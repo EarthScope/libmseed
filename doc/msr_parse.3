@@ -1,0 +1,62 @@
+.TH MSR_PARSE 3 2010/12/30 "Libmseed API"
+.SH DESCRIPTION
+Detect and parse a SEED data record from a memory buffer
+
+.SH SYNOPSIS
+.nf
+.B #include <libmseed.h>
+
+.BI "int  \fBmsr_parse\fP ( char *" record ", int " recbuflen ", MSRecord " **ppmsr "," 
+.BI "                 int " reclen ", flag " dataflag ", flag " verbose " );"
+
+.BI "int  \fBms_detect\fP ( const char *" record ", int " recbuflen " );"
+
+.SH DESCRIPTION
+\fBmsr_parse\fP will parse a SEED data record from the \fIrecord\fP
+buffer and populate the MSRecord structure at \fIppmsr\fP, allocating
+one if needed.  The \fIrecbuflen\fP argument is the length of the
+\fIrecord\fP buffer.  Records must begin at the start of the buffer.
+
+If \fIreclen\fP is 0 or negative the length of record is automatically
+determined, otherwise \fIreclen\fP should be the correct record
+length.  For auto detection of record length the record should include
+a 1000 blockette or be followed by another record header in the
+buffer.
+
+If \fIdataflag\fP is true (non-zero) the data samples will be unpacked
+when parsing the record.  This argument is passed directly to
+\fBmsr_unpack(3)\fP.
+
+\fBms_detect\fP determines whether the supplied \fIrecord\fP buffer
+contains a SEED data record by verifying known signatures, if a record
+is found the record length is determined by:
+
+1) Searching the buffer up to \fIrecbuflen\fP for a Blockette 1000.
+
+2) If no Blockette 1000 is found search at 256-byte offsets for the
+fixed section of the next header in the buffer, thereby implying the
+record length.
+
+.SH RETURN VALUES
+\fBmsr_parse\fP returns values:
+.nf
+  0 : On success and populates the supplied MSRecord.
+ >0 : Data record was detected but not enough data is present in buffer,
+      the value returned is a hint of how much more data is needed.
+ <0 : On error a negative libmseed error value is returned.
+
+\fBms_detect\fP returns values:
+.nf
+ -1 : Data record not detected or error
+  0 : Data record detected but could not determine length
+ >0 : Length of the data record in bytes
+.fi
+
+.SH SEE ALSO
+\fBmsr_unpack(3)\fP, \fBms_parse_raw(3)\fP and \fBms_errorstr(3)\fP
+
+.SH AUTHOR
+.nf
+Chad Trabant
+IRIS Data Management Center
+.fi
