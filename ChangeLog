@@ -1,3 +1,7 @@
+2012.111:
+	- Update example/test.mseed to new data with an earthquake to make it
+	more recognizable compared to ambient noise.
+
 2012.105: 2.7rc1
 	- Add many type casts to quiet newer GCC and MSVC compilers.
 	For 32-bit programs there are some places, mostly in packing routines,
