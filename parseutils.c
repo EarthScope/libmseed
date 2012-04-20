@@ -5,7 +5,7 @@
  * Written by Chad Trabant
  *   IRIS Data Management Center
  *
- * modified: 2011.129
+ * modified: 2012.105
  ***************************************************************************/
 
 #include <stdio.h>
@@ -186,7 +186,7 @@ ms_detect ( const char *record, int recbuflen )
       
       /* Found a 1000 blockette, not truncated */
       if ( blkt_type == 1000  &&
-	   (blkt_offset + 4 + sizeof(struct blkt_1000_s)) <= recbuflen )
+	   (int)(blkt_offset + 4 + sizeof(struct blkt_1000_s)) <= recbuflen )
 	{
           blkt_1000 = (struct blkt_1000_s *) (record + blkt_offset + 4);
 	  
