@@ -31,7 +31,7 @@ for link in $LIST ; do
 done
 
 ORIG=ms_readmsr.3
-LIST="ms_readmsr_r.3 ms_readtraces.3 ms_readtraces_timewin.3 ms_readtraces_selection.3 ms_readtracelist.3 ms_readtracelist_timewin.3 ms_readtracelist_selection"
+LIST="ms_readmsr_r.3 ms_readtraces.3 ms_readtraces_timewin.3 ms_readtraces_selection.3 ms_readtracelist.3 ms_readtracelist_timewin.3 ms_readtracelist_selection.3"
 for link in $LIST ; do
     ln -s $ORIG $link
 done
