@@ -790,7 +790,6 @@ ms_hptime2seedtimestr (hptime_t hptime, char *seedtimestr, flag subseconds)
 		    tms.tm_year + 1900, tms.tm_yday + 1,
 		    tms.tm_hour, tms.tm_min, tms.tm_sec, ifract);
   else
-    /* Assuming ifract has at least microsecond precision */
     ret = snprintf (seedtimestr, 18, "%4d,%03d,%02d:%02d:%02d",
                     tms.tm_year + 1900, tms.tm_yday + 1,
                     tms.tm_hour, tms.tm_min, tms.tm_sec);
