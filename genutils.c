@@ -7,7 +7,7 @@
  * ORFEUS/EC-Project MEREDIAN
  * IRIS Data Management Center
  *
- * modified: 2012.114
+ * modified: 2012.357
  ***************************************************************************/
 
 #include <stdio.h>
@@ -103,7 +103,7 @@ ms_splitsrcname (char *srcname, char *net, char *sta, char *loc, char *chan,
   /* Duplicate srcname */
   if ( ! (id = strdup(srcname)) )
     {
-      fprintf (stderr, "ms_splitsrcname(): Error duplicating srcname string");
+      ms_log (2, "ms_splitsrcname(): Error duplicating srcname string");
       return -1;
     }
   
