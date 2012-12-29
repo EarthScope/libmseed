@@ -135,19 +135,20 @@ msr_parse ( char *record, int recbuflen, MSRecord **ppmsr, int reclen,
  * properly manipulate the record buffer pointer, buffer length and
  * offset to the same effect.
  *
- * 2) when the end of the buffer is reached -1 is returned, the caller
- * should check the offset value against the record buffer length to
- * determine when the entire buffer has been searched.
+ * 2) when the end of the buffer is reached MS_GENERROR (-1) is
+ * returned, the caller should check the offset value against the
+ * record buffer length to determine when the entire buffer has been
+ * searched.
  * 
- * Return values: same as msr_parse() except that -1 is returned when
- * end-of-buffer is reached.
+ * Return values: same as msr_parse() except that MS_GENERROR is
+ * returned when end-of-buffer is reached.
  *********************************************************************/
 int
 msr_parse_selection ( char *recbuf, int recbuflen, int64_t *offset,
 		      MSRecord **ppmsr, int reclen,
 		      Selections *selections, flag dataflag, flag verbose )
 {
-  int retval = -1;
+  int retval = MS_GENERROR;
   int unpackretval;
   flag dataswapflag = 0;
   flag bigendianhost = ms_bigendianhost();
@@ -177,6 +178,7 @@ msr_parse_selection ( char *recbuf, int recbuflen, int64_t *offset,
 	  if ( selections && ! msr_matchselect (selections, *ppmsr, NULL) )
 	    {
 	      *offset += (*ppmsr)->reclen;
+	      retval = MS_GENERROR;
 	    }
 	  else
 	    {

@@ -9,6 +9,11 @@ Detect and parse a SEED data record from a memory buffer
 .BI "int  \fBmsr_parse\fP ( char *" record ", int " recbuflen ", MSRecord " **ppmsr "," 
 .BI "                 int " reclen ", flag " dataflag ", flag " verbose " );"
 
+.BI "int  \fBmsr_parse_selection\fP ( char *" recbuf ", int " recbuflen ","
+.BI "                           int64_t *" offset ", MSRecord " **ppmsr ","
+.BI "                           int " reclen ", Selections *" selections ","
+.BI "                           flag " dataflag ", flag " verbose " );"
+
 .BI "int  \fBms_detect\fP ( const char *" record ", int " recbuflen " );"
 
 .SH DESCRIPTION
@@ -26,6 +31,13 @@ buffer.
 If \fIdataflag\fP is true (non-zero) the data samples will be unpacked
 when parsing the record.  This argument is passed directly to
 \fBmsr_unpack(3)\fP.
+
+\fBmsr_parse_selection\fP will parse the first SEED data record from
+the \fIrecbuf\fP buffer that matches the optional \fIselections\fP.
+The \fIoffset\fP value indicates where to start searching the buffer.
+On success, the MSRecord structure at \fIppmsr\fP is populated and the
+\fIoffset\fP to the record in the buffer is set.  See the example
+below for the intended usage pattern.
 
 \fBms_detect\fP determines whether the supplied \fIrecord\fP buffer
 contains a SEED data record by verifying known signatures, if a record
@@ -50,6 +62,60 @@ record length.
  -1 : Data record not detected or error
   0 : Data record detected but could not determine length
  >0 : Length of the data record in bytes
+.fi
+
+.SH EXAMPLE USAGE OF MS_PARSE_SELECTION()
+The \fBms_parse_selection()\fP routine uses the initial setting of
+\fIoffset\fP as the starting point to search the buffer.  On
+successful parsing of a miniSEED record the value of \fIoffset\fP will
+be the offset in the buffer to the record parsed.
+
+To properly parse all records matching specificed selection criteria,
+a caller must check and manage the value of \fIoffset\fP.  In
+particular, when the end of the buffer is reached a value of
+MS_GENERROR will be returned and the caller should check if the offset
+is still within the buffer length to determine if this is a parsing
+error or simply the end of the buffer.
+
+The following example illustrates the intended usage:
+
+.nf
+  char *recbuf = <memory buffer containing records>;
+  int64_t recbuflen = <length of buffer>;
+  int64_t offset = 0;
+  MSRecord *msr = NULL;
+  int reclen = -1;
+  Selections *selections = NULL;
+  flag dataflag = 1;
+  flag verbose = 0;
+
+  // You probaby want to set Selections
+  // For example with a call to ms_readselectionsfile (&selections, selectfile)
+
+  /* Loop over all selected records in recbuf */
+  while ( offset < recbuflen )
+    {
+      if ( msr_parse_selection (recbuf, recbuflen, &offset, &msr, reclen, selections, dataflag, verbose) )
+        {
+          /* Only print error if offset is still within buffer length */
+          if ( verbose && offset < recbuflen )
+          ms_log (2, "Error parsing record at offset %lld\n", (long long int) offset);
+        }
+      else /* Succesfully found and parsed record */
+        {
+          /* Do something with the record, for example print the details */
+          msr_print (msr, ppackets);
+  
+          /* Increment offset in buffer for subsequent call to msr_parse_selection() */
+          offset += msr->reclen;
+        }
+    }
+
+  /* Clean up */
+  msr_free (&msr)
+
+  if ( selections )
+    ms_freeselections (selections);
 .fi
 
 .SH SEE ALSO

@@ -31,7 +31,7 @@ extern "C" {
 #include "lmplatform.h"
 
 #define LIBMSEED_VERSION "2.8rc"
-#define LIBMSEED_RELEASE "2012.357"
+#define LIBMSEED_RELEASE "2012.363"
 
 #define MINRECLEN   256      /* Minimum Mini-SEED record length, 2^8 bytes */
 #define MAXRECLEN   1048576  /* Maximum Mini-SEED record length, 2^20 bytes */
@@ -509,6 +509,10 @@ extern int unpackencodingfallback;
 /* Mini-SEED record related functions */
 extern int           msr_parse (char *record, int recbuflen, MSRecord **ppmsr, int reclen,
 				flag dataflag, flag verbose);
+
+extern int           msr_parse_selection ( char *recbuf, int recbuflen, int64_t *offset,
+					   MSRecord **ppmsr, int reclen,
+					   Selections *selections, flag dataflag, flag verbose );
 
 extern int           msr_unpack (char *record, int reclen, MSRecord **ppmsr,
 				 flag dataflag, flag verbose);
