@@ -133,7 +133,7 @@ for link in $LIST ; do
 done
 
 ORIG=msr_parse.3
-LIST="ms_detect.3"
+LIST="msr_parse_selection.3 ms_detect.3"
 for link in $LIST ; do
     ln -s $ORIG $link
 done
