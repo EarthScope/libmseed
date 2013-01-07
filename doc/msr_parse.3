@@ -1,4 +1,4 @@
-.TH MSR_PARSE 3 2012/12/28 "Libmseed API"
+.TH MSR_PARSE 3 2013/01/07 "Libmseed API"
 .SH DESCRIPTION
 Detect and parse a SEED data record from a memory buffer
 
@@ -104,7 +104,7 @@ The following example illustrates the intended usage:
       else /* Succesfully found and parsed record */
         {
           /* Do something with the record, for example print the details */
-          msr_print (msr, ppackets);
+          msr_print (msr, verbose);
   
           /* Increment offset in buffer for subsequent call to msr_parse_selection() */
           offset += msr->reclen;
@@ -112,7 +112,7 @@ The following example illustrates the intended usage:
     }
 
   /* Clean up */
-  msr_free (&msr)
+  msr_free (&msr);
 
   if ( selections )
     ms_freeselections (selections);

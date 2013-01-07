@@ -1,3 +1,7 @@
+2013.007: 2.8 (again)
+	- Add msr_parse_selection() to libmseed.def for Windows builds.
+	- Fix errors in pseudo code in doc/msr_parse.3.
+
 2012.363: 2.8
 	- Implement msr_parse_selection() which is a wrapper of msr_parse()
 	that searches for the first parsable miniSEED record in a memory
