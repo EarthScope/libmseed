@@ -13,7 +13,7 @@
  *   ORFEUS/EC-Project MEREDIAN
  *   IRIS Data Management Center
  *
- * modified: 2012.363
+ * modified: 2013.050
  ***************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -143,9 +143,8 @@ msr_unpack ( char *record, int reclen, MSRecord **ppmsr,
   
   memcpy (msr->fsdh, record, sizeof (struct fsdh_s));
   
-  /* Check to see if byte swapping is needed by testing the year */
-  if ( (msr->fsdh->start_time.year < 1920) ||
-       (msr->fsdh->start_time.year > 2050) )
+  /* Check to see if byte swapping is needed by testing the year and day */
+  if ( ! MS_ISVALIDYEARDAY (msr->fsdh->start_time.year, msr->fsdh->start_time.day) )
     headerswapflag = dataswapflag = 1;
   
   /* Check if byte order is forced */

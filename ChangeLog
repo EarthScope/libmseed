@@ -1,3 +1,8 @@
+2013.050: 2.8.1
+	- Add MS_ISVALIDYEARDAY() macro to test range for year and day values,
+	years between 1900 and 2100 and days between 1 and 366.
+	- Use new macro to determine when byte swapping is needed.
+
 2013.007: 2.8 (again)
 	- Add msr_parse_selection() to libmseed.def for Windows builds.
 	- Fix errors in pseudo code in doc/msr_parse.3.
