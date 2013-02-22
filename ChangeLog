@@ -1,7 +1,18 @@
-2013.050: 2.8.1
+2013.053: 2.9
+	- Extend parsing of day-of-year style time strings to allow parsing
+	of time fields separated by dashes in addition to allowing the day
+	and time fields to be separated by a 'T' or space.  Modifications 
+	were made to ms_seedtimestr2hptime().
+	- Extend parsing of year-month-day style time strings to allow parsing
+	of time fields separated by commas.  Modifications were made to
+	ms_timestr2hptime().
+
+2013.050:
 	- Add MS_ISVALIDYEARDAY() macro to test range for year and day values,
 	years between 1900 and 2100 and days between 1 and 366.
-	- Use new macro to determine when byte swapping is needed.
+	- Use new macro to determine when byte swapping is needed.  This test
+	leaves a non-determination of byte order for days 1, 256 and 257 in
+	the year 2056, beware future data users.
 
 2013.007: 2.8 (again)
 	- Add msr_parse_selection() to libmseed.def for Windows builds.
