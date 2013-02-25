@@ -13,7 +13,7 @@
  *   ORFEUS/EC-Project MEREDIAN
  *   IRIS Data Management Center
  *
- * modified: 2013.050
+ * modified: 2013.056
  ***************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -183,7 +183,7 @@ msr_unpack ( char *record, int reclen, MSRecord **ppmsr,
   /* Generate source name for MSRecord */
   if ( msr_srcname (msr, srcname, 1) == NULL )
     {
-      ms_log (2, "msr_unpack_data(): Cannot generate srcname\n");
+      ms_log (2, "msr_unpack(): Cannot generate srcname\n");
       return MS_GENERROR;
     }
   
@@ -748,7 +748,24 @@ msr_unpack_data ( MSRecord *msr, int swapflag, flag verbose )
 	      UNPACK_SRCNAME);
       return MS_NOTSEED;
     }
-    
+  else if ( msr->reclen < MINRECLEN || msr->reclen > MAXRECLEN )
+    {
+      ms_log (2, "msr_unpack_data(%s): Unsupported record length: %d\n",
+	      UNPACK_SRCNAME, msr->reclen);
+      return MS_OUTOFRANGE;
+    }
+  
+  /* Sanity check data offset before creating a pointer based on the value */
+  if ( msr->fsdh->data_offset < 48 || msr->fsdh->data_offset >= msr->reclen )
+    {
+      ms_log (2, "msr_unpack_data(%s): data offset value is not valid: %d\n",
+	      UNPACK_SRCNAME, msr->fsdh->data_offset);
+      return MS_GENERROR;
+    }
+  
+  datasize = msr->reclen - msr->fsdh->data_offset;
+  dbuf = msr->record + msr->fsdh->data_offset;
+  
   switch (msr->encoding)
     {
     case DE_ASCII:
@@ -793,9 +810,6 @@ msr_unpack_data ( MSRecord *msr, int swapflag, flag verbose )
       msr->datasamples = 0;
       msr->numsamples = 0;
     }
-  
-  datasize = msr->reclen - msr->fsdh->data_offset;
-  dbuf = msr->record + msr->fsdh->data_offset;
   
   if ( verbose > 2 )
     ms_log (1, "%s: Unpacking %lld samples\n",
