@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2012.105
+ * modified: 2013.117
  ***************************************************************************/
 
 #include <stdio.h>
@@ -1513,8 +1513,8 @@ mst_pack ( MSTrace *mst, void (*record_handler) (char *, int, void *),
 {
   MSRecord *msr;
   char srcname[50];
-  int trpackedrecords;
-  int64_t trpackedsamples;
+  int trpackedrecords = 0;
+  int64_t trpackedsamples = 0;
   int samplesize;
   int64_t bufsize;
   

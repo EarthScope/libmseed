@@ -1,3 +1,10 @@
+2013.117: 2.11
+	- Initialize internal counters in mst_pack() to avoid their use 
+	in error conditions. Thanks to D. Ketchum and M. Potter for help. 
+	- Add 'const' qualifier to the msfile argument of the file reading and
+	writing family of routines to stop compiler warnings resulting from
+	generated binding functions.  Thanks to M. Bach for reporting.
+
 2013.056: 2.10
 	- Add more sanity checks to msr_unpack_data() to catch bad/corrupted
 	data records and avoid crashes due to impossible pointer construction.
