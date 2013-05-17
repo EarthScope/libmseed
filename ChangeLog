@@ -1,3 +1,6 @@
+2013.137:
+	- Update docs for transition to 64-bit sample counts done in 2011!
+
 2013.117: 2.11
 	- Initialize internal counters in mst_pack() to avoid their use 
 	in error conditions. Thanks to D. Ketchum and M. Potter for help. 
