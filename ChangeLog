@@ -1,3 +1,11 @@
+2013.267:
+	- msr_endtime(): Check activity flags in fixed section of data header,
+	if bit 4 is set then a positive leap occurred during the record and
+	the end time should be reduced by one second to properly match the now
+	shifted UTC time.  As long as the next record in the series is
+	properly marked with the correct UTC time no artificial time tear
+	will be generated when reconstructing the time series.
+
 2013.137:
 	- Update docs for transition to 64-bit sample counts done in 2011!
 
