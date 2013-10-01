@@ -30,8 +30,8 @@ extern "C" {
 
 #include "lmplatform.h"
 
-#define LIBMSEED_VERSION "2.11"
-#define LIBMSEED_RELEASE "2013.117"
+#define LIBMSEED_VERSION "2.12"
+#define LIBMSEED_RELEASE "2013.273"
 
 #define MINRECLEN   256      /* Minimum Mini-SEED record length, 2^8 bytes */
 #define MAXRECLEN   1048576  /* Maximum Mini-SEED record length, 2^20 bytes */
@@ -575,6 +575,7 @@ extern MSTrace*      mst_addmsrtogroup (MSTraceGroup *mstg, MSRecord *msr, flag 
 extern MSTrace*      mst_addtracetogroup (MSTraceGroup *mstg, MSTrace *mst);
 extern int           mst_groupheal (MSTraceGroup *mstg, double timetol, double sampratetol);
 extern int           mst_groupsort (MSTraceGroup *mstg, flag quality);
+extern int           mst_convertsamples (MSTrace *mst, char type, flag truncate);
 extern char *        mst_srcname (MSTrace *mst, char *srcname, flag quality);
 extern void          mst_printtracelist (MSTraceGroup *mstg, flag timeformat,
 					 flag details, flag gaps);
@@ -595,6 +596,7 @@ extern MSTraceList * mstl_init ( MSTraceList *mstl );
 extern void          mstl_free ( MSTraceList **ppmstl, flag freeprvtptr );
 extern MSTraceSeg *  mstl_addmsr ( MSTraceList *mstl, MSRecord *msr, flag dataquality,
 				   flag autoheal, double timetol, double sampratetol );
+extern int           mstl_convertsamples ( MSTraceSeg *seg, char type, flag truncate );
 extern void          mstl_printtracelist ( MSTraceList *mstl, flag timeformat,
 					   flag details, flag gaps );
 extern void          mstl_printsynclist ( MSTraceList *mstl, char *dccid, flag subsecond );

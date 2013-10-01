@@ -1,3 +1,9 @@
+2013.273: 2.12
+	- Add mst_convertsamples() and mstl_convertsamples() to convert sample
+	types.  When converting from float & double types to integer type
+	a simple rounding is employed compensate for machine representation
+	of floating point numbers.
+
 2013.267:
 	- msr_endtime(): Check activity flags in fixed section of data header,
 	if bit 4 is set then a positive leap occurred during the record and

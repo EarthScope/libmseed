@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2013.117
+ * modified: 2013.273
  ***************************************************************************/
 
 #include <stdio.h>
@@ -1088,6 +1088,149 @@ mst_groupsort_cmp ( MSTrace *mst1, MSTrace *mst2, flag quality )
   
   return 0;
 } /* End of mst_groupsort_cmp() */
+
+
+/***************************************************************************
+ * mst_convertsamples:
+ *
+ * Convert the data samples associated with an MSTrace to another data
+ * type.  ASCII data samples cannot be converted, if supplied or
+ * requested an error will be returned.
+ *
+ * When converting float & double sample types to integer type a
+ * simple rounding is applied by adding 0.5 to the sample value before
+ * converting (truncating) to integer.
+ *
+ * If the truncate flag is true data samples will be truncated to
+ * integers even if loss of sample precision is detected.  If the
+ * truncate flag is false (0) and loss of precision is detected an
+ * error is returned.
+ *
+ * Returns 0 on success, and -1 on failure.
+ ***************************************************************************/
+int
+mst_convertsamples ( MSTrace *mst, char type, flag truncate )
+{
+  int32_t *idata;
+  float *fdata;
+  double *ddata;
+  int64_t idx;
+  
+  if ( ! mst )
+    return -1;
+  
+  /* No conversion necessary, report success */
+  if ( mst->sampletype == type )
+    return 0;
+  
+  if ( mst->sampletype == 'a' || type == 'a' )
+    {
+      ms_log (2, "mst_convertsamples: cannot convert ASCII samples to/from numeric type\n");
+      return -1;
+    }
+  
+  idata = (int32_t *) mst->datasamples;
+  fdata = (float *) mst->datasamples;
+  ddata = (double *) mst->datasamples;
+  
+  /* Convert to 32-bit integers */
+  if ( type == 'i' )
+    {
+      if ( mst->sampletype == 'f' )      /* Convert floats to integers with simple rounding */
+	{
+	  for (idx = 0; idx < mst->numsamples; idx++)
+	    {
+	      /* Check for loss of sub-integer */
+	      if ( ! truncate && (fdata[idx] - (int32_t)fdata[idx]) > 0.000001 )
+		{
+		  ms_log (1, "mst_convertsamples: Warning, loss of precision when converting floats to integers, loss: %g\n",
+			  (fdata[idx] - (int32_t)fdata[idx]));
+		  return -1;
+		}
+	      
+	      idata[idx] = (int32_t) (fdata[idx] + 0.5);
+	    }
+	}
+      else if ( mst->sampletype == 'd' ) /* Convert doubles to integers with simple rounding */
+	{
+	  for (idx = 0; idx < mst->numsamples; idx++)
+	    {
+	      /* Check for loss of sub-integer */
+	      if ( ! truncate && (ddata[idx] - (int32_t)ddata[idx]) > 0.000001 )
+		{
+		  ms_log (1, "mst_convertsamples: Warning, loss of precision when converting doubles to integers, loss: %g\n",
+			  (ddata[idx] - (int32_t)ddata[idx]));
+		  return -1;
+		}
+	      
+	      idata[idx] = (int32_t) (ddata[idx] + 0.5);
+	    }
+	  
+	  /* Reallocate buffer for reduced size needed */
+	  if ( ! (mst->datasamples = realloc (mst->datasamples, (mst->numsamples * sizeof(int32_t)))) )
+	    {
+	      ms_log (2, "mst_convertsamples: cannot re-allocate buffer for sample conversion\n");
+	      return -1;
+	    }
+	}
+      
+      mst->sampletype = 'i';
+    }  /* Done converting to 32-bit integers */
+  
+  /* Convert to 32-bit floats */
+  else if ( type == 'f' )
+    {
+      if ( mst->sampletype == 'i' )      /* Convert integers to floats */
+	{
+	  for (idx = 0; idx < mst->numsamples; idx++)
+	    fdata[idx] = (float) idata[idx];
+	}
+      else if ( mst->sampletype == 'd' ) /* Convert doubles to floats */
+	{
+	  for (idx = 0; idx < mst->numsamples; idx++)
+	    fdata[idx] = (float) ddata[idx];
+          
+	  /* Reallocate buffer for reduced size needed */
+	  if ( ! (mst->datasamples = realloc (mst->datasamples, (mst->numsamples * sizeof(float)))) )
+	    {
+	      ms_log (2, "mst_convertsamples: cannot re-allocate buffer after sample conversion\n");
+	      return -1;
+	    }
+	}
+          
+      mst->sampletype = 'f';
+    }  /* Done converting to 32-bit floats */
+  
+  /* Convert to 64-bit doubles */
+  else if ( type == 'd' )
+    {
+      if ( ! (ddata = (double *) malloc (mst->numsamples * sizeof(double))) )
+	{
+	  ms_log (2, "mst_convertsamples: cannot allocate buffer for sample conversion to doubles\n");
+	  return -1;
+	}
+      
+      if ( mst->sampletype == 'i' )      /* Convert integers to doubles */
+	{
+	  for (idx = 0; idx < mst->numsamples; idx++)
+	    ddata[idx] = (double) idata[idx];
+	  
+	  free (idata);
+	}
+      else if ( mst->sampletype == 'f' ) /* Convert floats to doubles */
+	{
+	  for (idx = 0; idx < mst->numsamples; idx++)
+	    ddata[idx] = (double) fdata[idx];
+	  
+	  free (fdata);
+	}
+      
+      mst->datasamples = ddata;
+      mst->sampletype = 'd';
+    }  /* Done converting to 64-bit doubles */
+  
+  return 0;
+} /* End of mst_convertsamples() */
 
 
 /***************************************************************************
