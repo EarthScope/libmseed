@@ -114,6 +114,12 @@ for link in $LIST ; do
     ln -s $ORIG $link
 done
 
+ORIG=mst_convertsamples.3
+LIST="mstl_convertsamples.3"
+for link in $LIST ; do
+    ln -s $ORIG $link
+done
+
 ORIG=mstl_init.3
 LIST="mstl_free.3"
 for link in $LIST ; do
