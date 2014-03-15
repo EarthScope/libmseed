@@ -52,7 +52,7 @@ extern "C" {
    * WIN32 => WIN32 and Windows Sockets 2 (LMP_WIN32)
    */
 
-#if defined(__linux__) || defined(__linux)
+#if defined(__linux__) || defined(__linux) || defined(__CYGWIN__)
   #define LMP_GLIBC2 1
 
   #include <stdlib.h>
@@ -83,7 +83,7 @@ extern "C" {
   #include <string.h>
   #include <ctype.h>
   
-#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__CYGWIN__)
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
   #define LMP_BSD 1
 
   #include <stdlib.h>

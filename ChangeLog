@@ -1,5 +1,5 @@
 2014.074:
-	- Add __CYGWIN__ defined test to BSD section of lmplatform.h.
+	- Add __CYGWIN__ defined test to Linux section of lmplatform.h.
 
 2013.273: 2.12
 	- Add mst_convertsamples() and mstl_convertsamples() to convert sample
