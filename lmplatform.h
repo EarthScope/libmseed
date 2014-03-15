@@ -18,7 +18,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2012.138
+ * modified: 2014.074
  ***************************************************************************/
 
 #ifndef LMPLATFORM_H
@@ -83,7 +83,7 @@ extern "C" {
   #include <string.h>
   #include <ctype.h>
   
-#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__CYGWIN__)
   #define LMP_BSD 1
 
   #include <stdlib.h>

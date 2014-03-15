@@ -1,7 +1,10 @@
+2014.074:
+	- Add __CYGWIN__ defined test to BSD section of lmplatform.h.
+
 2013.273: 2.12
 	- Add mst_convertsamples() and mstl_convertsamples() to convert sample
 	types.  When converting from float & double types to integer type
-	a simple rounding is employed compensate for machine representation
+	a simple rounding is employed to compensate for machine representation
 	of floating point numbers.
 
 2013.267:
