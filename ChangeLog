@@ -1,3 +1,8 @@
+2014.197:
+	- Change MINRECLEN to 128 (previously 256).  The current SEED
+	specification is a minimum record length of 256-bytes, but there are
+	cases (e.g. low latency data flow) using 128 byte record lengths.
+
 2014.074:
 	- Add __CYGWIN__ defined test to Linux section of lmplatform.h.
 
