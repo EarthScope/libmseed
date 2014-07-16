@@ -3,7 +3,7 @@
 	The current SEED specification is a minimum record length of 256-bytes,
 	but there are cases (e.g. low latency data flow) using 128-byte records.
 	- Add declarations, casting and string truncation to clear warnings/issues
-	uncovered in the ObsPy testing (reported by Elliott Sales de Andrade).
+	uncovered in ObsPy testing (thanks to Elliott Sales de Andrade).
 
 2014.074:
 	- Add __CYGWIN__ defined test to Linux section of lmplatform.h.
