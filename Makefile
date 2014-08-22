@@ -34,7 +34,7 @@ dynamic: $(LIB_DYN)
 # Build static library
 $(LIB_A): $(LIB_OBJS)
 	rm -f $(LIB_A)
-	ar -csq $(LIB_A) $(LIB_OBJS)
+	ar -crs $(LIB_A) $(LIB_OBJS)
 
 # Build shared library using GCC-style options
 $(LIB_SO): $(LIB_DOBJS)
