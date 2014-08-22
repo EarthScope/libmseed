@@ -46,7 +46,7 @@ $(LIB_SO): $(LIB_DOBJS)
 # Build dynamic library (usually for Mac OSX)
 $(LIB_DYN): $(LIB_DOBJS)
 	rm -f $(LIB_DYN) $(LIB_DYN_ALIAS)
-	$(CC) $(CFLAGS) -fPIC -dynamiclib -compatibility_version $(COMPAT_VER) -current_version $(CURRENT_VER) -install_name $(LIB_DYN_ALIAS) -o $(LIB_DYN) $(LIB_DOBJS)
+	$(CC) $(CFLAGS) -dynamiclib -compatibility_version $(COMPAT_VER) -current_version $(CURRENT_VER) -install_name $(LIB_DYN_ALIAS) -o $(LIB_DYN) $(LIB_DOBJS)
 	ln -sf $(LIB_DYN) $(LIB_DYN_ALIAS)
 
 clean:
