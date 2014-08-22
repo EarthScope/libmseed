@@ -1,8 +1,9 @@
 2014.234: 2.13
 	- Clean up Makefile and example/Makefile, remove all GCC-specific and
 	debug targets.  Makefiles are compatible with both GNU and BSD make. 
+	As before, the shared target works only for GCC-compatible compilers.
 	Thanks to Elliott Sales de Andrade for pointing out that shared library
-	targets did not work with parallel builds, prompting this housekeeping.
+	targets did not work with parallel builds, prompting this clean up.
 
 2014.197: 2.13rc
 	- Support 128-byte record length by changing MINRECLEN to 128 (was 256).
