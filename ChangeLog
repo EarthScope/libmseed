@@ -1,3 +1,8 @@
+2014.248:
+	- Add casting to size_t and int to avoid build warnings on certain
+	build systems (e.g. older MS Visual Studio).
+	The effective maximum sample buffer and record buffer size is ~2GB.
+
 2014.234: 2.13
 	- Clean up Makefile and example/Makefile, remove all GCC-specific and
 	debug targets.  Makefiles are compatible with both GNU and BSD make. 

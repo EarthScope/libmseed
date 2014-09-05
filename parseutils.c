@@ -5,7 +5,7 @@
  * Written by Chad Trabant
  *   IRIS Data Management Center
  *
- * modified: 2013.050
+ * modified: 2014.248
  ***************************************************************************/
 
 #include <stdio.h>
@@ -164,7 +164,7 @@ msr_parse_selection ( char *recbuf, int recbuflen, int64_t *offset,
   
   while ( *offset < recbuflen )
     {
-      retval = msr_parse (recbuf+*offset, recbuflen-*offset, ppmsr, reclen, 0, verbose);
+      retval = msr_parse (recbuf+*offset, (int)(recbuflen-*offset), ppmsr, reclen, 0, verbose);
       
       if ( retval )
         {
