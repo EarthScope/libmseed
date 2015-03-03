@@ -149,3 +149,9 @@ LIST="msr_writemseed.3 mst_writemseed.3 mst_writemseedgroup.3"
 for link in $LIST ; do
     ln -s $ORIG $link
 done
+
+ORIG=ms_readleapseconds.3
+LIST="ms_readleapsecondfile.3"
+for link in $LIST ; do
+    ln -s $ORIG $link
+done

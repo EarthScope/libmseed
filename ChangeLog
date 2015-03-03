@@ -1,3 +1,12 @@
+2015.061:
+	- Add ms_readleapseconds() and ms_readleapsecondfile() routines to
+	read a leap seconds file into an internal list.
+	- Modify msr_endtime() to check for an internal leap second list,
+	check for overlap with the record and adjust the end time as needed
+	when leap seconds are present.  When a leap second list is present
+	any indication of positive leap seconds in the fixed section data
+	header are ignored.
+
 2014.248:
 	- Add casting to size_t and int to avoid build warnings on certain
 	build systems (e.g. older MS Visual Studio).

@@ -30,8 +30,8 @@ extern "C" {
 
 #include "lmplatform.h"
 
-#define LIBMSEED_VERSION "2.13"
-#define LIBMSEED_RELEASE "2014.234"
+#define LIBMSEED_VERSION "2.14"
+#define LIBMSEED_RELEASE "2015.061"
 
 #define MINRECLEN   128      /* Minimum Mini-SEED record length, 2^7 bytes */
                              /* Note: the SEED specification minimum is 256 */
@@ -709,6 +709,18 @@ extern int      ms_addselect_comp (Selections **ppselections, char *net, char* s
 extern int      ms_readselectionsfile (Selections **ppselections, char *filename);
 extern void     ms_freeselections (Selections *selections);
 extern void     ms_printselections (Selections *selections);
+
+/* Leap second declarations, implementation in gentutils.c */
+typedef struct LeapSecond_s
+{
+  hptime_t leapsecond;
+  int32_t  TAIdelta;
+  struct LeapSecond_s *next;
+} LeapSecond;
+
+extern LeapSecond *leapsecondlist;
+extern int ms_readleapseconds (char *envvarname);
+extern int ms_readleapsecondfile (char *filename);
 
 /* Generic byte swapping routines */
 extern void     ms_gswap2 ( void *data2 );
