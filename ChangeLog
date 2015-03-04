@@ -1,3 +1,7 @@
+2015.062: 2.14
+	- Fix memory leak when msr_pack() returns after an error. Patch
+	contributed by Larry Baker and Eric Thomas.
+	
 2015.061:
 	- Add ms_readleapseconds() and ms_readleapsecondfile() routines to
 	read a leap seconds file into an internal list.
