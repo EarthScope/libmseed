@@ -411,9 +411,9 @@ ms_parse_raw ( char *record, int maxreclen, flag details, flag swapflag )
   X = record;  /* Pointer of convenience */
   
   /* Check record sequence number, 6 ASCII digits */
-  if ( ! isdigit((unsigned char) *(X)) || ! isdigit ((unsigned char) *(X+1)) ||
-       ! isdigit((unsigned char) *(X+2)) || ! isdigit ((unsigned char) *(X+3)) ||
-       ! isdigit((unsigned char) *(X+4)) || ! isdigit ((unsigned char) *(X+5)) )
+  if ( ! isdigit((int) *(X))   || ! isdigit ((int) *(X+1)) ||
+       ! isdigit((int) *(X+2)) || ! isdigit ((int) *(X+3)) ||
+       ! isdigit((int) *(X+4)) || ! isdigit ((int) *(X+5)) )
     {
       ms_log (2, "%s: Invalid sequence number: '%c%c%c%c%c%c'\n", srcname, X, X+1, X+2, X+3, X+4, X+5);
       retval++;
