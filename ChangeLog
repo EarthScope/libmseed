@@ -1,3 +1,7 @@
+2015.074:
+	- Define NTP-Posix time epoch factor as a constant specifically as
+	a long long integer to avoid warnings on some compilers.
+
 2015.070: 2.15
 	- Fix infinite loop if blockette chain is corrupt.  Patch submitted
 	by Elliott Sales de Andrade.
