@@ -7,7 +7,7 @@
  * ORFEUS/EC-Project MEREDIAN
  * IRIS Data Management Center
  *
- * modified: 2015.074
+ * modified: 2015.108
  ***************************************************************************/
 
 #include <stdio.h>
@@ -1161,10 +1161,10 @@ ms_readleapsecondfile (char *filename)
   FILE *fp = NULL;
   LeapSecond *ls = NULL;
   LeapSecond *lastls = NULL;
-  long long int expires;
+  int64_t expires;
   char readline[200];
   char *cp;
-  long long int leapsecond;
+  int64_t leapsecond;
   int TAIdelta;
   int fields;
   int count = 0;
@@ -1195,7 +1195,7 @@ ms_readleapsecondfile (char *filename)
       if ( ! strncmp (readline, "#@", 2) )
         {
           expires = 0;
-          fields = sscanf (readline, "#@ %lld", &expires);
+          fields = sscanf (readline, "#@ %"SCNd64, &expires);
           
           if ( fields == 1 )
             {
@@ -1219,7 +1219,7 @@ ms_readleapsecondfile (char *filename)
       if ( *readline == '#' )
         continue;
       
-      fields = sscanf (readline, "%lld %d ", &leapsecond, &TAIdelta);
+      fields = sscanf (readline, "%"SCNd64" %d ", &leapsecond, &TAIdelta);
       
       if ( fields == 2 )
         {
