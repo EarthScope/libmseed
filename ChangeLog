@@ -1,4 +1,7 @@
-2015.108: 2.16
+2015.113: 2.16
+	- Update minor release version in Makefile.
+
+2015.108:
 	- Cleanup of lmplatform.h removing unneeded headers and using C99
 	standard headers except for a few platform specific cases.
 	- Convert all printf() and scanf() usage of %lld for 64-bit integers
