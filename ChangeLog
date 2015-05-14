@@ -1,3 +1,12 @@
+2015.134: 2.16m
+	- Add defines for needed integer types and macros from inttypes.h
+	missing in older MSVC versions.  MSVC 2010 and later appear to have
+	enough C99 support.
+	- Add define tests for _WIN32 and _WIN64 to cover all WINs.
+	- ms_fread(): Add cast to quiet warning for conversion from size_t
+	to int.  In this case the read will always be <= MAXRECLEN, much
+	smaller than int, making the conversion safe.
+
 2015.113: 2.16
 	- Update minor release version in Makefile.
 

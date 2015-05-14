@@ -976,7 +976,7 @@ ms_fread (char *buf, int size, int num, FILE *stream)
 {
   int read = 0;
   
-  read = fread (buf, size, num, stream);
+  read = (int) fread (buf, size, num, stream);
   
   if ( read <= 0 && size && num )
     {

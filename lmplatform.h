@@ -18,7 +18,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2015.108
+ * modified: 2015.134
  ***************************************************************************/
 
 #ifndef LMPLATFORM_H
@@ -48,7 +48,6 @@ extern "C" {
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include <inttypes.h>
 #include <time.h>
 #include <string.h>
 #include <ctype.h>
@@ -59,25 +58,49 @@ extern "C" {
   #define LMP_GLIBC2 1 /* Deprecated */
 
   #include <unistd.h>
+  #include <inttypes.h>
 
 #elif defined(__sun__) || defined(__sun)
   #define LMP_SOLARIS 1
 
   #include <unistd.h>
+  #include <inttypes.h>
 
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
   #define LMP_BSD 1
 
   #include <unistd.h>
+  #include <inttypes.h>
 
-#elif defined(WIN32) || defined(WIN64)
+#elif defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
   #define LMP_WIN 1
   #define LMP_WIN32 1 /* Deprecated */
 
   #include <windows.h>
   #include <sys/types.h>
 
+  /* For pre-MSVC 2010 define standard int types, otherwise use inttypes.h */
+  #if defined(_MSC_VER) && _MSC_VER < 1600
+    typedef signed char int8_t;
+    typedef unsigned char uint8_t;
+    typedef signed short int int16_t;
+    typedef unsigned short int uint16_t;
+    typedef signed int int32_t;
+    typedef unsigned int uint32_t;
+    typedef signed __int64 int64_t;
+    typedef unsigned __int64 uint64_t;
+  #else
+    #include <inttypes.h>
+  #endif
+
   #if defined(_MSC_VER)
+    #if !defined(PRId64)
+      #define PRId64 "I64d"
+    #endif
+    #if !defined(SCNd64)
+      #define SCNd64 "I64d"
+    #endif
+
     #define snprintf _snprintf
     #define vsnprintf _vsnprintf
     #define strcasecmp _stricmp
