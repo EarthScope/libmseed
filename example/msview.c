@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified 2015.108
+ * modified 2016.233
  ***************************************************************************/
 
 #include <stdio.h>
@@ -30,6 +30,7 @@
 static flag  verbose    = 0;
 static flag  ppackets   = 0;
 static flag  basicsum   = 0;
+static int   printdata  = 0;
 static int   reclen     = -1;
 static char *inputfile  = 0;
 
@@ -42,11 +43,14 @@ main (int argc, char **argv)
 {
   MSRecord *msr = 0;
 
-  int dataflag   = 0;
   int64_t totalrecs  = 0;
   int64_t totalsamps = 0;
   int retcode;
-
+  
+  int32_t *idata;
+  float *fdata;
+  double *ddata;
+  
 #ifndef WIN32
   /* Signal handling, use POSIX calls with standardized semantics */
   struct sigaction sa;
@@ -70,12 +74,51 @@ main (int argc, char **argv)
   
   /* Loop over the input file */
   while ( (retcode = ms_readmsr (&msr, inputfile, reclen, NULL, NULL, 1,
-				 dataflag, verbose)) == MS_NOERROR )
+				 printdata, verbose)) == MS_NOERROR )
     {
       totalrecs++;
       totalsamps += msr->samplecnt;
       
       msr_print (msr, ppackets);
+
+      if ( printdata && msr->numsamples > 0 )
+        {
+          int line, col, cnt, samplesize;
+          int lines = (msr->numsamples / 6) + 1;
+          void *sptr;
+          
+          if ( (samplesize = ms_samplesize(msr->sampletype)) == 0 )
+            {
+              ms_log (2, "Unrecognized sample type: '%c'\n", msr->sampletype);
+            }
+          
+          for ( cnt = 0, line = 0; line < lines; line++ )
+            {
+              for ( col = 0; col < 6 ; col ++ )
+                {
+                  if ( cnt < msr->numsamples )
+                    {
+                      sptr = (char*)msr->datasamples + (cnt * samplesize);
+                      
+                      if ( msr->sampletype == 'i' )
+                        ms_log (0, "%10d  ", *(int32_t *)sptr);
+                      
+                      else if ( msr->sampletype == 'f' )
+                        ms_log (0, "%10.8g  ", *(float *)sptr);
+                      
+                      else if ( msr->sampletype == 'd' )
+                        ms_log (0, "%10.10g  ", *(double *)sptr);
+                      
+                      cnt++;
+                    }
+                }
+              ms_log (0, "\n");
+              
+              /* If only printing the first 6 samples break out here */
+              if ( printdata == 1 )
+                break;
+            }
+        }
     }
   
   if ( retcode != MS_ENDOFFILE )
@@ -123,6 +166,14 @@ parameter_proc (int argcount, char **argvec)
       else if (strncmp (argvec[optind], "-p", 2) == 0)
 	{
 	  ppackets += strspn (&argvec[optind][1], "p");
+	}
+      else if (strncmp (argvec[optind], "-d", 2) == 0)
+	{
+	  printdata = 1;
+	}
+      else if (strncmp (argvec[optind], "-D", 2) == 0)
+	{
+	  printdata = 2;
 	}
       else if (strcmp (argvec[optind], "-s") == 0)
 	{
@@ -181,6 +232,8 @@ usage (void)
 	   " -h             Show this usage message\n"
 	   " -v             Be more verbose, multiple flags can be used\n"
 	   " -p             Print details of header, multiple flags can be used\n"
+	   " -d             Print first 6 sample values\n"
+	   " -D             Print all sample values\n"
 	   " -s             Print a basic summary after processing a file\n"
 	   " -r bytes       Specify record length in bytes, required if no Blockette 1000\n"
 	   "\n"
