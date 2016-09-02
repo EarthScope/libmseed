@@ -1,0 +1,5 @@
+BasedOnStyle: LLVM
+AlwaysBreakAfterDefinitionReturnType: TopLevel
+SpaceBeforeParens: Always
+BreakBeforeBraces: Allman
+ColumnLimit: 0

@@ -1,3 +1,7 @@
+2016.266: 2.18rc1
+	- Replace data sample packing and unpacking routines from qlib2 with
+	new routines developed from scratch.  All code is now LGPL licensed.
+
 2015.053:
 	- Define needed C99 int types for MSVC 2012 or earlier.  Previously
 	this was only done for versions earlier than MSVC 2010.
