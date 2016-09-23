@@ -10,8 +10,8 @@ which has an unknown data structure by definition and Blockette 405
 which depends on full SEED (SEED including full ASCII headers) for a
 full data description.
 
-The library has been tested in Linux, Mac OSX (Darwin), Solaris and
-Win32 environments.
+The library should work in Linux, BSD (and derivatives like macOS),
+Solaris and Win32 environments.
 
 For installation instructions see the INSTALL file.  For further
 information regarding the library interface see the documentation in
@@ -21,14 +21,14 @@ in the 'examples' directory.
 -- License --
 
 This library is free software; you can redistribute it and/or modify
-it under the terms of the GNU Library General Public License as
+it under the terms of the GNU Lesser General Public License as
 published by the Free Software Foundation; either version 2 of the
 License, or (at your option) any later version.
 
 This library is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Library General Public License (GNU-LGPL) for more details.  The
+Lesser General Public License (GNU-LGPL) for more details.  The
 GNU-LGPL and further information can be found here:
 http://www.gnu.org/licenses/
 
