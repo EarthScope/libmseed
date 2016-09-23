@@ -3,7 +3,7 @@
  * STEIM2, GEOSCOPE (24bit and gain ranged), CDSN, SRO and DWWSSN
  * encoded data.
  *
- * modified: 2016.265
+ * modified: 2016.267
  ************************************************************************/
 
 #include <memory.h>
@@ -183,10 +183,10 @@ msr_decode_steim1 (int32_t *input, int inputlength, int samplecount,
 {
   int32_t *outputptr = output; /* Pointer to next output sample location */
   uint32_t frame[16];          /* Frame, 16 x 32-bit quantities = 64 bytes */
-  int32_t X0 = 0;              /* Forward integration constant, aka first sample */
-  int32_t Xn = 0;              /* Reverse integration constant, aka last sample */
+  int32_t X0     = 0;          /* Forward integration constant, aka first sample */
+  int32_t Xn     = 0;          /* Reverse integration constant, aka last sample */
   int maxsamples = outputlength / sizeof (int32_t);
-  int maxframes = inputlength / 64;
+  int maxframes  = inputlength / 64;
   int frameidx;
   int startnibble;
   int nibble;
@@ -198,7 +198,7 @@ msr_decode_steim1 (int32_t *input, int inputlength, int samplecount,
     int8_t d8[4];
     int16_t d16[2];
     int32_t d32;
-  } *word;
+  } * word;
 
   if (inputlength <= 0)
     return 0;
@@ -251,7 +251,7 @@ msr_decode_steim1 (int32_t *input, int inputlength, int samplecount,
       /* W0: the first 32-bit contains 16 x 2-bit nibbles for each word */
       nibble = EXTRACTBITRANGE (frame[0], (30 - (2 * widx)), 2);
 
-      word = (union dword *)&frame[widx];
+      word      = (union dword *)&frame[widx];
       diffcount = 0;
 
       switch (nibble)
@@ -350,7 +350,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
   int32_t diff[7];
   int32_t semask;
   int maxsamples = outputlength / sizeof (int32_t);
-  int maxframes = inputlength / 64;
+  int maxframes  = inputlength / 64;
   int frameidx;
   int startnibble;
   int nibble;
@@ -362,7 +362,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
   union dword {
     int8_t d8[4];
     int32_t d32;
-  } *word;
+  } * word;
 
   if (inputlength <= 0)
     return 0;
@@ -413,7 +413,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
     for (widx = startnibble; widx < 16 && samplecount > 0; widx++)
     {
       /* W0: the first 32-bit quantity contains 16 x 2-bit nibbles */
-      nibble = EXTRACTBITRANGE (frame[0], (30 - (2 * widx)), 2);
+      nibble    = EXTRACTBITRANGE (frame[0], (30 - (2 * widx)), 2);
       diffcount = 0;
 
       switch (nibble)
@@ -451,9 +451,9 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
 
         case 1: /* nibble=10, dnib=01: One 30-bit difference */
           diffcount = 1;
-          semask = 1U << (30 - 1); /* Sign extension from bit 30 */
-          diff[0] = EXTRACTBITRANGE (frame[widx], 0, 30);
-          diff[0] = (diff[0] ^ semask) - semask;
+          semask    = 1U << (30 - 1); /* Sign extension from bit 30 */
+          diff[0]   = EXTRACTBITRANGE (frame[widx], 0, 30);
+          diff[0]   = (diff[0] ^ semask) - semask;
 
           if (decodedebug)
             ms_log (1, "  W%02d: 10,01=1x30b  %d\n", widx, diff[0]);
@@ -461,7 +461,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
 
         case 2: /* nibble=10, dnib=10: Two 15-bit differences */
           diffcount = 2;
-          semask = 1U << (15 - 1); /* Sign extension from bit 15 */
+          semask    = 1U << (15 - 1); /* Sign extension from bit 15 */
           for (idx = 0; idx < diffcount; idx++)
           {
             diff[idx] = EXTRACTBITRANGE (frame[widx], (15 - idx * 15), 15);
@@ -474,7 +474,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
 
         case 3: /* nibble=10, dnib=11: Three 10-bit differences */
           diffcount = 3;
-          semask = 1U << (10 - 1); /* Sign extension from bit 10 */
+          semask    = 1U << (10 - 1); /* Sign extension from bit 10 */
           for (idx = 0; idx < diffcount; idx++)
           {
             diff[idx] = EXTRACTBITRANGE (frame[widx], (20 - idx * 10), 10);
@@ -497,7 +497,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
         {
         case 0: /* nibble=11, dnib=00: Five 6-bit differences */
           diffcount = 5;
-          semask = 1U << (6 - 1); /* Sign extension from bit 6 */
+          semask    = 1U << (6 - 1); /* Sign extension from bit 6 */
           for (idx = 0; idx < diffcount; idx++)
           {
             diff[idx] = EXTRACTBITRANGE (frame[widx], (24 - idx * 6), 6);
@@ -511,7 +511,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
 
         case 1: /* nibble=11, dnib=01: Six 5-bit differences */
           diffcount = 6;
-          semask = 1U << (5 - 1); /* Sign extension from bit 5 */
+          semask    = 1U << (5 - 1); /* Sign extension from bit 5 */
           for (idx = 0; idx < diffcount; idx++)
           {
             diff[idx] = EXTRACTBITRANGE (frame[widx], (25 - idx * 5), 5);
@@ -525,7 +525,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
 
         case 2: /* nibble=11, dnib=10: Seven 4-bit differences */
           diffcount = 7;
-          semask = 1U << (4 - 1); /* Sign extension from bit 4 */
+          semask    = 1U << (4 - 1); /* Sign extension from bit 4 */
           for (idx = 0; idx < diffcount; idx++)
           {
             diff[idx] = EXTRACTBITRANGE (frame[widx], (24 - idx * 4), 4);
@@ -637,10 +637,10 @@ msr_decode_geoscope (char *input, int samplecount, float *output,
     case DE_GEOSCOPE24:
       sample32.i = 0;
       if (swapflag)
-        for (k = 0; k < 3; k++)
+        for (k              = 0; k < 3; k++)
           sample32.b[2 - k] = input[k];
       else
-        for (k = 0; k < 3; k++)
+        for (k              = 0; k < 3; k++)
           sample32.b[1 + k] = input[k];
 
       mantissa = sample32.i;
@@ -659,7 +659,7 @@ msr_decode_geoscope (char *input, int samplecount, float *output,
         ms_gswap2a (&sint);
 
       /* Recover mantissa and gain range factor */
-      mantissa = (sint & GEOSCOPE_MANTISSA_MASK);
+      mantissa  = (sint & GEOSCOPE_MANTISSA_MASK);
       gainrange = (sint & GEOSCOPE_GAIN3_MASK) >> GEOSCOPE_SHIFT;
 
       /* Exponent is just gainrange for GEOSCOPE */
@@ -676,7 +676,7 @@ msr_decode_geoscope (char *input, int samplecount, float *output,
         ms_gswap2a (&sint);
 
       /* Recover mantissa and gain range factor */
-      mantissa = (sint & GEOSCOPE_MANTISSA_MASK);
+      mantissa  = (sint & GEOSCOPE_MANTISSA_MASK);
       gainrange = (sint & GEOSCOPE_GAIN4_MASK) >> GEOSCOPE_SHIFT;
 
       /* Exponent is just gainrange for GEOSCOPE */
@@ -772,7 +772,7 @@ msr_decode_cdsn (int16_t *input, int samplecount, int32_t *output,
       ms_gswap2a (&sint);
 
     /* Recover mantissa and gain range factor */
-    mantissa = (sint & CDSN_MANTISSA_MASK);
+    mantissa  = (sint & CDSN_MANTISSA_MASK);
     gainrange = (sint & CDSN_GAINRANGE_MASK) >> CDSN_SHIFT;
 
     /* Determine multiplier from the gain range factor and format definition
@@ -854,8 +854,8 @@ msr_decode_sro (int16_t *input, int samplecount, int32_t *output,
   if (samplecount <= 0)
     return 0;
 
-  add2gr = 0;
-  mult = -1;
+  add2gr     = 0;
+  mult       = -1;
   add2result = 10;
 
   for (idx = 0; idx < samplecount && outputlength > 0; idx++)
@@ -865,7 +865,7 @@ msr_decode_sro (int16_t *input, int samplecount, int32_t *output,
       ms_gswap2a (&sint);
 
     /* Recover mantissa and gain range factor */
-    mantissa = (sint & SRO_MANTISSA_MASK);
+    mantissa  = (sint & SRO_MANTISSA_MASK);
     gainrange = (sint & SRO_GAINRANGE_MASK) >> SRO_SHIFT;
 
     /* Take 2's complement for mantissa */

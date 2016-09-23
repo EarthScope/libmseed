@@ -2,7 +2,7 @@
  *  Routines for packing INT_32, INT_16, FLOAT_32, FLOAT_64,
  *  STEIM1 and STEIM2 data records.
  *
- * modified: 2016.265
+ * modified: 2016.267
  ************************************************************************/
 
 #include <memory.h>
@@ -36,17 +36,17 @@ msr_encode_text (char *input, int samplecount, char *output,
     return -1;
 
   /* Determine minimum of input or output */
-  length  = (samplecount < outputlength) ? samplecount : outputlength;
+  length = (samplecount < outputlength) ? samplecount : outputlength;
 
   memcpy (output, input, length);
 
   outputlength -= length;
 
-  if ( outputlength > 0 )
+  if (outputlength > 0)
     memset (input + length, 0, outputlength);
 
   return length;
-}  /* End of msr_encode_text() */
+} /* End of msr_encode_text() */
 
 /************************************************************************
  * msr_encode_int16:
@@ -79,11 +79,11 @@ msr_encode_int16 (int32_t *input, int samplecount, int16_t *output,
     outputlength -= sizeof (int16_t);
   }
 
-  if ( outputlength )
+  if (outputlength)
     memset (&output[idx], 0, outputlength);
 
   return idx;
-}  /* End of msr_encode_int16() */
+} /* End of msr_encode_int16() */
 
 /************************************************************************
  * msr_encode_int32:
@@ -116,11 +116,11 @@ msr_encode_int32 (int32_t *input, int samplecount, int32_t *output,
     outputlength -= sizeof (int32_t);
   }
 
-  if ( outputlength )
+  if (outputlength)
     memset (&output[idx], 0, outputlength);
 
   return idx;
-}  /* End of msr_encode_int32() */
+} /* End of msr_encode_int32() */
 
 /************************************************************************
  * msr_encode_float32:
@@ -153,11 +153,11 @@ msr_encode_float32 (float *input, int samplecount, float *output,
     outputlength -= sizeof (float);
   }
 
-  if ( outputlength )
+  if (outputlength)
     memset (&output[idx], 0, outputlength);
 
   return idx;
-}  /* End of msr_encode_float32() */
+} /* End of msr_encode_float32() */
 
 /************************************************************************
  * msr_encode_float64:
@@ -190,11 +190,11 @@ msr_encode_float64 (double *input, int samplecount, double *output,
     outputlength -= sizeof (double);
   }
 
-  if ( outputlength )
+  if (outputlength)
     memset (&output[idx], 0, outputlength);
 
   return idx;
-}  /* End of msr_encode_float64() */
+} /* End of msr_encode_float64() */
 
 /* Macro to determine number of bits needed to represent VALUE
  * in the following bit widths: 4,5,6,8,10,15,30,32 and set RESULT. */
@@ -233,14 +233,14 @@ int
 msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
                    int outputlength, int32_t diff0, int swapflag)
 {
-  int32_t *frameptr;      /* Frame pointer in output */
-  int32_t *Xnp = NULL;    /* Reverse integration constant, aka last sample */
+  int32_t *frameptr;   /* Frame pointer in output */
+  int32_t *Xnp = NULL; /* Reverse integration constant, aka last sample */
   int32_t diffs[4];
   int32_t bitwidth[4];
-  int diffcount = 0;
-  int inputidx = 0;
+  int diffcount     = 0;
+  int inputidx      = 0;
   int outputsamples = 0;
-  int maxframes = outputlength / 64;
+  int maxframes     = outputlength / 64;
   int packedsamples = 0;
   int frameidx;
   int startnibble;
@@ -251,7 +251,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
     int8_t d8[4];
     int16_t d16[2];
     int32_t d32;
-  } *word;
+  } * word;
 
   if (samplecount <= 0)
     return 0;
@@ -281,7 +281,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
       if (encodedebug)
         ms_log (1, "Frame %d: X0=%d\n", frameidx, frameptr[1]);
 
-      if ( swapflag )
+      if (swapflag)
         ms_gswap4a (&frameptr[1]);
 
       Xnp = &frameptr[2];
@@ -301,13 +301,13 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
 
     for (widx = startnibble; widx < 16 && outputsamples < samplecount; widx++)
     {
-      if ( diffcount < 4 )
+      if (diffcount < 4)
       {
         /* Shift diffs and related bit widths to beginning of buffers */
         for (idx = 0; idx < diffcount; idx++)
         {
-          diffs[idx] = diffs[packedsamples+idx];
-          bitwidth[idx] = bitwidth[packedsamples+idx];
+          diffs[idx]    = diffs[packedsamples + idx];
+          bitwidth[idx] = bitwidth[packedsamples + idx];
         }
 
         /* Add new diffs and determine bit width needed to represent */
@@ -324,7 +324,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
        * 2 x 16-bit differences
        * 1 x 32-bit difference */
 
-      word = (union dword *)&frameptr[widx];
+      word          = (union dword *)&frameptr[widx];
       packedsamples = 0;
 
       /* 4 x 8-bit differences */
@@ -342,7 +342,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
         word->d8[3] = diffs[3];
 
         /* 2-bit nibble is 0b01 (0x1) */
-        frameptr[0] |= 0x1 << (30 - 2*widx);
+        frameptr[0] |= 0x1 << (30 - 2 * widx);
 
         packedsamples = 4;
       }
@@ -363,7 +363,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
         }
 
         /* 2-bit nibble is 0b10 (0x2) */
-        frameptr[0] |= 0x2 << (30 - 2*widx);
+        frameptr[0] |= 0x2 << (30 - 2 * widx);
 
         packedsamples = 2;
       }
@@ -379,7 +379,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
           ms_gswap4a (&frameptr[widx]);
 
         /* 2-bit nibble is 0b11 (0x3) */
-        frameptr[0] |= 0x3 << (30 - 2*widx);
+        frameptr[0] |= 0x3 << (30 - 2 * widx);
 
         packedsamples = 1;
       }
@@ -389,7 +389,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
     } /* Done with words in frame */
 
     /* Swap word with nibbles */
-    if ( swapflag )
+    if (swapflag)
       ms_gswap4a (&frameptr[0]);
   } /* Done with frames */
 
@@ -405,7 +405,6 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
 
   return outputsamples;
 } /* End of msr_encode_steim1() */
-
 
 /************************************************************************
  * msr_encode_steim2:
@@ -425,14 +424,14 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
                    int outputlength, int32_t diff0,
                    char *srcname, int swapflag)
 {
-  uint32_t *frameptr;     /* Frame pointer in output */
-  int32_t *Xnp = NULL;    /* Reverse integration constant, aka last sample */
+  uint32_t *frameptr;  /* Frame pointer in output */
+  int32_t *Xnp = NULL; /* Reverse integration constant, aka last sample */
   int32_t diffs[7];
   int32_t bitwidth[7];
-  int diffcount = 0;
-  int inputidx = 0;
+  int diffcount     = 0;
+  int inputidx      = 0;
   int outputsamples = 0;
-  int maxframes = outputlength / 64;
+  int maxframes     = outputlength / 64;
   int packedsamples = 0;
   int frameidx;
   int startnibble;
@@ -443,13 +442,13 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
     int8_t d8[4];
     int16_t d16[2];
     int32_t d32;
-  } *word;
+  } * word;
 
   if (samplecount <= 0)
     return 0;
 
   if (!input || !output || outputlength <= 0)
-     return -1;
+    return -1;
 
   if (encodedebug)
     ms_log (1, "Encoding Steim2 frames, samples: %d, max frames: %d, swapflag: %d\n",
@@ -473,7 +472,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
       if (encodedebug)
         ms_log (1, "Frame %d: X0=%d\n", frameidx, frameptr[1]);
 
-      if ( swapflag )
+      if (swapflag)
         ms_gswap4a (&frameptr[1]);
 
       Xnp = (int32_t *)&frameptr[2];
@@ -493,13 +492,13 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
 
     for (widx = startnibble; widx < 16 && outputsamples < samplecount; widx++)
     {
-      if ( diffcount < 7 )
+      if (diffcount < 7)
       {
         /* Shift diffs and related bit widths to beginning of buffers */
         for (idx = 0; idx < diffcount; idx++)
         {
-          diffs[idx] = diffs[packedsamples+idx];
-          bitwidth[idx] = bitwidth[packedsamples+idx];
+          diffs[idx]    = diffs[packedsamples + idx];
+          bitwidth[idx] = bitwidth[packedsamples + idx];
         }
 
         /* Add new diffs and determine bit width needed to represent */
@@ -521,7 +520,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
        * 1 x 30-bit difference */
 
       frameptr[widx] = 0;
-      packedsamples = 0;
+      packedsamples  = 0;
 
       /* 7 x 4-bit differences */
       if (diffcount == 7 && bitwidth[0] <= 4 &&
@@ -545,7 +544,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
         frameptr[widx] |= 0x2 << 30;
 
         /* 2-bit nibble is 0b11 (0x3) */
-        frameptr[0] |= 0x3 << (30 - 2*widx);
+        frameptr[0] |= 0x3 << (30 - 2 * widx);
 
         packedsamples = 7;
       }
@@ -570,7 +569,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
         frameptr[widx] |= 0x1 << 30;
 
         /* 2-bit nibble is 0b11 (0x3) */
-        frameptr[0] |= 0x3 << (30 - 2*widx);
+        frameptr[0] |= 0x3 << (30 - 2 * widx);
 
         packedsamples = 6;
       }
@@ -593,7 +592,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
         /* 2-bit decode nibble is 0b00, nothing to set */
 
         /* 2-bit nibble is 0b11 (0x3) */
-        frameptr[0] |= 0x3 << (30 - 2*widx);
+        frameptr[0] |= 0x3 << (30 - 2 * widx);
 
         packedsamples = 5;
       }
@@ -614,7 +613,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
         word->d8[3] = diffs[3];
 
         /* 2-bit nibble is 0b01, only need to set 2nd bit */
-        frameptr[0] |= 0x1 << (30 - 2*widx);
+        frameptr[0] |= 0x1 << (30 - 2 * widx);
 
         packedsamples = 4;
       }
@@ -635,7 +634,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
         frameptr[widx] |= 0x3 << 30;
 
         /* 2-bit nibble is 0b10 (0x2) */
-        frameptr[0] |= 0x2 << (30 - 2*widx);
+        frameptr[0] |= 0x2 << (30 - 2 * widx);
 
         packedsamples = 3;
       }
@@ -655,7 +654,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
         frameptr[widx] |= 0x2 << 30;
 
         /* 2-bit nibble is 0b10 (0x2) */
-        frameptr[0] |= 0x2 << (30 - 2*widx);
+        frameptr[0] |= 0x2 << (30 - 2 * widx);
 
         packedsamples = 2;
       }
@@ -674,7 +673,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
         frameptr[widx] |= 0x1 << 30;
 
         /* 2-bit nibble is 0b10 (0x2) */
-        frameptr[0] |= 0x2 << (30 - 2*widx);
+        frameptr[0] |= 0x2 << (30 - 2 * widx);
 
         packedsamples = 1;
       }
@@ -694,7 +693,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
     } /* Done with words in frame */
 
     /* Swap word with nibbles */
-    if ( swapflag )
+    if (swapflag)
       ms_gswap4a (&frameptr[0]);
   } /* Done with frames */
 
