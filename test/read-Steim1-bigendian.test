@@ -1,0 +1,2 @@
+#!/bin/sh
+./lmtestbench testdata/Steim1-AllDifferences-BE.mseed -D
