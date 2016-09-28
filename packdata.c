@@ -1,8 +1,8 @@
 /***********************************************************************
- *  Routines for packing INT_32, INT_16, FLOAT_32, FLOAT_64,
- *  STEIM1 and STEIM2 data records.
+ * Routines for packing text/ASCII, INT_16, INT_32, FLOAT_32, FLOAT_64,
+ * STEIM1 and STEIM2 data records.
  *
- * modified: 2016.267
+ * modified: 2016.272
  ************************************************************************/
 
 #include <memory.h>
@@ -196,12 +196,12 @@ msr_encode_float64 (double *input, int samplecount, double *output,
   return idx;
 } /* End of msr_encode_float64() */
 
-/* Macro to determine number of bits needed to represent VALUE
- * in the following bit widths: 4,5,6,8,10,15,30,32 and set RESULT. */
+/* Macro to determine number of bits needed to represent VALUE in
+ * the following bit widths: 4,5,6,8,10,15,16,30,32 and set RESULT. */
 #define BITWIDTH(VALUE, RESULT)                       \
   if (VALUE >= -8 && VALUE <= 7)                      \
     RESULT = 4;                                       \
-  else if (VALUE >= -18 && VALUE <= 17)               \
+  else if (VALUE >= -16 && VALUE <= 15)               \
     RESULT = 5;                                       \
   else if (VALUE >= -32 && VALUE <= 31)               \
     RESULT = 6;                                       \
@@ -211,6 +211,8 @@ msr_encode_float64 (double *input, int samplecount, double *output,
     RESULT = 10;                                      \
   else if (VALUE >= -16384 && VALUE <= 16383)         \
     RESULT = 15;                                      \
+  else if (VALUE >= -32768 && VALUE <= 32767)         \
+    RESULT = 16;                                      \
   else if (VALUE >= -536870912 && VALUE <= 536870911) \
     RESULT = 30;                                      \
   else                                                \
