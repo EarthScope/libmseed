@@ -43,7 +43,7 @@ msr_encode_text (char *input, int samplecount, char *output,
   outputlength -= length;
 
   if (outputlength > 0)
-    memset (input + length, 0, outputlength);
+    memset (output + length, 0, outputlength);
 
   return length;
 } /* End of msr_encode_text() */
