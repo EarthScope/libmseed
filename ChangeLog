@@ -2,6 +2,8 @@
 	- Replace data sample packing and unpacking routines from qlib2 with
 	new routines developed from scratch.  All code is now LGPL licensed.
 	- Add test suite with tests for encoding, decoding, parsing, etc.
+	- Update licensing to GNU-LGPL version 3 and include (L)GPL licenses
+	in LICENSE.txt.
 
 2015.053:
 	- Define needed C99 int types for MSVC 2012 or earlier.  Previously
