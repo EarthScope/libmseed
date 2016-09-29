@@ -1030,9 +1030,6 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
 
     nsamples = msr_encode_steim2 (src, maxsamples, dest, maxdatabytes, d0, srcname, swapflag);
 
-//DEBUG
-fprintf (stderr, "msr_encode_steim2() returned: %d \n", nsamples);
-
     /* If a previous sample is supplied update it with the last sample value */
     if (lastintsample && nsamples > 0)
       *lastintsample = intbuff[nsamples - 1];
