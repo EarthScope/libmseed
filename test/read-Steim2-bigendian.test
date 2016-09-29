@@ -1,2 +1,2 @@
 #!/bin/sh
-./lmtestbench testdata/Steim2-AllDifferences-BE.mseed -D
+./lmtestparse data/Steim2-AllDifferences-BE.mseed -D

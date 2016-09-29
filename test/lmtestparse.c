@@ -1,11 +1,11 @@
 /***************************************************************************
- * lmtestbench.c
+ * lmtestparse.c
  *
- * A program for libmseed tests.
+ * A program for libmseed parsing tests.
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified 2016.269
+ * modified 2016.272
  ***************************************************************************/
 
 #include <errno.h>
@@ -16,15 +16,20 @@
 
 #include <libmseed.h>
 
-#define PACKAGE "lmtestbench"
+#define PACKAGE "lmtestparse"
 #define VERSION "[libmseed " LIBMSEED_VERSION " " PACKAGE " ]"
 
-static flag verbose = 0;
-static flag ppackets = 0;
-static flag basicsum = 0;
-static int printdata = 0;
-static int reclen = -1;
+static flag verbose    = 0;
+static flag ppackets   = 0;
+static flag basicsum   = 0;
+static flag tracegap   = 0;
+static int printraw    = 0;
+static int printdata   = 0;
+static int reclen      = -1;
 static char *inputfile = 0;
+
+static double timetol     = -1.0; /* Time tolerance for continuous traces */
+static double sampratetol = -1.0; /* Sample rate tolerance for continuous traces */
 
 static int parameter_proc (int argcount, char **argvec);
 static void usage (void);
@@ -32,15 +37,19 @@ static void usage (void);
 int
 main (int argc, char **argv)
 {
-  MSRecord *msr = 0;
+  MSTraceList *mstl = 0;
+  MSRecord *msr     = 0;
 
-  int64_t totalrecs = 0;
+  int64_t totalrecs  = 0;
   int64_t totalsamps = 0;
   int retcode;
 
   /* Process given parameters (command line and parameter file) */
   if (parameter_proc (argc, argv) < 0)
     return -1;
+
+  if (tracegap)
+    mstl = mstl_init (NULL);
 
   /* Loop over the input file */
   while ((retcode = ms_readmsr (&msr, inputfile, reclen, NULL, NULL, 1,
@@ -49,44 +58,79 @@ main (int argc, char **argv)
     totalrecs++;
     totalsamps += msr->samplecnt;
 
-    msr_print (msr, ppackets);
-
-    if (printdata && msr->numsamples > 0)
+    if (tracegap)
     {
-      int line, col, cnt, samplesize;
-      int lines = (msr->numsamples / 6) + 1;
-      void *sptr;
+      mstl_addmsr (mstl, msr, 0, 1, timetol, sampratetol);
+    }
+    else
+    {
+      if ( printraw )
+        ms_parse_raw (msr->record, msr->reclen, ppackets, -1);
+      else
+        msr_print (msr, ppackets);
 
-      if ((samplesize = ms_samplesize (msr->sampletype)) == 0)
+      if (printdata && msr->numsamples > 0)
       {
-        ms_log (2, "Unrecognized sample type: '%c'\n", msr->sampletype);
-      }
+        int line, col, cnt, samplesize;
+        int lines = (msr->numsamples / 6) + 1;
+        void *sptr;
 
-      for (cnt = 0, line = 0; line < lines; line++)
-      {
-        for (col = 0; col < 6; col++)
+        if ((samplesize = ms_samplesize (msr->sampletype)) == 0)
         {
-          if (cnt < msr->numsamples)
+          ms_log (2, "Unrecognized sample type: '%c'\n", msr->sampletype);
+        }
+        if (msr->sampletype == 'a')
+        {
+          char *ascii = (char *)msr->datasamples;
+          int length  = msr->numsamples;
+
+          ms_log (0, "ASCII Data:\n");
+
+          /* Print maximum log message segments */
+          while (length > (MAX_LOG_MSG_LENGTH - 1))
           {
-            sptr = (char *)msr->datasamples + (cnt * samplesize);
+            ms_log (0, "%.*s", (MAX_LOG_MSG_LENGTH - 1), ascii);
+            ascii += MAX_LOG_MSG_LENGTH - 1;
+            length -= MAX_LOG_MSG_LENGTH - 1;
+          }
 
-            if (msr->sampletype == 'i')
-              ms_log (0, "%10d  ", *(int32_t *)sptr);
-
-            else if (msr->sampletype == 'f')
-              ms_log (0, "%10.8g  ", *(float *)sptr);
-
-            else if (msr->sampletype == 'd')
-              ms_log (0, "%10.10g  ", *(double *)sptr);
-
-            cnt++;
+          /* Print any remaining ASCII and add a newline */
+          if (length > 0)
+          {
+            ms_log (0, "%.*s\n", length, ascii);
+          }
+          else
+          {
+            ms_log (0, "\n");
           }
         }
-        ms_log (0, "\n");
+        else
+          for (cnt = 0, line = 0; line < lines; line++)
+          {
+            for (col = 0; col < 6; col++)
+            {
+              if (cnt < msr->numsamples)
+              {
+                sptr = (char *)msr->datasamples + (cnt * samplesize);
 
-        /* If only printing the first 6 samples break out here */
-        if (printdata == 1)
-          break;
+                if (msr->sampletype == 'i')
+                  ms_log (0, "%10d  ", *(int32_t *)sptr);
+
+                else if (msr->sampletype == 'f')
+                  ms_log (0, "%10.8g  ", *(float *)sptr);
+
+                else if (msr->sampletype == 'd')
+                  ms_log (0, "%10.10g  ", *(double *)sptr);
+
+                cnt++;
+              }
+            }
+            ms_log (0, "\n");
+
+            /* If only printing the first 6 samples break out here */
+            if (printdata == 1)
+              break;
+          }
       }
     }
   }
@@ -94,8 +138,14 @@ main (int argc, char **argv)
   if (retcode != MS_ENDOFFILE)
     ms_log (2, "Cannot read %s: %s\n", inputfile, ms_errorstr (retcode));
 
+  if (tracegap)
+    mstl_printtracelist (mstl, 0, 1, 1);
+
   /* Make sure everything is cleaned up */
   ms_readmsr (&msr, NULL, 0, NULL, NULL, 0, 0, 0);
+
+  if (mstl)
+    mstl_free (&mstl, 0);
 
   if (basicsum)
     ms_log (1, "Records: %" PRId64 ", Samples: %" PRId64 "\n",
@@ -136,6 +186,10 @@ parameter_proc (int argcount, char **argvec)
     {
       ppackets += strspn (&argvec[optind][1], "p");
     }
+    else if (strncmp (argvec[optind], "-z", 2) == 0)
+    {
+      printraw = 1;
+    }
     else if (strncmp (argvec[optind], "-d", 2) == 0)
     {
       printdata = 1;
@@ -143,6 +197,10 @@ parameter_proc (int argcount, char **argvec)
     else if (strncmp (argvec[optind], "-D", 2) == 0)
     {
       printdata = 2;
+    }
+    else if (strncmp (argvec[optind], "-tg", 3) == 0)
+    {
+      tracegap = 1;
     }
     else if (strcmp (argvec[optind], "-s") == 0)
     {
@@ -200,8 +258,10 @@ usage (void)
            " -h             Show this usage message\n"
            " -v             Be more verbose, multiple flags can be used\n"
            " -p             Print details of header, multiple flags can be used\n"
+           " -z             Print raw details of header\n"
            " -d             Print first 6 sample values\n"
            " -D             Print all sample values\n"
+           " -tg            Print trace listing with gap information\n"
            " -s             Print a basic summary after processing a file\n"
            " -r bytes       Specify record length in bytes, required if no Blockette 1000\n"
            "\n"

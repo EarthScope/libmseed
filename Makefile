@@ -50,7 +50,7 @@ $(LIB_DYN): $(LIB_DOBJS)
 	ln -sf $(LIB_DYN) $(LIB_DYN_ALIAS)
 
 test: FORCE
-	$(MAKE) -C test test
+	@$(MAKE) -C test test
 
 clean:
 	@rm -f $(LIB_OBJS) $(LIB_DOBJS) $(LIB_A) $(LIB_SO_FILENAME) $(LIB_SO) $(LIB_SO_ALIAS) $(LIB_DYN) $(LIB_DYN_ALIAS)
