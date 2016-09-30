@@ -4,7 +4,7 @@
  * Interface declarations for the Mini-SEED packing routines in
  * packdata.c
  *
- * modified: 2016.259
+ * modified: 2016.273
  ***************************************************************************/
 
 #ifndef PACKDATA_H
@@ -16,6 +16,9 @@ extern "C" {
 
 #define STEIM1_FRAME_MAX_SAMPLES 60
 #define STEIM2_FRAME_MAX_SAMPLES 105
+
+/* Control for printing debugging information, declared in packdata.c */
+extern int encodedebug;
 
 extern int msr_encode_text (char *input, int samplecount, char *output,
                             int outputlength);

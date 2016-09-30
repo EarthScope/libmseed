@@ -13,7 +13,7 @@
  *   ORFEUS/EC-Project MEREDIAN
  *   IRIS Data Management Center
  *
- * modified: 2016.266
+ * modified: 2016.273
  ***************************************************************************/
 #include <ctype.h>
 #include <stdio.h>
@@ -727,8 +727,12 @@ msr_unpack_data (MSRecord *msr, int swapflag, flag verbose)
   char srcname[50];
   const char *dbuf;
 
-  if ( ! msr )
+  if (!msr)
     return MS_GENERROR;
+
+  /* Check for decode debugging environment variable */
+  if (getenv ("DECODE_DEBUG"))
+    decodedebug = 1;
 
   /* Generate source name for MSRecord */
   if (msr_srcname (msr, srcname, 1) == NULL)

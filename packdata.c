@@ -2,7 +2,7 @@
  * Routines for packing text/ASCII, INT_16, INT_32, FLOAT_32, FLOAT_64,
  * STEIM1 and STEIM2 data records.
  *
- * modified: 2016.272
+ * modified: 2016.273
  ************************************************************************/
 
 #include <memory.h>
@@ -274,6 +274,9 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
   {
     frameptr = output + (16 * frameidx);
 
+    /* Set 64-byte frame to 0's */
+    memset (frameptr, 0, 64);
+
     /* Save forward integration constant (X0), pointer to reverse integration constant (Xn)
      * and set the starting nibble index depending on frame. */
     if (frameidx == 0)
@@ -297,9 +300,6 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
       if (encodedebug)
         ms_log (1, "Frame %d\n", frameidx);
     }
-
-    /* Set 32-bit word containing nibbles to 0 */
-    frameptr[0] = 0;
 
     for (widx = startnibble; widx < 16 && outputsamples < samplecount; widx++)
     {
@@ -402,8 +402,8 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
     ms_gswap4a (Xnp);
 
   /* Pad any remaining bytes */
-  if ((int)(outputsamples * sizeof (int32_t)) < outputlength)
-    memset (output + outputsamples, 0, outputlength - (outputsamples * sizeof (int32_t)));
+  if ((frameidx * 64) < outputlength)
+    memset (output + (frameidx * 16), 0, outputlength - (frameidx * 64));
 
   return outputsamples;
 } /* End of msr_encode_steim1() */
@@ -465,6 +465,9 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
   {
     frameptr = (uint32_t *)output + (16 * frameidx);
 
+    /* Set 64-byte frame to 0's */
+    memset (frameptr, 0, 64);
+
     /* Save forward integration constant (X0), pointer to reverse integration constant (Xn)
      * and set the starting nibble index depending on frame. */
     if (frameidx == 0)
@@ -488,9 +491,6 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
       if (encodedebug)
         ms_log (1, "Frame %d\n", frameidx);
     }
-
-    /* Set 32-bit word containing nibbles to 0 */
-    frameptr[0] = 0;
 
     for (widx = startnibble; widx < 16 && outputsamples < samplecount; widx++)
     {
@@ -521,7 +521,6 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
        * 2 x 15-bit differences
        * 1 x 30-bit difference */
 
-      frameptr[widx] = 0;
       packedsamples  = 0;
 
       /* 7 x 4-bit differences */
@@ -706,8 +705,8 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
     ms_gswap4a (Xnp);
 
   /* Pad any remaining bytes */
-  if ((int)(outputsamples * sizeof (int32_t)) < outputlength)
-    memset (output + outputsamples, 0, outputlength - (outputsamples * sizeof (int32_t)));
+  if ((frameidx * 64) < outputlength)
+    memset (output + (frameidx * 16), 0, outputlength - (frameidx * 64));
 
   return outputsamples;
 } /* End of msr_encode_steim2() */

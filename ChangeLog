@@ -1,3 +1,9 @@
+2016:273: 2.18rc2
+	- Fix padding in steim[12] encoding routines.
+	- Check for environment variables ENCODE_DEBUG and DECODE_DEBUG
+	and set debugging output, at this point it is Steim frame details
+	and differences being encoded/decoded.
+
 2016.272: 2.18rc1
 	- Replace data sample packing and unpacking routines from qlib2 with
 	new routines developed from scratch.  All code is now LGPL licensed.

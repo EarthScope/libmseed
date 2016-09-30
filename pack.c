@@ -7,7 +7,7 @@
  * Written by Chad Trabant,
  *   IRIS Data Management Center
  *
- * modified: 2015.259
+ * modified: 2015.273
  ***************************************************************************/
 
 #include <stdio.h>
@@ -909,6 +909,10 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
   int nsamples;
   int32_t *intbuff;
   int32_t d0;
+
+  /* Check for encode debugging environment variable */
+  if (getenv ("ENCODE_DEBUG"))
+    encodedebug = 1;
 
   /* Decide if this is a format that we can encode */
   switch (encoding)

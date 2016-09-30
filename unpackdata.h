@@ -4,7 +4,7 @@
  * Interface declarations for the Mini-SEED unpacking routines in
  * unpackdata.c
  *
- * modified: 2016.266
+ * modified: 2016.273
  ***************************************************************************/
 
 #ifndef UNPACKDATA_H
@@ -13,6 +13,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* Control for printing debugging information, declared in unpackdata.c */
+extern int decodedebug;
 
 extern int msr_decode_int16 (int16_t *input, int samplecount, int32_t *output,
                              int outputlength, int swapflag);
