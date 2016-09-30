@@ -3,7 +3,7 @@
  * STEIM2, GEOSCOPE (24bit and gain ranged), CDSN, SRO and DWWSSN
  * encoded data.
  *
- * modified: 2016.267
+ * modified: 2016.274
  ************************************************************************/
 
 #include <memory.h>
@@ -185,7 +185,6 @@ msr_decode_steim1 (int32_t *input, int inputlength, int samplecount,
   uint32_t frame[16];          /* Frame, 16 x 32-bit quantities = 64 bytes */
   int32_t X0     = 0;          /* Forward integration constant, aka first sample */
   int32_t Xn     = 0;          /* Reverse integration constant, aka last sample */
-  int maxsamples = outputlength / sizeof (int32_t);
   int maxframes  = inputlength / 64;
   int frameidx;
   int startnibble;
@@ -295,14 +294,6 @@ msr_decode_steim1 (int32_t *input, int inputlength, int samplecount,
       /* Apply accumulated differences to calculate output samples */
       if (diffcount > 0)
       {
-        /* Check that we have space in the output buffer for diffcount samples */
-        if (((outputptr - output) + diffcount) > maxsamples)
-        {
-          ms_log (2, "%s: Insufficent space to decode Steim1, %d samples, max: %d, have at least %d more\n",
-                  srcname, (outputptr - output), maxsamples, diffcount);
-          return -1;
-        }
-
         for (idx = 0; idx < diffcount && samplecount > 0; idx++, outputptr++)
         {
           if (outputptr == output) /* Ignore first difference, instead store X0 */
@@ -349,7 +340,6 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
   int32_t Xn = 0;              /* Reverse integration constant, aka last sample */
   int32_t diff[7];
   int32_t semask;
-  int maxsamples = outputlength / sizeof (int32_t);
   int maxframes  = inputlength / 64;
   int frameidx;
   int startnibble;
@@ -550,14 +540,6 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
       /* Apply differences to calculate output samples */
       if (diffcount > 0)
       {
-        /* Check that we have space in the output buffer for diffcount samples */
-        if (((outputptr - output) + diffcount) > maxsamples)
-        {
-          ms_log (1, "%s: Insufficent space to decode Steim2, %d samples, max: %d, have at least %d more\n",
-                  srcname, (outputptr - output), maxsamples, diffcount);
-          return -1;
-        }
-
         for (idx = 0; idx < diffcount && samplecount > 0; idx++, outputptr++)
         {
           if (outputptr == output) /* Ignore first difference, instead store X0 */
