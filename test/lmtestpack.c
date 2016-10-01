@@ -26,6 +26,7 @@ static int byteorder = -1;
 static char *outfile = NULL;
 
 static int parameter_proc (int argcount, char **argvec);
+static void print_stderr (char *message);
 static void usage (void);
 
 /* A simple, expanding sinusoid of 500 samples.
@@ -86,6 +87,11 @@ static char *textdata =
     "I watched C-beams glitter in the dark near the Tannhäuser Gate. All those moments will be lost "
     "in time, like tears...in...rain. Time to die.";
 
+/* Binary I/O for Windows platforms */
+#ifdef LMP_WIN
+  unsigned int _CRT_fmode = _O_BINARY;
+#endif
+
 int
 main (int argc, char **argv)
 {
@@ -95,12 +101,8 @@ main (int argc, char **argv)
   int idx;
   int rv;
 
-  /* Redirect all output destined for stdout to stderr for consistency */
-  if (dup2 (fileno (stderr), fileno (stdout)) < 0)
-  {
-    fprintf (stderr, "Error redirecting stdout to stderr: %s", strerror (errno));
-    exit (1);
-  }
+  /* Redirect libmseed logging facility to stderr for consistency */
+  ms_loginit (print_stderr, NULL, print_stderr, NULL);
 
   /* Process given parameters (command line and parameter file) */
   if (parameter_proc (argc, argv) < 0)
@@ -254,6 +256,16 @@ parameter_proc (int argcount, char **argvec)
 
   return 0;
 } /* End of parameter_proc() */
+
+/***************************************************************************
+ * print_stderr():
+ * Print messsage to stderr.
+ ***************************************************************************/
+static void
+print_stderr (char *message)
+{
+  fprintf (stderr, "%s", message);
+} /* End of print_stderr() */
 
 /***************************************************************************
  * usage:
