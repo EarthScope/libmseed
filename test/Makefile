@@ -36,7 +36,7 @@ $(BINS) : % : %.c
         fi
 
 # Run test scripts, create %.test.out files and compare to %.test.ref references
-$(TESTOUTS) : %.test.out : %.test FORCE
+$(TESTOUTS) : %.test.out : %.test $(BINS) FORCE
 	@$(shell ./$< > $@ 2>&1)
 	@diff $<.ref $@ >/dev/null; if [ $$? -eq 0 ]; \
           then echo $(PASSED) "Test $<"; \

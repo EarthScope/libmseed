@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified 2016.272
+ * modified 2016.275
  ***************************************************************************/
 
 #include <errno.h>
@@ -94,6 +94,13 @@ main (int argc, char **argv)
   double *ddata = NULL;
   int idx;
   int rv;
+
+  /* Redirect all output destined for stdout to stderr for consistency */
+  if (dup2 (fileno (stderr), fileno (stdout)) < 0)
+  {
+    fprintf (stderr, "Error redirecting stdout to stderr: %s", strerror (errno));
+    exit (1);
+  }
 
   /* Process given parameters (command line and parameter file) */
   if (parameter_proc (argc, argv) < 0)

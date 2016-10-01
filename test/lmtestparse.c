@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified 2016.272
+ * modified 2016.274
  ***************************************************************************/
 
 #include <errno.h>
@@ -43,6 +43,13 @@ main (int argc, char **argv)
   int64_t totalrecs  = 0;
   int64_t totalsamps = 0;
   int retcode;
+
+  /* Redirect all output destined for stdout to stderr for consistency */
+  if (dup2 (fileno (stderr), fileno (stdout)) < 0)
+  {
+    fprintf (stderr, "Error redirecting stdout to stderr: %s", strerror (errno));
+    exit (1);
+  }
 
   /* Process given parameters (command line and parameter file) */
   if (parameter_proc (argc, argv) < 0)
