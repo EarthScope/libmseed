@@ -1,3 +1,8 @@
+2016:276: 2.18rc3
+	- Improvements for test suite, more consistency.
+	- Remove msr_decode_steim? from libmseed.def, they are internal.
+	- Add sanity to length check before memset calls in packing functions.
+
 2016:274: 2.18rc2
 	- Check for environment variables ENCODE_DEBUG and DECODE_DEBUG
 	and set debugging output, at this point it is Steim frame details
