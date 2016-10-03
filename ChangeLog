@@ -1,3 +1,6 @@
+2016.277:
+	- A more elegant sanity check for output length in packing by mbyt.
+
 2016:276: 2.18rc3
 	- Improvements for test suite, more consistency.
 	- Remove msr_decode_steim? from libmseed.def, they are internal.

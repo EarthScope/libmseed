@@ -2,7 +2,7 @@
  * Routines for packing text/ASCII, INT_16, INT_32, FLOAT_32, FLOAT_64,
  * STEIM1 and STEIM2 data records.
  *
- * modified: 2016.276
+ * modified: 2016.277
  ************************************************************************/
 
 #include <memory.h>
@@ -69,7 +69,7 @@ msr_encode_int16 (int32_t *input, int samplecount, int16_t *output,
   if (!input || !output || outputlength <= 0)
     return -1;
 
-  for (idx = 0; idx < samplecount && outputlength > 0; idx++)
+  for (idx = 0; idx < samplecount && outputlength >= sizeof (int16_t); idx++)
   {
     output[idx] = (int16_t)input[idx];
 
@@ -79,7 +79,7 @@ msr_encode_int16 (int32_t *input, int samplecount, int16_t *output,
     outputlength -= sizeof (int16_t);
   }
 
-  if (outputlength > 0)
+  if (outputlength)
     memset (&output[idx], 0, outputlength);
 
   return idx;
@@ -106,7 +106,7 @@ msr_encode_int32 (int32_t *input, int samplecount, int32_t *output,
   if (!input || !output || outputlength <= 0)
     return -1;
 
-  for (idx = 0; idx < samplecount && outputlength > 0; idx++)
+  for (idx = 0; idx < samplecount && outputlength >= sizeof (int32_t); idx++)
   {
     output[idx] = input[idx];
 
@@ -116,7 +116,7 @@ msr_encode_int32 (int32_t *input, int samplecount, int32_t *output,
     outputlength -= sizeof (int32_t);
   }
 
-  if (outputlength > 0)
+  if (outputlength)
     memset (&output[idx], 0, outputlength);
 
   return idx;
@@ -143,7 +143,7 @@ msr_encode_float32 (float *input, int samplecount, float *output,
   if (!input || !output || outputlength <= 0)
     return -1;
 
-  for (idx = 0; idx < samplecount && outputlength > 0; idx++)
+  for (idx = 0; idx < samplecount && outputlength >= sizeof (float); idx++)
   {
     output[idx] = input[idx];
 
@@ -153,7 +153,7 @@ msr_encode_float32 (float *input, int samplecount, float *output,
     outputlength -= sizeof (float);
   }
 
-  if (outputlength > 0)
+  if (outputlength)
     memset (&output[idx], 0, outputlength);
 
   return idx;
@@ -180,7 +180,7 @@ msr_encode_float64 (double *input, int samplecount, double *output,
   if (!input || !output || outputlength <= 0)
     return -1;
 
-  for (idx = 0; idx < samplecount && outputlength > 0; idx++)
+  for (idx = 0; idx < samplecount && outputlength >= sizeof (double); idx++)
   {
     output[idx] = input[idx];
 
@@ -190,7 +190,7 @@ msr_encode_float64 (double *input, int samplecount, double *output,
     outputlength -= sizeof (double);
   }
 
-  if (outputlength > 0)
+  if (outputlength)
     memset (&output[idx], 0, outputlength);
 
   return idx;
