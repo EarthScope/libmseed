@@ -1,3 +1,13 @@
+2016.281: 2.18rc4
+	- ms_genfactmult() now support a much larger range of integer
+	sample rates and periods.
+	- ms_genfactmult() now sets the factor and multiplier using the
+	SECONDS/SAMPLE notation for sample rates less than 1.0 to retain
+	precision for low rates.
+	- ms_genfactmult() now assumes the specified rate is a sample
+	period in seconds if the samprate value is negative.
+	- Add ms_rsqrt64() as a general use reciprocal sqrt for doubles.
+
 2016.277:
 	- A more elegant sanity check for output length in packing by mbyt.
 
