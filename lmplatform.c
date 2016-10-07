@@ -1,6 +1,6 @@
 /***************************************************************************
  * lmplatform.c:
- * 
+ *
  * Platform portability routines.
  *
  * modified: 2010.304
@@ -10,7 +10,6 @@
 #define _LARGEFILE_SOURCE 1
 
 #include "lmplatform.h"
-
 
 /***************************************************************************
  * lmp_ftello:
@@ -22,14 +21,13 @@ off_t
 lmp_ftello (FILE *stream)
 {
 #if defined(LMP_WIN)
-  return (off_t) ftell (stream);
+  return (off_t)ftell (stream);
 
 #else
-  return (off_t) ftello (stream);
+  return (off_t)ftello (stream);
 
 #endif
-}  /* End of lmp_ftello() */
-
+} /* End of lmp_ftello() */
 
 /***************************************************************************
  * lmp_fseeko:
@@ -41,11 +39,10 @@ int
 lmp_fseeko (FILE *stream, off_t offset, int whence)
 {
 #if defined(LMP_WIN)
-  return (int) fseek (stream, (long int) offset, whence);
-  
-#else
-  return (int) fseeko (stream, offset, whence);
-  
-#endif
-}  /* End of lmp_fseeko() */
+  return (int)fseek (stream, (long int)offset, whence);
 
+#else
+  return (int)fseeko (stream, offset, whence);
+
+#endif
+} /* End of lmp_fseeko() */

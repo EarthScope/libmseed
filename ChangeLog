@@ -10,6 +10,7 @@
 	- Use memcpy() instead of assignment when unpacking float32 and
 	float64 samples to avoid problems with NaN's.  Thanks Lion Krischer.
 	- Add test for reading records without Blockette 1000.
+	- Reformat all source code using included clang-format profile.
 
 2016.277:
 	- A more elegant sanity check for output length in packing by mbyt.

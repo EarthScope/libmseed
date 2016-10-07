@@ -514,7 +514,7 @@ ms_btime2isotimestr (BTime *btime, char *isotimestr)
  * ms_btime2mdtimestr:
  *
  * Build a time string in month-day format from a BTime struct.
- * 
+ *
  * The provided isostimestr must have enough room for the resulting time
  * string of 25 characters, i.e. '2001-07-29 12:38:00.0000' + NULL.
  *

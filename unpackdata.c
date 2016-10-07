@@ -215,7 +215,7 @@ msr_decode_steim1 (int32_t *input, int inputlength, int samplecount,
     memcpy (frame, input + (16 * frameidx), 64);
 
     /* Save forward integration constant (X0) and reverse integration constant (Xn)
-       * and set the starting nibble index depending on frame. */
+       and set the starting nibble index depending on frame. */
     if (frameidx == 0)
     {
       if (swapflag)
@@ -370,7 +370,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
     memcpy (frame, input + (16 * frameidx), 64);
 
     /* Save forward integration constant (X0) and reverse integration constant (Xn)
-       * and set the starting nibble index depending on frame. */
+       and set the starting nibble index depending on frame. */
     if (frameidx == 0)
     {
       if (swapflag)

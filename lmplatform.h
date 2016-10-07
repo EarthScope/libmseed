@@ -1,6 +1,6 @@
 /***************************************************************************
  * lmplatform.h:
- * 
+ *
  * Platform specific headers.  This file provides a basic level of platform
  * portability.
  *
@@ -111,5 +111,5 @@ extern int lmp_fseeko (FILE *stream, off_t offset, int whence);
 #ifdef __cplusplus
 }
 #endif
- 
+
 #endif /* LMPLATFORM_H */
