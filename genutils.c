@@ -1556,8 +1556,10 @@ ms_dabs (double val)
  * Further reference and description:
  *   https://en.wikipedia.org/wiki/Fast_inverse_square_root
  *
+ * Modifications:
  * Add 2 more iterations of Newton's method to increase accuracy,
  * specifically for large values.
+ * Use memcpy instead of assignment through differing pointer types.
  *
  * Returns 0 if the host is little endian, otherwise 1.
  ***************************************************************************/
@@ -1570,9 +1572,9 @@ ms_rsqrt64 (double val)
 
   x2 = val * 0.5;
   y  = val;
-  i  = *(uint64_t *)&y;
+  memcpy (&i, &y, sizeof(i));
   i  = 0x5fe6eb50c7b537a9 - (i >> 1);
-  y  = *(double *)&i;
+  memcpy (&y, &i, sizeof(y));
   y  = y * (1.5 - (x2 * y * y));
   y  = y * (1.5 - (x2 * y * y));
   y  = y * (1.5 - (x2 * y * y));
