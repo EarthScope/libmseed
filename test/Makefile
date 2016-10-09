@@ -14,10 +14,10 @@ CFLAGS += -I..
 LDFLAGS = -L..
 LDLIBS = -lmseed
 
-SRCS := $(wildcard *.c)
+SRCS := $(sort $(wildcard *.c))
 BINS := $(SRCS:%.c=%)
 
-TESTS := $(wildcard *.test)
+TESTS := $(sort $(wildcard *.test))
 TESTOUTS := $(TESTS:%.test=%.test.out)
 
 # ASCII color coding for test results, green for PASSED and red for FAILED
