@@ -1,3 +1,9 @@
+2016.286: 2.18
+	- Remove limitation on sample rate before calling ms_genfactmult()
+	in the normal path of packing records.  Previously generating the
+	factor and multiplier was not attempted for rates higher than
+	32,767.
+
 2016.281: 2.18rc4
 	- ms_genfactmult() now support a much larger range of integer
 	sample rates and periods.

@@ -7,7 +7,7 @@
  *   ORFEUS/EC-Project MEREDIAN
  *   IRIS Data Management Center
  *
- * modified: 2015.213
+ * modified: 2016.286
  ***************************************************************************/
 
 #include <stdio.h>
@@ -287,17 +287,13 @@ msr_normalize_header (MSRecord *msr, flag verbose)
     ms_strncpopen (msr->fsdh->channel, msr->channel, 3);
     ms_hptime2btime (hptimems, &(msr->fsdh->start_time));
 
-    /* When the sampling rate is <= 32767 Hertz determine the factor
-     * and multipler through rational approximation.  For higher rates
-     * set the factor and multiplier to 0. */
-    if (msr->samprate <= 32767.0)
-    {
-      ms_genfactmult (msr->samprate, &(msr->fsdh->samprate_fact), &(msr->fsdh->samprate_mult));
-    }
-    else
+    /* Determine the factor and multipler for sample rate */
+    if (ms_genfactmult (msr->samprate,
+                        &(msr->fsdh->samprate_fact),
+                        &(msr->fsdh->samprate_mult)))
     {
       if (verbose > 1)
-        ms_log (1, "Sampling rate too high to approximate factor & multiplier: %g\n",
+        ms_log (1, "Sampling rate out of range, cannot generate factor & multiplier: %g\n",
                 msr->samprate);
       msr->fsdh->samprate_fact = 0;
       msr->fsdh->samprate_mult = 0;
@@ -311,7 +307,7 @@ msr_normalize_header (MSRecord *msr, flag verbose)
       msr->fsdh->blockette_offset = 0;
   }
 
-  /* Traverse blockette chain and perform necessary updates*/
+  /* Traverse blockette chain and perform necessary updates */
   cur_blkt = msr->blkts;
 
   if (cur_blkt && verbose > 2)
