@@ -46,14 +46,14 @@ extern "C" {
   #include <unistd.h>
   #include <inttypes.h>
 
-#elif defined(__sun__) || defined(__sun)
-  #define LMP_SOLARIS 1
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+  #define LMP_BSD 1
 
   #include <unistd.h>
   #include <inttypes.h>
 
-#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
-  #define LMP_BSD 1
+#elif defined(__sun__) || defined(__sun)
+  #define LMP_SOLARIS 1
 
   #include <unistd.h>
   #include <inttypes.h>

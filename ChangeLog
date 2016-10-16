@@ -1,3 +1,7 @@
+2016.290:
+	- Remove dependency on ntwin32.mak for Windows nmake makefiles, now
+	building works in plain MSVC development environments.
+
 2016.286: 2.18
 	- Remove limitation on sample rate before calling ms_genfactmult()
 	in the normal path of packing records.  Previously generating the
