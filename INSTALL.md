@@ -4,7 +4,7 @@ target computer.  Specifically the int8_t, int16_t, int32_t, int64_t
 and their unsigned counterpart types.  If these data types are not
 available guesses are made in lmplatform.h.
 
--- Unix --
+## Unix
 
 A simple 'make' on most Unix-like systems should build the library.
 
@@ -18,7 +18,7 @@ By default a statically linked version of the library is built: 'libmseed.a'.
 With GCC, clang or compatible build tools it is possible to build a shared
 library with 'make shared'.
 
--- macOS --
+## macOS
 
 A static library can be compiled using the above Unix instructions,
 just run 'make'.
@@ -26,7 +26,7 @@ just run 'make'.
 Using GCC, clang or compatible build tools it is possible to build a dynamic
 library with 'make dynamic'.
 
--- Windows (Win32) --
+## Windows (Win32)
 
 On a WIN32 platform the library can be compiled by using the
 Nmake compatible Makefile.win (e.g. 'nmake -f Makefile.win') or Open
