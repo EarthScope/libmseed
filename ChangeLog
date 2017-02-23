@@ -1,3 +1,7 @@
+2017.053: 2.19
+	- Avoid undefined left shifts of signed values that would go out of
+	range and specify the types of some constants.
+
 2016.290:
 	- Remove dependency on ntwin32.mak for Windows nmake makefiles, now
 	building works in plain MSVC development environments.
