@@ -1,4 +1,6 @@
 2017.053: 2.19
+	- Incorporate lmplatform.h details into libmseed.h for improved
+	usage.  All that is needed is the shared/static library and limbseed.h.
 	- Avoid undefined left shifts of signed values that would go out of
 	range and specify the types of some constants.
 

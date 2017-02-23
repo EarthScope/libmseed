@@ -17,7 +17,6 @@
 #include <time.h>
 
 #include "libmseed.h"
-#include "lmplatform.h"
 
 static hptime_t ms_time2hptime_int (int year, int day, int hour,
                                     int min, int sec, int usec);

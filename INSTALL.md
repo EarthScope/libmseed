@@ -1,8 +1,7 @@
 
 The library requires that C99 integer types are available on the
 target computer.  Specifically the int8_t, int16_t, int32_t, int64_t
-and their unsigned counterpart types.  If these data types are not
-available guesses are made in lmplatform.h.
+and their unsigned counterpart types.
 
 ## Unix
 
