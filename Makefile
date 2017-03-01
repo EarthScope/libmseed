@@ -11,6 +11,15 @@ MAJOR_VER = $(shell grep LIBMSEED_VERSION libmseed.h | grep -Eo '[0-9]+.[0-9]+.[
 FULL_VER = $(shell grep LIBMSEED_VERSION libmseed.h | grep -Eo '[0-9]+.[0-9]+.[0-9]+')
 COMPAT_VER = $(MAJOR_VER).0.0
 
+PREFIX	?= /usr/local
+EXEC_PREFIX ?= $(PREFIX)
+LIBDIR	?= $(EXEC_PREFIX)/lib
+INCLUDEDIR ?= $(PREFIX)/include
+DATAROOTDIR ?= $(PREFIX)/share
+DOCDIR	?= $(DATAROOTDIR)/doc/libmseed
+MANDIR ?= $(DATAROOTDIR)/man
+MAN3DIR ?= $(MANDIR)/man3
+
 LIB_SRCS = fileutils.c genutils.c gswap.c lmplatform.c lookup.c \
            msrutils.c pack.c packdata.c traceutils.c tracelist.c \
            parseutils.c unpack.c unpackdata.c selection.c logging.c
@@ -62,11 +71,16 @@ clean:
 	@$(MAKE) -C test clean
 	@echo "All clean."
 
-install:
-	@echo
-	@echo "No install target, copy the library and libmseed.h header as needed"
-	@echo
-
+install: shared
+	mkdir -p $(DESTDIR)$(PREFIX)/include
+	cp libmseed.h $(DESTDIR)$(PREFIX)/include
+	mkdir -p $(DESTDIR)$(LIBDIR)/pkgconfig
+	cp -d libmseed.so* $(DESTDIR)$(LIBDIR)
+	mkdir -p $(DESTDIR)$(DOCDIR)/example
+	cp -r example $(DESTDIR)$(DOCDIR)/
+	cp doc/libmseed-UsersGuide $(DESTDIR)$(DOCDIR)/
+	mkdir -p $(DESTDIR)$(MAN3DIR)
+	cp -d doc/ms*.3 $(DESTDIR)$(MAN3DIR)/
 
 .SUFFIXES: .c .o .lo
 
