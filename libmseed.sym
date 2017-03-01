@@ -1,0 +1,8 @@
+{
+  global:
+      ms_*; msr_*; mst_*; mstl_*;
+
+  local:
+      *;
+};
+      
