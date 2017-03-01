@@ -1,6 +1,12 @@
+2017.060: 2.19.1
+	- Derive versioning of shared/dynamic library from canonical version
+	defined as LIBMSEED_VERSION in libmseed.h.
+	- Apply updates to more standardized use of NAME and typos in man pages,
+	submitted by Pierre Duperray.
+
 2017.053: 2.19
-	- Incorporate lmplatform.h details into libmseed.h for improved
-	usage.  All that is needed is the shared/static library and limbseed.h.
+	- Incorporate lmplatform.h details into libmseed.h for improved usage.
+	All that is needed is the static/shared/dynamic library and libmseed.h.
 	- Avoid undefined left shifts of signed values that would go out of
 	range and specify the types of some constants.
 
