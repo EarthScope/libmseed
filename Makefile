@@ -52,7 +52,7 @@ $(LIB_A): $(LIB_OBJS)
 $(LIB_SO): $(LIB_DOBJS)
 	@echo "Building shared library $(LIB_SO)"
 	rm -f $(LIB_SO) $(LIB_SONAME) $(LIB_SO_BASE)
-	$(CC) $(CFLAGS) $(LDFLAGS) -shared -Wl,--version-script=libmseed.sym -Wl,-soname -Wl,$(LIB_SO_NAME) -o $(LIB_SO) $(LIB_DOBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -shared -Wl,--version-script=libmseed.map -Wl,-soname -Wl,$(LIB_SO_NAME) -o $(LIB_SO) $(LIB_DOBJS)
 	ln -s $(LIB_SO) $(LIB_SO_BASE)
 	ln -s $(LIB_SO) $(LIB_SO_NAME)
 
