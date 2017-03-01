@@ -76,6 +76,14 @@ install: shared
 	cp libmseed.h $(DESTDIR)$(PREFIX)/include
 	mkdir -p $(DESTDIR)$(LIBDIR)/pkgconfig
 	cp -d libmseed.so* $(DESTDIR)$(LIBDIR)
+	cp mseed.pc.in $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
+	sed -i 's|@prefix@|$(PREFIX)|g' $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
+	sed -i 's|@exec_prefix@|$(EXEC_PREFIX)|g' $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
+	sed -i 's|@libdir@|$(LIBDIR)|g' $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
+	sed -i 's|@includedir@|$(PREFIX)/include|g' $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
+	sed -i 's|@PACKAGE_NAME@|libmseed|g' $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
+	sed -i 's|@PACKAGE_URL@|http://ds.iris.edu/ds/nodes/dmc/software/downloads/libmseed/|g' $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
+	sed -i 's|@VERSION@|$(FULL_VER)|g' $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
 	mkdir -p $(DESTDIR)$(DOCDIR)/example
 	cp -r example $(DESTDIR)$(DOCDIR)/
 	cp doc/libmseed-UsersGuide $(DESTDIR)$(DOCDIR)/
