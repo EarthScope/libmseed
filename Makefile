@@ -3,6 +3,8 @@
 # environment variables:
 #   CC : Specify the C compiler to use
 #   CFLAGS : Specify compiler options to use
+#   LDFLAGS : Specify linker options to use
+#   CPPFLAGS : Specify c-preprocessor options to use
 
 # Extract version from libmseed.h, expected line should include LIBMSEED_VERSION "#.#.#"
 MAJOR_VER = $(shell grep LIBMSEED_VERSION libmseed.h | grep -Eo '[0-9]+.[0-9]+.[0-9]+' | cut -d . -f 1)
@@ -70,10 +72,10 @@ install:
 
 # Standard object building
 .c.o:
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 # Standard object building for dynamic library components using -fPIC
 .c.lo:
-	$(CC) $(CFLAGS) -fPIC -c $< -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -c $< -o $@
 
 FORCE:
