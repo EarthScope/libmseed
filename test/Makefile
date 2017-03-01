@@ -26,6 +26,8 @@ FAILED := \033[0;31mFAILED\033[0m
 
 TESTCOUNT := 0
 
+export LD_LIBRARY_PATH=..
+
 test all: $(BINS) $(TESTOUTS)
 	@printf '%d tests conducted\n' $(TESTCOUNT)
 
@@ -41,7 +43,7 @@ $(BINS) : % : %.c
 # Run test scripts, create %.test.out files and compare to %.test.ref references
 $(TESTOUTS) : %.test.out : %.test $(BINS) FORCE
 	@$(eval TESTCOUNT=$(shell echo $$(($(TESTCOUNT)+1))))
-	@$(shell ./$< > $@ 2>&1)
+	@$(shell LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) ./$< > $@ 2>&1)
 	@diff $<.ref $@ >/dev/null; \
           if [ $$? -eq 0 ]; \
             then printf '$(PASSED) Test $<\n'; \
