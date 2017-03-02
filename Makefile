@@ -3,11 +3,22 @@
 # environment variables:
 #   CC : Specify the C compiler to use
 #   CFLAGS : Specify compiler options to use
+#   LDFLAGS : Specify linker options to use
+#   CPPFLAGS : Specify c-preprocessor options to use
 
 # Extract version from libmseed.h, expected line should include LIBMSEED_VERSION "#.#.#"
 MAJOR_VER = $(shell grep LIBMSEED_VERSION libmseed.h | grep -Eo '[0-9]+.[0-9]+.[0-9]+' | cut -d . -f 1)
 FULL_VER = $(shell grep LIBMSEED_VERSION libmseed.h | grep -Eo '[0-9]+.[0-9]+.[0-9]+')
 COMPAT_VER = $(MAJOR_VER).0.0
+
+PREFIX	?= /usr/local
+EXEC_PREFIX ?= $(PREFIX)
+LIBDIR	?= $(EXEC_PREFIX)/lib
+INCLUDEDIR ?= $(PREFIX)/include
+DATAROOTDIR ?= $(PREFIX)/share
+DOCDIR	?= $(DATAROOTDIR)/doc/libmseed
+MANDIR ?= $(DATAROOTDIR)/man
+MAN3DIR ?= $(MANDIR)/man3
 
 LIB_SRCS = fileutils.c genutils.c gswap.c lmplatform.c lookup.c \
            msrutils.c pack.c packdata.c traceutils.c tracelist.c \
@@ -41,7 +52,7 @@ $(LIB_A): $(LIB_OBJS)
 $(LIB_SO): $(LIB_DOBJS)
 	@echo "Building shared library $(LIB_SO)"
 	rm -f $(LIB_SO) $(LIB_SONAME) $(LIB_SO_BASE)
-	$(CC) $(CFLAGS) -shared -Wl,-soname -Wl,$(LIB_SO_NAME) -o $(LIB_SO) $(LIB_DOBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -shared -Wl,--version-script=libmseed.map -Wl,-soname -Wl,$(LIB_SO_NAME) -o $(LIB_SO) $(LIB_DOBJS)
 	ln -s $(LIB_SO) $(LIB_SO_BASE)
 	ln -s $(LIB_SO) $(LIB_SO_NAME)
 
@@ -60,20 +71,33 @@ clean:
 	@$(MAKE) -C test clean
 	@echo "All clean."
 
-install:
-	@echo
-	@echo "No install target, copy the library and libmseed.h header as needed"
-	@echo
-
+install: shared
+	mkdir -p $(DESTDIR)$(PREFIX)/include
+	cp libmseed.h $(DESTDIR)$(PREFIX)/include
+	mkdir -p $(DESTDIR)$(LIBDIR)/pkgconfig
+	cp -d libmseed.so* $(DESTDIR)$(LIBDIR)
+	cp mseed.pc.in $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
+	sed -i 's|@prefix@|$(PREFIX)|g' $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
+	sed -i 's|@exec_prefix@|$(EXEC_PREFIX)|g' $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
+	sed -i 's|@libdir@|$(LIBDIR)|g' $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
+	sed -i 's|@includedir@|$(PREFIX)/include|g' $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
+	sed -i 's|@PACKAGE_NAME@|libmseed|g' $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
+	sed -i 's|@PACKAGE_URL@|http://ds.iris.edu/ds/nodes/dmc/software/downloads/libmseed/|g' $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
+	sed -i 's|@VERSION@|$(FULL_VER)|g' $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
+	mkdir -p $(DESTDIR)$(DOCDIR)/example
+	cp -r example $(DESTDIR)$(DOCDIR)/
+	cp doc/libmseed-UsersGuide $(DESTDIR)$(DOCDIR)/
+	mkdir -p $(DESTDIR)$(MAN3DIR)
+	cp -d doc/ms*.3 $(DESTDIR)$(MAN3DIR)/
 
 .SUFFIXES: .c .o .lo
 
 # Standard object building
 .c.o:
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 # Standard object building for dynamic library components using -fPIC
 .c.lo:
-	$(CC) $(CFLAGS) -fPIC -c $< -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -c $< -o $@
 
 FORCE:
