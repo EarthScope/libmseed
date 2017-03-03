@@ -4,8 +4,8 @@
       msr_*;
       mst_*;
       mstl_*;
+      unpackencodingformat;
 
   local:
       *;
 };
-      
