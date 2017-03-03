@@ -1,3 +1,11 @@
+2017.061: 2.19.2
+	- Provide install target in Makefile thanks to by Pierre Duperray.
+	- Deprecate dynamic build target, the shared target will now build
+	shared or dynamic (Darwin) libraries depending on the system.
+	- Limit symbols exported in shared libraries to public interfaces
+	as defined in libmseed.map, thanks again to Pierre Duperray.
+	- Allow tests to work on Darwin with dynamic libraries.
+
 2017.060: 2.19.1
 	- Derive versioning of shared/dynamic library from canonical version
 	defined as LIBMSEED_VERSION in libmseed.h.
