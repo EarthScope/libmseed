@@ -10,6 +10,7 @@
       unpackdatabyteorder;
       unpackencodingformat;
       unpackencodingfallback;
+      LM_SIZEOF_OFF_T;
 
   local:
       *;
