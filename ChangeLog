@@ -1,3 +1,6 @@
+2017.125:
+	- Export LM_SIZEOF_OFF_T on Windows via libmseed.def.
+
 2017.118: 2.19.4
 	- Add global LM_SIZEOF_OFF_T variable that is set to the size of
 	the off_t data type as determined at compile time.
