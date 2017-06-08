@@ -5,10 +5,10 @@
 #   CFLAGS : Specify compiler options to use
 
 # Required compiler parameters
-CFLAGS += -I..
+CFLAGS += `pkg-config --cflags mseed`
 
-LDFLAGS = -L..
-LDLIBS = -lmseed
+LDFLAGS = `pkg-config --libs-only-L mseed`
+LDLIBS = `pkg-config --libs-only-l mseed`
 
 all: msview msrepack
 
