@@ -1,3 +1,6 @@
+2017.282:
+	- msr_endtime(): calculate correct end time during a leap second.
+
 2017.125:
 	- Export LM_SIZEOF_OFF_T on Windows via libmseed.def.
 
