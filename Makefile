@@ -23,7 +23,8 @@ MAN3DIR ?= $(MANDIR)/man3
 
 LIB_SRCS = fileutils.c genutils.c gswap.c lmplatform.c lookup.c \
            msrutils.c pack.c packdata.c traceutils.c tracelist.c \
-           parseutils.c unpack.c unpackdata.c selection.c logging.c
+           parseutils.c unpack.c unpackdata.c selection.c logging.c \
+           time64/time64.c
 
 LIB_OBJS = $(LIB_SRCS:.c=.o)
 LIB_DOBJS = $(LIB_SRCS:.c=.lo)
