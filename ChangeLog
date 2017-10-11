@@ -1,4 +1,4 @@
-2017.283:
+2017.283: 2.19.5
 	- msr_endtime(): calculate correct end time during a leap second.
 	- Fixed signedness comparison warning.
 
