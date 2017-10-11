@@ -7,7 +7,7 @@
  *   ORFEUS/EC-Project MEREDIAN
  *   IRIS Data Management Center
  *
- * modified: 2016.282
+ * modified: 2016.283
  ***************************************************************************/
 
 #include <stdio.h>
@@ -602,7 +602,6 @@ msr_endtime (MSRecord *msr)
       if (lslist->leapsecond > msr->starttime &&
           lslist->leapsecond <= (msr->starttime + span - HPTMODULUS))
       {
-        fprintf (stderr, "Adjusting endtime for leap second\n");
         span -= HPTMODULUS;
         break;
       }
