@@ -1,3 +1,21 @@
+2017.209:
+	- Remove all LWP_* platform defined except LWP_WIN for Windows.
+	- Rename MSRecord to MS3Record and restructure for miniSEED 3.
+	- Rename MSTrace[ID,Seg,List] to MS3Trace[ID,Seg,List] and restructure for
+	miniSEED 3.
+	- Remove MSTrace_s and MSTraceGroup, use MS3Trace[ID,Seg,List] instead.
+	- Change HPTMODULUS to 1000000000 to represent nanoseconds, update 
+	HPTERROR value to nanoseconds similarly.
+	- Rename macros and functions specific to miniSEED 2.x by adding "2".
+	- Rename macro MS_ISDATAINDICATOR to MS2_ISQUALITYINDICATOR.
+	- Remove packheaderbyteorder and packdatabyteorder handling.
+	- Rename unpackheaderbyteorder => ms2_unpackheaderbyteorder and
+	unpackdatabyteorder => ms2_unpackdatabyteorder, only for miniSEED 2.x.	
+	- Decrease MINRECLEN from 256 to 36, increase MAXRECLEN from 1MB to 16MB.
+	- Remove needless typedef and usage of flag as int8_t.
+	- Increase 'recbuflen' to msr3_parse[_selection]() to uint64_t.
+	- Remove record length specifier from many parsing routines, always autodetermined.
+
 2017.283: 2.19.5
 	- msr_endtime(): calculate correct end time during a leap second.
 	- Fixed signedness comparison warning.
