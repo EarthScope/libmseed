@@ -2,5 +2,5 @@ BasedOnStyle: LLVM
 AlwaysBreakAfterDefinitionReturnType: TopLevel
 SpaceBeforeParens: Always
 BreakBeforeBraces: Allman
-AlignConsecutiveAssignments: true
+AlignConsecutiveAssignments: false
 ColumnLimit: 0

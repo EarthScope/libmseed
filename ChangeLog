@@ -3,6 +3,7 @@
 	- Rename MSRecord to MS3Record and restructure for miniSEED 3.
 	- Rename MSTrace[ID,Seg,List] to MS3Trace[ID,Seg,List] and restructure for
 	miniSEED 3.
+	- Rename Selections and SelectTime to MS3Selections and MS3SelectTime.
 	- Remove MSTrace_s and MSTraceGroup, use MS3Trace[ID,Seg,List] instead.
 	- Change HPTMODULUS to 1000000000 to represent nanoseconds, update 
 	HPTERROR value to nanoseconds similarly.
@@ -15,6 +16,8 @@
 	- Remove needless typedef and usage of flag as int8_t.
 	- Increase 'recbuflen' to msr3_parse[_selection]() to uint64_t.
 	- Remove record length specifier from many parsing routines, always autodetermined.
+	- Remove capability to read the deprecated "pack" file format used at IRIS DMC.
+	- Remove MS_ISVALIDBLANK macro, was only used for notification of archaic structure.
 
 2017.283: 2.19.5
 	- msr_endtime(): calculate correct end time during a leap second.

@@ -4,10 +4,7 @@
  * Generic utility routines
  *
  * Written by Chad Trabant
- * ORFEUS/EC-Project MEREDIAN
  * IRIS Data Management Center
- *
- * modified: 2017.053
  ***************************************************************************/
 
 #include <errno.h>

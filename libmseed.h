@@ -203,38 +203,6 @@ extern "C" {
     (uint8_t) (*(X + 25)) >= 0 && (uint8_t) (*(X + 25)) <= 59 &&       \
     (uint8_t) (*(X + 26)) >= 0 && (uint8_t) (*(X + 26)) <= 60 )
 
-/* Macro to test memory for a blank/noise miniSEED 2.x data record signature
- * by checking for a valid SEED sequence number and padding characters.
- *
- * Offset = Value
- * [0-5]  = Digits or NULL, SEED sequence number
- * [6-47] = Space character (ASCII 32), remainder of fixed header
- *
- * Usage:
- *   MS2_ISVALIDBLANK ((char *)X)  X buffer must contain at least 27 bytes
- */
-#define MS2_ISVALIDBLANK(X) (                                         \
-    (isdigit ((uint8_t) * (X)) || !*(X)) &&                           \
-    (isdigit ((uint8_t) * (X + 1)) || !*(X + 1)) &&                   \
-    (isdigit ((uint8_t) * (X + 2)) || !*(X + 2)) &&                   \
-    (isdigit ((uint8_t) * (X + 3)) || !*(X + 3)) &&                   \
-    (isdigit ((uint8_t) * (X + 4)) || !*(X + 4)) &&                   \
-    (isdigit ((uint8_t) * (X + 5)) || !*(X + 5)) &&                   \
-    (*(X + 6) == ' ') && (*(X + 7) == ' ') && (*(X + 8) == ' ') &&    \
-    (*(X + 9) == ' ') && (*(X + 10) == ' ') && (*(X + 11) == ' ') &&  \
-    (*(X + 12) == ' ') && (*(X + 13) == ' ') && (*(X + 14) == ' ') && \
-    (*(X + 15) == ' ') && (*(X + 16) == ' ') && (*(X + 17) == ' ') && \
-    (*(X + 18) == ' ') && (*(X + 19) == ' ') && (*(X + 20) == ' ') && \
-    (*(X + 21) == ' ') && (*(X + 22) == ' ') && (*(X + 23) == ' ') && \
-    (*(X + 24) == ' ') && (*(X + 25) == ' ') && (*(X + 26) == ' ') && \
-    (*(X + 27) == ' ') && (*(X + 28) == ' ') && (*(X + 29) == ' ') && \
-    (*(X + 30) == ' ') && (*(X + 31) == ' ') && (*(X + 32) == ' ') && \
-    (*(X + 33) == ' ') && (*(X + 34) == ' ') && (*(X + 35) == ' ') && \
-    (*(X + 36) == ' ') && (*(X + 37) == ' ') && (*(X + 38) == ' ') && \
-    (*(X + 39) == ' ') && (*(X + 40) == ' ') && (*(X + 41) == ' ') && \
-    (*(X + 42) == ' ') && (*(X + 43) == ' ') && (*(X + 44) == ' ') && \
-    (*(X + 45) == ' ') && (*(X + 46) == ' ') && (*(X + 47) == ' ') )
-
 /* A simple bitwise AND test to return 0 or 1 */
 #define bit(x,y) (x&y)?1:0
 
@@ -321,18 +289,18 @@ typedef struct MS3TraceList_s {
 MS3TraceList;
 
 /* Data selection structure time window definition containers */
-typedef struct SelectTime3_s {
+typedef struct MS3SelectTime_s {
   nstime_t starttime;    /* Earliest data for matching channels */
   nstime_t endtime;      /* Latest data for matching channels */
-  struct SelectTime3_s *next;
-} SelectTime3;
+  struct MS3SelectTime_s *next;
+} MS3SelectTime;
 
 /* Data selection structure definition containers */
-typedef struct Selections3_s {
+typedef struct MS3Selections_s {
   char tsidpattern[100];    /* Matching (globbing) pattern for time series ID */
-  struct SelectTime3_s *timewindows;
-  struct Selections3_s *next;
-} Selections3;
+  struct MS3SelectTime_s *timewindows;
+  struct MS3Selections_s *next;
+} MS3Selections;
 
 
 /* Global variables (defined in unpack.c) and macros to set/force
@@ -354,8 +322,7 @@ extern int msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
                        int8_t dataflag, int8_t verbose);
 
 extern int msr3_parse_selection (char *recbuf, uint64_t recbuflen, uint64_t *offset,
-                                 MS3Record **ppmsr, int reclen,
-                                 Selections3 *selections,
+                                 MS3Record **ppmsr, MS3Selections *selections,
                                  int8_t dataflag, int8_t verbose);
 
 extern int msr3_unpack (char *record, MS3Record **ppmsr,
@@ -378,12 +345,13 @@ extern void       msr3_print (MS3Record *msr, int8_t details);
 extern double     msr3_host_latency (MS3Record *msr);
 
 extern int ms3_detect (const char *record, int recbuflen);
-extern int ms3_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag);
+extern int ms3_parse_raw (char *record, int maxreclen, int8_t details);
+extern int ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag);
 
 /* MSTraceList related functions */
 extern MS3TraceList* mstl3_init (MS3TraceList *mstl);
 extern void          mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr);
-extern MS3TraceSeg*  mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t dataquality,
+extern MS3TraceSeg*  mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t pubversion,
                                    int8_t autoheal, double timetol, double sampratetol);
 extern int mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate);
 extern void mstl3_printtracelist (MS3TraceList *mstl, int8_t timeformat,
@@ -400,32 +368,32 @@ typedef struct MS3FileParam_s
   char *rawrec;
   int readlen;
   int readoffset;
-  int packtype;
-  int64_t packhdroffset;
   int64_t filepos;
   int64_t filesize;
-  int recordcount;
+  int64_t recordcount;
 } MS3FileParam;
 
 extern int ms3_readmsr (MS3Record **ppmsr, const char *msfile, int64_t *fpos, int8_t *last,
                         int8_t skipnotdata, int8_t dataflag, int8_t verbose);
 extern int ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
                           int64_t *fpos, int8_t *last, int8_t skipnotdata, int8_t dataflag, int8_t verbose);
+
 extern int ms3_readmsr_main (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
                              int64_t *fpos, int8_t *last, int8_t skipnotdata, int8_t dataflag,
-                             Selections3 *selections, int8_t verbose);
+                             MS3Selections *selections, int8_t verbose);
+
 extern int ms3_readtracelist (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
-                              int8_t dataquality, int8_t skipnotdata, int8_t dataflag, int8_t verbose);
+                              int8_t pubversion, int8_t skipnotdata, int8_t dataflag, int8_t verbose);
 extern int ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
-                                      nstime_t starttime, nstime_t endtime, int8_t dataquality, int8_t skipnotdata,
+                                      nstime_t starttime, nstime_t endtime, int8_t pubversion, int8_t skipnotdata,
                                       int8_t dataflag, int8_t verbose);
 extern int ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
-                                        Selections3 *selections, int8_t dataquality, int8_t skipnotdata,
+                                        MS3Selections *selections, int8_t pubversion, int8_t skipnotdata,
                                         int8_t dataflag, int8_t verbose);
 extern int msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
-                            int8_t encoding, int8_t verbose);
+                            int maxreclen, int8_t encoding, int8_t verbose);
 extern int mstl3_writemseed (MS3TraceList *mst, const char *msfile, int8_t overwrite,
-                             int8_t encoding, int8_t verbose);
+                             int maxreclen, int8_t encoding, int8_t verbose);
 
 /* General use functions */
 extern int      ms_parsetsid (char *tsid, char *net, char *sta, char *loc, char *chan);
@@ -471,17 +439,19 @@ extern MSLogParam *ms_loginit_l (MSLogParam *logp,
                                  void (*diag_print)(char*), const char *errprefix);
 
 /* Selection functions */
-extern Selections *ms3_matchselect (Selections3 *selections, char *tsid,
-                                    nstime_t starttime, nstime_t endtime, SelectTime3 **ppselecttime);
-extern Selections *msr3_matchselect (Selections3 *selections, MS3Record *msr, SelectTime3 **ppselecttime);
-extern int ms3_addselect (Selections3 **ppselections, char tsid,
+extern MS3Selections *ms3_matchselect (MS3Selections *selections, char *tsid,
+                                       nstime_t starttime, nstime_t endtime,
+                                       MS3SelectTime **ppselecttime);
+extern MS3Selections *msr3_matchselect (MS3Selections *selections, MS3Record *msr,
+                                        MS3SelectTime **ppselecttime);
+extern int ms3_addselect (MS3Selections **ppselections, char tsid,
                           nstime_t starttime, nstime_t endtime);
-extern int ms3_addselect_comp (Selections3 **ppselections,
+extern int ms3_addselect_comp (MS3Selections **ppselections,
                                char *net, char* sta, char *loc, char *chan, char *qual,
                                nstime_t starttime, nstime_t endtime);
-extern int ms3_readselectionsfile (Selections3 **ppselections, char *filename);
-extern void ms3_freeselections (Selections3 *selections);
-extern void ms3_printselections (Selections3 *selections);
+extern int ms3_readselectionsfile (MS3Selections **ppselections, char *filename);
+extern void ms3_freeselections (MS3Selections *selections);
+extern void ms3_printselections (MS3Selections *selections);
 
 /* Leap second declarations, implementation in gentutils.c */
 typedef struct LeapSecond_s
