@@ -213,20 +213,12 @@ typedef int64_t hptime_t;
 /* A single byte flag type */
 typedef int8_t flag;
 
-typedef struct StreamState_s
-{
-  int64_t   packedrecords;           /* Count of packed records */
-  int64_t   packedsamples;           /* Count of packed samples */
-  int32_t   lastintsample;           /* Value of last integer sample packed */
-  int8_t    comphistory;             /* Control use of lastintsample for compression history */
-}
-StreamState;
-
 typedef struct MS3Record_s {
   char           *record;            /* Mini-SEED record */
   int32_t         reclen;            /* Length of Mini-SEED record in bytes */
 
   /* Common header fields in accessible form */
+  char            tsid[64];          /* Time series identifier as URN */
   uint8_t         formatversion;     /* Original source format major version */
   uint8_t         flags;             /* Record-level bit flags */
   nstime_t        starttime;         /* Record start time (first sample) */
@@ -235,19 +227,14 @@ typedef struct MS3Record_s {
   uint8_t         pubversion;        /* Publication version */
   uint32_t        samplecnt;         /* Number of samples in record */
   uint32_t        crc;               /* CRC of entire record */
-  char            tsid[64];          /* Time series identifier as URN */
   uint16_t        extralength;       /* Length of extra headers in bytes */
   uint16_t        payloadlength;     /* Length of data payload in bytes */
   void           *extra;             /* Pointer to extra headers */
-  void           *payload;           /* Pointer to data payload */
 
   /* Data sample fields */
   void           *datasamples;       /* Data samples, 'numsamples' of type 'sampletype'*/
   int64_t         numsamples;        /* Number of data samples in datasamples */
   char            sampletype;        /* Sample type code: a, i, f, d */
-
-  /* Stream oriented state information */
-  StreamState    *ststate;           /* Stream processing state information */
 }
 MS3Record;
 
@@ -300,6 +287,7 @@ typedef struct MS3Selections_s {
   char tsidpattern[100];    /* Matching (globbing) pattern for time series ID */
   struct MS3SelectTime_s *timewindows;
   struct MS3Selections_s *next;
+  uint8_t pubversion;
 } MS3Selections;
 
 
@@ -439,14 +427,14 @@ extern MSLogParam *ms_loginit_l (MSLogParam *logp,
 /* Selection functions */
 extern MS3Selections *ms3_matchselect (MS3Selections *selections, char *tsid,
                                        nstime_t starttime, nstime_t endtime,
-                                       MS3SelectTime **ppselecttime);
+                                       int pubversion, MS3SelectTime **ppselecttime);
 extern MS3Selections *msr3_matchselect (MS3Selections *selections, MS3Record *msr,
                                         MS3SelectTime **ppselecttime);
-extern int ms3_addselect (MS3Selections **ppselections, char tsidpattern,
-                          nstime_t starttime, nstime_t endtime);
+extern int ms3_addselect (MS3Selections **ppselections, char *tsidpattern,
+                          nstime_t starttime, nstime_t endtime, uint8_t pubversion);
 extern int ms3_addselect_comp (MS3Selections **ppselections,
                                char *net, char* sta, char *loc, char *chan,
-                               nstime_t starttime, nstime_t endtime);
+                               nstime_t starttime, nstime_t endtime, uint8_t pubversion);
 extern int ms3_readselectionsfile (MS3Selections **ppselections, char *filename);
 extern void ms3_freeselections (MS3Selections *selections);
 extern void ms3_printselections (MS3Selections *selections);

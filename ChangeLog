@@ -1,4 +1,6 @@
 2017.209:
+	- Selection file format allows two variants, quality code is ignored in old format.
+	- Remove StreamState tracking, effectively dropping the compression history capability, not worth it.
 	- Library is no longer able to read miniSEED 2 without a blockette 1000 to specify the length.
 	- Remove all LWP_* platform defined except LWP_WIN for Windows.
 	- Rename MSRecord to MS3Record and restructure for miniSEED 3.
