@@ -3,7 +3,6 @@
  *
  * Platform portability routines.
  *
- * modified: 2017.118
  ***************************************************************************/
 
 /* Define _LARGEFILE_SOURCE to get ftello/fseeko on some systems (Linux) */
@@ -11,41 +10,34 @@
 
 #include "libmseed.h"
 
-/* Size of off_t data type as determined at build time */
-int LM_SIZEOF_OFF_T = sizeof(off_t);
-
 /***************************************************************************
- * lmp_ftello:
+ * lmp_ftell64:
  *
  * Return the current file position for the specified descriptor using
  * the system's closest match to the POSIX ftello.
  ***************************************************************************/
-off_t
-lmp_ftello (FILE *stream)
+int64_t
+lmp_ftell64 (FILE *stream)
 {
 #if defined(LMP_WIN)
-  return (off_t)ftell (stream);
-
+  return (int64_t)_ftelli64 (stream);
 #else
-  return (off_t)ftello (stream);
-
+  return (int64_t)ftello (stream);
 #endif
-} /* End of lmp_ftello() */
+} /* End of lmp_ftell64() */
 
 /***************************************************************************
- * lmp_fseeko:
+ * lmp_fseek64:
  *
  * Seek to a specific file position for the specified descriptor using
  * the system's closest match to the POSIX fseeko.
  ***************************************************************************/
 int
-lmp_fseeko (FILE *stream, off_t offset, int whence)
+lmp_fseek64 (FILE *stream, int64_t offset, int whence)
 {
 #if defined(LMP_WIN)
-  return (int)fseek (stream, (long int)offset, whence);
-
+  return (int)fseek (stream, (int64_t)offset, whence);
 #else
   return (int)fseeko (stream, offset, whence);
-
 #endif
 } /* End of lmp_fseeko() */

@@ -1,11 +1,9 @@
 /***************************************************************************
  * lookup.c:
  *
- * Generic lookup routines for Mini-SEED information.
+ * Generic lookup routines for miniSEED information.
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
- *
- * modified: 2006.346
  ***************************************************************************/
 
 #include <string.h>
@@ -90,113 +88,6 @@ ms_encodingstr (const char encoding)
   } /* end switch */
 
 } /* End of ms_encodingstr() */
-
-/***************************************************************************
- * ms_blktdesc():
- *
- * Return a string describing a given blockette type or NULL if the
- * type is unknown.
- ***************************************************************************/
-char *
-ms_blktdesc (uint16_t blkttype)
-{
-  switch (blkttype)
-  {
-  case 100:
-    return "Sample Rate";
-  case 200:
-    return "Generic Event Detection";
-  case 201:
-    return "Murdock Event Detection";
-  case 300:
-    return "Step Calibration";
-  case 310:
-    return "Sine Calibration";
-  case 320:
-    return "Pseudo-random Calibration";
-  case 390:
-    return "Generic Calibration";
-  case 395:
-    return "Calibration Abort";
-  case 400:
-    return "Beam";
-  case 500:
-    return "Timing";
-  case 1000:
-    return "Data Only SEED";
-  case 1001:
-    return "Data Extension";
-  case 2000:
-    return "Opaque Data";
-  } /* end switch */
-
-  return NULL;
-
-} /* End of ms_blktdesc() */
-
-/***************************************************************************
- * ms_blktlen():
- *
- * Returns the total length of a given blockette type in bytes or 0 if
- * type unknown.
- ***************************************************************************/
-uint16_t
-ms_blktlen (uint16_t blkttype, const char *blkt, flag swapflag)
-{
-  uint16_t blktlen = 0;
-
-  switch (blkttype)
-  {
-  case 100: /* Sample Rate */
-    blktlen = 12;
-    break;
-  case 200: /* Generic Event Detection */
-    blktlen = 28;
-    break;
-  case 201: /* Murdock Event Detection */
-    blktlen = 36;
-    break;
-  case 300: /* Step Calibration */
-    blktlen = 32;
-    break;
-  case 310: /* Sine Calibration */
-    blktlen = 32;
-    break;
-  case 320: /* Pseudo-random Calibration */
-    blktlen = 28;
-    break;
-  case 390: /* Generic Calibration */
-    blktlen = 28;
-    break;
-  case 395: /* Calibration Abort */
-    blktlen = 16;
-    break;
-  case 400: /* Beam */
-    blktlen = 16;
-    break;
-  case 500: /* Timing */
-    blktlen = 8;
-    break;
-  case 1000: /* Data Only SEED */
-    blktlen = 8;
-    break;
-  case 1001: /* Data Extension */
-    blktlen = 8;
-    break;
-  case 2000: /* Opaque Data */
-    /* First 2-byte field after the blockette header is the length */
-    if (blkt)
-    {
-      memcpy ((void *)&blktlen, blkt + 4, sizeof (int16_t));
-      if (swapflag)
-        ms_gswap2 (&blktlen);
-    }
-    break;
-  } /* end switch */
-
-  return blktlen;
-
-} /* End of ms_blktlen() */
 
 /***************************************************************************
  * ms_errorstr():

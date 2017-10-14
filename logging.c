@@ -5,8 +5,6 @@
  *
  * Chad Trabant
  * IRIS Data Management Center
- *
- * modified: 2014.197
  ***************************************************************************/
 
 #include <stdarg.h>
@@ -42,9 +40,9 @@ ms_loginit (void (*log_print) (char *), const char *logprefix,
 /***************************************************************************
  * ms_loginit_l:
  *
- * Initialize MSLogParam specific logging parameters.  If the logging parameters
- * have not been initialized (log == NULL) new parameter space will
- * be allocated.
+ * Initialize MSLogParam specific logging parameters.  If the logging
+ * parameters have not been initialized (log == NULL) new parameter
+ * space will be allocated.
  *
  * See ms_loginit_main() description for usage.
  *
@@ -68,10 +66,10 @@ ms_loginit_l (MSLogParam *logp,
       return NULL;
     }
 
-    llog->log_print  = NULL;
-    llog->logprefix  = NULL;
+    llog->log_print = NULL;
+    llog->logprefix = NULL;
     llog->diag_print = NULL;
-    llog->errprefix  = NULL;
+    llog->errprefix = NULL;
   }
   else
   {
@@ -259,7 +257,7 @@ ms_log_main (MSLogParam *logp, int level, va_list *varlist)
       strncpy (message, "Error: ", MAX_LOG_MSG_LENGTH);
     }
 
-    presize  = strlen (message);
+    presize = strlen (message);
     retvalue = vsnprintf (&message[presize],
                           MAX_LOG_MSG_LENGTH - presize,
                           format, *varlist);
@@ -283,7 +281,7 @@ ms_log_main (MSLogParam *logp, int level, va_list *varlist)
       message[MAX_LOG_MSG_LENGTH - 1] = '\0';
     }
 
-    presize  = strlen (message);
+    presize = strlen (message);
     retvalue = vsnprintf (&message[presize],
                           MAX_LOG_MSG_LENGTH - presize,
                           format, *varlist);
@@ -307,7 +305,7 @@ ms_log_main (MSLogParam *logp, int level, va_list *varlist)
       message[MAX_LOG_MSG_LENGTH - 1] = '\0';
     }
 
-    presize  = strlen (message);
+    presize = strlen (message);
     retvalue = vsnprintf (&message[presize],
                           MAX_LOG_MSG_LENGTH - presize,
                           format, *varlist);

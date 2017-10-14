@@ -22,7 +22,7 @@ MANDIR ?= $(DATAROOTDIR)/man
 MAN3DIR ?= $(MANDIR)/man3
 
 LIB_SRCS = fileutils.c genutils.c gswap.c lmplatform.c lookup.c \
-           msrutils.c pack.c packdata.c traceutils.c tracelist.c \
+           msrutils.c pack.c packdata.c tracelist.c gmtime64.c \
            parseutils.c unpack.c unpackdata.c selection.c logging.c
 
 LIB_OBJS = $(LIB_SRCS:.c=.o)

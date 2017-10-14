@@ -5,8 +5,6 @@
  *
  * Written by Chad Trabant unless otherwise noted
  *   IRIS Data Management Center
- *
- * modified: 2014.197
  ***************************************************************************/
 
 #include <errno.h>
@@ -20,40 +18,40 @@
 static int ms_globmatch (char *string, char *pattern);
 
 /***************************************************************************
- * ms_matchselect:
+ * ms3_matchselect:
  *
  * Test the specified parameters for a matching selection entry.  The
- * srcname parameter may contain globbing characters.  The NULL value
- * (matching any times) for the start and end times is HPTERROR.
+ * tsidpattern parameter may contain globbing characters.  The NULL value
+ * (matching any times) for the start and end times is NSTERROR.
  *
- * Return Selections pointer to matching entry on successful match and
+ * Return MS3Selections pointer to matching entry on successful match and
  * NULL for no match or error.
  ***************************************************************************/
-Selections *
-ms_matchselect (Selections *selections, char *srcname, hptime_t starttime,
-                hptime_t endtime, SelectTime **ppselecttime)
+MS3Selections *
+ms3_matchselect (MS3Selections *selections, char *tsid, nstime_t starttime,
+                 nstime_t endtime, MS3SelectTime **ppselecttime)
 {
-  Selections *findsl  = NULL;
-  SelectTime *findst  = NULL;
-  SelectTime *matchst = NULL;
+  MS3Selections *findsl = NULL;
+  MS3SelectTime *findst = NULL;
+  MS3SelectTime *matchst = NULL;
 
   if (selections)
   {
     findsl = selections;
     while (findsl)
     {
-      if (ms_globmatch (srcname, findsl->srcname))
+      if (ms_globmatch (tsid, findsl->tsidpattern))
       {
         findst = findsl->timewindows;
         while (findst)
         {
-          if (starttime != HPTERROR && findst->starttime != HPTERROR &&
+          if (starttime != NSTERROR && findst->starttime != NSTERROR &&
               (starttime < findst->starttime && !(starttime <= findst->starttime && endtime >= findst->starttime)))
           {
             findst = findst->next;
             continue;
           }
-          else if (endtime != HPTERROR && findst->endtime != HPTERROR &&
+          else if (endtime != NSTERROR && findst->endtime != NSTERROR &&
                    (endtime > findst->endtime && !(starttime <= findst->endtime && endtime >= findst->endtime)))
           {
             findst = findst->next;
@@ -76,88 +74,85 @@ ms_matchselect (Selections *selections, char *srcname, hptime_t starttime,
     *ppselecttime = matchst;
 
   return (matchst) ? findsl : NULL;
-} /* End of ms_matchselect() */
+} /* End of ms3_matchselect() */
 
 /***************************************************************************
- * msr_matchselect:
+ * msr3_matchselect:
  *
- * A simple wrapper for calling ms_matchselect() using details from a
+ * A simple wrapper for calling ms3_matchselect() using details from a
  * MSRecord struct.
  *
- * Return Selections pointer to matching entry on successful match and
+ * Return MS3Selections pointer to matching entry on successful match and
  * NULL for no match or error.
  ***************************************************************************/
-Selections *
-msr_matchselect (Selections *selections, MSRecord *msr, SelectTime **ppselecttime)
+MS3Selections *
+msr3_matchselect (MS3Selections *selections, MS3Record *msr, MS3SelectTime **ppselecttime)
 {
-  char srcname[50];
-  hptime_t endtime;
+  nstime_t endtime;
 
   if (!selections || !msr)
     return NULL;
 
-  msr_srcname (msr, srcname, 1);
-  endtime = msr_endtime (msr);
+  endtime = msr3_endtime (msr);
 
-  return ms_matchselect (selections, srcname, msr->starttime, endtime,
-                         ppselecttime);
-} /* End of msr_matchselect() */
+  return ms3_matchselect (selections, msr->tsid, msr->starttime, endtime, ppselecttime);
+} /* End of msr3_matchselect() */
 
 /***************************************************************************
- * ms_addselect:
+ * ms3_addselect:
  *
- * Add select parameters to a specified selection list.  The srcname
+ * Add select parameters to a specified selection list.  The tsidpattern
  * argument may contain globbing parameters.  The NULL value (matching
- * any value) for the start and end times is HPTERROR.
+ * any value) for the start and end times is NSTERROR.
  *
  * Return 0 on success and -1 on error.
  ***************************************************************************/
 int
-ms_addselect (Selections **ppselections, char *srcname,
-              hptime_t starttime, hptime_t endtime)
+ms3_addselect (MS3Selections **ppselections, char *tsidpattern,
+               nstime_t starttime, nstime_t endtime)
 {
-  Selections *newsl = NULL;
-  SelectTime *newst = NULL;
+  MS3Selections *newsl = NULL;
+  MS3SelectTime *newst = NULL;
 
-  if (!ppselections || !srcname)
+  if (!ppselections || !tsid)
     return -1;
 
   /* Allocate new SelectTime and populate */
-  if (!(newst = (SelectTime *)calloc (1, sizeof (SelectTime))))
+  if (!(newst = (MS3SelectTime *)calloc (1, sizeof (MS3SelectTime))))
   {
     ms_log (2, "Cannot allocate memory\n");
     return -1;
   }
 
   newst->starttime = starttime;
-  newst->endtime   = endtime;
+  newst->endtime = endtime;
 
   /* Add new Selections struct to begining of list */
   if (!*ppselections)
   {
     /* Allocate new Selections and populate */
-    if (!(newsl = (Selections *)calloc (1, sizeof (Selections))))
+    if (!(newsl = (MS3Selections *)calloc (1, sizeof (MS3Selections))))
     {
       ms_log (2, "Cannot allocate memory\n");
       return -1;
     }
 
-    strncpy (newsl->srcname, srcname, sizeof (newsl->srcname));
-    newsl->srcname[sizeof (newsl->srcname) - 1] = '\0';
+    strncpy (newsl->tsidpattern, tsidpattern, sizeof (newsl->tsidpattern));
+    newsl->tsidpattern[sizeof (newsl->tsidpattern) - 1] = '\0';
 
-    /* Add new Selections struct as first in list */
-    *ppselections      = newsl;
+    /* Add new MS3Selections struct as first in list */
+    *ppselections = newsl;
     newsl->timewindows = newst;
   }
   else
   {
-    Selections *findsl  = *ppselections;
-    Selections *matchsl = 0;
+    MS3Selections *findsl = *ppselections;
+    MS3Selections *matchsl = 0;
 
     /* Search for matching Selectlink entry */
     while (findsl)
     {
-      if (!strcmp (findsl->srcname, srcname))
+      if (!strcmp (findsl->tsidpattern, tsidpattern))
       {
         matchsl = findsl;
         break;
@@ -169,38 +164,38 @@ ms_addselect (Selections **ppselections, char *srcname,
     if (matchsl)
     {
       /* Add time window selection to beginning of window list */
-      newst->next          = matchsl->timewindows;
+      newst->next = matchsl->timewindows;
       matchsl->timewindows = newst;
     }
     else
     {
-      /* Allocate new Selections and populate */
-      if (!(newsl = (Selections *)calloc (1, sizeof (Selections))))
+      /* Allocate new MS3Selections and populate */
+      if (!(newsl = (MS3Selections *)calloc (1, sizeof (MS3Selections))))
       {
         ms_log (2, "Cannot allocate memory\n");
         return -1;
       }
 
-      strncpy (newsl->srcname, srcname, sizeof (newsl->srcname));
-      newsl->srcname[sizeof (newsl->srcname) - 1] = '\0';
+      strncpy (newsl->tsidpattern, tsidpattern, sizeof (newsl->tsidpattern));
+      newsl->tsidpattern[sizeof (newsl->tsidpattern) - 1] = '\0';
 
-      /* Add new Selections to beginning of list */
-      newsl->next        = *ppselections;
-      *ppselections      = newsl;
+      /* Add new MS3Selections to beginning of list */
+      newsl->next = *ppselections;
+      *ppselections = newsl;
       newsl->timewindows = newst;
     }
   }
 
   return 0;
-} /* End of ms_addselect() */
+} /* End of ms3_addselect() */
 
 /***************************************************************************
- * ms_addselect_comp:
+ * ms3_addselect_comp:
  *
  * Add select parameters to a specified selection list based on
  * separate name components.  The network, station, location, channel
  * and quality arguments may contain globbing parameters.  The NULL
- * value (matching any value) for the start and end times is HPTERROR.
+ * value (matching any value) for the start and end times is NSTERROR.
  *
  * If any of the naming parameters are not supplied (pointer is NULL)
  * a wildcard for all matches is substituted.  As a special case, if
@@ -211,15 +206,14 @@ ms_addselect (Selections **ppselections, char *srcname,
  * Return 0 on success and -1 on error.
  ***************************************************************************/
 int
-ms_addselect_comp (Selections **ppselections, char *net, char *sta, char *loc,
-                   char *chan, char *qual, hptime_t starttime, hptime_t endtime)
+ms3_addselect_comp (MS3Selections **ppselections, char *net, char *sta, char *loc,
+                    char *chan, nstime_t starttime, nstime_t endtime)
 {
-  char srcname[100];
+  char tsidpattern[100];
   char selnet[20];
   char selsta[20];
   char selloc[20];
   char selchan[20];
-  char selqual[20];
 
   if (!ppselections)
     return -1;
@@ -230,7 +224,9 @@ ms_addselect_comp (Selections **ppselections, char *net, char *sta, char *loc,
     selnet[sizeof (selnet) - 1] = '\0';
   }
   else
+  {
     strcpy (selnet, "*");
+  }
 
   if (sta)
   {
@@ -238,13 +234,17 @@ ms_addselect_comp (Selections **ppselections, char *net, char *sta, char *loc,
     selsta[sizeof (selsta) - 1] = '\0';
   }
   else
+  {
     strcpy (selsta, "*");
+  }
 
   if (loc)
   {
     /* Test for special case blank location ID */
     if (!strcmp (loc, "--"))
+    {
       selloc[0] = '\0';
+    }
     else
     {
       strncpy (selloc, loc, sizeof (selloc));
@@ -252,7 +252,9 @@ ms_addselect_comp (Selections **ppselections, char *net, char *sta, char *loc,
     }
   }
   else
+  {
     strcpy (selloc, "*");
+  }
 
   if (chan)
   {
@@ -260,31 +262,25 @@ ms_addselect_comp (Selections **ppselections, char *net, char *sta, char *loc,
     selchan[sizeof (selchan) - 1] = '\0';
   }
   else
-    strcpy (selchan, "*");
-
-  if (qual)
   {
-    strncpy (selqual, qual, sizeof (selqual));
-    selqual[sizeof (selqual) - 1] = '\0';
+    strcpy (selchan, "*");
   }
-  else
-    strcpy (selqual, "?");
 
-  /* Create the srcname globbing match for this entry */
-  snprintf (srcname, sizeof (srcname), "%s_%s_%s_%s_%s",
+  /* Create the time series identifier globbing match for this entry */
+  snprintf (tsidpattern, sizeof (tsidpattern), "%s.%s.%s:%s",
             selnet, selsta, selloc, selchan, selqual);
 
   /* Add selection to list */
-  if (ms_addselect (ppselections, srcname, starttime, endtime))
+  if (ms3_addselect (ppselections, tsidpattern, starttime, endtime))
     return -1;
 
   return 0;
-} /* End of ms_addselect_comp() */
+} /* End of ms3_addselect_comp() */
 
 /***************************************************************************
- * ms_readselectionsfile:
+ * ms3_readselectionsfile:
  *
- * Read a list of data selections from a file and them to the
+ * Read a list of data selections from a file and add them to the
  * specified selections list.  On errors this routine will leave
  * allocated memory unreachable (leaked), it is expected that this is
  * a program failing condition.
@@ -295,11 +291,11 @@ ms_addselect_comp (Selections **ppselections, char *net, char *sta, char *loc,
  * Returns count of selections added on success and -1 on error.
  ***************************************************************************/
 int
-ms_readselectionsfile (Selections **ppselections, char *filename)
+ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
 {
   FILE *fp;
-  hptime_t starttime;
-  hptime_t endtime;
+  nstime_t starttime;
+  nstime_t endtime;
   char selectline[200];
   char *selnet;
   char *selsta;
@@ -311,7 +307,7 @@ ms_readselectionsfile (Selections **ppselections, char *filename)
   char *cp;
   char next;
   int selectcount = 0;
-  int linecount   = 0;
+  int linecount = 0;
 
   if (!ppselections || !filename)
     return -1;
@@ -332,13 +328,13 @@ ms_readselectionsfile (Selections **ppselections, char *filename)
 
   while (fgets (selectline, sizeof (selectline) - 1, fp))
   {
-    selnet   = 0;
-    selsta   = 0;
-    selloc   = 0;
-    selchan  = 0;
-    selqual  = 0;
+    selnet = 0;
+    selsta = 0;
+    selloc = 0;
+    selchan = 0;
+    selqual = 0;
     selstart = 0;
-    selend   = 0;
+    selend = 0;
 
     linecount++;
 
@@ -358,13 +354,13 @@ ms_readselectionsfile (Selections **ppselections, char *filename)
       continue;
 
     /* Parse: identify components of selection and terminate */
-    cp   = selectline;
+    cp = selectline;
     next = 1;
     while (*cp)
     {
       if (*cp == ' ' || *cp == '\t')
       {
-        *cp  = '\0';
+        *cp = '\0';
         next = 1;
       }
       else if (*cp == '#')
@@ -375,37 +371,37 @@ ms_readselectionsfile (Selections **ppselections, char *filename)
       else if (next && !selnet)
       {
         selnet = cp;
-        next   = 0;
+        next = 0;
       }
       else if (next && !selsta)
       {
         selsta = cp;
-        next   = 0;
+        next = 0;
       }
       else if (next && !selloc)
       {
         selloc = cp;
-        next   = 0;
+        next = 0;
       }
       else if (next && !selchan)
       {
         selchan = cp;
-        next    = 0;
+        next = 0;
       }
       else if (next && !selqual)
       {
         selqual = cp;
-        next    = 0;
+        next = 0;
       }
       else if (next && !selstart)
       {
         selstart = cp;
-        next     = 0;
+        next = 0;
       }
       else if (next && !selend)
       {
         selend = cp;
-        next   = 0;
+        next = 0;
       }
       else if (next)
       {
@@ -425,7 +421,7 @@ ms_readselectionsfile (Selections **ppselections, char *filename)
     if (selstart)
     {
       starttime = ms_seedtimestr2hptime (selstart);
-      if (starttime == HPTERROR)
+      if (starttime == NSTERROR)
       {
         ms_log (2, "Cannot convert data selection start time (line %d): %s\n", linecount, selstart);
         return -1;
@@ -433,13 +429,13 @@ ms_readselectionsfile (Selections **ppselections, char *filename)
     }
     else
     {
-      starttime = HPTERROR;
+      starttime = NSTERROR;
     }
 
     if (selend)
     {
       endtime = ms_seedtimestr2hptime (selend);
-      if (endtime == HPTERROR)
+      if (endtime == NSTERROR)
       {
         ms_log (2, "Cannot convert data selection end time (line %d): %s\n", linecount, selend);
         return -1;
@@ -447,7 +443,7 @@ ms_readselectionsfile (Selections **ppselections, char *filename)
     }
     else
     {
-      endtime = HPTERROR;
+      endtime = NSTERROR;
     }
 
     /* Add selection to list */
@@ -467,17 +463,17 @@ ms_readselectionsfile (Selections **ppselections, char *filename)
 } /* End of ms_readselectionsfile() */
 
 /***************************************************************************
- * ms_freeselections:
+ * ms3_freeselections:
  *
- * Free all memory associated with a Selections struct.
+ * Free all memory associated with a MS3Selections struct.
  ***************************************************************************/
 void
-ms_freeselections (Selections *selections)
+ms3_freeselections (MS3Selections *selections)
 {
-  Selections *select;
-  Selections *selectnext;
-  SelectTime *selecttime;
-  SelectTime *selecttimenext;
+  MS3Selections *select;
+  MS3Selections *selectnext;
+  MS3SelectTime *selecttime;
+  MS3SelectTime *selecttimenext;
 
   if (selections)
   {
@@ -504,18 +500,18 @@ ms_freeselections (Selections *selections)
     }
   }
 
-} /* End of ms_freeselections() */
+} /* End of ms3_freeselections() */
 
 /***************************************************************************
- * ms_printselections:
+ * ms3_printselections:
  *
  * Print the selections list using the ms_log() facility.
  ***************************************************************************/
 void
-ms_printselections (Selections *selections)
+ms3_printselections (MS3Selections *selections)
 {
-  Selections *select;
-  SelectTime *selecttime;
+  MS3Selections *select;
+  MS3SelectTime *selecttime;
   char starttime[50];
   char endtime[50];
 
@@ -525,18 +521,18 @@ ms_printselections (Selections *selections)
   select = selections;
   while (select)
   {
-    ms_log (0, "Selection: %s\n", select->srcname);
+    ms_log (0, "Selection: %s\n", select->tsidpattern);
 
     selecttime = select->timewindows;
     while (selecttime)
     {
-      if (selecttime->starttime != HPTERROR)
-        ms_hptime2seedtimestr (selecttime->starttime, starttime, 1);
+      if (selecttime->starttime != NSTERROR)
+        ms_nstime2seedtimestr (selecttime->starttime, starttime, 1);
       else
         strncpy (starttime, "No start time", sizeof (starttime) - 1);
 
-      if (selecttime->endtime != HPTERROR)
-        ms_hptime2seedtimestr (selecttime->endtime, endtime, 1);
+      if (selecttime->endtime != NSTERROR)
+        ms_nstime2seedtimestr (selecttime->endtime, endtime, 1);
       else
         strncpy (endtime, "No end time", sizeof (endtime) - 1);
 
@@ -547,7 +543,7 @@ ms_printselections (Selections *selections)
 
     select = select->next;
   }
-} /* End of ms_printselections() */
+} /* End of ms3_printselections() */
 
 /***********************************************************************
  * robust glob pattern matcher
@@ -584,7 +580,7 @@ ms_printselections (Selections *selections)
  * Revision 1.2  94/12/11  10:38:15  oz
  * charset code fixed. it is now robust and interprets all
  * variations of charset [i think] correctly, including [z-a] etc.
- * 
+ *
  * Revision 1.1  94/12/08  12:45:23  oz
  * Initial revision
  ***********************************************************************/

@@ -1,4 +1,5 @@
 2017.209:
+	- Library is no longer able to read miniSEED 2 without a blockette 1000 to specify the length.
 	- Remove all LWP_* platform defined except LWP_WIN for Windows.
 	- Rename MSRecord to MS3Record and restructure for miniSEED 3.
 	- Rename MSTrace[ID,Seg,List] to MS3Trace[ID,Seg,List] and restructure for

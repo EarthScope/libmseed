@@ -402,8 +402,6 @@ extern int      ms_strncpcleantail (char *dest, const char *source, int length);
 extern int      ms_strncpopen (char *dest, const char *source, int length);
 extern int      ms_doy2md (int year, int jday, int *month, int *mday);
 extern int      ms_md2doy (int year, int month, int mday, int *jday);
-extern int      ms_nstime2tomsusecoffset (nstime_t nstime, nstime_t *toms, int8_t *usecoffset);
-extern int      ms_nstime2btime (nstime_t nstime, BTime *btime);
 extern char*    ms_nstime2isotimestr (nstime_t nstime, char *isotimestr, int8_t subsecond);
 extern char*    ms_nstime2mdtimestr (nstime_t nstime, char *mdtimestr, int8_t subsecond);
 extern char*    ms_nstime2seedtimestr (nstime_t nstime, char *seedtimestr, int8_t subsecond);
@@ -419,7 +417,7 @@ extern char*    ms_encodingstr (const char encoding);
 extern char *   ms_errorstr (int errorcode);
 
 /* Logging facility */
-#define MS_MAX_LOG_MSG_LENGTH  200      /* Maximum length of log messages */
+#define MAX_LOG_MSG_LENGTH  200      /* Maximum length of log messages */
 
 /* Logging parameters */
 typedef struct MSLogParam_s
@@ -444,10 +442,10 @@ extern MS3Selections *ms3_matchselect (MS3Selections *selections, char *tsid,
                                        MS3SelectTime **ppselecttime);
 extern MS3Selections *msr3_matchselect (MS3Selections *selections, MS3Record *msr,
                                         MS3SelectTime **ppselecttime);
-extern int ms3_addselect (MS3Selections **ppselections, char tsid,
+extern int ms3_addselect (MS3Selections **ppselections, char tsidpattern,
                           nstime_t starttime, nstime_t endtime);
 extern int ms3_addselect_comp (MS3Selections **ppselections,
-                               char *net, char* sta, char *loc, char *chan, char *qual,
+                               char *net, char* sta, char *loc, char *chan,
                                nstime_t starttime, nstime_t endtime);
 extern int ms3_readselectionsfile (MS3Selections **ppselections, char *filename);
 extern void ms3_freeselections (MS3Selections *selections);
@@ -456,7 +454,7 @@ extern void ms3_printselections (MS3Selections *selections);
 /* Leap second declarations, implementation in gentutils.c */
 typedef struct LeapSecond_s
 {
-  hptime_t leapsecond;
+  nstime_t leapsecond;
   int32_t  TAIdelta;
   struct LeapSecond_s *next;
 } LeapSecond;
@@ -477,8 +475,8 @@ extern void ms3_gswap4a ( void *data4 );
 extern void ms3_gswap8a ( void *data8 );
 
 /* Platform portable functions */
-extern int64_t lmp3_ftello (FILE *stream);
-extern int lmp3_fseeko (FILE *stream, int64_t offset, int whence);
+extern int64_t lmp_ftell64 (FILE *stream);
+extern int lmp_fseek64 (FILE *stream, int64_t offset, int whence);
 
 #ifdef __cplusplus
 }
