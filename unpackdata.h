@@ -1,7 +1,7 @@
 /***************************************************************************
  * unpackdata.h:
  *
- * Interface declarations for the Mini-SEED unpacking routines in
+ * Interface declarations for the miniSEED unpacking routines in
  * unpackdata.c
  *
  * modified: 2016.273

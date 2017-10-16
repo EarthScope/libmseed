@@ -365,7 +365,7 @@
 	   ms_readtracegroup_selection()
 	   ms_readtracelist_timewin()
 	   ms_readtracelist_selection()
-	- Add convience routines to write Mini-SEED data to specified file:
+	- Add convience routines to write miniSEED data to specified file:
 	   msr_writemseed()
 	   mst_writemseed()
 	   mst_writemseedgroup().
@@ -605,7 +605,7 @@
         in msr_pack_header_raw() when none is available in the passed
         MSRecord.  Previously this could result in a subtle bug for systems
         where malloc'd memory is not zeroed.  This would only have effected
-	programs that were creating Mini-SEED in a particular way.
+	programs that were creating miniSEED in a particular way.
 
 2007.138: 2.1.1
 	- Create LMP_BSD platform definition to cover the BSDs including

@@ -1,7 +1,7 @@
 
-# libmseed - The Mini-SEED library
+# libmseed - The miniSEED library
 
-The Mini-SEED library provides a framework for manipulation of SEED
+The miniSEED library provides a framework for manipulation of SEED
 data records including the unpacking and packing of data records.
 Functionality is also included for managing waveform data as
 continuous traces.

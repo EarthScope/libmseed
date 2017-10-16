@@ -4,7 +4,7 @@ libdir=@libdir@
 includedir=@includedir@
 
 Name: @PACKAGE_NAME@
-Description: The Mini-SEED library provides a framework for manipulation of SEED
+Description: The miniSEED library provides a framework for manipulation of SEED
  (Standard for the Exchange of Earthquake Data) data records.
 URL: @PACKAGE_URL@
 Version: @VERSION@

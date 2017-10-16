@@ -1,7 +1,7 @@
 /***************************************************************************
  * unpack.c:
  *
- * Generic routines to unpack Mini-SEED records.
+ * Generic routines to unpack miniSEED records.
  *
  * Appropriate values from the record header will be byte-swapped to
  * the host order.  The purpose of this code is to provide a portable
@@ -96,7 +96,7 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
   {
     ms_recsrcname (record, srcname, 1);
     ms_log (2, "msr_unpack(%s) Record header & quality indicator unrecognized: '%c'\n", srcname);
-    ms_log (2, "msr_unpack(%s) This is not a valid Mini-SEED record\n", srcname);
+    ms_log (2, "msr_unpack(%s) This is not a valid miniSEED record\n", srcname);
 
     return MS_NOTSEED;
   }
@@ -709,7 +709,7 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
 /************************************************************************
  *  msr_unpack_data:
  *
- *  Unpack Mini-SEED data samples for a given MSRecord.  The packed
+ *  Unpack miniSEED data samples for a given MSRecord.  The packed
  *  data is accessed in the record indicated by MSRecord->record and
  *  the unpacked samples are placed in MSRecord->datasamples.  The
  *  resulting data samples are either 32-bit integers, 32-bit floats

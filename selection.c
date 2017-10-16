@@ -15,6 +15,7 @@
 
 #include "libmseed.h"
 
+static int ms_isinteger (char *string);
 static int ms_globmatch (char *string, char *pattern);
 
 /***************************************************************************
@@ -191,6 +192,7 @@ ms3_addselect (MS3Selections **ppselections, char *tsidpattern,
 
       strncpy (newsl->tsidpattern, tsidpattern, sizeof (newsl->tsidpattern));
       newsl->tsidpattern[sizeof (newsl->tsidpattern) - 1] = '\0';
+      newsl->pubversion = pubversion;
 
       /* Add new MS3Selections to beginning of list */
       newsl->next = *ppselections;
@@ -279,9 +281,11 @@ ms3_addselect_comp (MS3Selections **ppselections, char *net, char *sta, char *lo
     strcpy (selchan, "*");
   }
 
+  // TODO: wildcard location codes cannot be done that match empty codes:
+
   /* Create the time series identifier globbing match for this entry */
-  snprintf (tsidpattern, sizeof (tsidpattern), "%s.%s.%s:%s",
-            selnet, selsta, selloc, selchan);
+  snprintf (tsidpattern, sizeof (tsidpattern), "FDSN:%s.%s.%s%s%s",
+            selnet, selsta, selloc, (selloc[0] == '\0') ? "" : ":", selchan);
 
   /* Add selection to list */
   if (ms3_addselect (ppselections, tsidpattern, starttime, endtime, pubversion))
@@ -289,6 +293,8 @@ ms3_addselect_comp (MS3Selections **ppselections, char *net, char *sta, char *lo
 
   return 0;
 } /* End of ms3_addselect_comp() */
+
+#define MAX_SELECTION_FIELDS 8
 
 /***************************************************************************
  * ms3_readselectionsfile:
@@ -301,13 +307,12 @@ ms3_addselect_comp (MS3Selections **ppselections, char *net, char *sta, char *lo
  * As a special case if the filename is "-", selection lines will be
  * read from stdin.
  *
- * The selection file can be two line formats, differentiated by count of fields.
- * 4 fields version is:
- *   "TimeseriesID  Starttime  Endtime  Pubversion"
- * 7 fields version is:
- *   "Network  Station  Location  Channel  Quality  Starttime  Endtime"
+ * The selection file may contain two line formats:
+ *   "TimeseriesID  [Starttime  [Endtime  [Pubversion]]]"
+ *  or
+ *   "Network  Station  Location  Channel  [Quality  [Starttime  [Endtime]]]"
  *
- * In the 7 field version the Quality field is ignored as of libmseed version 3.
+ * In the later version, the Quality field is ignored as of libmseed version 3.
  *
  * Returns count of selections added on success and -1 on error.
  ***************************************************************************/
@@ -319,20 +324,17 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
   nstime_t endtime;
   uint8_t pubversion;
   char selectline[200];
-  char *seltsid;
-  char *selnet;
-  char *selsta;
-  char *selloc;
-  char *selchan;
-  char *selqual;
-  char *selstart;
-  char *selend;
-  char *selpver;
+  char *line;
+  char *fields[MAX_SELECTION_FIELDS];
   char *cp;
   char next;
-  int fieldcount;
   int selectcount = 0;
   int linecount = 0;
+  int fieldidx;
+  uint8_t isstart2;
+  uint8_t isend3;
+  uint8_t isstart6;
+  uint8_t isend7;
 
   if (!ppselections || !filename)
     return -1;
@@ -353,163 +355,184 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
 
   while (fgets (selectline, sizeof (selectline) - 1, fp))
   {
-    seltsid = NULL;
-    selnet = NULL;
-    selsta = NULL;
-    selloc = NULL;
-    selchan = NULL;
-    selqual = NULL;
-    selstart = NULL;
-    selend = NULL;
-    selpver = NULL;
-    fieldcount = 0;
     linecount++;
+
+    /* Reset fields array */
+    for (fieldidx = 0; fieldidx < MAX_SELECTION_FIELDS; fieldidx++)
+      fields[fieldidx] = NULL;
 
     /* Guarantee termination */
     selectline[sizeof (selectline) - 1] = '\0';
 
-    /* End string at first newline character if any */
-    if ((cp = strchr (selectline, '\n')))
+    line = selectline;
+
+    /* Trim trailing whitespace (including newlines, carriage returns, etc.) if any */
+    cp = line;
+    while (*cp != '\0')
+    {
+      cp++;
+    }
+    cp--;
+    while (cp >= line && isspace((int)(*cp)))
+    {
       *cp = '\0';
+      cp--;
+    }
+
+    /* Trim leading whitespace if any */
+    cp = line;
+    while (isspace((int)(*cp)))
+    {
+      line = cp = cp+1;
+    }
+
+    printf ("DEBUG line: '%s'\n", line);
 
     /* Skip empty lines */
-    if (!strlen (selectline))
+    if (!strlen (line))
       continue;
 
     /* Skip comment lines */
-    if (*selectline == '#')
+    if (*line == '#')
       continue;
 
-    //CHAD, need to cound fields and parse differently for two different formats
-
-    /* Determine number of whitespace separated fields */
-    cp = selectline;
-    next = 1;
-    while (*cp)
+    /* Set fields array to whitespace delimited fields */
+    cp = line;
+    next = 0;  /* For this loop: 0 = whitespace, 1 = non-whitespace */
+    fieldidx = 0;
+    while (*cp && fieldidx < MAX_SELECTION_FIELDS)
     {
-      //count fields
-      cp++;
-    }
-
-    /* Parse: identify components of selection and terminate */
-    cp = selectline;
-    next = 1;
-    while (*cp)
-    {
-      if (*cp == ' ' || *cp == '\t')
+      if (!isspace ((int)(*cp)))
       {
-        *cp = '\0';
+        /* Field starts at transition from whitespace to non-whitespace */
+        if (next == 0)
+        {
+          fields[fieldidx] = cp;
+          fieldidx++;
+        }
+
         next = 1;
-      }
-      else if (*cp == '#')
-      {
-        *cp = '\0';
-        break;
-      }
-      else if (next && !selnet)
-      {
-        selnet = cp;
-        next = 0;
-      }
-      else if (next && !selsta)
-      {
-        selsta = cp;
-        next = 0;
-      }
-      else if (next && !selloc)
-      {
-        selloc = cp;
-        next = 0;
-      }
-      else if (next && !selchan)
-      {
-        selchan = cp;
-        next = 0;
-      }
-      else if (next && !selqual)
-      {
-        selqual = cp;
-        next = 0;
-      }
-      else if (next && !selstart)
-      {
-        selstart = cp;
-        next = 0;
-      }
-      else if (next && !selend)
-      {
-        selend = cp;
-        next = 0;
-      }
-      else if (next)
-      {
-        *cp = '\0';
-        break;
-      }
-      cp++;
-    }
-
-    /* Skip line if network, station, location and channel are not defined */
-    if (!selnet || !selsta || !selloc || !selchan)
-    {
-      ms_log (2, "[%s] Skipping data selection line number %d\n", filename, linecount);
-      continue;
-    }
-
-    if (selstart)
-    {
-      starttime = ms_seedtimestr2nstime (selstart);
-      if (starttime == NSTERROR)
-      {
-        ms_log (2, "Cannot convert data selection start time (line %d): %s\n", linecount, selstart);
-        return -1;
-      }
-    }
-    else
-    {
-      starttime = NSTERROR;
-    }
-
-    if (selend)
-    {
-      endtime = ms_seedtimestr2nstime (selend);
-      if (endtime == NSTERROR)
-      {
-        ms_log (2, "Cannot convert data selection end time (line %d): %s\n", linecount, selend);
-        return -1;
-      }
-    }
-    else
-    {
-      endtime = NSTERROR;
-    }
-
-    if (selpver)
-    {
-      long int longpver;
-
-      longpver = strtol (selpver, NULL, 10);
-
-      if (longpver < 0 || longpver > 255 )
-      {
-        ms_log (2, "Cannot convert publication version (line %d): %s\n", linecount, selpver);
-        return -1;
       }
       else
       {
-        pubversion = (uint8_t) longpver;
+        /* Field ends at transition from non-whitespace to whitespace */
+        if (next == 1)
+          *cp = '\0';
+
+        next = 0;
+      }
+
+      cp++;
+    }
+
+/* Globbing pattern to match the beginning of a date "YYYY[-/,]#..." */
+#define INITDATEGLOB "[0-9][0-9][0-9][0-9][-/,][0-9]*"
+
+    isstart2 = (fields[1]) ? ms_globmatch (fields[1], INITDATEGLOB) : 0;
+    isend3 = (fields[2]) ? ms_globmatch (fields[2], INITDATEGLOB) : 0;
+    isstart6 = (fields[5]) ? ms_globmatch (fields[5], INITDATEGLOB) : 0;
+    isend7 = (fields[6]) ? ms_globmatch (fields[6], INITDATEGLOB) : 0;
+
+    /* Convert starttime to nstime_t */
+    starttime = NSTERROR;
+    cp = NULL;
+    if (isstart2)
+      cp = fields[1];
+    else if (isstart6)
+      cp = fields[5];
+    if (cp)
+    {
+      starttime = ms_seedtimestr2nstime (cp);
+      if (starttime == NSTERROR)
+      {
+        ms_log (2, "Cannot convert data selection start time (line %d): %s\n", linecount, cp);
+        return -1;
+      }
+    }
+
+    /* Convert endtime to nstime_t */
+    endtime = NSTERROR;
+    cp = NULL;
+    if (isend3)
+      cp = fields[2];
+    else if (isend7)
+      cp = fields[6];
+    if (cp)
+    {
+      endtime = ms_seedtimestr2nstime (cp);
+      if (endtime == NSTERROR)
+      {
+        ms_log (2, "Cannot convert data selection end time (line %d): %s\n", linecount, cp);
+        return -1;
+      }
+    }
+
+    /* Test for "TimeseriesID  [Starttime  [Endtime  [Pubversion]]]" */
+    if (fieldidx == 1 ||
+        (fieldidx == 2 && isstart2) ||
+        (fieldidx == 3 && isstart2 && isend3) ||
+        (fieldidx == 4 && isstart2 && isend3 && ms_isinteger(fields[3])))
+    {
+      /* Convert publication version to integer */
+      pubversion = 0;
+      if (fields[3])
+      {
+        long int longpver;
+
+        longpver = strtol (fields[3], NULL, 10);
+
+        if (longpver < 0 || longpver > 255 )
+        {
+          ms_log (2, "Cannot convert publication version (line %d): %s\n", linecount, fields[3]);
+          return -1;
+        }
+        else
+        {
+          pubversion = (uint8_t) longpver;
+        }
+      }
+
+      /* Add selection to list */
+      if (ms3_addselect (ppselections, fields[0], starttime, endtime, pubversion))
+      {
+        ms_log (2, "[%s] Error adding selection on line %d\n", filename, linecount);
+        return -1;
+      }
+    }
+    /* Test for "Network  Station  Location  Channel  [Quality  [Starttime  [Endtime]]]" */
+    else if (fieldidx == 4 || fieldidx == 5 ||
+             (fieldidx == 6 && isstart6) ||
+             (fieldidx == 7 && isstart6 && isend7))
+    {
+      /* Convert quality field to publication version if integer */
+      pubversion = 0;
+      if (fields[4] && ms_isinteger(fields[4]))
+      {
+        long int longpver;
+
+        longpver = strtol (fields[4], NULL, 10);
+
+        if (longpver < 0 || longpver > 255 )
+        {
+          ms_log (2, "Cannot convert publication version (line %d): %s\n", linecount, fields[4]);
+          return -1;
+        }
+        else
+        {
+          pubversion = (uint8_t) longpver;
+        }
+      }
+
+      if (ms3_addselect_comp (ppselections, fields[0], fields[1], fields[2], fields[3],
+                              starttime, endtime, pubversion))
+      {
+        ms_log (2, "[%s] Error adding selection on line %d\n", filename, linecount);
+        return -1;
       }
     }
     else
     {
-      pubversion = 0;
-    }
-
-    /* Add selection to list */
-    if (ms3_addselect_comp (ppselections, selnet, selsta, selloc, selchan, starttime, endtime, pubversion))
-    {
-      ms_log (2, "[%s] Error adding selection on line %d\n", filename, linecount);
-      return -1;
+      ms_log (2, "[%s] Skipping unrecognized data selection on line %d\n", filename, linecount);
     }
 
     selectcount++;
@@ -580,7 +603,7 @@ ms3_printselections (MS3Selections *selections)
   select = selections;
   while (select)
   {
-    ms_log (0, "Selection: %s  pubversion\n",
+    ms_log (0, "Selection: %s  pubversion: %d\n",
             select->tsidpattern, select->pubversion);
 
     selecttime = select->timewindows;
@@ -604,6 +627,26 @@ ms3_printselections (MS3Selections *selections)
     select = select->next;
   }
 } /* End of ms3_printselections() */
+
+/***************************************************************************
+ * ms_isinteger:
+ *
+ * Test a string for all digits, i.e. and integer
+ *
+ * Returns 1 if is integer and 0 otherwise.
+ ***************************************************************************/
+static int
+ms_isinteger (char *string)
+{
+  while (*string)
+  {
+    if (!isdigit((int)(*string)))
+      return 0;
+    string++;
+  }
+
+  return 1;
+}
 
 /***********************************************************************
  * robust glob pattern matcher

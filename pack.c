@@ -1,7 +1,7 @@
 /***************************************************************************
  * pack.c:
  *
- * Generic routines to pack Mini-SEED records using an MSrecord as a
+ * Generic routines to pack miniSEED records using an MSrecord as a
  * header template and data source.
  *
  * Written by Chad Trabant,
@@ -889,7 +889,7 @@ msr_update_header (MSRecord *msr, char *rawrec, flag swapflag,
 /************************************************************************
  *  msr_pack_data:
  *
- *  Pack Mini-SEED data samples.  The input data samples specified as
+ *  Pack miniSEED data samples.  The input data samples specified as
  *  'src' will be packed with 'encoding' format and placed in 'dest'.
  *
  *  If a pointer to a 32-bit integer sample is provided in the

@@ -1,7 +1,7 @@
 /***************************************************************************
  * packdata.h:
  *
- * Interface declarations for the Mini-SEED packing routines in
+ * Interface declarations for the miniSEED packing routines in
  * packdata.c
  *
  * modified: 2016.273

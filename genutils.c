@@ -666,10 +666,10 @@ ms_seedtimestr2nstime (char *seedtimestr)
   int hour = 0;
   int min = 0;
   int sec = 0;
-  float fsec = 0.0;
+  double fsec = 0.0;
   int nsec = 0;
 
-  fields = sscanf (seedtimestr, "%d%*[-,:.]%d%*[-,:.Tt ]%d%*[-,:.]%d%*[-,:.]%d%f",
+  fields = sscanf (seedtimestr, "%d%*[-,:.]%d%*[-,:.Tt ]%d%*[-,:.]%d%*[-,:.]%d%lf",
                    &year, &day, &hour, &min, &sec, &fsec);
 
   /* Convert fractional seconds to nanoseconds */
@@ -753,10 +753,10 @@ ms_timestr2nstime (char *timestr)
   int hour = 0;
   int min = 0;
   int sec = 0;
-  float fsec = 0.0;
+  double fsec = 0.0;
   int nsec = 0;
 
-  fields = sscanf (timestr, "%d%*[-,/:.]%d%*[-,/:.]%d%*[-,/:.Tt ]%d%*[-,/:.]%d%*[-,/:.]%d%f",
+  fields = sscanf (timestr, "%d%*[-,/:.]%d%*[-,/:.]%d%*[-,/:.Tt ]%d%*[-,/:.]%d%*[-,/:.]%d%lf",
                    &year, &mon, &mday, &hour, &min, &sec, &fsec);
 
   /* Convert fractional seconds to microseconds */

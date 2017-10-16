@@ -1,7 +1,7 @@
 /***************************************************************************
  * libmseed.h:
  *
- * Interface declarations for the Mini-SEED library (libmseed).
+ * Interface declarations for the miniSEED library (libmseed).
  *
  * This library is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
@@ -92,8 +92,8 @@ extern "C" {
   #include <inttypes.h>
 #endif
 
-#define MINRECLEN 36       /* Minimum Mini-SEED record length */
-#define MAXRECLEN 16777216 /* Maximum Mini-SEED record length, 16MB */
+#define MINRECLEN 36       /* Minimum miniSEED record length */
+#define MAXRECLEN 16777216 /* Maximum miniSEED record length, 16MB */
 
 /* SEED data encoding types */
 #define DE_ASCII       0
@@ -214,8 +214,8 @@ typedef int64_t hptime_t;
 typedef int8_t flag;
 
 typedef struct MS3Record_s {
-  char           *record;            /* Mini-SEED record */
-  int32_t         reclen;            /* Length of Mini-SEED record in bytes */
+  char           *record;            /* miniSEED record */
+  int32_t         reclen;            /* Length of miniSEED record in bytes */
 
   /* Common header fields in accessible form */
   char            tsid[64];          /* Time series identifier as URN */
@@ -348,7 +348,7 @@ extern void mstl3_printsynclist (MS3TraceList *mstl, char *dccid, int8_t subseco
 extern void mstl3_printgaplist (MS3TraceList *mstl, int8_t timeformat,
                                 double *mingap, double *maxgap);
 
-/* Reading Mini-SEED records from files */
+/* Reading miniSEED records from files */
 typedef struct MS3FileParam_s
 {
   FILE *fp;

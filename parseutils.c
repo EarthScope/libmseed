@@ -1,6 +1,6 @@
 /***************************************************************************
  *
- * Routines to parse Mini-SEED.
+ * Routines to parse miniSEED.
  *
  * Written by Chad Trabant
  *   IRIS Data Management Center
@@ -19,7 +19,7 @@
 /**********************************************************************
  * msr_parse:
  *
- * This routine will attempt to parse (detect and unpack) a Mini-SEED
+ * This routine will attempt to parse (detect and unpack) a miniSEED
  * record from a specified memory buffer and populate a supplied
  * MSRecord structure.
  *
@@ -329,7 +329,7 @@ ms_detect (const char *record, int recbuflen)
  * Parse and verify a SEED data record header (fixed section and
  * blockettes) at the lowest level, printing error messages for
  * invalid header values and optionally print raw header values.  The
- * memory at 'record' is assumed to be a Mini-SEED record.  Not every
+ * memory at 'record' is assumed to be a miniSEED record.  Not every
  * possible test is performed, common errors and those causing
  * libmseed parsing to fail should be detected.
  *
@@ -350,7 +350,7 @@ ms_detect (const char *record, int recbuflen)
  * Any byte swapping performed by this routine is applied directly to
  * the memory reference by the record pointer.
  *
- * This routine is primarily intended to diagnose invalid Mini-SEED headers.
+ * This routine is primarily intended to diagnose invalid miniSEED headers.
  *
  * Returns 0 when no errors were detected or a positive count of
  * errors detected.

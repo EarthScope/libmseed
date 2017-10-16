@@ -761,7 +761,7 @@ mst_addtracetogroup (MSTraceGroup *mstg, MSTrace *mst)
  * Check if traces in MSTraceGroup can be healed, if contiguous segments
  * belong together they will be merged.  This routine is only useful
  * if the trace group was assembled from segments out of time order
- * (e.g. a file of Mini-SEED records not in time order) but forming
+ * (e.g. a file of miniSEED records not in time order) but forming
  * contiguous time coverage.  The MSTraceGroup will be sorted using
  * mst_groupsort() before healing.
  *
@@ -1623,7 +1623,7 @@ mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
 /***************************************************************************
  * mst_pack:
  *
- * Pack MSTrace data into Mini-SEED records using the specified record
+ * Pack MSTrace data into miniSEED records using the specified record
  * length, encoding format and byte order.  The datasamples array and
  * numsamples field will be adjusted (reduced) based on how many
  * samples were packed.
@@ -1639,7 +1639,7 @@ mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
  * records even though the last one will probably not be filled.
  *
  * If the mstemplate argument is not NULL it will be used as the
- * template for the packed Mini-SEED records.  Otherwise a new
+ * template for the packed miniSEED records.  Otherwise a new
  * MSRecord will be initialized and populated from values in the
  * MSTrace.  The reclen, encoding and byteorder arguments take
  * precedence over those in the template.  The start time, sample
@@ -1798,7 +1798,7 @@ mst_pack (MSTrace *mst, void (*record_handler) (char *, int, void *),
 /***************************************************************************
  * mst_packgroup:
  *
- * Pack MSTraceGroup data into Mini-SEED records by calling mst_pack()
+ * Pack MSTraceGroup data into miniSEED records by calling mst_pack()
  * for each MSTrace in the group.
  *
  * Returns the number of records created on success and -1 on error.
