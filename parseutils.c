@@ -4,8 +4,6 @@
  *
  * Written by Chad Trabant
  *   IRIS Data Management Center
- *
- * modified: 2015.108
  ***************************************************************************/
 
 #include <errno.h>
@@ -17,19 +15,15 @@
 #include "libmseed.h"
 
 /**********************************************************************
- * msr_parse:
+ * msr3_parse:
  *
  * This routine will attempt to parse (detect and unpack) a miniSEED
  * record from a specified memory buffer and populate a supplied
- * MSRecord structure.
+ * MSRecord structure.  Both miniSEED 2.x and 3.x records are
+ * supported by this routine.
  *
- * If reclen is less than or equal to 0 the length of record is
- * automatically detected otherwise reclen should be the correct
- * record length.
- *
- * For auto detection of record length the record should include a
- * 1000 blockette or be followed by another record header in the
- * buffer.
+ * The record length is always automatically detected.  For miniSEED
+ * 2.x this means the record must contain a 1000 blockette.
  *
  * dataflag will be passed directly to msr_unpack().
  *
@@ -40,49 +34,34 @@
  *  <0 : libmseed error code (listed in libmseed.h) is returned.
  *********************************************************************/
 int
-msr_parse (char *record, int recbuflen, MSRecord **ppmsr, int reclen,
-           flag dataflag, flag verbose)
+msr3_parse (char *record, int recbuflen, MSRecord **ppmsr,
+            int8_t dataflag, int8_t verbose)
 {
-  int detlen  = 0;
+  int reclen  = 0;
   int retcode = 0;
+  uint8_t formatversion;
 
-  if (!ppmsr)
+  if (!ppmsr || !record)
     return MS_GENERROR;
 
-  if (!record)
-    return MS_GENERROR;
+  /* Detect record, determine length and format version */
+  reclen = ms_detect (record, recbuflen, &formatversion);
 
-  /* Sanity check: record length cannot be larger than buffer */
-  if (reclen > 0 && reclen > recbuflen)
+  /* No data record detected */
+  if (reclen < 0)
   {
-    ms_log (2, "ms_parse() Record length (%d) cannot be larger than buffer (%d)\n",
-            reclen, recbuflen);
-    return MS_GENERROR;
+    return MS_NOTSEED;
   }
 
-  /* Autodetect the record length */
-  if (reclen <= 0)
+  /* Found record but could not determine length */
+  if (reclen == 0)
   {
-    detlen = ms_detect (record, recbuflen);
+    return MINRECLEN;
+  }
 
-    /* No data record detected */
-    if (detlen < 0)
-    {
-      return MS_NOTSEED;
-    }
-
-    /* Found record but could not determine length */
-    if (detlen == 0)
-    {
-      return MINRECLEN;
-    }
-
-    if (verbose > 2)
-    {
-      ms_log (1, "Detected record length of %d bytes\n", detlen);
-    }
-
-    reclen = detlen;
+  if (verbose > 2)
+  {
+    ms_log (1, "Detected record length of %d bytes\n", reclen);
   }
 
   /* Check that record length is in supported range */
@@ -104,6 +83,8 @@ msr_parse (char *record, int recbuflen, MSRecord **ppmsr, int reclen,
     return (reclen - recbuflen);
   }
 
+  CHAD, need to unpack according to format version
+
   /* Unpack record */
   if ((retcode = msr_unpack (record, reclen, ppmsr, dataflag, verbose)) != MS_NOERROR)
   {
@@ -113,97 +94,7 @@ msr_parse (char *record, int recbuflen, MSRecord **ppmsr, int reclen,
   }
 
   return MS_NOERROR;
-} /* End of msr_parse() */
-
-/**********************************************************************
- * msr_parse_selection:
- *
- * This routine wraps msr_parse() to parse and return the first record
- * from a memory buffer that matches optional Selections.  If the
- * selections pointer is NULL the effect is to search the buffer for
- * the first parsable record.
- *
- * The offset value specifies the starting offset in the buffer and,
- * on success, the offset in the buffer to record parsed.
- *
- * The caller should manage the value of the offset in two ways:
- *
- * 1) on subsequent calls after a record has been parsed the caller
- * should increment the offset by the record length returned or
- * properly manipulate the record buffer pointer, buffer length and
- * offset to the same effect.
- *
- * 2) when the end of the buffer is reached MS_GENERROR (-1) is
- * returned, the caller should check the offset value against the
- * record buffer length to determine when the entire buffer has been
- * searched.
- *
- * Return values: same as msr_parse() except that MS_GENERROR is
- * returned when end-of-buffer is reached.
- *********************************************************************/
-int
-msr_parse_selection (char *recbuf, int recbuflen, int64_t *offset,
-                     MSRecord **ppmsr, int reclen,
-                     Selections *selections, flag dataflag, flag verbose)
-{
-  int retval = MS_GENERROR;
-  int unpackretval;
-  flag dataswapflag  = 0;
-  flag bigendianhost = ms_bigendianhost ();
-
-  if (!ppmsr)
-    return MS_GENERROR;
-
-  if (!recbuf)
-    return MS_GENERROR;
-
-  if (!offset)
-    return MS_GENERROR;
-
-  while (*offset < recbuflen)
-  {
-    retval = msr_parse (recbuf + *offset, (int)(recbuflen - *offset), ppmsr, reclen, 0, verbose);
-
-    if (retval)
-    {
-      if (verbose)
-        ms_log (2, "Error parsing record at offset %" PRId64 "\n", *offset);
-
-      *offset += MINRECLEN;
-    }
-    else
-    {
-      if (selections && !msr_matchselect (selections, *ppmsr, NULL))
-      {
-        *offset += (*ppmsr)->reclen;
-        retval = MS_GENERROR;
-      }
-      else
-      {
-        if (dataflag)
-        {
-          /* If BE host and LE data need swapping */
-          if (bigendianhost && (*ppmsr)->byteorder == 0)
-            dataswapflag = 1;
-          /* If LE host and BE data (or bad byte order value) need swapping */
-          else if (!bigendianhost && (*ppmsr)->byteorder > 0)
-            dataswapflag = 1;
-
-          unpackretval = msr_unpack_data (*ppmsr, dataswapflag, verbose);
-
-          if (unpackretval < 0)
-            return unpackretval;
-          else
-            (*ppmsr)->numsamples = unpackretval;
-        }
-
-        break;
-      }
-    }
-  }
-
-  return retval;
-} /* End of msr_parse_selection() */
+} /* End of msr3_parse() */
 
 /********************************************************************
  * ms_detect:
@@ -356,7 +247,7 @@ ms_detect (const char *record, int recbuflen)
  * errors detected.
  ***************************************************************************/
 int
-ms_parse_raw (char *record, int maxreclen, flag details, flag swapflag)
+ms_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
 {
   struct fsdh_s *fsdh;
   double nomsamprate;

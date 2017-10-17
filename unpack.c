@@ -10,10 +10,7 @@
  * samples are optionally decompressed/unpacked.
  *
  * Written by Chad Trabant,
- *   ORFEUS/EC-Project MEREDIAN
  *   IRIS Data Management Center
- *
- * modified: 2016.273
  ***************************************************************************/
 #include <ctype.h>
 #include <stdio.h>
@@ -25,52 +22,258 @@
 #include "unpackdata.h"
 
 /* Function(s) internal to this file */
-static int check_environment (int verbose);
+static int msr3_unpack_mseed3 (char *record, int maxreclen, MSRecord **ppmsr,
+                               int8_t dataflag, int8_t verbose);
+static int msr3_unpack_mseed2 (char *record, int maxreclen, MSRecord **ppmsr,
+                               int8_t dataflag, int8_t verbose);
 
-/* Header and data byte order flags controlled by environment variables */
-/* -2 = not checked, -1 = checked but not set, or 0 = LE and 1 = BE */
-flag unpackheaderbyteorder = -2;
-flag unpackdatabyteorder   = -2;
+CHAD, needs working
 
-/* Data encoding format/fallback controlled by environment variable */
-/* -2 = not checked, -1 = checked but not set, or = encoding */
-int unpackencodingformat   = -2;
-int unpackencodingfallback = -2;
 
 /***************************************************************************
- * msr_unpack:
+ * msr3_unpack_mseed3:
  *
- * Unpack a SEED data record header/blockettes and populate a MSRecord
- * struct. All approriate fields are byteswapped, if needed, and
- * pointers to structured data are setup in addition to setting the
- * common header fields.
+ * Unpack a miniSEED 3.x data record and populate a MS3Record struct.
+ * All approriate fields are byteswapped, if needed, and pointers to
+ * structured data are set.
  *
  * If 'dataflag' is true the data samples are unpacked/decompressed
- * and the MSRecord->datasamples pointer is set appropriately.  The
+ * and the MS3Record->datasamples pointer is set appropriately.  The
  * data samples will be either 32-bit integers, 32-bit floats or
  * 64-bit floats (doubles) with the same byte order as the host
- * machine.  The MSRecord->numsamples will be set to the actual number
- * of samples unpacked/decompressed and MSRecord->sampletype will
- * indicated the sample type.
+ * machine.  The MS3Record->numsamples will be set to the actual
+ * number of samples unpacked/decompressed and MS3Record->sampletype
+ * will indicated the sample type.
  *
  * All appropriate values will be byte-swapped to the host order,
  * including the data samples.
  *
- * All header values, blockette values and data samples will be
- * overwritten by subsequent calls to this function.
+ * All MS3Record struct values, including data samples and data
+ * samples will be overwritten by subsequent calls to this function.
  *
- * If the msr struct is NULL it will be allocated.
+ * If the 'msr' struct is NULL it will be allocated.
  *
- * Returns MS_NOERROR and populates the MSRecord struct at *ppmsr on
+ * Returns MS_NOERROR and populates the MS3Record struct at *ppmsr on
  * success, otherwise returns a libmseed error code (listed in
  * libmseed.h).
  ***************************************************************************/
-int
-msr_unpack (char *record, int reclen, MSRecord **ppmsr,
-            flag dataflag, flag verbose)
+static int
+msr3_unpack_mseed3 (char *record, int maxreclen, MSRecord **ppmsr,
+                    int8_t dataflag, int8_t verbose)
 {
-  flag headerswapflag = 0;
-  flag dataswapflag   = 0;
+  int8_t headerswapflag = 0;
+  int8_t dataswapflag = 0;
+  int retval;
+
+  MS3Record *msr = NULL;
+
+  if (!ppmsr)
+  {
+    ms_log (2, "msr_unpack(): ppmsr argument cannot be NULL\n");
+    return MS_GENERROR;
+  }
+
+  /* Verify that record includes a valid header */
+  if (!MS_ISVALIDHEADER (record))
+  {
+    ms_recsrcname (record, srcname, 1);
+    ms_log (2, "msr_unpack(%s) Record header & quality indicator unrecognized: '%c'\n", srcname);
+    ms_log (2, "msr_unpack(%s) This is not a valid miniSEED record\n", srcname);
+
+    return MS_NOTSEED;
+  }
+
+  /* Verify that passed record length is within supported range */
+  if (reclen < MINRECLEN || reclen > MAXRECLEN)
+  {
+    ms_recsrcname (record, srcname, 1);
+    ms_log (2, "msr_unpack(%s): Record length is out of range: %d\n", srcname, reclen);
+    return MS_OUTOFRANGE;
+  }
+
+  /* Initialize the MSRecord */
+  if (!(*ppmsr = msr_init (*ppmsr)))
+    return MS_GENERROR;
+
+  /* Shortcut pointer, historical and help readability */
+  msr = *ppmsr;
+
+  /* Set raw record pointer and record length */
+  msr->record = record;
+  msr->reclen = reclen;
+
+  /* Check environment variables if necessary */
+  if (unpackheaderbyteorder == -2 ||
+      unpackdatabyteorder == -2 ||
+      unpackencodingformat == -2 ||
+      unpackencodingfallback == -2)
+    if (check_environment (verbose))
+      return MS_GENERROR;
+
+  /* Allocate and copy fixed section of data header */
+  msr->fsdh = realloc (msr->fsdh, sizeof (struct fsdh_s));
+
+  if (msr->fsdh == NULL)
+  {
+    ms_log (2, "msr_unpack(): Cannot allocate memory\n");
+    return MS_GENERROR;
+  }
+
+  memcpy (msr->fsdh, record, sizeof (struct fsdh_s));
+
+  /* Check to see if byte swapping is needed by testing the year and day */
+  if (!MS_ISVALIDYEARDAY (msr->fsdh->start_time.year, msr->fsdh->start_time.day))
+    headerswapflag = dataswapflag = 1;
+
+  /* Swap byte order? */
+  if (headerswapflag)
+  {
+    MS_SWAPBTIME (&msr->fsdh->start_time);
+    ms_gswap2a (&msr->fsdh->numsamples);
+    ms_gswap2a (&msr->fsdh->samprate_fact);
+    ms_gswap2a (&msr->fsdh->samprate_mult);
+    ms_gswap4a (&msr->fsdh->time_correct);
+    ms_gswap2a (&msr->fsdh->data_offset);
+    ms_gswap2a (&msr->fsdh->blockette_offset);
+  }
+
+  /* Populate some of the common header fields */
+  strncpy (sequence_number, msr->fsdh->sequence_number, 6);
+  sequence_number[6] = '\0';
+  msr->sequence_number = (int32_t)strtol (sequence_number, NULL, 10);
+  msr->dataquality = msr->fsdh->dataquality;
+  ms_strncpcleantail (msr->network, msr->fsdh->network, 2);
+  ms_strncpcleantail (msr->station, msr->fsdh->station, 5);
+  ms_strncpcleantail (msr->location, msr->fsdh->location, 2);
+  ms_strncpcleantail (msr->channel, msr->fsdh->channel, 3);
+  msr->samplecnt = msr->fsdh->numsamples;
+
+  /* Generate source name for MSRecord */
+  if (msr_srcname (msr, srcname, 1) == NULL)
+  {
+    ms_log (2, "msr_unpack(): Cannot generate srcname\n");
+    return MS_GENERROR;
+  }
+
+  /* Report byte swapping status */
+  if (verbose > 2)
+  {
+    if (headerswapflag)
+      ms_log (1, "%s: Byte swapping needed for unpacking of header\n", srcname);
+    else
+      ms_log (1, "%s: Byte swapping NOT needed for unpacking of header\n", srcname);
+  }
+
+  /* Populate remaining common header fields */
+  msr->starttime = msr_starttime (msr);
+  msr->samprate = msr_samprate (msr);
+
+  /* Set MSRecord->byteorder if data byte order is forced */
+  if (unpackdatabyteorder >= 0)
+  {
+    msr->byteorder = unpackdatabyteorder;
+  }
+
+  /* Check if encoding format is forced */
+  if (unpackencodingformat >= 0)
+  {
+    msr->encoding = unpackencodingformat;
+  }
+
+  /* Use encoding format fallback if defined and no encoding is set,
+     also make sure the byteorder is set by default to big endian */
+  if (unpackencodingfallback >= 0 && msr->encoding == -1)
+  {
+    msr->encoding = unpackencodingfallback;
+
+    if (msr->byteorder == -1)
+    {
+      msr->byteorder = 1;
+    }
+  }
+
+  /* Unpack the data samples if requested */
+  if (dataflag && msr->samplecnt > 0)
+  {
+    int8_t dswapflag = headerswapflag;
+    int8_t bigendianhost = ms_bigendianhost ();
+
+    /* Determine byte order of the data and set the dswapflag as
+       needed; if no Blkt1000 or UNPACK_DATA_BYTEORDER environment
+       variable setting assume the order is the same as the header */
+    if (msr->Blkt1000 != 0 && unpackdatabyteorder < 0)
+    {
+      dswapflag = 0;
+
+      /* If BE host and LE data need swapping */
+      if (bigendianhost && msr->byteorder == 0)
+        dswapflag = 1;
+      /* If LE host and BE data (or bad byte order value) need swapping */
+      else if (!bigendianhost && msr->byteorder > 0)
+        dswapflag = 1;
+    }
+    else if (unpackdatabyteorder >= 0)
+    {
+      dswapflag = dataswapflag;
+    }
+
+    if (verbose > 2 && dswapflag)
+      ms_log (1, "%s: Byte swapping needed for unpacking of data samples\n", srcname);
+    else if (verbose > 2)
+      ms_log (1, "%s: Byte swapping NOT needed for unpacking of data samples\n", srcname);
+
+    retval = msr_unpack_data (msr, dswapflag, verbose);
+
+    if (retval < 0)
+      return retval;
+    else
+      msr->numsamples = retval;
+  }
+  else
+  {
+    if (msr->datasamples)
+      free (msr->datasamples);
+
+    msr->datasamples = 0;
+    msr->numsamples = 0;
+  }
+
+  return MS_NOERROR;
+} /* End of msr3_unpack_mseed3() */
+
+/***************************************************************************
+ * msr3_unpack_mseed2:
+ *
+ * Unpack a miniSEED 2.x data record and populate a MS3Record struct.
+ * All approriate fields are byteswapped, if needed, and pointers to
+ * structured data are set.
+ *
+ * If 'dataflag' is true the data samples are unpacked/decompressed
+ * and the MS3Record->datasamples pointer is set appropriately.  The
+ * data samples will be either 32-bit integers, 32-bit floats or
+ * 64-bit floats (doubles) with the same byte order as the host
+ * machine.  The MS3Record->numsamples will be set to the actual
+ * number of samples unpacked/decompressed and MS3Record->sampletype
+ * will indicated the sample type.
+ *
+ * All appropriate values will be byte-swapped to the host order,
+ * including the data samples.
+ *
+ * All MS3Record struct values, including data samples and data
+ * samples will be overwritten by subsequent calls to this function.
+ *
+ * If the 'msr' struct is NULL it will be allocated.
+ *
+ * Returns MS_NOERROR and populates the MS3Record struct at *ppmsr on
+ * success, otherwise returns a libmseed error code (listed in
+ * libmseed.h).
+ ***************************************************************************/
+static int
+msr3_unpack_mseed2 (char *record, int maxreclen, MSRecord **ppmsr,
+                    int8_t dataflag, int8_t verbose)
+{
+  int8_t headerswapflag = 0;
+  int8_t dataswapflag = 0;
   int retval;
 
   MSRecord *msr = NULL;
@@ -168,9 +371,9 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
 
   /* Populate some of the common header fields */
   strncpy (sequence_number, msr->fsdh->sequence_number, 6);
-  sequence_number[6]   = '\0';
+  sequence_number[6] = '\0';
   msr->sequence_number = (int32_t)strtol (sequence_number, NULL, 10);
-  msr->dataquality     = msr->fsdh->dataquality;
+  msr->dataquality = msr->fsdh->dataquality;
   ms_strncpcleantail (msr->network, msr->fsdh->network, 2);
   ms_strncpcleantail (msr->station, msr->fsdh->station, 5);
   ms_strncpcleantail (msr->location, msr->fsdh->location, 2);
@@ -243,7 +446,7 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
         break;
 
       blkt_link->blktoffset = blkt_offset - 4;
-      blkt_link->next_blkt  = next_blkt;
+      blkt_link->next_blkt = next_blkt;
 
       blkt_100 = (struct blkt_100_s *)blkt_link->blktdata;
 
@@ -266,7 +469,7 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
         break;
 
       blkt_link->blktoffset = blkt_offset - 4;
-      blkt_link->next_blkt  = next_blkt;
+      blkt_link->next_blkt = next_blkt;
 
       blkt_200 = (struct blkt_200_s *)blkt_link->blktdata;
 
@@ -290,7 +493,7 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
         break;
 
       blkt_link->blktoffset = blkt_offset - 4;
-      blkt_link->next_blkt  = next_blkt;
+      blkt_link->next_blkt = next_blkt;
 
       blkt_201 = (struct blkt_201_s *)blkt_link->blktdata;
 
@@ -314,7 +517,7 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
         break;
 
       blkt_link->blktoffset = blkt_offset - 4;
-      blkt_link->next_blkt  = next_blkt;
+      blkt_link->next_blkt = next_blkt;
 
       blkt_300 = (struct blkt_300_s *)blkt_link->blktdata;
 
@@ -339,7 +542,7 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
         break;
 
       blkt_link->blktoffset = blkt_offset - 4;
-      blkt_link->next_blkt  = next_blkt;
+      blkt_link->next_blkt = next_blkt;
 
       blkt_310 = (struct blkt_310_s *)blkt_link->blktdata;
 
@@ -364,7 +567,7 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
         break;
 
       blkt_link->blktoffset = blkt_offset - 4;
-      blkt_link->next_blkt  = next_blkt;
+      blkt_link->next_blkt = next_blkt;
 
       blkt_320 = (struct blkt_320_s *)blkt_link->blktdata;
 
@@ -388,7 +591,7 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
         break;
 
       blkt_link->blktoffset = blkt_offset - 4;
-      blkt_link->next_blkt  = next_blkt;
+      blkt_link->next_blkt = next_blkt;
 
       blkt_390 = (struct blkt_390_s *)blkt_link->blktdata;
 
@@ -411,7 +614,7 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
         break;
 
       blkt_link->blktoffset = blkt_offset - 4;
-      blkt_link->next_blkt  = next_blkt;
+      blkt_link->next_blkt = next_blkt;
 
       blkt_395 = (struct blkt_395_s *)blkt_link->blktdata;
 
@@ -432,7 +635,7 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
         break;
 
       blkt_link->blktoffset = blkt_offset - 4;
-      blkt_link->next_blkt  = next_blkt;
+      blkt_link->next_blkt = next_blkt;
 
       blkt_400 = (struct blkt_400_s *)blkt_link->blktdata;
 
@@ -455,7 +658,7 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
         break;
 
       blkt_link->blktoffset = blkt_offset - 4;
-      blkt_link->next_blkt  = next_blkt;
+      blkt_link->next_blkt = next_blkt;
 
       blkt_405 = (struct blkt_405_s *)blkt_link->blktdata;
 
@@ -482,7 +685,7 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
         break;
 
       blkt_link->blktoffset = blkt_offset - 4;
-      blkt_link->next_blkt  = next_blkt;
+      blkt_link->next_blkt = next_blkt;
 
       blkt_500 = (struct blkt_500_s *)blkt_link->blktdata;
 
@@ -505,7 +708,7 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
         break;
 
       blkt_link->blktoffset = blkt_offset - 4;
-      blkt_link->next_blkt  = next_blkt;
+      blkt_link->next_blkt = next_blkt;
 
       blkt_1000 = (struct blkt_1000_s *)blkt_link->blktdata;
 
@@ -519,7 +722,7 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
                 srcname, msr->reclen, reclen);
       }
 
-      msr->encoding  = blkt_1000->encoding;
+      msr->encoding = blkt_1000->encoding;
       msr->byteorder = blkt_1000->byteorder;
     }
 
@@ -532,7 +735,7 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
         break;
 
       blkt_link->blktoffset = blkt_offset - 4;
-      blkt_link->next_blkt  = next_blkt;
+      blkt_link->next_blkt = next_blkt;
     }
 
     else if (blkt_type == 2000)
@@ -554,7 +757,7 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
         break;
 
       blkt_link->blktoffset = blkt_offset - 4;
-      blkt_link->next_blkt  = next_blkt;
+      blkt_link->next_blkt = next_blkt;
 
       blkt_2000 = (struct blkt_2000_s *)blkt_link->blktdata;
 
@@ -578,7 +781,7 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
           break;
 
         blkt_link->blktoffset = blkt_offset - 4;
-        blkt_link->next_blkt  = next_blkt;
+        blkt_link->next_blkt = next_blkt;
       }
     }
 
@@ -631,7 +834,7 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
 
   /* Populate remaining common header fields */
   msr->starttime = msr_starttime (msr);
-  msr->samprate  = msr_samprate (msr);
+  msr->samprate = msr_samprate (msr);
 
   /* Set MSRecord->byteorder if data byte order is forced */
   if (unpackdatabyteorder >= 0)
@@ -660,8 +863,8 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
   /* Unpack the data samples if requested */
   if (dataflag && msr->samplecnt > 0)
   {
-    flag dswapflag     = headerswapflag;
-    flag bigendianhost = ms_bigendianhost ();
+    int8_t dswapflag = headerswapflag;
+    int8_t bigendianhost = ms_bigendianhost ();
 
     /* Determine byte order of the data and set the dswapflag as
        needed; if no Blkt1000 or UNPACK_DATA_BYTEORDER environment
@@ -700,11 +903,11 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
       free (msr->datasamples);
 
     msr->datasamples = 0;
-    msr->numsamples  = 0;
+    msr->numsamples = 0;
   }
 
   return MS_NOERROR;
-} /* End of msr_unpack() */
+} /* End of msr3_unpack_mseed2() */
 
 /************************************************************************
  *  msr_unpack_data:
@@ -718,11 +921,11 @@ msr_unpack (char *record, int reclen, MSRecord **ppmsr,
  *  Return number of samples unpacked or negative libmseed error code.
  ************************************************************************/
 int
-msr_unpack_data (MSRecord *msr, int swapflag, flag verbose)
+msr_unpack_data (MSRecord *msr, int swapflag, int8_t verbose)
 {
-  int datasize;       /* byte size of data samples in record */
-  int nsamples;       /* number of samples unpacked	     */
-  int unpacksize;     /* byte size of unpacked samples	     */
+  int datasize; /* byte size of data samples in record */
+  int nsamples; /* number of samples unpacked	     */
+  int unpacksize; /* byte size of unpacked samples	     */
   int samplesize = 0; /* size of the data samples in bytes   */
   char srcname[50];
   const char *dbuf;
@@ -763,7 +966,7 @@ msr_unpack_data (MSRecord *msr, int swapflag, flag verbose)
   }
 
   datasize = msr->reclen - msr->fsdh->data_offset;
-  dbuf     = msr->record + msr->fsdh->data_offset;
+  dbuf = msr->record + msr->fsdh->data_offset;
 
   switch (msr->encoding)
   {
@@ -810,7 +1013,7 @@ msr_unpack_data (MSRecord *msr, int swapflag, flag verbose)
     if (msr->datasamples)
       free (msr->datasamples);
     msr->datasamples = 0;
-    msr->numsamples  = 0;
+    msr->numsamples = 0;
   }
 
   if (verbose > 2)
@@ -962,119 +1165,3 @@ msr_unpack_data (MSRecord *msr, int swapflag, flag verbose)
 
   return nsamples;
 } /* End of msr_unpack_data() */
-
-/************************************************************************
- *  check_environment:
- *
- *  Check environment variables and set global variables appropriately.
- *
- *  Return 0 on success and -1 on error.
- ************************************************************************/
-static int
-check_environment (int verbose)
-{
-  char *envvariable;
-
-  /* Read possible environmental variables that force byteorder */
-  if (unpackheaderbyteorder == -2)
-  {
-    if ((envvariable = getenv ("UNPACK_HEADER_BYTEORDER")))
-    {
-      if (*envvariable != '0' && *envvariable != '1')
-      {
-        ms_log (2, "Environment variable UNPACK_HEADER_BYTEORDER must be set to '0' or '1'\n");
-        return -1;
-      }
-      else if (*envvariable == '0')
-      {
-        unpackheaderbyteorder = 0;
-        if (verbose > 2)
-          ms_log (1, "UNPACK_HEADER_BYTEORDER=0, unpacking little-endian header\n");
-      }
-      else
-      {
-        unpackheaderbyteorder = 1;
-        if (verbose > 2)
-          ms_log (1, "UNPACK_HEADER_BYTEORDER=1, unpacking big-endian header\n");
-      }
-    }
-    else
-    {
-      unpackheaderbyteorder = -1;
-    }
-  }
-
-  if (unpackdatabyteorder == -2)
-  {
-    if ((envvariable = getenv ("UNPACK_DATA_BYTEORDER")))
-    {
-      if (*envvariable != '0' && *envvariable != '1')
-      {
-        ms_log (2, "Environment variable UNPACK_DATA_BYTEORDER must be set to '0' or '1'\n");
-        return -1;
-      }
-      else if (*envvariable == '0')
-      {
-        unpackdatabyteorder = 0;
-        if (verbose > 2)
-          ms_log (1, "UNPACK_DATA_BYTEORDER=0, unpacking little-endian data samples\n");
-      }
-      else
-      {
-        unpackdatabyteorder = 1;
-        if (verbose > 2)
-          ms_log (1, "UNPACK_DATA_BYTEORDER=1, unpacking big-endian data samples\n");
-      }
-    }
-    else
-    {
-      unpackdatabyteorder = -1;
-    }
-  }
-
-  /* Read possible environmental variable that forces encoding format */
-  if (unpackencodingformat == -2)
-  {
-    if ((envvariable = getenv ("UNPACK_DATA_FORMAT")))
-    {
-      unpackencodingformat = (int)strtol (envvariable, NULL, 10);
-
-      if (unpackencodingformat < 0 || unpackencodingformat > 33)
-      {
-        ms_log (2, "Environment variable UNPACK_DATA_FORMAT set to invalid value: '%d'\n", unpackencodingformat);
-        return -1;
-      }
-      else if (verbose > 2)
-        ms_log (1, "UNPACK_DATA_FORMAT, unpacking data in encoding format %d\n", unpackencodingformat);
-    }
-    else
-    {
-      unpackencodingformat = -1;
-    }
-  }
-
-  /* Read possible environmental variable to be used as a fallback encoding format */
-  if (unpackencodingfallback == -2)
-  {
-    if ((envvariable = getenv ("UNPACK_DATA_FORMAT_FALLBACK")))
-    {
-      unpackencodingfallback = (int)strtol (envvariable, NULL, 10);
-
-      if (unpackencodingfallback < 0 || unpackencodingfallback > 33)
-      {
-        ms_log (2, "Environment variable UNPACK_DATA_FORMAT_FALLBACK set to invalid value: '%d'\n",
-                unpackencodingfallback);
-        return -1;
-      }
-      else if (verbose > 2)
-        ms_log (1, "UNPACK_DATA_FORMAT_FALLBACK, fallback data unpacking encoding format %d\n",
-                unpackencodingfallback);
-    }
-    else
-    {
-      unpackencodingfallback = 10; /* Default fallback is Steim-1 encoding */
-    }
-  }
-
-  return 0;
-} /* End of check_environment() */

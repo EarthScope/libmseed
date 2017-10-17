@@ -214,7 +214,7 @@ typedef int64_t hptime_t;
 typedef int8_t flag;
 
 typedef struct MS3Record_s {
-  char           *record;            /* miniSEED record */
+  char           *record;            /* Raw miniSEED record, if available */
   int32_t         reclen;            /* Length of miniSEED record in bytes */
 
   /* Common header fields in accessible form */
@@ -290,31 +290,9 @@ typedef struct MS3Selections_s {
   uint8_t pubversion;
 } MS3Selections;
 
-
-/* Global variables (defined in unpack.c) and macros to set/force
- * encoding and fallback encoding */
-extern int unpackencodingformat;
-extern int unpackencodingfallback;
-#define MS_UNPACKENCODINGFORMAT(X) (unpackencodingformat = X);
-#define MS_UNPACKENCODINGFALLBACK(X) (unpackencodingfallback = X);
-
-/* Global variables (defined in unpack.c) and macros to set/force
- * unpack byte orders for miniSEED 2.x */
-extern int8_t ms2_unpackheaderbyteorder;
-extern int8_t ms2_unpackdatabyteorder;
-#define MS2_UNPACKHEADERBYTEORDER(X) (ms2_unpackheaderbyteorder = X);
-#define MS2_UNPACKDATABYTEORDER(X) (ms2_unpackdatabyteorder = X);
-
 /* miniSEED record related functions */
 extern int msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
                        int8_t dataflag, int8_t verbose);
-
-extern int msr3_parse_selection (char *recbuf, uint64_t recbuflen, uint64_t *offset,
-                                 MS3Record **ppmsr, MS3Selections *selections,
-                                 int8_t dataflag, int8_t verbose);
-
-extern int msr3_unpack (char *record, MS3Record **ppmsr,
-                        int8_t dataflag, int8_t verbose);
 
 extern int msr3_pack (MS3Record *msr,
                       void (*record_handler) (char *, int, void *),
@@ -332,7 +310,7 @@ extern hptime_t   msr3_endtime (MS3Record *msr);
 extern void       msr3_print (MS3Record *msr, int8_t details);
 extern double     msr3_host_latency (MS3Record *msr);
 
-extern int ms3_detect (const char *record, int recbuflen);
+extern int ms3_detect (const char *record, int recbuflen, uint8_t *formatversion);
 extern int ms3_parse_raw (char *record, int maxreclen, int8_t details);
 extern int ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag);
 
@@ -452,15 +430,15 @@ extern int ms_readleapseconds (char *envvarname);
 extern int ms_readleapsecondfile (char *filename);
 
 /* Generic byte swapping routines */
-extern void ms3_gswap2 ( void *data2 );
-extern void ms3_gswap3 ( void *data3 );
-extern void ms3_gswap4 ( void *data4 );
-extern void ms3_gswap8 ( void *data8 );
+extern void ms_gswap2 ( void *data2 );
+extern void ms_gswap3 ( void *data3 );
+extern void ms_gswap4 ( void *data4 );
+extern void ms_gswap8 ( void *data8 );
 
 /* Generic byte swapping routines for memory aligned quantities */
-extern void ms3_gswap2a ( void *data2 );
-extern void ms3_gswap4a ( void *data4 );
-extern void ms3_gswap8a ( void *data8 );
+extern void ms_gswap2a ( void *data2 );
+extern void ms_gswap4a ( void *data4 );
+extern void ms_gswap8a ( void *data8 );
 
 /* Platform portable functions */
 extern int64_t lmp_ftell64 (FILE *stream);

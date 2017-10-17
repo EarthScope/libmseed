@@ -4,8 +4,6 @@
  * Routines to handle TraceList and related structures.
  *
  * Written by Chad Trabant, IRIS Data Management Center
- *
- * modified: 2015.108
  ***************************************************************************/
 
 #include <stdio.h>
@@ -15,56 +13,56 @@
 
 #include "libmseed.h"
 
-MSTraceSeg *mstl_msr2seg (MSRecord *msr, hptime_t endtime);
-MSTraceSeg *mstl_addmsrtoseg (MSTraceSeg *seg, MSRecord *msr, hptime_t endtime, flag whence);
-MSTraceSeg *mstl_addsegtoseg (MSTraceSeg *seg1, MSTraceSeg *seg2);
+MS3TraceSeg *mstl3_msr2seg (MS3Record *msr, nstime_t endtime);
+MS3TraceSeg *mstl3_addmsrtoseg (MS3TraceSeg *seg, MS3Record *msr, nstime_t endtime, int8_t whence);
+MS3TraceSeg *mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2);
 
 /***************************************************************************
- * mstl_init:
+ * mstl3_init:
  *
- * Initialize and return a MSTraceList struct, allocating memory if
- * needed.  If the supplied MSTraceList is not NULL any associated
+ * Initialize and return a MS3TraceList struct, allocating memory if
+ * needed.  If the supplied MS3TraceList is not NULL any associated
  * memory it will be freed including data at prvtptr pointers.
  *
- * Returns a pointer to a MSTraceList struct on success or NULL on error.
+ * Returns a pointer to a MS3TraceList struct on success or NULL on error.
  ***************************************************************************/
-MSTraceList *
-mstl_init (MSTraceList *mstl)
+MS3TraceList *
+mstl3_init (MS3TraceList *mstl)
 {
   if (mstl)
   {
-    mstl_free (&mstl, 1);
+    mstl3_free (&mstl, 1);
   }
 
-  mstl = (MSTraceList *)malloc (sizeof (MSTraceList));
+  mstl = (MS3TraceList *)malloc (sizeof (MS3TraceList));
 
   if (mstl == NULL)
   {
-    ms_log (2, "mstl_init(): Cannot allocate memory\n");
+    ms_log (2, "mstl3_init(): Cannot allocate memory\n");
     return NULL;
   }
 
-  memset (mstl, 0, sizeof (MSTraceList));
+  memset (mstl, 0, sizeof (MS3TraceList));
 
   return mstl;
-} /* End of mstl_init() */
+} /* End of mstl3_init() */
 
 /***************************************************************************
- * mstl_free:
+ * mstl3_free:
  *
- * Free all memory associated with a MSTraceList struct and set the
+ * Free all memory associated with a MS3TraceList struct and set the
  * pointer to 0.
  *
- * If the freeprvtptr flag is true any private pointer data will also
+ * If the freeprvtptr int8_t is true any private pointer data will also
  * be freed when present.
  ***************************************************************************/
 void
-mstl_free (MSTraceList **ppmstl, flag freeprvtptr)
+mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
 {
-  MSTraceID *id       = 0;
-  MSTraceID *nextid   = 0;
-  MSTraceSeg *seg     = 0;
-  MSTraceSeg *nextseg = 0;
+  MS3TraceID *id = 0;
+  MS3TraceID *nextid = 0;
+  MS3TraceSeg *seg = 0;
+  MS3TraceSeg *nextseg = 0;
 
   if (!ppmstl)
     return;
@@ -109,57 +107,56 @@ mstl_free (MSTraceList **ppmstl, flag freeprvtptr)
   }
 
   return;
-} /* End of mstl_free() */
+} /* End of mstl3_free() */
 
 /***************************************************************************
- * mstl_addmsr:
+ * mstl3_addmsr:
  *
- * Add data coverage from an MSRecord to a MSTraceList by searching the
- * list for the appropriate MSTraceID and MSTraceSeg and either adding
- * data to it or creating a new MStraceID and/or MSTraceSeg if needed.
+ * Add data coverage from an MS3Record to a MS3TraceList by searching the
+ * list for the appropriate MS3TraceID and MS3TraceSeg and either adding
+ * data to it or creating a new MS3TraceID and/or MS3TraceSeg if needed.
  *
  * If the dataquality flag is true the data quality bytes must also
  * match otherwise they are ignored.
  *
  * If the autoheal flag is true extra processing is invoked to conjoin
- * trace segments that fit together after the MSRecord coverage is
+ * trace segments that fit together after the MS3Record coverage is
  * added.  For segments that are removed, any memory at the prvtptr
  * will be freed.
  *
- * An MSTraceList is always maintained with the MSTraceIDs in
- * descending alphanumeric order.  MSTraceIDs are always maintained
- * with MSTraceSegs in data time time order.
+ * An MS3TraceList is always maintained with the MS3TraceIDs in
+ * descending alphanumeric order.  MS3TraceIDs are always maintained
+ * with MS3TraceSegs in data time time order.
  *
- * Return a pointer to the MSTraceSeg updated or 0 on error.
+ * Return a pointer to the MS3TraceSeg updated or 0 on error.
  ***************************************************************************/
-MSTraceSeg *
-mstl_addmsr (MSTraceList *mstl, MSRecord *msr, flag dataquality,
-             flag autoheal, double timetol, double sampratetol)
+MS3TraceSeg *
+mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t dataquality,
+              int8_t autoheal, double timetol, double sampratetol)
 {
-  MSTraceID *id       = 0;
-  MSTraceID *searchid = 0;
-  MSTraceID *ltid     = 0;
+  MS3TraceID *id = 0;
+  MS3TraceID *searchid = 0;
+  MS3TraceID *ltid = 0;
 
-  MSTraceSeg *seg       = 0;
-  MSTraceSeg *searchseg = 0;
-  MSTraceSeg *segbefore = 0;
-  MSTraceSeg *segafter  = 0;
-  MSTraceSeg *followseg = 0;
+  MS3TraceSeg *seg = 0;
+  MS3TraceSeg *searchseg = 0;
+  MS3TraceSeg *segbefore = 0;
+  MS3TraceSeg *segafter = 0;
+  MS3TraceSeg *followseg = 0;
 
-  hptime_t endtime;
-  hptime_t pregap;
-  hptime_t postgap;
-  hptime_t lastgap;
-  hptime_t firstgap;
-  hptime_t hpdelta;
-  hptime_t hptimetol  = 0;
-  hptime_t nhptimetol = 0;
+  nstime_t endtime;
+  nstime_t pregap;
+  nstime_t postgap;
+  nstime_t lastgap;
+  nstime_t firstgap;
+  nstime_t nsdelta;
+  nstime_t nstimetol = 0;
+  nstime_t nnstimetol = 0;
 
-  char srcname[45];
   char *s1, *s2;
-  flag whence;
-  flag lastratecheck;
-  flag firstratecheck;
+  int8_t whence;
+  int8_t lastratecheck;
+  int8_t firstratecheck;
   int mag;
   int cmp;
   int ltmag;
@@ -168,17 +165,10 @@ mstl_addmsr (MSTraceList *mstl, MSRecord *msr, flag dataquality,
   if (!mstl || !msr)
     return 0;
 
-  /* Calculate end time for MSRecord */
-  if ((endtime = msr_endtime (msr)) == HPTERROR)
+  /* Calculate end time for MS3Record */
+  if ((endtime = msr3_endtime (msr)) == NSTERROR)
   {
-    ms_log (2, "mstl_addmsr(): Error calculating record end time\n");
-    return 0;
-  }
-
-  /* Generate source name string */
-  if (!msr_srcname (msr, srcname, dataquality))
-  {
-    ms_log (2, "mstl_addmsr(): Error generating srcname for MSRecord\n");
+    ms_log (2, "mstl3_addmsr(): Error calculating record end time\n");
     return 0;
   }
 
@@ -186,8 +176,8 @@ mstl_addmsr (MSTraceList *mstl, MSRecord *msr, flag dataquality,
      then looping through the trace ID list. */
   if (mstl->last)
   {
-    s1 = mstl->last->srcname;
-    s2 = srcname;
+    s1 = mstl->last->tsid;
+    s2 = msr->tsid;
     while (*s1 == *s2++)
     {
       if (*s1++ == '\0')
@@ -202,16 +192,16 @@ mstl_addmsr (MSTraceList *mstl, MSRecord *msr, flag dataquality,
     else
     {
       /* Loop through trace ID list searching for a match, simultaneously
-         track the source name which is closest but less than the MSRecord
+         track the source name which is closest but less than the MS3Record
          to allow for later insertion with sort order. */
       searchid = mstl->traces;
-      ltcmp    = 0;
-      ltmag    = 0;
+      ltcmp = 0;
+      ltmag = 0;
       while (searchid)
       {
         /* Compare source names */
-        s1  = searchid->srcname;
-        s2  = srcname;
+        s1 = searchid->tsid;
+        s2 = msr->tsid;
         mag = 0;
         while (*s1 == *s2++)
         {
@@ -231,13 +221,13 @@ mstl_addmsr (MSTraceList *mstl, MSRecord *msr, flag dataquality,
             {
               ltcmp = cmp;
               ltmag = mag;
-              ltid  = searchid;
+              ltid = searchid;
             }
             else if (mag > ltmag)
             {
               ltcmp = cmp;
               ltmag = mag;
-              ltid  = searchid;
+              ltid = searchid;
             }
           }
 
@@ -252,79 +242,75 @@ mstl_addmsr (MSTraceList *mstl, MSRecord *msr, flag dataquality,
     }
   } /* Done searching for match in trace ID list */
 
-  /* If no matching ID was found create new MSTraceID and MSTraceSeg entries */
+  /* If no matching ID was found create new MS3TraceID and MS3TraceSeg entries */
   if (!id)
   {
-    if (!(id = (MSTraceID *)calloc (1, sizeof (MSTraceID))))
+    if (!(id = (MS3TraceID *)calloc (1, sizeof (MS3TraceID))))
     {
-      ms_log (2, "mstl_addmsr(): Error allocating memory\n");
+      ms_log (2, "mstl3_addmsr(): Error allocating memory\n");
       return 0;
     }
 
-    /* Populate MSTraceID */
-    strcpy (id->network, msr->network);
-    strcpy (id->station, msr->station);
-    strcpy (id->location, msr->location);
-    strcpy (id->channel, msr->channel);
-    id->dataquality = msr->dataquality;
-    strcpy (id->srcname, srcname);
+    /* Populate MS3TraceID */
+    strcpy (id->tsid, msr->tsid);
+    id->pubversion = msr->pubversion;
 
-    id->earliest    = msr->starttime;
-    id->latest      = endtime;
+    id->earliest = msr->starttime;
+    id->latest = endtime;
     id->numsegments = 1;
 
-    if (!(seg = mstl_msr2seg (msr, endtime)))
+    if (!(seg = mstl3_msr2seg (msr, endtime)))
     {
       return 0;
     }
     id->first = id->last = seg;
 
-    /* Add new MSTraceID to MSTraceList */
+    /* Add new MS3TraceID to MS3TraceList */
     if (!mstl->traces || !ltid)
     {
-      id->next     = mstl->traces;
+      id->next = mstl->traces;
       mstl->traces = id;
     }
     else
     {
-      id->next   = ltid->next;
+      id->next = ltid->next;
       ltid->next = id;
     }
 
     mstl->numtraces++;
   }
-  /* Add data coverage to the matching MSTraceID */
+  /* Add data coverage to the matching MS3TraceID */
   else
   {
     /* Calculate high-precision sample period */
-    hpdelta = (hptime_t) ((msr->samprate) ? (HPTMODULUS / msr->samprate) : 0.0);
+    nsdelta = (nstime_t) ((msr->samprate) ? (NSTMODULUS / msr->samprate) : 0.0);
 
     /* Calculate high-precision time tolerance */
     if (timetol == -1.0)
-      hptimetol = (hptime_t) (0.5 * hpdelta); /* Default time tolerance is 1/2 sample period */
+      nstimetol = (nstime_t) (0.5 * nsdelta); /* Default time tolerance is 1/2 sample period */
     else if (timetol >= 0.0)
-      hptimetol = (hptime_t) (timetol * HPTMODULUS);
+      nstimetol = (nstime_t) (timetol * NSTMODULUS);
 
-    nhptimetol = (hptimetol) ? -hptimetol : 0;
+    nnstimetol = (nstimetol) ? -nstimetol : 0;
 
     /* last/firstgap are negative when the record overlaps the trace
      * segment and positive when there is a time gap. */
 
     /* Gap relative to the last segment */
-    lastgap = msr->starttime - id->last->endtime - hpdelta;
+    lastgap = msr->starttime - id->last->endtime - nsdelta;
 
     /* Gap relative to the first segment */
-    firstgap = id->first->starttime - endtime - hpdelta;
+    firstgap = id->first->starttime - endtime - nsdelta;
 
     /* Sample rate tolerance checks for first and last segments */
     if (sampratetol == -1.0)
     {
-      lastratecheck  = MS_ISRATETOLERABLE (msr->samprate, id->last->samprate);
+      lastratecheck = MS_ISRATETOLERABLE (msr->samprate, id->last->samprate);
       firstratecheck = MS_ISRATETOLERABLE (msr->samprate, id->first->samprate);
     }
     else
     {
-      lastratecheck  = (ms_dabs (msr->samprate - id->last->samprate) > sampratetol) ? 0 : 1;
+      lastratecheck = (ms_dabs (msr->samprate - id->last->samprate) > sampratetol) ? 0 : 1;
       firstratecheck = (ms_dabs (msr->samprate - id->first->samprate) > sampratetol) ? 0 : 1;
     }
 
@@ -338,9 +324,9 @@ mstl_addmsr (MSTraceList *mstl, MSRecord *msr, flag dataquality,
      */
 
     /* Record coverage fits at end of last segment */
-    if (lastgap <= hptimetol && lastgap >= nhptimetol && lastratecheck)
+    if (lastgap <= nstimetol && lastgap >= nnstimetol && lastratecheck)
     {
-      if (!mstl_addmsrtoseg (id->last, msr, endtime, 1))
+      if (!mstl3_addmsrtoseg (id->last, msr, endtime, 1))
         return 0;
 
       seg = id->last;
@@ -349,39 +335,39 @@ mstl_addmsr (MSTraceList *mstl, MSRecord *msr, flag dataquality,
         id->latest = endtime;
     }
     /* Record coverage is after all other coverage */
-    else if ((msr->starttime - hpdelta - hptimetol) > id->latest)
+    else if ((msr->starttime - nsdelta - nstimetol) > id->latest)
     {
-      if (!(seg = mstl_msr2seg (msr, endtime)))
+      if (!(seg = mstl3_msr2seg (msr, endtime)))
         return 0;
 
       /* Add to end of list */
       id->last->next = seg;
-      seg->prev      = id->last;
-      id->last       = seg;
+      seg->prev = id->last;
+      id->last = seg;
       id->numsegments++;
 
       if (endtime > id->latest)
         id->latest = endtime;
     }
     /* Record coverage is before all other coverage */
-    else if ((endtime + hpdelta + hptimetol) < id->earliest)
+    else if ((endtime + nsdelta + nstimetol) < id->earliest)
     {
-      if (!(seg = mstl_msr2seg (msr, endtime)))
+      if (!(seg = mstl3_msr2seg (msr, endtime)))
         return 0;
 
       /* Add to beginning of list */
       id->first->prev = seg;
-      seg->next       = id->first;
-      id->first       = seg;
+      seg->next = id->first;
+      id->first = seg;
       id->numsegments++;
 
       if (msr->starttime < id->earliest)
         id->earliest = msr->starttime;
     }
     /* Record coverage fits at beginning of first segment */
-    else if (firstgap <= hptimetol && firstgap >= nhptimetol && firstratecheck)
+    else if (firstgap <= nstimetol && firstgap >= nnstimetol && firstratecheck)
     {
-      if (!mstl_addmsrtoseg (id->first, msr, endtime, 2))
+      if (!mstl3_addmsrtoseg (id->first, msr, endtime, 2))
         return 0;
 
       seg = id->first;
@@ -394,7 +380,7 @@ mstl_addmsr (MSTraceList *mstl, MSRecord *msr, flag dataquality,
     {
       searchseg = id->first;
       segbefore = 0; /* Find segment that record fits before */
-      segafter  = 0; /* Find segment that record fits after */
+      segafter = 0; /* Find segment that record fits after */
       followseg = 0; /* Track segment that record follows in time order */
       while (searchseg)
       {
@@ -403,12 +389,12 @@ mstl_addmsr (MSTraceList *mstl, MSRecord *msr, flag dataquality,
 
         whence = 0;
 
-        postgap = msr->starttime - searchseg->endtime - hpdelta;
-        if (!segbefore && postgap <= hptimetol && postgap >= nhptimetol)
+        postgap = msr->starttime - searchseg->endtime - nsdelta;
+        if (!segbefore && postgap <= nstimetol && postgap >= nnstimetol)
           whence = 1;
 
-        pregap = searchseg->starttime - endtime - hpdelta;
-        if (!segafter && pregap <= hptimetol && pregap >= nhptimetol)
+        pregap = searchseg->starttime - endtime - nsdelta;
+        if (!segafter && pregap <= nstimetol && pregap >= nnstimetol)
           whence = 2;
 
         if (!whence)
@@ -450,10 +436,10 @@ mstl_addmsr (MSTraceList *mstl, MSRecord *msr, flag dataquality,
         searchseg = searchseg->next;
       } /* Done looping through segments */
 
-      /* Add MSRecord coverage to end of segment before */
+      /* Add MS3Record coverage to end of segment before */
       if (segbefore)
       {
-        if (!mstl_addmsrtoseg (segbefore, msr, endtime, 1))
+        if (!mstl3_addmsrtoseg (segbefore, msr, endtime, 1))
         {
           return 0;
         }
@@ -462,7 +448,7 @@ mstl_addmsr (MSTraceList *mstl, MSRecord *msr, flag dataquality,
         if (autoheal && segafter && segbefore != segafter)
         {
           /* Add segafter coverage to segbefore */
-          if (!mstl_addsegtoseg (segbefore, segafter))
+          if (!mstl3_addsegtoseg (segbefore, segafter))
           {
             return 0;
           }
@@ -489,21 +475,21 @@ mstl_addmsr (MSTraceList *mstl, MSRecord *msr, flag dataquality,
 
         seg = segbefore;
       }
-      /* Add MSRecord coverage to beginning of segment after */
+      /* Add MS3Record coverage to beginning of segment after */
       else if (segafter)
       {
-        if (!mstl_addmsrtoseg (segafter, msr, endtime, 2))
+        if (!mstl3_addmsrtoseg (segafter, msr, endtime, 2))
         {
           return 0;
         }
 
         seg = segafter;
       }
-      /* Add MSRecord coverage to new segment */
+      /* Add MS3Record coverage to new segment */
       else
       {
         /* Create new segment */
-        if (!(seg = mstl_msr2seg (msr, endtime)))
+        if (!(seg = mstl3_msr2seg (msr, endtime)))
         {
           return 0;
         }
@@ -524,7 +510,7 @@ mstl_addmsr (MSTraceList *mstl, MSRecord *msr, flag dataquality,
           seg->prev = followseg;
           if (followseg->next)
             followseg->next->prev = seg;
-          followseg->next         = seg;
+          followseg->next = seg;
 
           if (followseg == id->last)
             id->last = seg;
@@ -540,7 +526,7 @@ mstl_addmsr (MSTraceList *mstl, MSRecord *msr, flag dataquality,
       if (endtime > id->latest)
         id->latest = endtime;
     } /* End of searching segment list */
-  }   /* End of adding coverage to matching ID */
+  } /* End of adding coverage to matching ID */
 
   /* Sort modified segment into place, logic above should limit these to few shifts if any */
   while (seg->next && (seg->starttime > seg->next->starttime ||
@@ -556,8 +542,8 @@ mstl_addmsr (MSTraceList *mstl, MSRecord *msr, flag dataquality,
       segafter->next->prev = seg;
 
     segafter->prev = seg->prev;
-    seg->prev      = segafter;
-    seg->next      = segafter->next;
+    seg->prev = segafter;
+    seg->next = segafter->next;
     segafter->next = seg;
 
     /* Reset first and last segment pointers if replaced */
@@ -580,8 +566,8 @@ mstl_addmsr (MSTraceList *mstl, MSRecord *msr, flag dataquality,
       segbefore->prev->next = seg;
 
     segbefore->next = seg->next;
-    seg->next       = segbefore;
-    seg->prev       = segbefore->prev;
+    seg->next = segbefore;
+    seg->prev = segbefore->prev;
     segbefore->prev = seg;
 
     /* Reset first and last segment pointers if replaced */
@@ -592,36 +578,36 @@ mstl_addmsr (MSTraceList *mstl, MSRecord *msr, flag dataquality,
       id->last = segbefore;
   }
 
-  /* Set MSTraceID as last accessed */
+  /* Set MS3TraceID as last accessed */
   mstl->last = id;
 
   return seg;
-} /* End of mstl_addmsr() */
+} /* End of mstl3_addmsr() */
 
 /***************************************************************************
- * mstl_msr2seg:
+ * mstl3_msr2seg:
  *
- * Create an MSTraceSeg structure from an MSRecord structure.
+ * Create an MS3TraceSeg structure from an MS3Record structure.
  *
- * Return a pointer to a MSTraceSeg otherwise 0 on error.
+ * Return a pointer to a MS3TraceSeg otherwise 0 on error.
  ***************************************************************************/
-MSTraceSeg *
-mstl_msr2seg (MSRecord *msr, hptime_t endtime)
+MS3TraceSeg *
+mstl3_msr2seg (MS3Record *msr, nstime_t endtime)
 {
-  MSTraceSeg *seg = 0;
+  MS3TraceSeg *seg = 0;
   int samplesize;
 
-  if (!(seg = (MSTraceSeg *)calloc (1, sizeof (MSTraceSeg))))
+  if (!(seg = (MS3TraceSeg *)calloc (1, sizeof (MS3TraceSeg))))
   {
-    ms_log (2, "mstl_addmsr(): Error allocating memory\n");
+    ms_log (2, "mstl3_addmsr(): Error allocating memory\n");
     return 0;
   }
 
-  /* Populate MSTraceSeg */
-  seg->starttime  = msr->starttime;
-  seg->endtime    = endtime;
-  seg->samprate   = msr->samprate;
-  seg->samplecnt  = msr->samplecnt;
+  /* Populate MS3TraceSeg */
+  seg->starttime = msr->starttime;
+  seg->endtime = endtime;
+  seg->samprate = msr->samprate;
+  seg->samplecnt = msr->samplecnt;
   seg->sampletype = msr->sampletype;
   seg->numsamples = msr->numsamples;
 
@@ -632,31 +618,31 @@ mstl_msr2seg (MSRecord *msr, hptime_t endtime)
 
     if (!(seg->datasamples = malloc ((size_t) (samplesize * msr->numsamples))))
     {
-      ms_log (2, "mstl_msr2seg(): Error allocating memory\n");
+      ms_log (2, "mstl3_msr2seg(): Error allocating memory\n");
       return 0;
     }
 
-    /* Copy data samples from MSRecord to MSTraceSeg */
+    /* Copy data samples from MS3Record to MS3TraceSeg */
     memcpy (seg->datasamples, msr->datasamples, (size_t) (samplesize * msr->numsamples));
   }
 
   return seg;
-} /* End of mstl_msr2seg() */
+} /* End of mstl3_msr2seg() */
 
 /***************************************************************************
- * mstl_addmsrtoseg:
+ * mstl3_addmsrtoseg:
  *
- * Add data coverage from a MSRecord structure to a MSTraceSeg structure.
+ * Add data coverage from a MS3Record structure to a MS3TraceSeg structure.
  *
- * Data coverage is added to the beginning or end of MSTraceSeg
+ * Data coverage is added to the beginning or end of MS3TraceSeg
  * according to the whence flag:
  * 1 : add coverage to the end
  * 2 : add coverage to the beginninig
  *
- * Return a pointer to a MSTraceSeg otherwise 0 on error.
+ * Return a pointer to a MS3TraceSeg otherwise 0 on error.
  ***************************************************************************/
-MSTraceSeg *
-mstl_addmsrtoseg (MSTraceSeg *seg, MSRecord *msr, hptime_t endtime, flag whence)
+MS3TraceSeg *
+mstl3_addmsrtoseg (MS3TraceSeg *seg, MS3Record *msr, nstime_t endtime, int8_t whence)
 {
   int samplesize = 0;
   void *newdatasamples;
@@ -669,20 +655,20 @@ mstl_addmsrtoseg (MSTraceSeg *seg, MSRecord *msr, hptime_t endtime, flag whence)
   {
     if (msr->sampletype != seg->sampletype)
     {
-      ms_log (2, "mstl_addmsrtoseg(): MSRecord sample type (%c) does not match segment sample type (%c)\n",
+      ms_log (2, "mstl3_addmsrtoseg(): MS3Record sample type (%c) does not match segment sample type (%c)\n",
               msr->sampletype, seg->sampletype);
       return 0;
     }
 
     if (!(samplesize = ms_samplesize (msr->sampletype)))
     {
-      ms_log (2, "mstl_addmsrtoseg(): Unknown sample size for sample type: %c\n", msr->sampletype);
+      ms_log (2, "mstl3_addmsrtoseg(): Unknown sample size for sample type: %c\n", msr->sampletype);
       return 0;
     }
 
     if (!(newdatasamples = realloc (seg->datasamples, (size_t) ((seg->numsamples + msr->numsamples) * samplesize))))
     {
-      ms_log (2, "mstl_addmsrtoseg(): Error allocating memory\n");
+      ms_log (2, "mstl3_addmsrtoseg(): Error allocating memory\n");
       return 0;
     }
 
@@ -725,22 +711,22 @@ mstl_addmsrtoseg (MSTraceSeg *seg, MSRecord *msr, hptime_t endtime, flag whence)
   }
   else
   {
-    ms_log (2, "mstl_addmsrtoseg(): unrecognized whence value: %d\n", whence);
+    ms_log (2, "mstl3_addmsrtoseg(): unrecognized whence value: %d\n", whence);
     return 0;
   }
 
   return seg;
-} /* End of mstl_addmsrtoseg() */
+} /* End of mstl3_addmsrtoseg() */
 
 /***************************************************************************
- * mstl_addsegtoseg:
+ * mstl3_addsegtoseg:
  *
  * Add data coverage from seg2 to seg1.
  *
  * Return a pointer to a seg1 otherwise 0 on error.
  ***************************************************************************/
-MSTraceSeg *
-mstl_addsegtoseg (MSTraceSeg *seg1, MSTraceSeg *seg2)
+MS3TraceSeg *
+mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
 {
   int samplesize = 0;
   void *newdatasamples;
@@ -753,20 +739,20 @@ mstl_addsegtoseg (MSTraceSeg *seg1, MSTraceSeg *seg2)
   {
     if (seg2->sampletype != seg1->sampletype)
     {
-      ms_log (2, "mstl_addsegtoseg(): MSTraceSeg sample types do not match (%c and %c)\n",
+      ms_log (2, "mstl3_addsegtoseg(): MS3TraceSeg sample types do not match (%c and %c)\n",
               seg1->sampletype, seg2->sampletype);
       return 0;
     }
 
     if (!(samplesize = ms_samplesize (seg1->sampletype)))
     {
-      ms_log (2, "mstl_addsegtoseg(): Unknown sample size for sample type: %c\n", seg1->sampletype);
+      ms_log (2, "mstl3_addsegtoseg(): Unknown sample size for sample type: %c\n", seg1->sampletype);
       return 0;
     }
 
     if (!(newdatasamples = realloc (seg1->datasamples, (size_t) ((seg1->numsamples + seg2->numsamples) * samplesize))))
     {
-      ms_log (2, "mstl_addsegtoseg(): Error allocating memory\n");
+      ms_log (2, "mstl3_addsegtoseg(): Error allocating memory\n");
       return 0;
     }
 
@@ -787,12 +773,12 @@ mstl_addsegtoseg (MSTraceSeg *seg1, MSTraceSeg *seg2)
   }
 
   return seg1;
-} /* End of mstl_addsegtoseg() */
+} /* End of mstl3_addsegtoseg() */
 
 /***************************************************************************
- * mstl_convertsamples:
+ * mstl3_convertsamples:
  *
- * Convert the data samples associated with an MSTraceSeg to another
+ * Convert the data samples associated with an MS3TraceSeg to another
  * data type.  ASCII data samples cannot be converted, if supplied or
  * requested an error will be returned.
  *
@@ -808,7 +794,7 @@ mstl_addsegtoseg (MSTraceSeg *seg1, MSTraceSeg *seg2)
  * Returns 0 on success, and -1 on failure.
  ***************************************************************************/
 int
-mstl_convertsamples (MSTraceSeg *seg, char type, flag truncate)
+mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
 {
   int32_t *idata;
   float *fdata;
@@ -824,7 +810,7 @@ mstl_convertsamples (MSTraceSeg *seg, char type, flag truncate)
 
   if (seg->sampletype == 'a' || type == 'a')
   {
-    ms_log (2, "mstl_convertsamples: cannot convert ASCII samples to/from numeric type\n");
+    ms_log (2, "mstl3_convertsamples: cannot convert ASCII samples to/from numeric type\n");
     return -1;
   }
 
@@ -842,7 +828,7 @@ mstl_convertsamples (MSTraceSeg *seg, char type, flag truncate)
         /* Check for loss of sub-integer */
         if (!truncate && (fdata[idx] - (int32_t)fdata[idx]) > 0.000001)
         {
-          ms_log (1, "mstl_convertsamples: Warning, loss of precision when converting floats to integers, loss: %g\n",
+          ms_log (1, "mstl3_convertsamples: Warning, loss of precision when converting floats to integers, loss: %g\n",
                   (fdata[idx] - (int32_t)fdata[idx]));
           return -1;
         }
@@ -857,7 +843,7 @@ mstl_convertsamples (MSTraceSeg *seg, char type, flag truncate)
         /* Check for loss of sub-integer */
         if (!truncate && (ddata[idx] - (int32_t)ddata[idx]) > 0.000001)
         {
-          ms_log (1, "mstl_convertsamples: Warning, loss of precision when converting doubles to integers, loss: %g\n",
+          ms_log (1, "mstl3_convertsamples: Warning, loss of precision when converting doubles to integers, loss: %g\n",
                   (ddata[idx] - (int32_t)ddata[idx]));
           return -1;
         }
@@ -868,7 +854,7 @@ mstl_convertsamples (MSTraceSeg *seg, char type, flag truncate)
       /* Reallocate buffer for reduced size needed */
       if (!(seg->datasamples = realloc (seg->datasamples, (size_t) (seg->numsamples * sizeof (int32_t)))))
       {
-        ms_log (2, "mstl_convertsamples: cannot re-allocate buffer for sample conversion\n");
+        ms_log (2, "mstl3_convertsamples: cannot re-allocate buffer for sample conversion\n");
         return -1;
       }
     }
@@ -881,18 +867,18 @@ mstl_convertsamples (MSTraceSeg *seg, char type, flag truncate)
   {
     if (seg->sampletype == 'i') /* Convert integers to floats */
     {
-      for (idx     = 0; idx < seg->numsamples; idx++)
+      for (idx = 0; idx < seg->numsamples; idx++)
         fdata[idx] = (float)idata[idx];
     }
     else if (seg->sampletype == 'd') /* Convert doubles to floats */
     {
-      for (idx     = 0; idx < seg->numsamples; idx++)
+      for (idx = 0; idx < seg->numsamples; idx++)
         fdata[idx] = (float)ddata[idx];
 
       /* Reallocate buffer for reduced size needed */
       if (!(seg->datasamples = realloc (seg->datasamples, (size_t) (seg->numsamples * sizeof (float)))))
       {
-        ms_log (2, "mstl_convertsamples: cannot re-allocate buffer after sample conversion\n");
+        ms_log (2, "mstl3_convertsamples: cannot re-allocate buffer after sample conversion\n");
         return -1;
       }
     }
@@ -905,41 +891,41 @@ mstl_convertsamples (MSTraceSeg *seg, char type, flag truncate)
   {
     if (!(ddata = (double *)malloc ((size_t) (seg->numsamples * sizeof (double)))))
     {
-      ms_log (2, "mstl_convertsamples: cannot allocate buffer for sample conversion to doubles\n");
+      ms_log (2, "mstl3_convertsamples: cannot allocate buffer for sample conversion to doubles\n");
       return -1;
     }
 
     if (seg->sampletype == 'i') /* Convert integers to doubles */
     {
-      for (idx     = 0; idx < seg->numsamples; idx++)
+      for (idx = 0; idx < seg->numsamples; idx++)
         ddata[idx] = (double)idata[idx];
 
       free (idata);
     }
     else if (seg->sampletype == 'f') /* Convert floats to doubles */
     {
-      for (idx     = 0; idx < seg->numsamples; idx++)
+      for (idx = 0; idx < seg->numsamples; idx++)
         ddata[idx] = (double)fdata[idx];
 
       free (fdata);
     }
 
     seg->datasamples = ddata;
-    seg->sampletype  = 'd';
+    seg->sampletype = 'd';
   } /* Done converting to 64-bit doubles */
 
   return 0;
-} /* End of mstl_convertsamples() */
+} /* End of mstl3_convertsamples() */
 
 /***************************************************************************
- * mstl_printtracelist:
+ * mstl3_printtracelist:
  *
- * Print trace list summary information for the specified MSTraceList.
+ * Print trace list summary information for the specified MS3TraceList.
  *
- * By default only print the srcname, starttime and endtime for each
+ * By default only print the time series ID, starttime and endtime for each
  * trace.  If details is greater than 0 include the sample rate,
  * number of samples and a total trace count.  If gaps is greater than
- * 0 and the previous trace matches (srcname & samprate) include the
+ * 0 and the previous trace matches (TSID & samprate) include the
  * gap between the endtime of the last trace and the starttime of the
  * current trace.
  *
@@ -949,19 +935,19 @@ mstl_convertsamples (MSTraceSeg *seg, char type, flag truncate)
  * 2 : Epoch time, seconds since the epoch
  ***************************************************************************/
 void
-mstl_printtracelist (MSTraceList *mstl, flag timeformat,
-                     flag details, flag gaps)
+mstl3_printtracelist (MS3TraceList *mstl, int8_t timeformat,
+                      int8_t details, int8_t gaps)
 {
-  MSTraceID *id   = 0;
-  MSTraceSeg *seg = 0;
+  MS3TraceID *id = 0;
+  MS3TraceSeg *seg = 0;
   char stime[30];
   char etime[30];
   char gapstr[20];
-  flag nogap;
+  int8_t nogap;
   double gap;
   double delta;
   int tracecnt = 0;
-  int segcnt   = 0;
+  int segcnt = 0;
 
   if (!mstl)
   {
@@ -970,13 +956,13 @@ mstl_printtracelist (MSTraceList *mstl, flag timeformat,
 
   /* Print out the appropriate header */
   if (details > 0 && gaps > 0)
-    ms_log (0, "   Source                Start sample             End sample        Gap  Hz  Samples\n");
+    ms_log (0, "   TimeSeriesID          Start sample             End sample        Gap  Hz  Samples\n");
   else if (details <= 0 && gaps > 0)
-    ms_log (0, "   Source                Start sample             End sample        Gap\n");
+    ms_log (0, "   TimeSeriesID          Start sample             End sample        Gap\n");
   else if (details > 0 && gaps <= 0)
-    ms_log (0, "   Source                Start sample             End sample        Hz  Samples\n");
+    ms_log (0, "   TimeSeriesID          Start sample             End sample        Hz  Samples\n");
   else
-    ms_log (0, "   Source                Start sample             End sample\n");
+    ms_log (0, "   TimeSeriesID          Start sample             End sample\n");
 
   /* Loop through trace list */
   id = mstl->traces;
@@ -989,34 +975,34 @@ mstl_printtracelist (MSTraceList *mstl, flag timeformat,
       /* Create formatted time strings */
       if (timeformat == 2)
       {
-        snprintf (stime, sizeof (stime), "%.6f", (double)MS_HPTIME2EPOCH (seg->starttime));
-        snprintf (etime, sizeof (etime), "%.6f", (double)MS_HPTIME2EPOCH (seg->endtime));
+        snprintf (stime, sizeof (stime), "%.6f", (double)MS_NSTIME2EPOCH (seg->starttime));
+        snprintf (etime, sizeof (etime), "%.6f", (double)MS_NSTIME2EPOCH (seg->endtime));
       }
       else if (timeformat == 1)
       {
-        if (ms_hptime2isotimestr (seg->starttime, stime, 1) == NULL)
-          ms_log (2, "Cannot convert trace start time for %s\n", id->srcname);
+        if (ms_nstime2isotimestr (seg->starttime, stime, 1) == NULL)
+          ms_log (2, "Cannot convert trace start time for %s\n", id->tsid);
 
-        if (ms_hptime2isotimestr (seg->endtime, etime, 1) == NULL)
-          ms_log (2, "Cannot convert trace end time for %s\n", id->srcname);
+        if (ms_nstime2isotimestr (seg->endtime, etime, 1) == NULL)
+          ms_log (2, "Cannot convert trace end time for %s\n", id->tsid);
       }
       else
       {
-        if (ms_hptime2seedtimestr (seg->starttime, stime, 1) == NULL)
-          ms_log (2, "Cannot convert trace start time for %s\n", id->srcname);
+        if (ms_nstime2seedtimestr (seg->starttime, stime, 1) == NULL)
+          ms_log (2, "Cannot convert trace start time for %s\n", id->tsid);
 
-        if (ms_hptime2seedtimestr (seg->endtime, etime, 1) == NULL)
-          ms_log (2, "Cannot convert trace end time for %s\n", id->srcname);
+        if (ms_nstime2seedtimestr (seg->endtime, etime, 1) == NULL)
+          ms_log (2, "Cannot convert trace end time for %s\n", id->tsid);
       }
 
       /* Print segment info at varying levels */
       if (gaps > 0)
       {
-        gap   = 0.0;
+        gap = 0.0;
         nogap = 0;
 
         if (seg->prev)
-          gap = (double)(seg->starttime - seg->prev->endtime) / HPTMODULUS;
+          gap = (double)(seg->starttime - seg->prev->endtime) / NSTMODULUS;
         else
           nogap = 1;
 
@@ -1025,8 +1011,8 @@ mstl_printtracelist (MSTraceList *mstl, flag timeformat,
         {
           delta = (seg->samprate) ? (1.0 / seg->samprate) : 0.0;
 
-          if ((gap * -1.0) > (((double)(seg->endtime - seg->starttime) / HPTMODULUS) + delta))
-            gap = -(((double)(seg->endtime - seg->starttime) / HPTMODULUS) + delta);
+          if ((gap * -1.0) > (((double)(seg->endtime - seg->starttime) / NSTMODULUS) + delta))
+            gap = -(((double)(seg->endtime - seg->starttime) / NSTMODULUS) + delta);
         }
 
         /* Fix up gap display */
@@ -1043,16 +1029,16 @@ mstl_printtracelist (MSTraceList *mstl, flag timeformat,
 
         if (details <= 0)
           ms_log (0, "%-17s %-24s %-24s %-4s\n",
-                  id->srcname, stime, etime, gapstr);
+                  id->tsid, stime, etime, gapstr);
         else
           ms_log (0, "%-17s %-24s %-24s %-s %-3.3g %-" PRId64 "\n",
-                  id->srcname, stime, etime, gapstr, seg->samprate, seg->samplecnt);
+                  id->tsid, stime, etime, gapstr, seg->samprate, seg->samplecnt);
       }
       else if (details > 0 && gaps <= 0)
         ms_log (0, "%-17s %-24s %-24s %-3.3g %-" PRId64 "\n",
-                id->srcname, stime, etime, seg->samprate, seg->samplecnt);
+                id->tsid, stime, etime, seg->samprate, seg->samplecnt);
       else
-        ms_log (0, "%-17s %-24s %-24s\n", id->srcname, stime, etime);
+        ms_log (0, "%-17s %-24s %-24s\n", id->tsid, stime, etime);
 
       segcnt++;
       seg = seg->next;
@@ -1063,18 +1049,18 @@ mstl_printtracelist (MSTraceList *mstl, flag timeformat,
   }
 
   if (tracecnt != mstl->numtraces)
-    ms_log (2, "mstl_printtracelist(): number of traces in trace list is inconsistent\n");
+    ms_log (2, "mstl3_printtracelist(): number of traces in trace list is inconsistent\n");
 
   if (details > 0)
     ms_log (0, "Total: %d trace(s) with %d segment(s)\n", tracecnt, segcnt);
 
   return;
-} /* End of mstl_printtracelist() */
+} /* End of mstl3_printtracelist() */
 
 /***************************************************************************
- * mstl_printsynclist:
+ * mstl3_printsynclist:
  *
- * Print SYNC trace list summary information for the specified MSTraceList.
+ * Print SYNC trace list summary information for the specified MS3TraceList.
  *
  * The SYNC header line will be created using the supplied dccid, if
  * the pointer is NULL the string "DCC" will be used instead.
@@ -1085,13 +1071,17 @@ mstl_printtracelist (MSTraceList *mstl, flag timeformat,
  *
  ***************************************************************************/
 void
-mstl_printsynclist (MSTraceList *mstl, char *dccid, flag subsecond)
+mstl3_printsynclist (MS3TraceList *mstl, char *dccid, int8_t subsecond)
 {
-  MSTraceID *id   = 0;
-  MSTraceSeg *seg = 0;
+  MS3TraceID *id = 0;
+  MS3TraceSeg *seg = 0;
   char starttime[30];
   char endtime[30];
   char yearday[10];
+  char net[11] = {0};
+  char sta[11] = {0};
+  char loc[11] = {0};
+  char chan[11] = {0};
   time_t now;
   struct tm *nt;
 
@@ -1102,7 +1092,7 @@ mstl_printsynclist (MSTraceList *mstl, char *dccid, flag subsecond)
 
   /* Generate current time stamp */
   now = time (NULL);
-  nt  = localtime (&now);
+  nt = localtime (&now);
   nt->tm_year += 1900;
   nt->tm_yday += 1;
   snprintf (yearday, sizeof (yearday), "%04d,%03d", nt->tm_year, nt->tm_yday);
@@ -1114,17 +1104,20 @@ mstl_printsynclist (MSTraceList *mstl, char *dccid, flag subsecond)
   id = mstl->traces;
   while (id)
   {
+    ms_parsetsid (id->tsid, net, sta, loc, chan);
+
     /* Loop through segment list */
     seg = id->first;
     while (seg)
     {
-      ms_hptime2seedtimestr (seg->starttime, starttime, subsecond);
-      ms_hptime2seedtimestr (seg->endtime, endtime, subsecond);
+      ms_nstime2seedtimestr (seg->starttime, starttime, subsecond);
+      ms_nstime2seedtimestr (seg->endtime, endtime, subsecond);
 
       /* Print SYNC line */
       ms_log (0, "%s|%s|%s|%s|%s|%s||%.10g|%" PRId64 "|||||||%s\n",
-              id->network, id->station, id->location, id->channel,
-              starttime, endtime, seg->samprate, seg->samplecnt,
+              net, sta, loc, chan,
+              starttime, endtime,
+              seg->samprate, seg->samplecnt,
               yearday);
 
       seg = seg->next;
@@ -1134,13 +1127,13 @@ mstl_printsynclist (MSTraceList *mstl, char *dccid, flag subsecond)
   }
 
   return;
-} /* End of mstl_printsynclist() */
+} /* End of mstl3_printsynclist() */
 
 /***************************************************************************
- * mstl_printgaplist:
+ * mstl3_printgaplist:
  *
  * Print gap/overlap list summary information for the specified
- * MSTraceList.  Overlaps are printed as negative gaps.
+ * MS3TraceList.  Overlaps are printed as negative gaps.
  *
  * If mingap and maxgap are not NULL their values will be enforced and
  * only gaps/overlaps matching their implied criteria will be printed.
@@ -1151,18 +1144,18 @@ mstl_printsynclist (MSTraceList *mstl, char *dccid, flag subsecond)
  * 2 : Epoch time, seconds since the epoch
  ***************************************************************************/
 void
-mstl_printgaplist (MSTraceList *mstl, flag timeformat,
-                   double *mingap, double *maxgap)
+mstl3_printgaplist (MS3TraceList *mstl, int8_t timeformat,
+                    double *mingap, double *maxgap)
 {
-  MSTraceID *id   = 0;
-  MSTraceSeg *seg = 0;
+  MS3TraceID *id = 0;
+  MS3TraceSeg *seg = 0;
 
   char time1[30], time2[30];
   char gapstr[30];
   double gap;
   double delta;
   double nsamples;
-  flag printflag;
+  int8_t printflag;
   int gapcnt = 0;
 
   if (!mstl)
@@ -1171,7 +1164,7 @@ mstl_printgaplist (MSTraceList *mstl, flag timeformat,
   if (!mstl->traces)
     return;
 
-  ms_log (0, "   Source                Last Sample              Next Sample       Gap  Samples\n");
+  ms_log (0, "   TimeSeriesID          Last Sample              Next Sample       Gap  Samples\n");
 
   id = mstl->traces;
   while (id)
@@ -1186,15 +1179,15 @@ mstl_printgaplist (MSTraceList *mstl, flag timeformat,
         continue;
       }
 
-      gap = (double)(seg->next->starttime - seg->endtime) / HPTMODULUS;
+      gap = (double)(seg->next->starttime - seg->endtime) / NSTMODULUS;
 
       /* Check that any overlap is not larger than the trace coverage */
       if (gap < 0.0)
       {
         delta = (seg->next->samprate) ? (1.0 / seg->next->samprate) : 0.0;
 
-        if ((gap * -1.0) > (((double)(seg->next->endtime - seg->next->starttime) / HPTMODULUS) + delta))
-          gap = -(((double)(seg->next->endtime - seg->next->starttime) / HPTMODULUS) + delta);
+        if ((gap * -1.0) > (((double)(seg->next->endtime - seg->next->starttime) / NSTMODULUS) + delta))
+          gap = -(((double)(seg->next->endtime - seg->next->starttime) / NSTMODULUS) + delta);
       }
 
       printflag = 1;
@@ -1230,28 +1223,28 @@ mstl_printgaplist (MSTraceList *mstl, flag timeformat,
         /* Create formatted time strings */
         if (timeformat == 2)
         {
-          snprintf (time1, sizeof (time1), "%.6f", (double)MS_HPTIME2EPOCH (seg->endtime));
-          snprintf (time2, sizeof (time2), "%.6f", (double)MS_HPTIME2EPOCH (seg->next->starttime));
+          snprintf (time1, sizeof (time1), "%.6f", (double)MS_NSTIME2EPOCH (seg->endtime));
+          snprintf (time2, sizeof (time2), "%.6f", (double)MS_NSTIME2EPOCH (seg->next->starttime));
         }
         else if (timeformat == 1)
         {
-          if (ms_hptime2isotimestr (seg->endtime, time1, 1) == NULL)
-            ms_log (2, "Cannot convert trace end time for %s\n", id->srcname);
+          if (ms_nstime2isotimestr (seg->endtime, time1, 1) == NULL)
+            ms_log (2, "Cannot convert trace end time for %s\n", id->tsid);
 
-          if (ms_hptime2isotimestr (seg->next->starttime, time2, 1) == NULL)
-            ms_log (2, "Cannot convert next trace start time for %s\n", id->srcname);
+          if (ms_nstime2isotimestr (seg->next->starttime, time2, 1) == NULL)
+            ms_log (2, "Cannot convert next trace start time for %s\n", id->tsid);
         }
         else
         {
-          if (ms_hptime2seedtimestr (seg->endtime, time1, 1) == NULL)
-            ms_log (2, "Cannot convert trace end time for %s\n", id->srcname);
+          if (ms_nstime2seedtimestr (seg->endtime, time1, 1) == NULL)
+            ms_log (2, "Cannot convert trace end time for %s\n", id->tsid);
 
-          if (ms_hptime2seedtimestr (seg->next->starttime, time2, 1) == NULL)
-            ms_log (2, "Cannot convert next trace start time for %s\n", id->srcname);
+          if (ms_nstime2seedtimestr (seg->next->starttime, time2, 1) == NULL)
+            ms_log (2, "Cannot convert next trace start time for %s\n", id->tsid);
         }
 
         ms_log (0, "%-17s %-24s %-24s %-4s %-.8g\n",
-                id->srcname, time1, time2, gapstr, nsamples);
+                id->tsid, time1, time2, gapstr, nsamples);
 
         gapcnt++;
       }
@@ -1265,4 +1258,4 @@ mstl_printgaplist (MSTraceList *mstl, flag timeformat,
   ms_log (0, "Total: %d gap(s)\n", gapcnt);
 
   return;
-} /* End of mstl_printgaplist() */
+} /* End of mstl3_printgaplist() */

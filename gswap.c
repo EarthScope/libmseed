@@ -17,8 +17,6 @@
  *
  * Written by Chad Trabant,
  *   IRIS Data Management Center
- *
- * Version: 2010.006
  ***************************************************************************/
 
 #include "libmseed.h"
