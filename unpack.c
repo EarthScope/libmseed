@@ -21,14 +21,7 @@
 #include "libmseed.h"
 #include "unpackdata.h"
 
-/* Function(s) internal to this file */
-static int msr3_unpack_mseed3 (char *record, int maxreclen, MSRecord **ppmsr,
-                               int8_t dataflag, int8_t verbose);
-static int msr3_unpack_mseed2 (char *record, int maxreclen, MSRecord **ppmsr,
-                               int8_t dataflag, int8_t verbose);
-
 CHAD, needs working
-
 
 /***************************************************************************
  * msr3_unpack_mseed3:
@@ -57,8 +50,8 @@ CHAD, needs working
  * success, otherwise returns a libmseed error code (listed in
  * libmseed.h).
  ***************************************************************************/
-static int
-msr3_unpack_mseed3 (char *record, int maxreclen, MSRecord **ppmsr,
+int
+msr3_unpack_mseed3 (char *record, int reclen, MSRecord **ppmsr,
                     int8_t dataflag, int8_t verbose)
 {
   int8_t headerswapflag = 0;
@@ -268,8 +261,8 @@ msr3_unpack_mseed3 (char *record, int maxreclen, MSRecord **ppmsr,
  * success, otherwise returns a libmseed error code (listed in
  * libmseed.h).
  ***************************************************************************/
-static int
-msr3_unpack_mseed2 (char *record, int maxreclen, MSRecord **ppmsr,
+int
+msr3_unpack_mseed2 (char *record, int reclen, MSRecord **ppmsr,
                     int8_t dataflag, int8_t verbose)
 {
   int8_t headerswapflag = 0;

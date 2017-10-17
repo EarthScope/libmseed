@@ -13,6 +13,7 @@
 #include <time.h>
 
 #include "libmseed.h"
+#include "unpack.h"
 
 /**********************************************************************
  * msr3_parse:
@@ -38,7 +39,7 @@ msr3_parse (char *record, int recbuflen, MSRecord **ppmsr,
             int8_t dataflag, int8_t verbose)
 {
   int reclen  = 0;
-  int retcode = 0;
+  int retcode = MS_NOERROR;
   uint8_t formatversion;
 
   if (!ppmsr || !record)
@@ -83,10 +84,23 @@ msr3_parse (char *record, int recbuflen, MSRecord **ppmsr,
     return (reclen - recbuflen);
   }
 
-  CHAD, need to unpack according to format version
-
   /* Unpack record */
-  if ((retcode = msr_unpack (record, reclen, ppmsr, dataflag, verbose)) != MS_NOERROR)
+  if (formatversion == 3)
+  {
+    retcode = msr_unpack_mseed3 (record, reclen, ppmsr, dataflag, verbose);
+  }
+  else if (formatversion == 2)
+  {
+    retcode = msr_unpack_mseed2 (record, reclen, ppmsr, dataflag, verbose);
+  }
+  else
+  {
+    ms_log (2, "Unrecognized format version: %d\n", formatversion);
+
+    return MS_GENERROR;
+  }
+
+  if (retcode != MS_NOERROR)
   {
     msr_free (ppmsr);
 
@@ -96,18 +110,26 @@ msr3_parse (char *record, int recbuflen, MSRecord **ppmsr,
   return MS_NOERROR;
 } /* End of msr3_parse() */
 
+/* Macro to test for sane year and day values, used primarily to
+ * determine if byte order swapping is needed.
+ *
+ * Year : between 1900 and 2100
+ * Day  : between 1 and 366
+ *
+ * This test is non-unique (non-deterministic) for days 1, 256 and 257
+ * in the year 2056 because the swapped values are also within range.
+ */
+#define MS_ISVALIDYEARDAY(Y,D) (Y >= 1900 && Y <= 2100 && D >= 1 && D <= 366)
+
 /********************************************************************
- * ms_detect:
+ * ms3_detect:
  *
- * Determine SEED data record length with the following steps:
+ * Determine that the buffer contains a miniSEED data record by
+ * verifying known signatures (fields with known limited values).
  *
- * 1) determine that the buffer contains a SEED data record by
- * verifying known signatures (fields with known limited values)
- *
- * 2) search the record up to recbuflen bytes for a 1000 blockette.
- *
- * 3) If no blockette 1000 is found search at MINRECLEN-byte offsets
- * for the fixed section of the next header or blank/noise record,
+ * If miniSEED 2.x is detected, search the record up to recbuflen
+ * bytes for a 1000 blockette. If no blockette 1000 is found, search
+ * at 64-byte offsets for the fixed section of the next header,
  * thereby implying the record length.
  *
  * Returns:
@@ -116,108 +138,122 @@ msr3_parse (char *record, int recbuflen, MSRecord **ppmsr,
  * >0 : size of the record in bytes
  *********************************************************************/
 int
-ms_detect (const char *record, int recbuflen)
+ms3_detect (const char *record, int recbuflen, uint8_t *formatversion)
 {
-  uint16_t blkt_offset;  /* Byte offset for next blockette */
-  uint8_t swapflag = 0;  /* Byte swapping flag */
-  uint8_t foundlen = 0;  /* Found record length */
-  int32_t reclen   = -1; /* Size of record in bytes */
+  uint8_t swapflag = 0; /* Byte swapping flag */
+  uint8_t foundlen = 0; /* Found record length */
+  int32_t reclen = -1; /* Size of record in bytes */
 
+  uint16_t blkt_offset; /* Byte offset for next blockette */
   uint16_t blkt_type;
   uint16_t next_blkt;
-
-  struct fsdh_s *fsdh;
-  struct blkt_1000_s *blkt_1000;
+  uint16_t year;
+  uint16_t day;
   const char *nextfsdh;
 
-  /* Buffer must be at least 48 bytes (the fixed section) */
-  if (recbuflen < 48)
+  if (!record || !formatversion)
     return -1;
 
-  /* Check for valid fixed section of header */
-  if (!MS_ISVALIDHEADER (record))
+  /* Buffer must be at least MINRECLEN */
+  if (recbuflen < MINRECLEN)
     return -1;
 
-  fsdh = (struct fsdh_s *)record;
-
-  /* Check to see if byte swapping is needed by checking for sane year and day */
-  if (!MS_ISVALIDYEARDAY (fsdh->start_time.year, fsdh->start_time.day))
-    swapflag = 1;
-
-  blkt_offset = fsdh->blockette_offset;
-
-  /* Swap order of blkt_offset if needed */
-  if (swapflag)
-    ms_gswap2 (&blkt_offset);
-
-  /* Loop through blockettes as long as number is non-zero and viable */
-  while (blkt_offset != 0 &&
-         blkt_offset <= recbuflen)
+  /* Check for valid header, set format version */
+  *formatversion = 0;
+  if (MS3_ISVALIDHEADER (record))
   {
-    memcpy (&blkt_type, record + blkt_offset, 2);
-    memcpy (&next_blkt, record + blkt_offset + 2, 2);
+    *formatversion = 3;
 
-    if (swapflag)
-    {
-      ms_gswap2 (&blkt_type);
-      ms_gswap2 (&next_blkt);
-    }
-
-    /* Found a 1000 blockette, not truncated */
-    if (blkt_type == 1000 &&
-        (int)(blkt_offset + 4 + sizeof (struct blkt_1000_s)) <= recbuflen)
-    {
-      blkt_1000 = (struct blkt_1000_s *)(record + blkt_offset + 4);
-
-      foundlen = 1;
-
-      /* Calculate record size in bytes as 2^(blkt_1000->reclen) */
-      reclen = (unsigned int)1 << blkt_1000->reclen;
-
-      break;
-    }
-
-    /* Safety check for invalid offset */
-    if (next_blkt != 0 && (next_blkt < 4 || (next_blkt - 4) <= blkt_offset))
-    {
-      ms_log (2, "Invalid blockette offset (%d) less than or equal to current offset (%d)\n",
-              next_blkt, blkt_offset);
-      return -1;
-    }
-
-    blkt_offset = next_blkt;
+    reclen = 36 /* Length of fixed portion of header */
+             + (uint8_t) * (record + 33) /* Length of time series identifier */
+             + (uint16_t) * (record + 34) /* Length of extra headers */
+             + (uint16_t) * (record + 36); /* Length of data payload */
   }
-
-  /* If record length was not determined by a 1000 blockette scan the buffer
-   * and search for the next record */
-  if (reclen == -1)
+  else if (MS2_ISVALIDHEADER (record))
   {
-    nextfsdh = record + MINRECLEN;
+    *formatversion = 2;
 
-    /* Check for record header or blank/noise record at MINRECLEN byte offsets */
-    while (((nextfsdh - record) + 48) < recbuflen)
+    year = (uint16_t)*(record + 20);
+    day = (uint16_t)*(record + 22);
+
+    /* Check to see if byte swapping is needed by checking for sane year and day */
+    if (!MS_ISVALIDYEARDAY (year, day))
+      swapflag = 1;
+
+    blkt_offset = (uint16_t)*(record + 46);
+
+    /* Swap order of blkt_offset if needed */
+    if (swapflag)
+      ms_gswap2 (&blkt_offset);
+
+    /* Loop through blockettes as long as number is non-zero and viable */
+    while (blkt_offset != 0 &&
+           blkt_offset > 47 &&
+           blkt_offset <= recbuflen)
     {
-      if (MS_ISVALIDHEADER (nextfsdh) || MS_ISVALIDBLANK (nextfsdh))
+      memcpy (&blkt_type, record + blkt_offset, 2);
+      memcpy (&next_blkt, record + blkt_offset + 2, 2);
+
+      if (swapflag)
+      {
+        ms_gswap2 (&blkt_type);
+        ms_gswap2 (&next_blkt);
+      }
+
+      /* Found a 1000 blockette, not truncated */
+      if (blkt_type == 1000 &&
+          (int)(blkt_offset + 4 + 8) <= recbuflen)
       {
         foundlen = 1;
-        reclen   = nextfsdh - record;
+
+        /* Calculate record size in bytes as 2^(reclen field) */
+        reclen = (unsigned int)1 << (uint8_t)*(record + blkt_offset + 6);
+
         break;
       }
 
-      nextfsdh += MINRECLEN;
+      /* Safety check for invalid offset */
+      if (next_blkt != 0 && (next_blkt < 4 || (next_blkt - 4) <= blkt_offset))
+      {
+        ms_log (2, "Invalid blockette offset (%d) less than or equal to current offset (%d)\n",
+                next_blkt, blkt_offset);
+        return -1;
+      }
+
+      blkt_offset = next_blkt;
     }
-  }
+
+    /* If record length was not determined by a 1000 blockette scan the buffer
+     * and search for the next record */
+    if (reclen == -1)
+    {
+      nextfsdh = record + 64;
+
+      /* Check for record header or blank/noise record at MINRECLEN byte offsets */
+      while (((nextfsdh - record) + 48) < recbuflen)
+      {
+        if (MS_ISVALIDHEADER (nextfsdh))
+        {
+          foundlen = 1;
+          reclen = nextfsdh - record;
+          break;
+        }
+
+        nextfsdh += 64;
+      }
+    }
+  } /* End of miniSEED 2.x detection */
 
   if (!foundlen)
     return 0;
   else
     return reclen;
-} /* End of ms_detect() */
+} /* End of ms3_detect() */
 
 /***************************************************************************
- * ms_parse_raw:
+ * ms2_parse_raw:
  *
- * Parse and verify a SEED data record header (fixed section and
+ * Parse and verify a miniSEED 2.x data record header (fixed section and
  * blockettes) at the lowest level, printing error messages for
  * invalid header values and optionally print raw header values.  The
  * memory at 'record' is assumed to be a miniSEED record.  Not every
@@ -247,7 +283,7 @@ ms_detect (const char *record, int recbuflen)
  * errors detected.
  ***************************************************************************/
 int
-ms_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
+ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
 {
   struct fsdh_s *fsdh;
   double nomsamprate;
@@ -262,6 +298,8 @@ ms_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
 
   if (!record)
     return 1;
+
+  CHAD, needs adapting below
 
   /* Generate a source name string */
   srcname[0] = '\0';
