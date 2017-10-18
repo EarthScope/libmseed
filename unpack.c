@@ -1158,3 +1158,172 @@ msr_unpack_data (MSRecord *msr, int swapflag, int8_t verbose)
 
   return nsamples;
 } /* End of msr_unpack_data() */
+
+
+/***************************************************************************
+ * ms_nomsamprate:
+ *
+ * Calculate a sample rate from SEED sample rate factor and multiplier
+ * as stored in the fixed section header of data records.
+ *
+ * Returns the positive sample rate.
+ ***************************************************************************/
+double
+ms_nomsamprate (int factor, int multiplier)
+{
+  double samprate = 0.0;
+
+  if (factor > 0)
+    samprate = (double)factor;
+  else if (factor < 0)
+    samprate = -1.0 / (double)factor;
+  if (multiplier > 0)
+    samprate = samprate * (double)multiplier;
+  else if (multiplier < 0)
+    samprate = -1.0 * (samprate / (double)multiplier);
+
+  return samprate;
+} /* End of ms_nomsamprate() */
+
+/***************************************************************************
+ * ms2_recordtsid:
+ *
+ * Generate a time series identifier string for a specified raw
+ * miniSEED 2.x data record in the format: 'FDSN:NET.STA.[LOC:]CHAN'.
+ * The supplied tsid buffer must have enough room for the resulting
+ * string.
+ *
+ * Returns a pointer to the resulting string or NULL on error.
+ ***************************************************************************/
+char *
+ms2_recordtsid (char *record, char *tsid)
+{
+  int idx;
+
+  if (!record || !tsid)
+    return NULL;
+
+  idx = 0;
+  idx += strncpyclean (tsid+idx,  "FDSN:", 5);
+  idx += strncpyclean (tsid+idx,  MS2FSDH_NETWORK(record), 2);
+  idx += strncpyclean (tsid+idx,  ".", 1);
+  idx += strncpyclean (tsid+idx,  MS2FSDH_STATION(record), 5);
+  idx += strncpyclean (tsid+idx,  ".", 1);
+
+  if ( MS2FSDH_LOCATION(record)[0] != ' ' &&
+       MS2FSDH_LOCATION(record)[0] != '\0')
+  {
+    idx += strncpyclean (tsid+idx,  MS2FSDH_LOCATION(record), 2);
+    idx += strncpyclean (tsid+idx,  ":", 1);
+  }
+  idx += strncpyclean (tsid+idx,  MS2FSDH_CHANNEL(record), 3);
+
+  return tsid;
+} /* End of ms2_recordtsid() */
+
+/***************************************************************************
+ * ms2_blktdesc():
+ *
+ * Return a string describing a given blockette type or NULL if the
+ * type is unknown.
+ ***************************************************************************/
+char *
+ms2_blktdesc (uint16_t blkttype)
+{
+  switch (blkttype)
+  {
+  case 100:
+    return "Sample Rate";
+  case 200:
+    return "Generic Event Detection";
+  case 201:
+    return "Murdock Event Detection";
+  case 300:
+    return "Step Calibration";
+  case 310:
+    return "Sine Calibration";
+  case 320:
+    return "Pseudo-random Calibration";
+  case 390:
+    return "Generic Calibration";
+  case 395:
+    return "Calibration Abort";
+  case 400:
+    return "Beam";
+  case 500:
+    return "Timing";
+  case 1000:
+    return "Data Only SEED";
+  case 1001:
+    return "Data Extension";
+  case 2000:
+    return "Opaque Data";
+  } /* end switch */
+
+  return NULL;
+
+} /* End of ms2_blktdesc() */
+
+/***************************************************************************
+ * ms2_blktlen():
+ *
+ * Returns the total length of a given blockette type in bytes or 0 if
+ * type unknown.
+ ***************************************************************************/
+uint16_t
+ms2_blktlen (uint16_t blkttype, const char *blkt, flag swapflag)
+{
+  uint16_t blktlen = 0;
+
+  switch (blkttype)
+  {
+  case 100: /* Sample Rate */
+    blktlen = 12;
+    break;
+  case 200: /* Generic Event Detection */
+    blktlen = 28;
+    break;
+  case 201: /* Murdock Event Detection */
+    blktlen = 36;
+    break;
+  case 300: /* Step Calibration */
+    blktlen = 32;
+    break;
+  case 310: /* Sine Calibration */
+    blktlen = 32;
+    break;
+  case 320: /* Pseudo-random Calibration */
+    blktlen = 28;
+    break;
+  case 390: /* Generic Calibration */
+    blktlen = 28;
+    break;
+  case 395: /* Calibration Abort */
+    blktlen = 16;
+    break;
+  case 400: /* Beam */
+    blktlen = 16;
+    break;
+  case 500: /* Timing */
+    blktlen = 8;
+    break;
+  case 1000: /* Data Only SEED */
+    blktlen = 8;
+    break;
+  case 1001: /* Data Extension */
+    blktlen = 8;
+    break;
+  case 2000: /* Opaque Data */
+    /* First 2-byte field after the blockette header is the length */
+    if (blkt)
+    {
+      memcpy ((void *)&blktlen, blkt + 4, sizeof (int16_t));
+      if (swapflag)
+        ms_gswap2 (&blktlen);
+    }
+    break;
+  } /* end switch */
+
+  return blktlen;
+
+} /* End of ms2_blktlen() */

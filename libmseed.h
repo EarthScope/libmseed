@@ -174,7 +174,7 @@ extern "C" {
     *(X) == 'M' && *(X + 1) == 'S' && *(X + 2) == 3 &&         \
     (uint8_t) (*(X + 8)) >= 0 && (uint8_t) (*(X + 8)) <= 23 && \
     (uint8_t) (*(X + 9)) >= 0 && (uint8_t) (*(X + 9)) <= 59 && \
-    (uint8_t) (*(X + 10)) >= 0 && (uint8_t) (*(X + 10)) <= 60) )
+    (uint8_t) (*(X + 10)) >= 0 && (uint8_t) (*(X + 10)) <= 60 )
 
 /* Macro to test memory for a miniSEED 2.x data record signature by checking
  * SEED data record header values at known byte offsets.
@@ -197,7 +197,7 @@ extern "C" {
     (isdigit ((uint8_t) * (X + 3)) || *(X + 3) == ' ' || !*(X + 3)) && \
     (isdigit ((uint8_t) * (X + 4)) || *(X + 4) == ' ' || !*(X + 4)) && \
     (isdigit ((uint8_t) * (X + 5)) || *(X + 5) == ' ' || !*(X + 5)) && \
-    MS2_ISQUALITYINDICATOR (*(X + 6)) &&                               \
+    MS2_ISDATAINDICATOR (*(X + 6)) &&                                  \
     (*(X + 7) == ' ' || *(X + 7) == '\0') &&                           \
     (uint8_t) (*(X + 24)) >= 0 && (uint8_t) (*(X + 24)) <= 23 &&       \
     (uint8_t) (*(X + 25)) >= 0 && (uint8_t) (*(X + 25)) <= 59 &&       \
