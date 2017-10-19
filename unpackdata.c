@@ -33,8 +33,8 @@ int decodedebug = 0;
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_int16 (int16_t *input, int samplecount, int32_t *output,
-                  int outputlength, int swapflag)
+msr_decode_int16 (int16_t *input, int64_t samplecount, int32_t *output,
+                  int64_t outputlength, int swapflag)
 {
   int16_t sample;
   int idx;
@@ -69,8 +69,8 @@ msr_decode_int16 (int16_t *input, int samplecount, int32_t *output,
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_int32 (int32_t *input, int samplecount, int32_t *output,
-                  int outputlength, int swapflag)
+msr_decode_int32 (int32_t *input, int64_t samplecount, int32_t *output,
+                  int64_t outputlength, int swapflag)
 {
   int32_t sample;
   int idx;
@@ -105,8 +105,8 @@ msr_decode_int32 (int32_t *input, int samplecount, int32_t *output,
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_float32 (float *input, int samplecount, float *output,
-                    int outputlength, int swapflag)
+msr_decode_float32 (float *input, int64_t samplecount, float *output,
+                    int64_t outputlength, int swapflag)
 {
   float sample;
   int idx;
@@ -141,8 +141,8 @@ msr_decode_float32 (float *input, int samplecount, float *output,
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_float64 (double *input, int samplecount, double *output,
-                    int outputlength, int swapflag)
+msr_decode_float64 (double *input, int64_t samplecount, double *output,
+                    int64_t outputlength, int swapflag)
 {
   double sample;
   int idx;
@@ -177,8 +177,8 @@ msr_decode_float64 (double *input, int samplecount, double *output,
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_steim1 (int32_t *input, int inputlength, int samplecount,
-                   int32_t *output, int outputlength, char *srcname,
+msr_decode_steim1 (int32_t *input, int inputlength, int64_t samplecount,
+                   int32_t *output, int64_t outputlength, char *srcname,
                    int swapflag)
 {
   int32_t *outputptr = output; /* Pointer to next output sample location */
@@ -330,8 +330,8 @@ msr_decode_steim1 (int32_t *input, int inputlength, int samplecount,
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
-                   int32_t *output, int outputlength, char *srcname,
+msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
+                   int32_t *output, int64_t outputlength, char *srcname,
                    int swapflag)
 {
   int32_t *outputptr = output; /* Pointer to next output sample location */
@@ -578,8 +578,8 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_geoscope (char *input, int samplecount, float *output,
-                     int outputlength, int encoding,
+msr_decode_geoscope (char *input, int64_t samplecount, float *output,
+                     int64_t outputlength, int encoding,
                      char *srcname, int swapflag)
 {
   int idx = 0;
@@ -734,8 +734,8 @@ msr_decode_geoscope (char *input, int samplecount, float *output,
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_cdsn (int16_t *input, int samplecount, int32_t *output,
-                 int outputlength, int swapflag)
+msr_decode_cdsn (int16_t *input, int64_t samplecount, int32_t *output,
+                 int64_t outputlength, int swapflag)
 {
   int32_t idx = 0;
   int32_t mantissa;  /* mantissa */
@@ -820,8 +820,8 @@ msr_decode_cdsn (int16_t *input, int samplecount, int32_t *output,
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_sro (int16_t *input, int samplecount, int32_t *output,
-                int outputlength, char *srcname, int swapflag)
+msr_decode_sro (int16_t *input, int64_t samplecount, int32_t *output,
+                int64_t outputlength, char *srcname, int swapflag)
 {
   int32_t idx = 0;
   int32_t mantissa;   /* mantissa */
@@ -884,8 +884,8 @@ msr_decode_sro (int16_t *input, int samplecount, int32_t *output,
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_dwwssn (int16_t *input, int samplecount, int32_t *output,
-                   int outputlength, int swapflag)
+msr_decode_dwwssn (int16_t *input, int64_t samplecount, int32_t *output,
+                   int64_t outputlength, int swapflag)
 {
   int32_t idx = 0;
   int32_t sample;

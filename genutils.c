@@ -17,7 +17,7 @@
 #include "gmtime64.h"
 
 static nstime_t ms_time2nstime_int (int year, int day, int hour,
-                                    int min, int sec, int usec);
+                                    int min, int sec, uint32_t usec);
 
 /* A constant number of seconds between the NTP and Posix/Unix time epoch */
 #define NTPPOSIXEPOCHDELTA 2208988800LL
@@ -557,7 +557,7 @@ ms_nstime2seedtimestr (nstime_t nstime, char *seedtimestr, flag subseconds)
  * Returns epoch time on success and NSTERROR on error.
  ***************************************************************************/
 static nstime_t
-ms_time2nstime_int (int year, int day, int hour, int min, int sec, int nsec)
+ms_time2nstime_int (int year, int day, int hour, int min, int sec, uint32_t nsec)
 {
   nstime_t nstime;
   int shortyear;
@@ -592,12 +592,12 @@ ms_time2nstime_int (int year, int day, int hour, int min, int sec, int nsec)
  * hour : 0 - 23
  * min  : 0 - 59
  * sec  : 0 - 60
- * usec : 0 - 999999
+ * nsec : 0 - 999999999
  *
  * Returns epoch time on success and NSTERROR on error.
  ***************************************************************************/
 nstime_t
-ms_time2nstime (int year, int day, int hour, int min, int sec, int nsec)
+ms_time2nstime (int year, int day, int hour, int min, int sec, uint32_t nsec)
 {
   if (year < 1800 || year > 5000)
   {
@@ -629,7 +629,7 @@ ms_time2nstime (int year, int day, int hour, int min, int sec, int nsec)
     return NSTERROR;
   }
 
-  if (nsec < 0 || nsec > 999999999)
+  if (nsec > 999999999)
   {
     ms_log (2, "ms_time2nstime(): Error with nanosecond value: %d\n", nsec);
     return NSTERROR;

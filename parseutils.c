@@ -279,7 +279,6 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
 {
   double nomsamprate;
   char tsid[21] = {0};
-  char *cp;
   char *X;
   char b;
   int retval = 0;
@@ -287,10 +286,6 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
   int b1000reclen = -1;
   int endofblockettes = -1;
   int idx;
-
-  uint16_t blkt_offset; /* Byte offset for next blockette */
-  uint16_t blkt_type;
-  uint16_t next_blkt;
 
   if (!record)
     return 1;
@@ -302,7 +297,7 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
   ms2_recordtsid (record, tsid);
 
   /* Check to see if byte swapping is needed by testing the year and day */
-  if (swapflag == -1 && !MS_ISVALIDYEARDAY (MS2FSDH_YEAR (record), MS2FSDH_DAY (record)))
+  if (swapflag == -1 && !MS_ISVALIDYEARDAY (*pMS2FSDH_YEAR (record), *pMS2FSDH_DAY (record)))
     swapflag = 1;
   else
     swapflag = 0;
@@ -318,15 +313,15 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
   /* Swap byte order */
   if (swapflag)
   {
-    ms_gswap2a (&MS2FSDH_YEAR (record));
-    ms_gswap2a (&MS2FSDH_DAY (record));
-    ms_gswap2a (&MS2FSDH_FSEC (record));
-    ms_gswap2a (&MS2FSDH_NUMSAMPLES (record));
-    ms_gswap2a (&MS2FSDH_SAMPLERATEFACT (record));
-    ms_gswap2a (&MS2FSDH_SAMPLERATEMULT (record));
-    ms_gswap4a (&MS2FSDH_TIMECORRECT (record));
-    ms_gswap2a (&MS2FSDH_DATAOFFSET (record));
-    ms_gswap2a (&MS2FSDH_BLOCKETTEOFFSET (record));
+    ms_gswap2a (pMS2FSDH_YEAR (record));
+    ms_gswap2a (pMS2FSDH_DAY (record));
+    ms_gswap2a (pMS2FSDH_FSEC (record));
+    ms_gswap2a (pMS2FSDH_NUMSAMPLES (record));
+    ms_gswap2a (pMS2FSDH_SAMPLERATEFACT (record));
+    ms_gswap2a (pMS2FSDH_SAMPLERATEMULT (record));
+    ms_gswap4a (pMS2FSDH_TIMECORRECT (record));
+    ms_gswap2a (pMS2FSDH_DATAOFFSET (record));
+    ms_gswap2a (pMS2FSDH_BLOCKETTEOFFSET (record));
   }
 
   /* Validate fixed section header fields */
@@ -341,7 +336,7 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
     retval++;
   }
 
-  /* Check header/quality indicator */
+  /* Check header data/quality indicator */
   if (!MS2_ISDATAINDICATOR (*(X + 6)))
   {
     ms_log (2, "%s: Invalid header indicator (DRQM): '%c'\n", tsid, X + 6);
@@ -392,51 +387,52 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
   }
 
   /* Check start time fields */
-  if (MS2FSDH_YEAR (record) < 1900 || MS2FSDH_YEAR (record) > 2100)
+  if (*pMS2FSDH_YEAR (record) < 1900 || *pMS2FSDH_YEAR (record) > 2100)
   {
-    ms_log (2, "%s: Unlikely start year (1900-2100): '%d'\n", tsid, MS2FSDH_YEAR (record));
+    ms_log (2, "%s: Unlikely start year (1900-2100): '%d'\n", tsid, *pMS2FSDH_YEAR (record));
     retval++;
   }
-  if (MS2FSDH_DAY (record) < 1 || MS2FSDH_DAY (record) > 366)
+  if (*pMS2FSDH_DAY (record) < 1 || *pMS2FSDH_DAY (record) > 366)
   {
-    ms_log (2, "%s: Invalid start day (1-366): '%d'\n", tsid, MS2FSDH_DAY (record));
+    ms_log (2, "%s: Invalid start day (1-366): '%d'\n", tsid, *pMS2FSDH_DAY (record));
     retval++;
   }
-  if (MS2FSDH_HOUR (record) > 23)
+  if (*pMS2FSDH_HOUR (record) > 23)
   {
-    ms_log (2, "%s: Invalid start hour (0-23): '%d'\n", tsid, MS2FSDH_HOUR (record));
+    ms_log (2, "%s: Invalid start hour (0-23): '%d'\n", tsid, *pMS2FSDH_HOUR (record));
     retval++;
   }
-  if (MS2FSDH_MIN (record) > 59)
+  if (*pMS2FSDH_MIN (record) > 59)
   {
-    ms_log (2, "%s: Invalid start minute (0-59): '%d'\n", tsid, MS2FSDH_MIN (record));
+    ms_log (2, "%s: Invalid start minute (0-59): '%d'\n", tsid, *pMS2FSDH_MIN (record));
     retval++;
   }
-  if (MS2FSDH_SEC (record) > 60)
+  if (*pMS2FSDH_SEC (record) > 60)
   {
-    ms_log (2, "%s: Invalid start second (0-60): '%d'\n", tsid, MS2FSDH_SEC (record));
+    ms_log (2, "%s: Invalid start second (0-60): '%d'\n", tsid, *pMS2FSDH_SEC (record));
     retval++;
   }
-  if (MS2FSDH_FSEC (record) > 9999)
+  if (*pMS2FSDH_FSEC (record) > 9999)
   {
-    ms_log (2, "%s: Invalid start fractional seconds (0-9999): '%d'\n", tsid, MS2FSDH_FSEC (record));
+    ms_log (2, "%s: Invalid start fractional seconds (0-9999): '%d'\n", tsid, *pMS2FSDH_FSEC (record));
     retval++;
   }
 
   /* Check number of samples, max samples in 4096-byte Steim-2 encoded record: 6601 */
-  if (fsdh->numsamples > 20000)
+  if (*pMS2FSDH_NUMSAMPLES(record) > 20000)
   {
-    ms_log (2, "%s: Unlikely number of samples (>20000): '%d'\n", tsid, fsdh->numsamples);
+    ms_log (2, "%s: Unlikely number of samples (>20000): '%d'\n",
+            tsid, *pMS2FSDH_NUMSAMPLES(record));
     retval++;
   }
 
   /* Sanity check that there is space for blockettes when both data and blockettes are present */
-  if (MS2FSDH_NUMSAMPLES(record) > 0 &&
-      MS2FSDH_NUMBLOCKETTES(record) > 0 &&
-      MS2FSDH_DATAOFFSET(record) <= MS2FSDH_BLOCKETTEOFFSET(record))
+  if (*pMS2FSDH_NUMSAMPLES(record) > 0 &&
+      *pMS2FSDH_NUMBLOCKETTES(record) > 0 &&
+      *pMS2FSDH_DATAOFFSET(record) <= *pMS2FSDH_BLOCKETTEOFFSET(record))
   {
     ms_log (2, "%s: No space for %d blockettes, data offset: %d, blockette offset: %d\n", tsid,
-            MS2FSDH_NUMBLOCKETTES(record), MS2FSDH_DATAOFFSET(record), MS2FSDH_BLOCKETTEOFFSET(record));
+            *pMS2FSDH_NUMBLOCKETTES(record), *pMS2FSDH_DATAOFFSET(record), *pMS2FSDH_BLOCKETTEOFFSET(record));
     retval++;
   }
 
@@ -444,32 +440,40 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
   if (details >= 1)
   {
     /* Determine nominal sample rate */
-    nomsamprate = ms_nomsamprate (MS2FSDH_SAMPLERATEFACT (record), MS2FSDH_SAMPLERATEMULT (record));
+    nomsamprate = ms_nomsamprate (*pMS2FSDH_SAMPLERATEFACT (record), *pMS2FSDH_SAMPLERATEMULT (record));
 
     /* Print header values */
     ms_log (0, "RECORD -- %s\n", tsid);
-    ms_log (0, "        sequence number: '%c%c%c%c%c%c'\n", MS2FSDH_SEQNUM (record)[0], MS2FSDH_SEQNUM (record)[1],
-            MS2FSDH_SEQNUM (record)[2], MS2FSDH_SEQNUM (record)[3], MS2FSDH_SEQNUM (record)[4], MS2FSDH_SEQNUM (record)[5]);
-    ms_log (0, " data quality indicator: '%c'\n", MS2FSDH_DATAQUALTIY (record));
+    ms_log (0, "        sequence number: '%c%c%c%c%c%c'\n",
+            pMS2FSDH_SEQNUM (record)[0], pMS2FSDH_SEQNUM (record)[1],
+            pMS2FSDH_SEQNUM (record)[2], pMS2FSDH_SEQNUM (record)[3],
+            pMS2FSDH_SEQNUM (record)[4], pMS2FSDH_SEQNUM (record)[5]);
+    ms_log (0, " data quality indicator: '%c'\n", *pMS2FSDH_DATAQUALITY (record));
     if (details > 0)
-      ms_log (0, "               reserved: '%c'\n", MS2FSDH_RESERVED (record));
-    ms_log (0, "           station code: '%c%c%c%c%c'\n", MS2FSDH_STATION (record)[0], MS2FSDH_STATION (record)[1],
-            MS2FSDH_STATION (record)[2], MS2FSDH_STATION (record)[3], MS2FSDH_STATION (record)[4]);
-    ms_log (0, "            location ID: '%c%c'\n", MS2FSDH_LOCATION (record)[0], MS2FSDH_LOCATION (record)[1]);
-    ms_log (0, "          channel codes: '%c%c%c'\n", MS2FSDH_CHANNEL (record)[0], MS2FSDH_CHANNEL (record)[1], MS2FSDH_CHANNEL (record)[2]);
-    ms_log (0, "           network code: '%c%c'\n", MS2FSDH_NETWORK (record)[0], MS2FSDH_NETWORK (record)[1]);
-    ms_log (0, "             start time: %d,%d,%d:%d:%d.%04d (unused: %d)\n", MS2FSDH_YEAR (record), MS2FSDH_DAY (record),
-            MS2FSDH_HOUR (record), MS2FSDH_MIN (record), MS2FSDH_SEC (record), MS2FSDH_FSEC (record), MS2FSDH_UNUSED (record));
-    ms_log (0, "      number of samples: %d\n", MS2FSDH_NUMSAMPLES (record));
+      ms_log (0, "               reserved: '%c'\n", *pMS2FSDH_RESERVED (record));
+    ms_log (0, "           station code: '%c%c%c%c%c'\n",
+            pMS2FSDH_STATION (record)[0], pMS2FSDH_STATION (record)[1],
+            pMS2FSDH_STATION (record)[2], pMS2FSDH_STATION (record)[3], pMS2FSDH_STATION (record)[4]);
+    ms_log (0, "            location ID: '%c%c'\n",
+            pMS2FSDH_LOCATION (record)[0], pMS2FSDH_LOCATION (record)[1]);
+    ms_log (0, "          channel codes: '%c%c%c'\n",
+            pMS2FSDH_CHANNEL (record)[0], pMS2FSDH_CHANNEL (record)[1], pMS2FSDH_CHANNEL (record)[2]);
+    ms_log (0, "           network code: '%c%c'\n",
+            pMS2FSDH_NETWORK (record)[0], pMS2FSDH_NETWORK (record)[1]);
+    ms_log (0, "             start time: %d,%d,%d:%d:%d.%04d (unused: %d)\n",
+            *pMS2FSDH_YEAR (record), *pMS2FSDH_DAY (record),
+            *pMS2FSDH_HOUR (record), *pMS2FSDH_MIN (record),
+            *pMS2FSDH_SEC (record), *pMS2FSDH_FSEC (record), *pMS2FSDH_UNUSED (record));
+    ms_log (0, "      number of samples: %d\n", *pMS2FSDH_NUMSAMPLES (record));
     ms_log (0, "     sample rate factor: %d  (%.10g samples per second)\n",
-            MS2FSDH_SAMPLERATEFACT (record), nomsamprate);
-    ms_log (0, " sample rate multiplier: %d\n", MS2FSDH_SAMPLERATEMULT (record));
+            *pMS2FSDH_SAMPLERATEFACT (record), nomsamprate);
+    ms_log (0, " sample rate multiplier: %d\n", *pMS2FSDH_SAMPLERATEMULT (record));
 
     /* Print flag details if requested */
     if (details > 1)
     {
       /* Activity flags */
-      b = MS2FSDH_ACTFLAGS (record);
+      b = *pMS2FSDH_ACTFLAGS (record);
       ms_log (0, "         activity flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
               bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
               bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
@@ -491,7 +495,7 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
         ms_log (0, "                         [Bit 7] Undefined bit set\n");
 
       /* I/O and clock flags */
-      b = MS2FSDH_IOFLAGS (record);
+      b = *pMS2FSDH_IOFLAGS (record);
       ms_log (0, "    I/O and clock flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
               bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
               bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
@@ -513,7 +517,7 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
         ms_log (0, "                         [Bit 7] Undefined bit set\n");
 
       /* Data quality flags */
-      b = MS2FSDH_DQFLAGS (record);
+      b = *pMS2FSDH_DQFLAGS (record);
       ms_log (0, "     data quality flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
               bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
               bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
@@ -535,16 +539,16 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
         ms_log (0, "                         [Bit 7] Time tag is questionable\n");
     }
 
-    ms_log (0, "   number of blockettes: %d\n", MS2FSDH_NUMBLOCKETTES (record));
-    ms_log (0, "        time correction: %ld\n", (long int)MS2FSDH_TIMECORRECT (record));
-    ms_log (0, "            data offset: %d\n", MS2FSDH_DATAOFFSET (record));
-    ms_log (0, " first blockette offset: %d\n", MS2FSDH_BLOCKETTEOFFSET (record));
+    ms_log (0, "   number of blockettes: %d\n", *pMS2FSDH_NUMBLOCKETTES (record));
+    ms_log (0, "        time correction: %ld\n", (long int)*pMS2FSDH_TIMECORRECT (record));
+    ms_log (0, "            data offset: %d\n", *pMS2FSDH_DATAOFFSET (record));
+    ms_log (0, " first blockette offset: %d\n", *pMS2FSDH_BLOCKETTEOFFSET (record));
   } /* Done printing raw header details */
 
   /* Validate and report information in the blockette chain */
-  if (MS2FSDH_BLOCKETTEOFFSET (record) > 46 && MS2FSDH_BLOCKETTEOFFSET (record) < maxreclen)
+  if (*pMS2FSDH_BLOCKETTEOFFSET (record) > 46 && *pMS2FSDH_BLOCKETTEOFFSET (record) < maxreclen)
   {
-    int blkt_offset = MS2FSDH_BLOCKETTEOFFSET (record);
+    int blkt_offset = *pMS2FSDH_BLOCKETTEOFFSET (record);
     int blkt_count  = 0;
     int blkt_length;
     uint16_t blkt_type;
@@ -567,12 +571,12 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
       /* Print common header fields */
       if (details >= 1)
       {
-        blkt_desc = ms_blktdesc (blkt_type);
+        blkt_desc = ms2_blktdesc (blkt_type);
         ms_log (0, "          BLOCKETTE %u: (%s)\n", blkt_type, (blkt_desc) ? blkt_desc : "Unknown");
         ms_log (0, "              next blockette: %u\n", next_blkt);
       }
 
-      blkt_length = ms_blktlen (blkt_type, record + blkt_offset, swapflag);
+      blkt_length = ms2_blktlen (blkt_type, record + blkt_offset, swapflag);
       if (blkt_length == 0)
       {
         ms_log (2, "%s: Unknown blockette length for type %d\n", tsid, blkt_type);
@@ -594,23 +598,23 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
       if (blkt_type == 100)
       {
         if (swapflag)
-          ms_gswap4 (&MS2B100_SAMPRATE(record + blkt_offset));
+          ms_gswap4 (pMS2B100_SAMPRATE(record + blkt_offset));
 
         if (details >= 1)
         {
-          ms_log (0, "          actual sample rate: %.10g\n", MS2B100_SAMPRATE(record + blkt_offset));
+          ms_log (0, "          actual sample rate: %.10g\n", *pMS2B100_SAMPRATE(record + blkt_offset));
 
           if (details > 1)
           {
-            b = MS2B100_FLAGS(record + blkt_offset);
+            b = *pMS2B100_FLAGS(record + blkt_offset);
             ms_log (0, "             undefined flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
                     bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
                     bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
 
             ms_log (0, "          reserved bytes (3): %u,%u,%u\n",
-                    MS2B100_RESERVED(record + blkt_offset)[0],
-                    MS2B100_RESERVED(record + blkt_offset)[1],
-                    MS2B100_RESERVED(record + blkt_offset)[2]);
+                    pMS2B100_RESERVED(record + blkt_offset)[0],
+                    pMS2B100_RESERVED(record + blkt_offset)[1],
+                    pMS2B100_RESERVED(record + blkt_offset)[2]);
           }
         }
       }
@@ -619,23 +623,23 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
       {
         if (swapflag)
         {
-          ms_gswap4 (&MS2B200_AMPLITUDE(record + blkt_offset));
-          ms_gswap4 (&MS2B200_PERIOD(record + blkt_offset));
-          ms_gswap4 (&MS2B200_BACKGROUNDEST(record + blkt_offset));
-          ms_gswap2 (&MS2B200_YEAR (record + blkt_offset));
-          ms_gswap2 (&MS2B200_DAY (record + blkt_offset));
-          ms_gswap2 (&MS2B200_FSEC (record + blkt_offset));
+          ms_gswap4 (pMS2B200_AMPLITUDE(record + blkt_offset));
+          ms_gswap4 (pMS2B200_PERIOD(record + blkt_offset));
+          ms_gswap4 (pMS2B200_BACKGROUNDEST(record + blkt_offset));
+          ms_gswap2 (pMS2B200_YEAR (record + blkt_offset));
+          ms_gswap2 (pMS2B200_DAY (record + blkt_offset));
+          ms_gswap2 (pMS2B200_FSEC (record + blkt_offset));
         }
 
         if (details >= 1)
         {
-          ms_log (0, "            signal amplitude: %g\n", MS2B200_AMPLITUDE(record + blkt_offset));
-          ms_log (0, "               signal period: %g\n", MS2B200_PERIOD(record + blkt_offset));
-          ms_log (0, "         background estimate: %g\n", MS2B200_BACKGROUNDEST(record + blkt_offset));
+          ms_log (0, "            signal amplitude: %g\n", *pMS2B200_AMPLITUDE(record + blkt_offset));
+          ms_log (0, "               signal period: %g\n", *pMS2B200_PERIOD(record + blkt_offset));
+          ms_log (0, "         background estimate: %g\n", *pMS2B200_BACKGROUNDEST(record + blkt_offset));
 
           if (details > 1)
           {
-            b = MS2B200_FLAGS(record + blkt_offset);
+            b = *pMS2B200_FLAGS(record + blkt_offset);
             ms_log (0, "       event detection flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
                     bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
                     bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
@@ -649,15 +653,15 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
               ms_log (0, "                         [Bit 1] 0: Units are digital counts\n");
             if (b & 0x04)
               ms_log (0, "                         [Bit 2] Bit 0 is undetermined\n");
-            ms_log (0, "               reserved byte: %u\n", MS2B200_RESERVED (record + blkt_offset));
+            ms_log (0, "               reserved byte: %u\n", *pMS2B200_RESERVED (record + blkt_offset));
           }
 
           ms_log (0, "           signal onset time: %d,%d,%d:%d:%d.%04d (unused: %d)\n",
-                  MS2B200_YEAR (record + blkt_offset), MS2B200_DAY (record + blkt_offset),
-                  MS2B200_HOUR (record + blkt_offset), MS2B200_MIN (record + blkt_offset),
-                  MS2B200_SEC (record + blkt_offset), MS2B200_FSEC (record + blkt_offset),
-                  MS2B200_UNUSED (record + blkt_offset));
-          ms_log (0, "               detector name: %.24s\n", MS2B200_DETECTOR (record + blkt_offset));
+                  *pMS2B200_YEAR (record + blkt_offset), *pMS2B200_DAY (record + blkt_offset),
+                  *pMS2B200_HOUR (record + blkt_offset), *pMS2B200_MIN (record + blkt_offset),
+                  *pMS2B200_SEC (record + blkt_offset), *pMS2B200_FSEC (record + blkt_offset),
+                  *pMS2B200_UNUSED (record + blkt_offset));
+          ms_log (0, "               detector name: %.24s\n", *pMS2B200_DETECTOR (record + blkt_offset));
         }
       }
 
@@ -665,21 +669,21 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
       {
         if (swapflag)
         {
-          ms_gswap4 (&MS2B201_AMPLITUDE(record + blkt_offset));
-          ms_gswap4 (&MS2B201_PERIOD(record + blkt_offset));
-          ms_gswap4 (&MS2B201_BACKGROUNDEST(record + blkt_offset));
-          ms_gswap2 (&MS2B201_YEAR (record + blkt_offset));
-          ms_gswap2 (&MS2B201_DAY (record + blkt_offset));
-          ms_gswap2 (&MS2B201_FSEC (record + blkt_offset));
+          ms_gswap4 (pMS2B201_AMPLITUDE(record + blkt_offset));
+          ms_gswap4 (pMS2B201_PERIOD(record + blkt_offset));
+          ms_gswap4 (pMS2B201_BACKGROUNDEST(record + blkt_offset));
+          ms_gswap2 (pMS2B201_YEAR (record + blkt_offset));
+          ms_gswap2 (pMS2B201_DAY (record + blkt_offset));
+          ms_gswap2 (pMS2B201_FSEC (record + blkt_offset));
         }
 
         if (details >= 1)
         {
-          ms_log (0, "            signal amplitude: %g\n", MS2B201_AMPLITUDE(record + blkt_offset));
-          ms_log (0, "               signal period: %g\n", MS2B201_PERIOD(record + blkt_offset));
-          ms_log (0, "         background estimate: %g\n", MS2B201_BACKGROUNDEST(record + blkt_offset));
+          ms_log (0, "            signal amplitude: %g\n", *pMS2B201_AMPLITUDE(record + blkt_offset));
+          ms_log (0, "               signal period: %g\n", *pMS2B201_PERIOD(record + blkt_offset));
+          ms_log (0, "         background estimate: %g\n", *pMS2B201_BACKGROUNDEST(record + blkt_offset));
 
-          b = MS2B201_FLAGS(record + blkt_offset);
+          b = *pMS2B201_FLAGS(record + blkt_offset);
           ms_log (0, "       event detection flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
                   bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
                   bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
@@ -689,20 +693,20 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
             ms_log (0, "                         [Bit 0] 0: Compression wave\n");
 
           if (details > 1)
-            ms_log (0, "               reserved byte: %u\n", MS2B201_RESERVED(record + blkt_offset));
+            ms_log (0, "               reserved byte: %u\n", *pMS2B201_RESERVED(record + blkt_offset));
           ms_log (0, "           signal onset time: %d,%d,%d:%d:%d.%04d (unused: %d)\n",
-                  MS2B201_YEAR (record + blkt_offset), MS2B201_DAY (record + blkt_offset),
-                  MS2B201_HOUR (record + blkt_offset), MS2B201_MIN (record + blkt_offset),
-                  MS2B201_SEC (record + blkt_offset), MS2B201_FSEC (record + blkt_offset),
-                  MS2B201_UNUSED (record + blkt_offset));
+                  *pMS2B201_YEAR (record + blkt_offset), *pMS2B201_DAY (record + blkt_offset),
+                  *pMS2B201_HOUR (record + blkt_offset), *pMS2B201_MIN (record + blkt_offset),
+                  *pMS2B201_SEC (record + blkt_offset), *pMS2B201_FSEC (record + blkt_offset),
+                  *pMS2B201_UNUSED (record + blkt_offset));
           ms_log (0, "                  SNR values: ");
 
           for (idx = 0; idx < 6; idx++)
-            ms_log (0, "%u  ", MS2B201_SNRVALUES (record + blkt_offset)[idx]);
+            ms_log (0, "%u  ", pMS2B201_SNRVALUES (record + blkt_offset)[idx]);
           ms_log (0, "\n");
-          ms_log (0, "              loopback value: %u\n", MS2B201_LOOPBACK (record + blkt_offset));
-          ms_log (0, "              pick algorithm: %u\n", MS2B201_PICKALGORITHM (record + blkt_offset));
-          ms_log (0, "               detector name: %.24s\n", MS2B201_DETECTOR (record + blkt_offset));
+          ms_log (0, "              loopback value: %u\n", *pMS2B201_LOOPBACK (record + blkt_offset));
+          ms_log (0, "              pick algorithm: %u\n", *pMS2B201_PICKALGORITHM (record + blkt_offset));
+          ms_log (0, "               detector name: %.24s\n", *pMS2B201_DETECTOR (record + blkt_offset));
         }
       }
 
@@ -710,25 +714,25 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
       {
         if (swapflag)
         {
-          ms_gswap2 (&MS2B300_YEAR (record + blkt_offset));
-          ms_gswap2 (&MS2B300_DAY (record + blkt_offset));
-          ms_gswap2 (&MS2B300_FSEC (record + blkt_offset));
-          ms_gswap4 (&MS2B300_STEPDURATION (record + blkt_offset));
-          ms_gswap4 (&MS2B300_INTERVALDURATION (record + blkt_offset));
-          ms_gswap4 (&MS2B300_AMPLITUDE (record + blkt_offset));
-          ms_gswap4 (&MS2B300_REFERENCEAMPLITUDE (record + blkt_offset));
+          ms_gswap2 (pMS2B300_YEAR (record + blkt_offset));
+          ms_gswap2 (pMS2B300_DAY (record + blkt_offset));
+          ms_gswap2 (pMS2B300_FSEC (record + blkt_offset));
+          ms_gswap4 (pMS2B300_STEPDURATION (record + blkt_offset));
+          ms_gswap4 (pMS2B300_INTERVALDURATION (record + blkt_offset));
+          ms_gswap4 (pMS2B300_AMPLITUDE (record + blkt_offset));
+          ms_gswap4 (pMS2B300_REFERENCEAMPLITUDE (record + blkt_offset));
         }
 
         if (details >= 1)
         {
           ms_log (0, "      calibration start time: %d,%d,%d:%d:%d.%04d (unused: %d)\n",
-                  MS2B300_YEAR (record + blkt_offset), MS2B300_DAY (record + blkt_offset),
-                  MS2B300_HOUR (record + blkt_offset), MS2B300_MIN (record + blkt_offset),
-                  MS2B300_SEC (record + blkt_offset), MS2B300_FSEC (record + blkt_offset),
-                  MS2B300_UNUSED (record + blkt_offset));
-          ms_log (0, "      number of calibrations: %u\n", MS2B300_NUMCALIBRATIONS (record + blkt_offset));
+                  *pMS2B300_YEAR (record + blkt_offset), *pMS2B300_DAY (record + blkt_offset),
+                  *pMS2B300_HOUR (record + blkt_offset), *pMS2B300_MIN (record + blkt_offset),
+                  *pMS2B300_SEC (record + blkt_offset), *pMS2B300_FSEC (record + blkt_offset),
+                  *pMS2B300_UNUSED (record + blkt_offset));
+          ms_log (0, "      number of calibrations: %u\n", *pMS2B300_NUMCALIBRATIONS (record + blkt_offset));
 
-          b = MS2B300_FLAGS (record + blkt_offset);
+          b = *pMS2B300_FLAGS (record + blkt_offset);
           ms_log (0, "           calibration flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
                   bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
                   bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
@@ -741,15 +745,15 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
           if (b & 0x08)
             ms_log (0, "                         [Bit 3] Calibration continued from previous record(s)\n");
 
-          ms_log (0, "               step duration: %u\n", MS2B300_STEPDURATION (record + blkt_offset));
-          ms_log (0, "           interval duration: %u\n", MS2B300_INTERVALDURATION (record + blkt_offset));
-          ms_log (0, "            signal amplitude: %g\n", MS2B300_AMPLITUDE (record + blkt_offset));
-          ms_log (0, "        input signal channel: %.3s", MS2B300_INPUTCHANNEL (record + blkt_offset));
+          ms_log (0, "               step duration: %u\n", *pMS2B300_STEPDURATION (record + blkt_offset));
+          ms_log (0, "           interval duration: %u\n", *pMS2B300_INTERVALDURATION (record + blkt_offset));
+          ms_log (0, "            signal amplitude: %g\n", *pMS2B300_AMPLITUDE (record + blkt_offset));
+          ms_log (0, "        input signal channel: %.3s", *pMS2B300_INPUTCHANNEL (record + blkt_offset));
           if (details > 1)
-            ms_log (0, "               reserved byte: %u\n", MS2B300_RESERVED (record + blkt_offset));
-          ms_log (0, "         reference amplitude: %u\n", MS2B300_REFERENCEAMPLITUDE (record + blkt_offset));
-          ms_log (0, "                    coupling: %.12s\n", MS2B300_COUPLING (record + blkt_offset));
-          ms_log (0, "                     rolloff: %.12s\n", MS2B300_ROLLOFF (record + blkt_offset));
+            ms_log (0, "               reserved byte: %u\n", *pMS2B300_RESERVED (record + blkt_offset));
+          ms_log (0, "         reference amplitude: %u\n", *pMS2B300_REFERENCEAMPLITUDE (record + blkt_offset));
+          ms_log (0, "                    coupling: %.12s\n", *pMS2B300_COUPLING (record + blkt_offset));
+          ms_log (0, "                     rolloff: %.12s\n", *pMS2B300_ROLLOFF (record + blkt_offset));
         }
       }
 
@@ -757,26 +761,26 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
       {
         if (swapflag)
         {
-          ms_gswap2 (&MS2B310_YEAR (record + blkt_offset));
-          ms_gswap2 (&MS2B310_DAY (record + blkt_offset));
-          ms_gswap2 (&MS2B310_FSEC (record + blkt_offset));
-          ms_gswap4 (&MS2B310_DURATION (record + blkt_offset));
-          ms_gswap4 (&MS2B310_PERIOD (record + blkt_offset));
-          ms_gswap4 (&MS2B310_AMPLITUDE (record + blkt_offset));
-          ms_gswap4 (&MS2B310_REFERENCEAMPLITUDE (record + blkt_offset));
+          ms_gswap2 (pMS2B310_YEAR (record + blkt_offset));
+          ms_gswap2 (pMS2B310_DAY (record + blkt_offset));
+          ms_gswap2 (pMS2B310_FSEC (record + blkt_offset));
+          ms_gswap4 (pMS2B310_DURATION (record + blkt_offset));
+          ms_gswap4 (pMS2B310_PERIOD (record + blkt_offset));
+          ms_gswap4 (pMS2B310_AMPLITUDE (record + blkt_offset));
+          ms_gswap4 (pMS2B310_REFERENCEAMPLITUDE (record + blkt_offset));
         }
 
         if (details >= 1)
         {
           ms_log (0, "      calibration start time: %d,%d,%d:%d:%d.%04d (unused: %d)\n",
-                  MS2B310_YEAR (record + blkt_offset), MS2B310_DAY (record + blkt_offset),
-                  MS2B310_HOUR (record + blkt_offset), MS2B310_MIN (record + blkt_offset),
-                  MS2B310_SEC (record + blkt_offset), MS2B310_FSEC (record + blkt_offset),
-                  MS2B310_UNUSED (record + blkt_offset));
+                  *pMS2B310_YEAR (record + blkt_offset), *pMS2B310_DAY (record + blkt_offset),
+                  *pMS2B310_HOUR (record + blkt_offset), *pMS2B310_MIN (record + blkt_offset),
+                  *pMS2B310_SEC (record + blkt_offset), *pMS2B310_FSEC (record + blkt_offset),
+                  *pMS2B310_UNUSED (record + blkt_offset));
           if (details > 1)
-            ms_log (0, "               reserved byte: %u\n", MS2B310_RESERVED1 (record + blkt_offset));
+            ms_log (0, "               reserved byte: %u\n", *pMS2B310_RESERVED1 (record + blkt_offset));
 
-          b = MS2B310_FLAGS (record + blkt_offset);
+          b = *pMS2B310_FLAGS (record + blkt_offset);
           ms_log (0, "           calibration flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
                   bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
                   bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
@@ -791,42 +795,41 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
           if (b & 0x40)
             ms_log (0, "                         [Bit 6] RMS amplitude\n");
 
-          ms_log (0, "        calibration duration: %u\n", MS2B310_DURATION (record + blkt_offset));
-          ms_log (0, "               signal period: %g\n", MS2B310_PERIOD (record + blkt_offset));
-          ms_log (0, "            signal amplitude: %g\n", MS2B310_AMPLITUDE (record + blkt_offset));
-          ms_log (0, "        input signal channel: %.3s", MS2B310_INPUTCHANNEL (record + blkt_offset));
+          ms_log (0, "        calibration duration: %u\n", *pMS2B310_DURATION (record + blkt_offset));
+          ms_log (0, "               signal period: %g\n", *pMS2B310_PERIOD (record + blkt_offset));
+          ms_log (0, "            signal amplitude: %g\n", *pMS2B310_AMPLITUDE (record + blkt_offset));
+          ms_log (0, "        input signal channel: %.3s", *pMS2B310_INPUTCHANNEL (record + blkt_offset));
           if (details > 1)
-            ms_log (0, "               reserved byte: %u\n", MS2B310_RESERVED2 (record + blkt_offset));
-          ms_log (0, "         reference amplitude: %u\n", MS2B310_REFERENCEAMPLITUDE (record + blkt_offset));
-          ms_log (0, "                    coupling: %.12s\n", MS2B310_COUPLING (record + blkt_offset));
-          ms_log (0, "                     rolloff: %.12s\n", MS2B310_ROLLOFF (record + blkt_offset));
+            ms_log (0, "               reserved byte: %u\n", *pMS2B310_RESERVED2 (record + blkt_offset));
+          ms_log (0, "         reference amplitude: %u\n", *pMS2B310_REFERENCEAMPLITUDE (record + blkt_offset));
+          ms_log (0, "                    coupling: %.12s\n", *pMS2B310_COUPLING (record + blkt_offset));
+          ms_log (0, "                     rolloff: %.12s\n", *pMS2B310_ROLLOFF (record + blkt_offset));
         }
       }
 
       else if (blkt_type == 320)
       {
-        struct blkt_320_s *blkt_320 = (struct blkt_320_s *)(record + blkt_offset + 4);
-
         if (swapflag)
         {
-          ms_gswap2 (&MS2B320_YEAR (record + blkt_offset));
-          ms_gswap2 (&MS2B320_DAY (record + blkt_offset));
-          ms_gswap2 (&MS2B320_FSEC (record + blkt_offset));
-          ms_gswap4 (&MS2B320_DURATION (record + blkt_offset));
-          ms_gswap4 (&MS2B320_PTPAMPLITUDE (record + blkt_offset));
-          ms_gswap4 (&MS2B320_REFERENCEAMPLITUDE (record + blkt_offset));
+          ms_gswap2 (pMS2B320_YEAR (record + blkt_offset));
+          ms_gswap2 (pMS2B320_DAY (record + blkt_offset));
+          ms_gswap2 (pMS2B320_FSEC (record + blkt_offset));
+          ms_gswap4 (pMS2B320_DURATION (record + blkt_offset));
+          ms_gswap4 (pMS2B320_PTPAMPLITUDE (record + blkt_offset));
+          ms_gswap4 (pMS2B320_REFERENCEAMPLITUDE (record + blkt_offset));
+        }
 
         if (details >= 1)
         {
           ms_log (0, "      calibration start time: %d,%d,%d:%d:%d.%04d (unused: %d)\n",
-                  MS2B320_YEAR (record + blkt_offset), MS2B320_DAY (record + blkt_offset),
-                  MS2B320_HOUR (record + blkt_offset), MS2B320_MIN (record + blkt_offset),
-                  MS2B320_SEC (record + blkt_offset), MS2B320_FSEC (record + blkt_offset),
-                  MS2B320_UNUSED (record + blkt_offset));
+                  *pMS2B320_YEAR (record + blkt_offset), *pMS2B320_DAY (record + blkt_offset),
+                  *pMS2B320_HOUR (record + blkt_offset), *pMS2B320_MIN (record + blkt_offset),
+                  *pMS2B320_SEC (record + blkt_offset), *pMS2B320_FSEC (record + blkt_offset),
+                  *pMS2B320_UNUSED (record + blkt_offset));
           if (details > 1)
-            ms_log (0, "               reserved byte: %u\n", MS2B320_RESERVED1 (record + blkt_offset));
+            ms_log (0, "               reserved byte: %u\n", *pMS2B320_RESERVED1 (record + blkt_offset));
 
-          b = MS2B320_FLAGS (record + blkt_offset);
+          b = *pMS2B320_FLAGS (record + blkt_offset);
           ms_log (0, "           calibration flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
                   bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
                   bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
@@ -837,15 +840,15 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
           if (b & 0x10)
             ms_log (0, "                         [Bit 4] Random amplitudes\n");
 
-          ms_log (0, "        calibration duration: %u\n", MS2B320_DURATION (record + blkt_offset));
-          ms_log (0, "      peak-to-peak amplitude: %g\n", MS2B320_PTPAMPLITUDE (record + blkt_offset));
-          ms_log (0, "        input signal channel: %.3s", MS2B320_INPUTCHANNEL (record + blkt_offset));
+          ms_log (0, "        calibration duration: %u\n", *pMS2B320_DURATION (record + blkt_offset));
+          ms_log (0, "      peak-to-peak amplitude: %g\n", *pMS2B320_PTPAMPLITUDE (record + blkt_offset));
+          ms_log (0, "        input signal channel: %.3s", *pMS2B320_INPUTCHANNEL (record + blkt_offset));
           if (details > 1)
-            ms_log (0, "               reserved byte: %u\n", MS2B320_RESERVED2 (record + blkt_offset));
-          ms_log (0, "         reference amplitude: %u\n", MS2B320_REFERENCEAMPLITUDE (record + blkt_offset));
-          ms_log (0, "                    coupling: %.12s\n", MS2B320_COUPLING (record + blkt_offset));
-          ms_log (0, "                     rolloff: %.12s\n", MS2B320_ROLLOFF (record + blkt_offset));
-          ms_log (0, "                  noise type: %.8s\n", MS2B320_NOISETYPE (record + blkt_offset));
+            ms_log (0, "               reserved byte: %u\n", *pMS2B320_RESERVED2 (record + blkt_offset));
+          ms_log (0, "         reference amplitude: %u\n", *pMS2B320_REFERENCEAMPLITUDE (record + blkt_offset));
+          ms_log (0, "                    coupling: %.12s\n", *pMS2B320_COUPLING (record + blkt_offset));
+          ms_log (0, "                     rolloff: %.12s\n", *pMS2B320_ROLLOFF (record + blkt_offset));
+          ms_log (0, "                  noise type: %.8s\n", *pMS2B320_NOISETYPE (record + blkt_offset));
         }
       }
 
@@ -853,24 +856,24 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
       {
         if (swapflag)
         {
-          ms_gswap2 (&MS2B390_YEAR (record + blkt_offset));
-          ms_gswap2 (&MS2B390_DAY (record + blkt_offset));
-          ms_gswap2 (&MS2B390_FSEC (record + blkt_offset));
-          ms_gswap4 (&MS2B390_DURATION (record + blkt_offset));
-          ms_gswap4 (&MS2B390_AMPLITUDE (record + blkt_offset));
+          ms_gswap2 (pMS2B390_YEAR (record + blkt_offset));
+          ms_gswap2 (pMS2B390_DAY (record + blkt_offset));
+          ms_gswap2 (pMS2B390_FSEC (record + blkt_offset));
+          ms_gswap4 (pMS2B390_DURATION (record + blkt_offset));
+          ms_gswap4 (pMS2B390_AMPLITUDE (record + blkt_offset));
         }
 
         if (details >= 1)
         {
           ms_log (0, "      calibration start time: %d,%d,%d:%d:%d.%04d (unused: %d)\n",
-                  MS2B390_YEAR (record + blkt_offset), MS2B390_DAY (record + blkt_offset),
-                  MS2B390_HOUR (record + blkt_offset), MS2B390_MIN (record + blkt_offset),
-                  MS2B390_SEC (record + blkt_offset), MS2B390_FSEC (record + blkt_offset),
-                  MS2B390_UNUSED (record + blkt_offset));
+                  *pMS2B390_YEAR (record + blkt_offset), *pMS2B390_DAY (record + blkt_offset),
+                  *pMS2B390_HOUR (record + blkt_offset), *pMS2B390_MIN (record + blkt_offset),
+                  *pMS2B390_SEC (record + blkt_offset), *pMS2B390_FSEC (record + blkt_offset),
+                  *pMS2B390_UNUSED (record + blkt_offset));
           if (details > 1)
-            ms_log (0, "               reserved byte: %u\n", MS2B390_RESERVED1 (record + blkt_offset));
+            ms_log (0, "               reserved byte: %u\n", *pMS2B390_RESERVED1 (record + blkt_offset));
 
-          b = MS2B390_FLAGS (record + blkt_offset);
+          b = *pMS2B390_FLAGS (record + blkt_offset);
           ms_log (0, "           calibration flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
                   bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
                   bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
@@ -879,11 +882,11 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
           if (b & 0x08)
             ms_log (0, "                         [Bit 3] Calibration continued from previous record(s)\n");
 
-          ms_log (0, "        calibration duration: %u\n", MS2B390_DURATION (record + blkt_offset));
-          ms_log (0, "            signal amplitude: %g\n", MS2B390_AMPLITUDE (record + blkt_offset));
-          ms_log (0, "        input signal channel: %.3s", MS2B390_INPUTCHANEL (record + blkt_offset));
+          ms_log (0, "        calibration duration: %u\n", *pMS2B390_DURATION (record + blkt_offset));
+          ms_log (0, "            signal amplitude: %g\n", *pMS2B390_AMPLITUDE (record + blkt_offset));
+          ms_log (0, "        input signal channel: %.3s", *pMS2B390_INPUTCHANNEL (record + blkt_offset));
           if (details > 1)
-            ms_log (0, "               reserved byte: %u\n", MS2B390_RESERVED2 (record + blkt_offset));
+            ms_log (0, "               reserved byte: %u\n", *pMS2B390_RESERVED2 (record + blkt_offset));
         }
       }
 
@@ -891,21 +894,21 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
       {
         if (swapflag)
         {
-          ms_gswap2 (&MS2B395_YEAR (record + blkt_offset));
-          ms_gswap2 (&MS2B395_DAY (record + blkt_offset));
-          ms_gswap2 (&MS2B395_FSEC (record + blkt_offset));
+          ms_gswap2 (pMS2B395_YEAR (record + blkt_offset));
+          ms_gswap2 (pMS2B395_DAY (record + blkt_offset));
+          ms_gswap2 (pMS2B395_FSEC (record + blkt_offset));
         }
 
         if (details >= 1)
         {
           ms_log (0, "        calibration end time: %d,%d,%d:%d:%d.%04d (unused: %d)\n",
-                  MS2B395_YEAR (record + blkt_offset), MS2B395_DAY (record + blkt_offset),
-                  MS2B395_HOUR (record + blkt_offset), MS2B395_MIN (record + blkt_offset),
-                  MS2B395_SEC (record + blkt_offset), MS2B395_FSEC (record + blkt_offset),
-                  MS2B395_UNUSED (record + blkt_offset));
+                  *pMS2B395_YEAR (record + blkt_offset), *pMS2B395_DAY (record + blkt_offset),
+                  *pMS2B395_HOUR (record + blkt_offset), *pMS2B395_MIN (record + blkt_offset),
+                  *pMS2B395_SEC (record + blkt_offset), *pMS2B395_FSEC (record + blkt_offset),
+                  *pMS2B395_UNUSED (record + blkt_offset));
           if (details > 1)
             ms_log (0, "          reserved bytes (2): %u,%u\n",
-                    MS2B395_RESERVED (record + blkt_offset)[0], MS2B395_RESERVED (record + blkt_offset)[1]);
+                    pMS2B395_RESERVED (record + blkt_offset)[0], pMS2B395_RESERVED (record + blkt_offset)[1]);
         }
       }
 
@@ -913,25 +916,25 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
       {
         if (swapflag)
         {
-          ms_gswap4 (&MS2B400_AZIMUTH (record + blkt_offset));
-          ms_gswap4 (&MS2B400_SLOWNESS (record + blkt_offset));
-          ms_gswap4 (&MS2B400_CONFIGURATION (record + blkt_offset));
+          ms_gswap4 (pMS2B400_AZIMUTH (record + blkt_offset));
+          ms_gswap4 (pMS2B400_SLOWNESS (record + blkt_offset));
+          ms_gswap4 (pMS2B400_CONFIGURATION (record + blkt_offset));
         }
 
         if (details >= 1)
         {
-          ms_log (0, "      beam azimuth (degrees): %g\n", MS2B400_AZIMUTH (record + blkt_offset));
-          ms_log (0, "  beam slowness (sec/degree): %g\n", MS2B400_SLOWNESS (record + blkt_offset));
-          ms_log (0, "               configuration: %u\n", MS2B400_CONFIGURATION (record + blkt_offset));
+          ms_log (0, "      beam azimuth (degrees): %g\n", *pMS2B400_AZIMUTH (record + blkt_offset));
+          ms_log (0, "  beam slowness (sec/degree): %g\n", *pMS2B400_SLOWNESS (record + blkt_offset));
+          ms_log (0, "               configuration: %u\n", *pMS2B400_CONFIGURATION (record + blkt_offset));
           if (details > 1)
             ms_log (0, "          reserved bytes (2): %u,%u\n",
-                    MS2B400_RESERVED (record + blkt_offset)[0], MS2B400_RESERVED (record + blkt_offset)[1]);
+                    pMS2B400_RESERVED (record + blkt_offset)[0], pMS2B400_RESERVED (record + blkt_offset)[1]);
         }
       }
 
       else if (blkt_type == 405)
       {
-        uint16_t firstvalue = MS2B400_DELAYVALUES (record + blkt_offset)[0]; /* Work on a private copy */
+        uint16_t firstvalue = pMS2B405_DELAYVALUES (record + blkt_offset)[0]; /* Work on a private copy */
 
         if (swapflag)
           ms_gswap2 (&firstvalue);
@@ -944,27 +947,27 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
       {
         if (swapflag)
         {
-          ms_gswap4 (&MS2B500_VCOCORRECTION (record + blkt_offset));
-          ms_gswap2 (&MS2B500_YEAR (record + blkt_offset));
-          ms_gswap2 (&MS2B500_DAY (record + blkt_offset));
-          ms_gswap2 (&MS2B500_FSEC (record + blkt_offset));
-          ms_gswap4 (&MS2B500_EXCEPTIONCOUNT (record + blkt_offset));
+          ms_gswap4 (pMS2B500_VCOCORRECTION (record + blkt_offset));
+          ms_gswap2 (pMS2B500_YEAR (record + blkt_offset));
+          ms_gswap2 (pMS2B500_DAY (record + blkt_offset));
+          ms_gswap2 (pMS2B500_FSEC (record + blkt_offset));
+          ms_gswap4 (pMS2B500_EXCEPTIONCOUNT (record + blkt_offset));
         }
 
         if (details >= 1)
         {
-          ms_log (0, "              VCO correction: %g%%\n", MS2B500_VCOCORRECTION (record + blkt_offset));
+          ms_log (0, "              VCO correction: %g%%\n", *pMS2B500_VCOCORRECTION (record + blkt_offset));
           ms_log (0, "           time of exception: %d,%d,%d:%d:%d.%04d (unused: %d)\n",
-                  MS2B500_YEAR (record + blkt_offset), MS2B500_DAY (record + blkt_offset),
-                  MS2B500_HOUR (record + blkt_offset), MS2B500_MIN (record + blkt_offset),
-                  MS2B500_SEC (record + blkt_offset), MS2B500_FSEC (record + blkt_offset),
-                  MS2B500_UNUSED (record + blkt_offset));
-          ms_log (0, "                        usec: %d\n", MS2B500_MICROSECOND (record + blkt_offset));
-          ms_log (0, "           reception quality: %u%%\n", MS2B500_RECEPTIONQUALITY (record + blkt_offset));
-          ms_log (0, "             exception count: %u\n", MS2B500_EXCEPTIONCOUNT (record + blkt_offset));
-          ms_log (0, "              exception type: %.16s\n", MS2B500_EXCEPTIONTYPE (record + blkt_offset));
-          ms_log (0, "                 clock model: %.32s\n", MS2B500_CLOCKMODEL (record + blkt_offset));
-          ms_log (0, "                clock status: %.128s\n", MS2B500_CLOCKSTATUS (record + blkt_offset));
+                  *pMS2B500_YEAR (record + blkt_offset), *pMS2B500_DAY (record + blkt_offset),
+                  *pMS2B500_HOUR (record + blkt_offset), *pMS2B500_MIN (record + blkt_offset),
+                  *pMS2B500_SEC (record + blkt_offset), *pMS2B500_FSEC (record + blkt_offset),
+                  *pMS2B500_UNUSED (record + blkt_offset));
+          ms_log (0, "                        usec: %d\n", *pMS2B500_MICROSECOND (record + blkt_offset));
+          ms_log (0, "           reception quality: %u%%\n", *pMS2B500_RECEPTIONQUALITY (record + blkt_offset));
+          ms_log (0, "             exception count: %u\n", *pMS2B500_EXCEPTIONCOUNT (record + blkt_offset));
+          ms_log (0, "              exception type: %.16s\n", *pMS2B500_EXCEPTIONTYPE (record + blkt_offset));
+          ms_log (0, "                 clock model: %.32s\n", *pMS2B500_CLOCKMODEL (record + blkt_offset));
+          ms_log (0, "                clock status: %.128s\n", *pMS2B500_CLOCKSTATUS (record + blkt_offset));
         }
       }
 
@@ -973,12 +976,12 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
         char order[40];
 
         /* Calculate record size in bytes as 2^(blkt_1000->rec_len) */
-        b1000reclen = (unsigned int)1 << MS2B1000_RECLEN (record + blkt_offset);
+        b1000reclen = (uint32_t)1 << *pMS2B1000_RECLEN (record + blkt_offset);
 
         /* Big or little endian? */
-        if (MS2B1000_BYTEORDER (record + blkt_offset) == 0)
+        if (*pMS2B1000_BYTEORDER (record + blkt_offset) == 0)
           strncpy (order, "Little endian", sizeof (order) - 1);
-        else if (MS2B1000_BYTEORDER (record + blkt_offset) == 1)
+        else if (*pMS2B1000_BYTEORDER (record + blkt_offset) == 1)
           strncpy (order, "Big endian", sizeof (order) - 1);
         else
           strncpy (order, "Unknown value", sizeof (order) - 1);
@@ -986,19 +989,19 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
         if (details >= 1)
         {
           ms_log (0, "                    encoding: %s (val:%u)\n",
-                  (char *)ms_encodingstr (MS2B1000_ENCODING (record + blkt_offset)),
-                  MS2B1000_ENCODING (record + blkt_offset));
+                  (char *)ms_encodingstr (*pMS2B1000_ENCODING (record + blkt_offset)),
+                  *pMS2B1000_ENCODING (record + blkt_offset));
           ms_log (0, "                  byte order: %s (val:%u)\n",
-                  order, MS2B1000_BYTEORDER (record + blkt_offset));
+                  order, *pMS2B1000_BYTEORDER (record + blkt_offset));
           ms_log (0, "               record length: %d (val:%u)\n",
-                  b1000reclen, MS2B1000_RECLEN (record + blkt_offset));
+                  b1000reclen, *pMS2B1000_RECLEN (record + blkt_offset));
 
           if (details > 1)
-            ms_log (0, "               reserved byte: %u\n", MS2B1000_RESERVED (record + blkt_offset));
+            ms_log (0, "               reserved byte: %u\n", *pMS2B1000_RESERVED (record + blkt_offset));
         }
 
         /* Save encoding format */
-        b1000encoding = MS2B1000_ENCODING (record + blkt_offset);
+        b1000encoding = *pMS2B1000_ENCODING (record + blkt_offset);
 
         /* Sanity check encoding format */
         if (!(b1000encoding >= 0 && b1000encoding <= 5) &&
@@ -1010,11 +1013,11 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
         }
 
         /* Sanity check byte order flag */
-        if (MS2B1000_BYTEORDER (record + blkt_offset) != 0 &&
-            MS2B1000_BYTEORDER (record + blkt_offset) != 1)
+        if (*pMS2B1000_BYTEORDER (record + blkt_offset) != 0 &&
+            *pMS2B1000_BYTEORDER (record + blkt_offset) != 1)
         {
           ms_log (2, "%s: Blockette 1000 byte order flag invalid (0 or 1): %d\n", tsid,
-                  MS2B1000_BYTEORDER (record + blkt_offset));
+                  *pMS2B1000_BYTEORDER (record + blkt_offset));
           retval++;
         }
       }
@@ -1023,13 +1026,13 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
       {
         if (details >= 1)
         {
-          ms_log (0, "              timing quality: %u%%\n", MS2B1001_TIMINGQUALITY (record + blkt_offset));
-          ms_log (0, "                micro second: %d\n", MS2B1001_MICROSECOND (record + blkt_offset));
+          ms_log (0, "              timing quality: %u%%\n", *pMS2B1001_TIMINGQUALITY (record + blkt_offset));
+          ms_log (0, "                micro second: %d\n", *pMS2B1001_MICROSECOND (record + blkt_offset));
 
           if (details > 1)
-            ms_log (0, "               reserved byte: %u\n", MS2B1001_RESERVED (record + blkt_offset));
+            ms_log (0, "               reserved byte: %u\n", *pMS2B1001_RESERVED (record + blkt_offset));
 
-          ms_log (0, "                 frame count: %u\n", MS2B1001_FRAMECOUNT (record + blkt_offset));
+          ms_log (0, "                 frame count: %u\n", *pMS2B1001_FRAMECOUNT (record + blkt_offset));
         }
       }
 
@@ -1039,27 +1042,27 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
 
         if (swapflag)
         {
-          ms_gswap2 (&MS2B2000_LENGTH (record + blkt_offset));
-          ms_gswap2 (&MS2B2000_DATAOFFSET (record + blkt_offset));
-          ms_gswap4 (&MS2B2000_RECNUM (record + blkt_offset));
+          ms_gswap2 (pMS2B2000_LENGTH (record + blkt_offset));
+          ms_gswap2 (pMS2B2000_DATAOFFSET (record + blkt_offset));
+          ms_gswap4 (pMS2B2000_RECNUM (record + blkt_offset));
         }
 
         /* Big or little endian? */
-        if (MS2B2000_BYTEORDER (record + blkt_offset) == 0)
+        if (*pMS2B2000_BYTEORDER (record + blkt_offset) == 0)
           strncpy (order, "Little endian", sizeof (order) - 1);
-        else if (MS2B2000_BYTEORDER (record + blkt_offset) == 1)
+        else if (*pMS2B2000_BYTEORDER (record + blkt_offset) == 1)
           strncpy (order, "Big endian", sizeof (order) - 1);
         else
           strncpy (order, "Unknown value", sizeof (order) - 1);
 
         if (details >= 1)
         {
-          ms_log (0, "            blockette length: %u\n", MS2B2000_LENGTH (record + blkt_offset));
-          ms_log (0, "                 data offset: %u\n", MS2B2000_DATAOFFSET (record + blkt_offset));
-          ms_log (0, "               record number: %u\n", MS2B2000_RECNUM (record + blkt_offset));
+          ms_log (0, "            blockette length: %u\n", *pMS2B2000_LENGTH (record + blkt_offset));
+          ms_log (0, "                 data offset: %u\n", *pMS2B2000_DATAOFFSET (record + blkt_offset));
+          ms_log (0, "               record number: %u\n", *pMS2B2000_RECNUM (record + blkt_offset));
           ms_log (0, "                  byte order: %s (val:%u)\n",
-                  order, MS2B2000_BYTEORDER (record + blkt_offset));
-          b = MS2B2000_FLAGS (record + blkt_offset);
+                  order, *pMS2B2000_BYTEORDER (record + blkt_offset));
+          b = *pMS2B2000_FLAGS (record + blkt_offset);
           ms_log (0, "                  data flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
                   bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
                   bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
@@ -1092,12 +1095,13 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
               ms_log (0, "                      [Bits 4-5] 11: Last blockette of file\n");
           }
 
-          ms_log (0, "           number of headers: %u\n", MS2B2000_NUMHEADERS (record + blkt_offset));
+          ms_log (0, "           number of headers: %u\n", *pMS2B2000_NUMHEADERS (record + blkt_offset));
 
           /* Crude display of the opaque data headers */
           if (details > 1)
             ms_log (0, "                     headers: %.*s\n",
-                    (MS2B2000_DATAOFFSET (record + blkt_offset) - 15), MS2B2000_PAYLOAD (record + blkt_offset));
+                    (*pMS2B2000_DATAOFFSET (record + blkt_offset) - 15),
+                    *pMS2B2000_PAYLOAD (record + blkt_offset));
         }
       }
 
@@ -1131,32 +1135,32 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
     }
 
     /* Check that the data and blockette offsets are within the record */
-    if (b1000reclen && MS2FSDH_DATAOFFSET (record) > b1000reclen)
+    if (b1000reclen && *pMS2FSDH_DATAOFFSET (record) > b1000reclen)
     {
       ms_log (2, "%s: Data offset (%d) beyond record length (%d)\n",
-              tsid, MS2FSDH_DATAOFFSET (record), b1000reclen);
+              tsid, *pMS2FSDH_DATAOFFSET (record), b1000reclen);
       retval++;
     }
-    if (b1000reclen && fsdh->blockette_offset > b1000reclen)
+    if (b1000reclen && *pMS2FSDH_BLOCKETTEOFFSET (record) > b1000reclen)
     {
       ms_log (2, "%s: Blockette offset (%d) beyond record length (%d)\n",
-              tsid, MS2FSDH_BLOCKETTEOFFSET (record), b1000reclen);
+              tsid, *pMS2FSDH_BLOCKETTEOFFSET (record), b1000reclen);
       retval++;
     }
 
     /* Check that the data offset is beyond the end of the blockettes */
-    if (fsdh->numsamples && fsdh->data_offset <= endofblockettes)
+    if (*pMS2FSDH_NUMSAMPLES (record) && *pMS2FSDH_DATAOFFSET (record) <= endofblockettes)
     {
       ms_log (2, "%s: Data offset (%d) is within blockette chain (end of blockettes: %d)\n",
-              tsid, MS2FSDH_DATAOFFSET (record), endofblockettes);
+              tsid, *pMS2FSDH_DATAOFFSET (record), endofblockettes);
       retval++;
     }
 
     /* Check that the correct number of blockettes were parsed */
-    if (fsdh->numblockettes != blkt_count)
+    if (*pMS2FSDH_NUMBLOCKETTES (record) != blkt_count)
     {
       ms_log (2, "%s: Specified number of blockettes (%d) not equal to those parsed (%d)\n",
-              tsid, MS2FSDH_NUMBLOCKETTES (record), blkt_count);
+              tsid, *pMS2FSDH_NUMBLOCKETTES (record), blkt_count);
       retval++;
     }
   }

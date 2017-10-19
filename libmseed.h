@@ -124,37 +124,24 @@ extern "C" {
  * Default, native modulus defines tick interval as a nanosecond.
  * Compatibility moduls defines tick interval as millisecond. */
 #define NSTMODULUS 1000000000
-#define HPTMODULUS 1000000
+//#define HPTMODULUS 1000000
 
 /* Error code for routines that normally return a high precision time.
  * The time value corresponds to '1902-1-1 00:00:00.00000000'. */
 #define NSTERROR -2145916800000000000LL
-#define HPTERROR -2145916800000000LL
+    //#define HPTERROR -2145916800000000LL
 
 /* Macros to scale between Unix/POSIX epoch time & high precision times */
 #define MS_EPOCH2NSTIME(X) X * (hptime_t) NSTMODULUS
 #define MS_NSTIME2EPOCH(X) X / NSTMODULUS
-#define MS_EPOCH2HPTIME(X) X * (hptime_t) HPTMODULUS
-#define MS_HPTIME2EPOCH(X) X / HPTMODULUS
+    //#define MS_EPOCH2HPTIME(X) X * (hptime_t) HPTMODULUS
+    //#define MS_HPTIME2EPOCH(X) X / HPTMODULUS
 
 /* Macro to test default sample rate tolerance: abs(1-sr1/sr2) < 0.0001 */
 #define MS_ISRATETOLERABLE(A,B) (ms_dabs (1.0 - (A / B)) < 0.0001)
 
-/* Macro to test for sane year and day values, used primarily to
- * determine if byte order swapping is needed for miniSEED 2.x.
- *
- * Year : between 1900 and 2100
- * Day  : between 1 and 366
- *
- * This test is non-unique (non-deterministic) for days 1, 256 and 257
- * in the year 2056 because the swapped values are also within range.
- * If you are using this in 2056 to determine the byte order of miniSEED 2
- * you have my deepest sympathies.
- */
-#define MS_ISVALIDYEARDAY(Y,D) (Y >= 1900 && Y <= 2100 && D >= 1 && D <= 366)
-
 /* Macro to test a character for miniSEED 2.x data record/quality indicators */
-#define MS_ISQUALITYINDICATOR(X) (X=='D' || X=='R' || X=='Q' || X=='M')
+#define MS2_ISDATAINDICATOR(X) (X=='D' || X=='R' || X=='Q' || X=='M')
 
 /* Macro to test memory for a miniSEED 3.x data record signature by checking
  * record header values at known byte offsets.
@@ -223,9 +210,9 @@ typedef struct MS3Record_s {
   uint8_t         flags;             /* Record-level bit flags */
   nstime_t        starttime;         /* Record start time (first sample) */
   double          samprate;          /* Nominal sample rate (Hz) */
-  uint8_t         encoding;          /* Data encoding format */
+  int8_t          encoding;          /* Data encoding format */
   uint8_t         pubversion;        /* Publication version */
-  uint32_t        samplecnt;         /* Number of samples in record */
+  int64_t         samplecnt;         /* Number of samples in record */
   uint32_t        crc;               /* CRC of entire record */
   uint16_t        extralength;       /* Length of extra headers in bytes */
   uint16_t        payloadlength;     /* Length of data payload in bytes */
@@ -371,7 +358,7 @@ extern int      ms_md2doy (int year, int month, int mday, int *jday);
 extern char*    ms_nstime2isotimestr (nstime_t nstime, char *isotimestr, int8_t subsecond);
 extern char*    ms_nstime2mdtimestr (nstime_t nstime, char *mdtimestr, int8_t subsecond);
 extern char*    ms_nstime2seedtimestr (nstime_t nstime, char *seedtimestr, int8_t subsecond);
-extern nstime_t ms_time2nstime (int year, int day, int hour, int min, int sec, int usec);
+extern nstime_t ms_time2nstime (int year, int day, int hour, int min, int sec, uint32_t nsec);
 extern nstime_t ms_seedtimestr2nstime (char *seedtimestr);
 extern nstime_t ms_timestr2nstime (char *timestr);
 extern int      ms_bigendianhost (void);

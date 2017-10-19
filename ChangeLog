@@ -11,7 +11,6 @@
 	- Change HPTMODULUS to 1000000000 to represent nanoseconds, update 
 	HPTERROR value to nanoseconds similarly.
 	- Rename macros and functions specific to miniSEED 2.x by adding "2".
-	- Rename macro MS_ISDATAINDICATOR to MS2_ISQUALITYINDICATOR.
 	- Remove packheaderbyteorder and packdatabyteorder handling.
 	- Rename unpackheaderbyteorder => ms2_unpackheaderbyteorder and
 	unpackdatabyteorder => ms2_unpackdatabyteorder, only for miniSEED 2.x.	

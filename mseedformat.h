@@ -39,32 +39,32 @@
  * data_offset         uint16_t     44
  * blockette_offset    uint16_t     46
  *
- * Convenience macros for accessing the fields with typing follow:
+ * Convenience macros for accessing the fields via typed pointers follow:
  ***************************************************************************/
-#define MS2FSDH_SEQNUM(BUFFER)          (char*)BUFFER
-#define MS2FSDH_DATAQUALTIY(BUFFER)     (char)*((uint8_t)BUFFER+6)
-#define MS2FSDH_RESERVED(BUFFER)        (char)*((uint8_t)BUFFER+7)
-#define MS2FSDH_STATION(BUFFER)         (char*)((uint8_t)BUFFER+8)
-#define MS2FSDH_LOCATION(BUFFER)        (char*)((uint8_t)BUFFER+13)
-#define MS2FSDH_CHANNEL(BUFFER)         (char*)((uint8_t)BUFFER+15)
-#define MS2FSDH_NETWORK(BUFFER)         (char*)((uint8_t)BUFFER+18)
-#define MS2FSDH_YEAR(BUFFER)            (uint16_t)*((uint8_t)BUFFER+20)
-#define MS2FSDH_DAY(BUFFER)             (uint16_t)*((uint8_t)BUFFER+22)
-#define MS2FSDH_HOUR(BUFFER)            (uint8_t)*((uint8_t)BUFFER+24)
-#define MS2FSDH_MIN(BUFFER)             (uint8_t)*((uint8_t)BUFFER+25)
-#define MS2FSDH_SEC(BUFFER)             (uint8_t)*((uint8_t)BUFFER+26)
-#define MS2FSDH_UNUSED(BUFFER)          (uint8_t)*((uint8_t)BUFFER+27)
-#define MS2FSDH_FSEC(BUFFER)            (uint16_t)*((uint8_t)BUFFER+28)
-#define MS2FSDH_NUMSAMPLES(BUFFER)      (uint16_t)*((uint8_t)BUFFER+30)
-#define MS2FSDH_SAMPLERATEFACT(BUFFER)  (int16_t)*((uint8_t)BUFFER+32)
-#define MS2FSDH_SAMPLERATEMULT(BUFFER)  (int16_t)*((uint8_t)BUFFER+34)
-#define MS2FSDH_ACTFLAGS(BUFFER)        (uint8_t)*((uint8_t)BUFFER+36)
-#define MS2FSDH_IOFLAGS(BUFFER)         (uint8_t)*((uint8_t)BUFFER+37)
-#define MS2FSDH_DQFLAGS(BUFFER)         (uint8_t)*((uint8_t)BUFFER+38)
-#define MS2FSDH_NUMBLOCKETTES(BUFFER)   (uint8_t)*((uint8_t)BUFFER+39)
-#define MS2FSDH_TIMECORRECT(BUFFER)     (int32_t)*((uint8_t)BUFFER+40)
-#define MS2FSDH_DATAOFFSET(BUFFER)      (uint16_t)*((uint8_t)BUFFER+44)
-#define MS2FSDH_BLOCKETTEOFFSET(BUFFER) (uint16_t)*((uint8_t)BUFFER+46)
+#define pMS2FSDH_SEQNUM(record)          ((char*)record)
+#define pMS2FSDH_DATAQUALITY(record)     ((char*)((uint8_t*)record+6))
+#define pMS2FSDH_RESERVED(record)        ((char*)((uint8_t*)record+7))
+#define pMS2FSDH_STATION(record)         ((char*)((uint8_t*)record+8))
+#define pMS2FSDH_LOCATION(record)        ((char*)((uint8_t*)record+13))
+#define pMS2FSDH_CHANNEL(record)         ((char*)((uint8_t*)record+15))
+#define pMS2FSDH_NETWORK(record)         ((char*)((uint8_t*)record+18))
+#define pMS2FSDH_YEAR(record)            ((uint16_t*)((uint8_t*)record+20))
+#define pMS2FSDH_DAY(record)             ((uint16_t*)((uint8_t*)record+22))
+#define pMS2FSDH_HOUR(record)            ((uint8_t*)((uint8_t*)record+24))
+#define pMS2FSDH_MIN(record)             ((uint8_t*)((uint8_t*)record+25))
+#define pMS2FSDH_SEC(record)             ((uint8_t*)((uint8_t*)record+26))
+#define pMS2FSDH_UNUSED(record)          ((uint8_t*)((uint8_t*)record+27))
+#define pMS2FSDH_FSEC(record)            ((uint16_t*)((uint8_t*)record+28))
+#define pMS2FSDH_NUMSAMPLES(record)      ((uint16_t*)((uint8_t*)record+30))
+#define pMS2FSDH_SAMPLERATEFACT(record)  ((int16_t*)((uint8_t*)record+32))
+#define pMS2FSDH_SAMPLERATEMULT(record)  ((int16_t*)((uint8_t*)record+34))
+#define pMS2FSDH_ACTFLAGS(record)        ((uint8_t*)((uint8_t*)record+36))
+#define pMS2FSDH_IOFLAGS(record)         ((uint8_t*)((uint8_t*)record+37))
+#define pMS2FSDH_DQFLAGS(record)         ((uint8_t*)((uint8_t*)record+38))
+#define pMS2FSDH_NUMBLOCKETTES(record)   ((uint8_t*)((uint8_t*)record+39))
+#define pMS2FSDH_TIMECORRECT(record)     ((int32_t*)((uint8_t*)record+40))
+#define pMS2FSDH_DATAOFFSET(record)      ((uint16_t*)((uint8_t*)record+44))
+#define pMS2FSDH_BLOCKETTEOFFSET(record) ((uint16_t*)((uint8_t*)record+46))
 
 /***************************************************************************
  * miniSEED 2.4 Blockette 100 - sample rate
@@ -76,13 +76,13 @@
  * flags               uint8_t       8
  * reserved            uint8_t[3]    9
  *
- * Convenience macros for accessing the fields with typing follow:
+ * Convenience macros for accessing the fields via typed pointers follow:
  ***************************************************************************/
-#define MS2B100_TYPE(BUFFER)            (uint16_t)*(BUFFER)
-#define MS2B100_NEXT(BUFFER)            (uint16_t)*((uint8_t)BUFFER+2)
-#define MS2B100_SAMPRATE(BUFFER)        (float)*((uint8_t)BUFFER+4)
-#define MS2B100_FLAGS(BUFFER)           (uint8_t)*((uint8_t)BUFFER+8)
-#define MS2B100_RESERVED(BUFFER)        (uint8_t)*((uint8_t)BUFFER+9)
+#define pMS2B100_TYPE(blockette)            ((uint16_t*)(blockette))
+#define pMS2B100_NEXT(blockette)            ((uint16_t*)((uint8_t*)blockette+2))
+#define pMS2B100_SAMPRATE(blockette)        ((float*)((uint8_t*)blockette+4))
+#define pMS2B100_FLAGS(blockette)           ((uint8_t*)((uint8_t*)blockette+8))
+#define pMS2B100_RESERVED(blockette)        ((uint8_t*)((uint8_t*)blockette+9))
 
 /***************************************************************************
  * miniSEED 2.4 Blockette 200 - generic event detection
@@ -104,23 +104,23 @@
  * fract               uint16_t     26
  * detector            char[24]     28
  *
- * Convenience macros for accessing the fields with typing follow:
+ * Convenience macros for accessing the fields via typed pointers follow:
  ***************************************************************************/
-#define MS2B200_TYPE(BUFFER)            (uint16_t)*(BUFFER)
-#define MS2B200_NEXT(BUFFER)            (uint16_t)*((uint8_t)BUFFER+2)
-#define MS2B200_AMPLITUDE(BUFFER)       (float)*((uint8_t)BUFFER+4)
-#define MS2B200_PERIOD(BUFFER)          (float)*((uint8_t)BUFFER+8)
-#define MS2B200_BACKGROUNDEST(BUFFER)   (float)*((uint8_t)BUFFER+12)
-#define MS2B200_FLAGS(BUFFER)           (uint8_t)*((uint8_t)BUFFER+16)
-#define MS2B200_RESERVED(BUFFER)        (uint8_t)*((uint8_t)BUFFER+17)
-#define MS2B200_YEAR(BUFFER)            (uint16_t)*((uint8_t)BUFFER+18)
-#define MS2B200_DAY(BUFFER)             (uint16_t)*((uint8_t)BUFFER+20)
-#define MS2B200_HOUR(BUFFER)            (uint8_t)*((uint8_t)BUFFER+22)
-#define MS2B200_MIN(BUFFER)             (uint8_t)*((uint8_t)BUFFER+23)
-#define MS2B200_SEC(BUFFER)             (uint8_t)*((uint8_t)BUFFER+24)
-#define MS2B200_UNUSED(BUFFER)          (uint8_t)*((uint8_t)BUFFER+25)
-#define MS2B200_FSEC(BUFFER)            (uint16_t)*((uint8_t)BUFFER+26)
-#define MS2B200_DETECTOR(BUFFER)        (char*)((uint8_t)BUFFER+28)
+#define pMS2B200_TYPE(blockette)            ((uint16_t*)(blockette))
+#define pMS2B200_NEXT(blockette)            ((uint16_t*)((uint8_t*)blockette+2))
+#define pMS2B200_AMPLITUDE(blockette)       ((float*)((uint8_t*)blockette+4))
+#define pMS2B200_PERIOD(blockette)          ((float*)((uint8_t*)blockette+8))
+#define pMS2B200_BACKGROUNDEST(blockette)   ((float*)((uint8_t*)blockette+12))
+#define pMS2B200_FLAGS(blockette)           ((uint8_t*)((uint8_t*)blockette+16))
+#define pMS2B200_RESERVED(blockette)        ((uint8_t*)((uint8_t*)blockette+17))
+#define pMS2B200_YEAR(blockette)            ((uint16_t*)((uint8_t*)blockette+18))
+#define pMS2B200_DAY(blockette)             ((uint16_t*)((uint8_t*)blockette+20))
+#define pMS2B200_HOUR(blockette)            ((uint8_t*)((uint8_t*)blockette+22))
+#define pMS2B200_MIN(blockette)             ((uint8_t*)((uint8_t*)blockette+23))
+#define pMS2B200_SEC(blockette)             ((uint8_t*)((uint8_t*)blockette+24))
+#define pMS2B200_UNUSED(blockette)          ((uint8_t*)((uint8_t*)blockette+25))
+#define pMS2B200_FSEC(blockette)            ((uint16_t*)((uint8_t*)blockette+26))
+#define pMS2B200_DETECTOR(blockette)        ((char*)((uint8_t*)blockette+28))
 
 /***************************************************************************
  * miniSEED 2.4 Blockette 201 - Murdock event detection
@@ -145,26 +145,26 @@
  * pick_algorithm      uint8_t      35
  * detector            char[24]     36
  *
- * Convenience macros for accessing the fields with typing follow:
+ * Convenience macros for accessing the fields via typed pointers follow:
  ***************************************************************************/
-#define MS2B201_TYPE(BUFFER)            (uint16_t)*(BUFFER)
-#define MS2B201_NEXT(BUFFER)            (uint16_t)*((uint8_t)BUFFER+2)
-#define MS2B201_AMPLITUDE(BUFFER)       (float)*((uint8_t)BUFFER+4)
-#define MS2B201_PERIOD(BUFFER)          (float)*((uint8_t)BUFFER+8)
-#define MS2B201_BACKGROUNDEST(BUFFER)   (float)*((uint8_t)BUFFER+12)
-#define MS2B201_FLAGS(BUFFER)           (uint8_t)*((uint8_t)BUFFER+16)
-#define MS2B201_RESERVED(BUFFER)        (uint8_t)*((uint8_t)BUFFER+17)
-#define MS2B201_YEAR(BUFFER)            (uint16_t)*((uint8_t)BUFFER+18)
-#define MS2B201_DAY(BUFFER)             (uint16_t)*((uint8_t)BUFFER+20)
-#define MS2B201_HOUR(BUFFER)            (uint8_t)*((uint8_t)BUFFER+22)
-#define MS2B201_MIN(BUFFER)             (uint8_t)*((uint8_t)BUFFER+23)
-#define MS2B201_SEC(BUFFER)             (uint8_t)*((uint8_t)BUFFER+24)
-#define MS2B201_UNUSED(BUFFER)          (uint8_t)*((uint8_t)BUFFER+25)
-#define MS2B201_FSEC(BUFFER)            (uint16_t)*((uint8_t)BUFFER+26)
-#define MS2B201_SNRVALUES(BUFFER)       (uint8_t)*((uint8_t)BUFFER+28)
-#define MS2B201_LOOPBACK(BUFFER)        (uint8_t)*((uint8_t)BUFFER+34)
-#define MS2B201_PICKALGORITHM(BUFFER)   (uint8_t)*((uint8_t)BUFFER+35)
-#define MS2B201_DETECTOR(BUFFER)        (char*)((uint8_t)BUFFER+36)
+#define pMS2B201_TYPE(blockette)            ((uint16_t*)(blockette))
+#define pMS2B201_NEXT(blockette)            ((uint16_t*)((uint8_t*)blockette+2))
+#define pMS2B201_AMPLITUDE(blockette)       ((float*)((uint8_t*)blockette+4))
+#define pMS2B201_PERIOD(blockette)          ((float*)((uint8_t*)blockette+8))
+#define pMS2B201_BACKGROUNDEST(blockette)   ((float*)((uint8_t*)blockette+12))
+#define pMS2B201_FLAGS(blockette)           ((uint8_t*)((uint8_t*)blockette+16))
+#define pMS2B201_RESERVED(blockette)        ((uint8_t*)((uint8_t*)blockette+17))
+#define pMS2B201_YEAR(blockette)            ((uint16_t*)((uint8_t*)blockette+18))
+#define pMS2B201_DAY(blockette)             ((uint16_t*)((uint8_t*)blockette+20))
+#define pMS2B201_HOUR(blockette)            ((uint8_t*)((uint8_t*)blockette+22))
+#define pMS2B201_MIN(blockette)             ((uint8_t*)((uint8_t*)blockette+23))
+#define pMS2B201_SEC(blockette)             ((uint8_t*)((uint8_t*)blockette+24))
+#define pMS2B201_UNUSED(blockette)          ((uint8_t*)((uint8_t*)blockette+25))
+#define pMS2B201_FSEC(blockette)            ((uint16_t*)((uint8_t*)blockette+26))
+#define pMS2B201_SNRVALUES(blockette)       ((uint8_t*)((uint8_t*)blockette+28))
+#define pMS2B201_LOOPBACK(blockette)        ((uint8_t*)((uint8_t*)blockette+34))
+#define pMS2B201_PICKALGORITHM(blockette)   ((uint8_t*)((uint8_t*)blockette+35))
+#define pMS2B201_DETECTOR(blockette)        ((char*)((uint8_t*)blockette+36))
 
 /***************************************************************************
  * miniSEED 2.4 Blockette 300 - step calibration
@@ -190,27 +190,27 @@
  * coupling            char[12]     36
  * rolloff             char[12]     48
  *
- * Convenience macros for accessing the fields with typing follow:
+ * Convenience macros for accessing the fields via typed pointers follow:
  ***************************************************************************/
-#define MS2B300_TYPE(BUFFER)            (uint16_t)*(BUFFER)
-#define MS2B300_NEXT(BUFFER)            (uint16_t)*((uint8_t)BUFFER+2)
-#define MS2B300_YEAR(BUFFER)            (uint16_t)*((uint8_t)BUFFER+4)
-#define MS2B300_DAY(BUFFER)             (uint16_t)*((uint8_t)BUFFER+6)
-#define MS2B300_HOUR(BUFFER)            (uint8_t)*((uint8_t)BUFFER+8)
-#define MS2B300_MIN(BUFFER)             (uint8_t)*((uint8_t)BUFFER+9)
-#define MS2B300_SEC(BUFFER)             (uint8_t)*((uint8_t)BUFFER+10)
-#define MS2B300_UNUSED(BUFFER)          (uint8_t)*((uint8_t)BUFFER+11)
-#define MS2B300_FSEC(BUFFER)            (uint16_t)*((uint8_t)BUFFER+12)
-#define MS2B300_NUMCALIBRATIONS(BUFFER) (uint8_t)*((uint8_t)BUFFER+14)
-#define MS2B300_FLAGS(BUFFER)           (uint8_t)*((uint8_t)BUFFER+15)
-#define MS2B300_STEPDURATION(BUFFER)    (uint32_t)*((uint8_t)BUFFER+16)
-#define MS2B300_INTERVALDURATION(BUFFER) (uint32_t)*((uint8_t)BUFFER+20)
-#define MS2B300_AMPLITUDE(BUFFER)       (float)*((uint8_t)BUFFER+24)
-#define MS2B300_INPUTCHANNEL(BUFFER)    (char *)((uint8_t)BUFFER+28)
-#define MS2B300_RESERVED(BUFFER)        (uint8_t)*((uint8_t)BUFFER+31)
-#define MS2B300_REFERENCEAMPLITUDE(BUFFER) (uint32_t)*((uint8_t)BUFFER+32)
-#define MS2B300_COUPLING(BUFFER)        (char*)((uint8_t)BUFFER+36)
-#define MS2B300_ROLLOFF(BUFFER)         (char*)((uint8_t)BUFFER+48)
+#define pMS2B300_TYPE(blockette)            ((uint16_t*)(blockette))
+#define pMS2B300_NEXT(blockette)            ((uint16_t*)((uint8_t*)blockette+2))
+#define pMS2B300_YEAR(blockette)            ((uint16_t*)((uint8_t*)blockette+4))
+#define pMS2B300_DAY(blockette)             ((uint16_t*)((uint8_t*)blockette+6))
+#define pMS2B300_HOUR(blockette)            ((uint8_t*)((uint8_t*)blockette+8))
+#define pMS2B300_MIN(blockette)             ((uint8_t*)((uint8_t*)blockette+9))
+#define pMS2B300_SEC(blockette)             ((uint8_t*)((uint8_t*)blockette+10))
+#define pMS2B300_UNUSED(blockette)          ((uint8_t*)((uint8_t*)blockette+11))
+#define pMS2B300_FSEC(blockette)            ((uint16_t*)((uint8_t*)blockette+12))
+#define pMS2B300_NUMCALIBRATIONS(blockette) ((uint8_t*)((uint8_t*)blockette+14))
+#define pMS2B300_FLAGS(blockette)           ((uint8_t*)((uint8_t*)blockette+15))
+#define pMS2B300_STEPDURATION(blockette)    ((uint32_t*)((uint8_t*)blockette+16))
+#define pMS2B300_INTERVALDURATION(blockette) ((uint32_t*)((uint8_t*)blockette+20))
+#define pMS2B300_AMPLITUDE(blockette)       ((float*)((uint8_t*)blockette+24))
+#define pMS2B300_INPUTCHANNEL(blockette)    ((char *)((uint8_t*)blockette+28))
+#define pMS2B300_RESERVED(blockette)        ((uint8_t*)((uint8_t*)blockette+31))
+#define pMS2B300_REFERENCEAMPLITUDE(blockette) ((uint32_t*)((uint8_t*)blockette+32))
+#define pMS2B300_COUPLING(blockette)        ((char*)((uint8_t*)blockette+36))
+#define pMS2B300_ROLLOFF(blockette)         ((char*)((uint8_t*)blockette+48))
 
 /***************************************************************************
  * miniSEED 2.4 Blockette 310 - sine calibration
@@ -236,27 +236,27 @@
  * coupling            char[12]     36
  * rolloff             char[12]     48
  *
- * Convenience macros for accessing the fields with typing follow:
+ * Convenience macros for accessing the fields via typed pointers follow:
  ***************************************************************************/
-#define MS2B310_TYPE(BUFFER)            (uint16_t)*(BUFFER)
-#define MS2B310_NEXT(BUFFER)            (uint16_t)*((uint8_t)BUFFER+2)
-#define MS2B310_YEAR(BUFFER)            (uint16_t)*((uint8_t)BUFFER+4)
-#define MS2B310_DAY(BUFFER)             (uint16_t)*((uint8_t)BUFFER+6)
-#define MS2B310_HOUR(BUFFER)            (uint8_t)*((uint8_t)BUFFER+8)
-#define MS2B310_MIN(BUFFER)             (uint8_t)*((uint8_t)BUFFER+9)
-#define MS2B310_SEC(BUFFER)             (uint8_t)*((uint8_t)BUFFER+10)
-#define MS2B310_UNUSED(BUFFER)          (uint8_t)*((uint8_t)BUFFER+11)
-#define MS2B310_FSEC(BUFFER)            (uint16_t)*((uint8_t)BUFFER+12)
-#define MS2B310_RESERVED1(BUFFER)       (uint8_t)*((uint8_t)BUFFER+14)
-#define MS2B310_FLAGS(BUFFER)           (uint8_t)*((uint8_t)BUFFER+15)
-#define MS2B310_DURATION(BUFFER)        (uint32_t)*((uint8_t)BUFFER+16)
-#define MS2B310_PERIOD(BUFFER)          (float)*((uint8_t)BUFFER+20)
-#define MS2B310_AMPLITUDE(BUFFER)       (float)*((uint8_t)BUFFER+24)
-#define MS2B310_INPUTCHANNEL(BUFFER)    (char *)((uint8_t)BUFFER+28)
-#define MS2B310_RESERVED2(BUFFER)       (uint8_t)*((uint8_t)BUFFER+31)
-#define MS2B310_REFERENCEAMPLITUDE(BUFFER) (uint32_t)*((uint8_t)BUFFER+32)
-#define MS2B310_COUPLING(BUFFER)        (char*)((uint8_t)BUFFER+36)
-#define MS2B310_ROLLOFF(BUFFER)         (char*)((uint8_t)BUFFER+48)
+#define pMS2B310_TYPE(blockette)            ((uint16_t*)(blockette))
+#define pMS2B310_NEXT(blockette)            ((uint16_t*)((uint8_t*)blockette+2))
+#define pMS2B310_YEAR(blockette)            ((uint16_t*)((uint8_t*)blockette+4))
+#define pMS2B310_DAY(blockette)             ((uint16_t*)((uint8_t*)blockette+6))
+#define pMS2B310_HOUR(blockette)            ((uint8_t*)((uint8_t*)blockette+8))
+#define pMS2B310_MIN(blockette)             ((uint8_t*)((uint8_t*)blockette+9))
+#define pMS2B310_SEC(blockette)             ((uint8_t*)((uint8_t*)blockette+10))
+#define pMS2B310_UNUSED(blockette)          ((uint8_t*)((uint8_t*)blockette+11))
+#define pMS2B310_FSEC(blockette)            ((uint16_t*)((uint8_t*)blockette+12))
+#define pMS2B310_RESERVED1(blockette)       ((uint8_t*)((uint8_t*)blockette+14))
+#define pMS2B310_FLAGS(blockette)           ((uint8_t*)((uint8_t*)blockette+15))
+#define pMS2B310_DURATION(blockette)        ((uint32_t*)((uint8_t*)blockette+16))
+#define pMS2B310_PERIOD(blockette)          ((float*)((uint8_t*)blockette+20))
+#define pMS2B310_AMPLITUDE(blockette)       ((float*)((uint8_t*)blockette+24))
+#define pMS2B310_INPUTCHANNEL(blockette)    ((char *)((uint8_t*)blockette+28))
+#define pMS2B310_RESERVED2(blockette)       ((uint8_t*)((uint8_t*)blockette+31))
+#define pMS2B310_REFERENCEAMPLITUDE(blockette) ((uint32_t*)((uint8_t*)blockette+32))
+#define pMS2B310_COUPLING(blockette)        ((char*)((uint8_t*)blockette+36))
+#define pMS2B310_ROLLOFF(blockette)         ((char*)((uint8_t*)blockette+48))
 
 /***************************************************************************
  * miniSEED 2.4 Blockette 320 - pseudo-random calibration
@@ -282,27 +282,27 @@
  * rolloff             char[12]     44
  * noise type          char[8]      56
  *
- * Convenience macros for accessing the fields with typing follow:
+ * Convenience macros for accessing the fields via typed pointers follow:
  ***************************************************************************/
-#define MS2B320_TYPE(BUFFER)            (uint16_t)*(BUFFER)
-#define MS2B320_NEXT(BUFFER)            (uint16_t)*((uint8_t)BUFFER+2)
-#define MS2B320_YEAR(BUFFER)            (uint16_t)*((uint8_t)BUFFER+4)
-#define MS2B320_DAY(BUFFER)             (uint16_t)*((uint8_t)BUFFER+6)
-#define MS2B320_HOUR(BUFFER)            (uint8_t)*((uint8_t)BUFFER+8)
-#define MS2B320_MIN(BUFFER)             (uint8_t)*((uint8_t)BUFFER+9)
-#define MS2B320_SEC(BUFFER)             (uint8_t)*((uint8_t)BUFFER+10)
-#define MS2B320_UNUSED(BUFFER)          (uint8_t)*((uint8_t)BUFFER+11)
-#define MS2B320_FSEC(BUFFER)            (uint16_t)*((uint8_t)BUFFER+12)
-#define MS2B320_RESERVED1(BUFFER)       (uint8_t)*((uint8_t)BUFFER+14)
-#define MS2B320_FLAGS(BUFFER)           (uint8_t)*((uint8_t)BUFFER+15)
-#define MS2B320_DURATION(BUFFER)        (uint32_t)*((uint8_t)BUFFER+16)
-#define MS2B320_PTPAMPLITUDE(BUFFER)    (float)*((uint8_t)BUFFER+20)
-#define MS2B320_INPUTCHANNEL(BUFFER)    (char *)((uint8_t)BUFFER+24)
-#define MS2B320_RESERVED2(BUFFER)       (uint8_t)*((uint8_t)BUFFER+27)
-#define MS2B320_REFERENCEAMPLITUDE(BUFFER) (uint32_t)*((uint8_t)BUFFER+28)
-#define MS2B320_COUPLING(BUFFER)        (char*)((uint8_t)BUFFER+32)
-#define MS2B320_ROLLOFF(BUFFER)         (char*)((uint8_t)BUFFER+44)
-#define MS2B320_NOISETYPE(BUFFER)       (char*)((uint8_t)BUFFER+56)
+#define pMS2B320_TYPE(blockette)            ((uint16_t*)(blockette))
+#define pMS2B320_NEXT(blockette)            ((uint16_t*)((uint8_t*)blockette+2))
+#define pMS2B320_YEAR(blockette)            ((uint16_t*)((uint8_t*)blockette+4))
+#define pMS2B320_DAY(blockette)             ((uint16_t*)((uint8_t*)blockette+6))
+#define pMS2B320_HOUR(blockette)            ((uint8_t*)((uint8_t*)blockette+8))
+#define pMS2B320_MIN(blockette)             ((uint8_t*)((uint8_t*)blockette+9))
+#define pMS2B320_SEC(blockette)             ((uint8_t*)((uint8_t*)blockette+10))
+#define pMS2B320_UNUSED(blockette)          ((uint8_t*)((uint8_t*)blockette+11))
+#define pMS2B320_FSEC(blockette)            ((uint16_t*)((uint8_t*)blockette+12))
+#define pMS2B320_RESERVED1(blockette)       ((uint8_t*)((uint8_t*)blockette+14))
+#define pMS2B320_FLAGS(blockette)           ((uint8_t*)((uint8_t*)blockette+15))
+#define pMS2B320_DURATION(blockette)        ((uint32_t*)((uint8_t*)blockette+16))
+#define pMS2B320_PTPAMPLITUDE(blockette)    ((float*)((uint8_t*)blockette+20))
+#define pMS2B320_INPUTCHANNEL(blockette)    ((char *)((uint8_t*)blockette+24))
+#define pMS2B320_RESERVED2(blockette)       ((uint8_t*)((uint8_t*)blockette+27))
+#define pMS2B320_REFERENCEAMPLITUDE(blockette) ((uint32_t*)((uint8_t*)blockette+28))
+#define pMS2B320_COUPLING(blockette)        ((char*)((uint8_t*)blockette+32))
+#define pMS2B320_ROLLOFF(blockette)         ((char*)((uint8_t*)blockette+44))
+#define pMS2B320_NOISETYPE(blockette)       ((char*)((uint8_t*)blockette+56))
 
 /***************************************************************************
  * miniSEED 2.4 Blockette 390 - generic calibration
@@ -324,23 +324,23 @@
  * input channel       char[3]      24
  * reserved2           uint8_t      27
  *
- * Convenience macros for accessing the fields with typing follow:
+ * Convenience macros for accessing the fields via typed pointers follow:
  ***************************************************************************/
-#define MS2B390_TYPE(BUFFER)            (uint16_t)*(BUFFER)
-#define MS2B390_NEXT(BUFFER)            (uint16_t)*((uint8_t)BUFFER+2)
-#define MS2B390_YEAR(BUFFER)            (uint16_t)*((uint8_t)BUFFER+4)
-#define MS2B390_DAY(BUFFER)             (uint16_t)*((uint8_t)BUFFER+6)
-#define MS2B390_HOUR(BUFFER)            (uint8_t)*((uint8_t)BUFFER+8)
-#define MS2B390_MIN(BUFFER)             (uint8_t)*((uint8_t)BUFFER+9)
-#define MS2B390_SEC(BUFFER)             (uint8_t)*((uint8_t)BUFFER+10)
-#define MS2B390_UNUSED(BUFFER)          (uint8_t)*((uint8_t)BUFFER+11)
-#define MS2B390_FSEC(BUFFER)            (uint16_t)*((uint8_t)BUFFER+12)
-#define MS2B390_RESERVED1(BUFFER)       (uint8_t)*((uint8_t)BUFFER+14)
-#define MS2B390_FLAGS(BUFFER)           (uint8_t)*((uint8_t)BUFFER+15)
-#define MS2B390_DURATION(BUFFER)        (uint32_t)*((uint8_t)BUFFER+16)
-#define MS2B390_AMPLITUDE(BUFFER)       (float)*((uint8_t)BUFFER+20)
-#define MS2B390_INPUTCHANNEL(BUFFER)    (char *)((uint8_t)BUFFER+24)
-#define MS2B390_RESERVED2(BUFFER)       (uint8_t)*((uint8_t)BUFFER+27)
+#define pMS2B390_TYPE(blockette)            ((uint16_t*)(blockette))
+#define pMS2B390_NEXT(blockette)            ((uint16_t*)((uint8_t*)blockette+2))
+#define pMS2B390_YEAR(blockette)            ((uint16_t*)((uint8_t*)blockette+4))
+#define pMS2B390_DAY(blockette)             ((uint16_t*)((uint8_t*)blockette+6))
+#define pMS2B390_HOUR(blockette)            ((uint8_t*)((uint8_t*)blockette+8))
+#define pMS2B390_MIN(blockette)             ((uint8_t*)((uint8_t*)blockette+9))
+#define pMS2B390_SEC(blockette)             ((uint8_t*)((uint8_t*)blockette+10))
+#define pMS2B390_UNUSED(blockette)          ((uint8_t*)((uint8_t*)blockette+11))
+#define pMS2B390_FSEC(blockette)            ((uint16_t*)((uint8_t*)blockette+12))
+#define pMS2B390_RESERVED1(blockette)       ((uint8_t*)((uint8_t*)blockette+14))
+#define pMS2B390_FLAGS(blockette)           ((uint8_t*)((uint8_t*)blockette+15))
+#define pMS2B390_DURATION(blockette)        ((uint32_t*)((uint8_t*)blockette+16))
+#define pMS2B390_AMPLITUDE(blockette)       ((float*)((uint8_t*)blockette+20))
+#define pMS2B390_INPUTCHANNEL(blockette)    ((char *)((uint8_t*)blockette+24))
+#define pMS2B390_RESERVED2(blockette)       ((uint8_t*)((uint8_t*)blockette+27))
 
 /***************************************************************************
  * miniSEED 2.4 Blockette 395 - calibration abort
@@ -357,18 +357,18 @@
  * fract               uint16_t     12
  * reserved            uint8_t[2]   14
  *
- * Convenience macros for accessing the fields with typing follow:
+ * Convenience macros for accessing the fields via typed pointers follow:
  ***************************************************************************/
-#define MS2B395_TYPE(BUFFER)            (uint16_t)*(BUFFER)
-#define MS2B395_NEXT(BUFFER)            (uint16_t)*((uint8_t)BUFFER+2)
-#define MS2B395_YEAR(BUFFER)            (uint16_t)*((uint8_t)BUFFER+4)
-#define MS2B395_DAY(BUFFER)             (uint16_t)*((uint8_t)BUFFER+6)
-#define MS2B395_HOUR(BUFFER)            (uint8_t)*((uint8_t)BUFFER+8)
-#define MS2B395_MIN(BUFFER)             (uint8_t)*((uint8_t)BUFFER+9)
-#define MS2B395_SEC(BUFFER)             (uint8_t)*((uint8_t)BUFFER+10)
-#define MS2B395_UNUSED(BUFFER)          (uint8_t)*((uint8_t)BUFFER+11)
-#define MS2B395_FSEC(BUFFER)            (uint16_t)*((uint8_t)BUFFER+12)
-#define MS2B395_RESERVED1(BUFFER)       (uint8_t)*((uint8_t)BUFFER+14)
+#define pMS2B395_TYPE(blockette)            ((uint16_t*)(blockette))
+#define pMS2B395_NEXT(blockette)            ((uint16_t*)((uint8_t*)blockette+2))
+#define pMS2B395_YEAR(blockette)            ((uint16_t*)((uint8_t*)blockette+4))
+#define pMS2B395_DAY(blockette)             ((uint16_t*)((uint8_t*)blockette+6))
+#define pMS2B395_HOUR(blockette)            ((uint8_t*)((uint8_t*)blockette+8))
+#define pMS2B395_MIN(blockette)             ((uint8_t*)((uint8_t*)blockette+9))
+#define pMS2B395_SEC(blockette)             ((uint8_t*)((uint8_t*)blockette+10))
+#define pMS2B395_UNUSED(blockette)          ((uint8_t*)((uint8_t*)blockette+11))
+#define pMS2B395_FSEC(blockette)            ((uint16_t*)((uint8_t*)blockette+12))
+#define pMS2B395_RESERVED(blockette)        ((uint8_t*)((uint8_t*)blockette+14))
 
 /***************************************************************************
  * miniSEED 2.4 Blockette 400 - beam
@@ -381,14 +381,14 @@
  * configuration       uint16_t     12
  * reserved            uint8_t[2]   14
  *
- * Convenience macros for accessing the fields with typing follow:
+ * Convenience macros for accessing the fields via typed pointers follow:
  ***************************************************************************/
-#define MS2B400_TYPE(BUFFER)            (uint16_t)*(BUFFER)
-#define MS2B400_NEXT(BUFFER)            (uint16_t)*((uint8_t)BUFFER+2)
-#define MS2B400_AZIMUTH(BUFFER)         (float)*((uint8_t)BUFFER+4)
-#define MS2B400_SLOWNESS(BUFFER)        (float)*((uint8_t)BUFFER+8)
-#define MS2B400_CONFIGURATION(BUFFER)   (uint16_t)*((uint8_t)BUFFER+12)
-#define MS2B400_RESERVED(BUFFER)        (uint8_t)*((uint8_t)BUFFER+14)
+#define pMS2B400_TYPE(blockette)            ((uint16_t*)(blockette))
+#define pMS2B400_NEXT(blockette)            ((uint16_t*)((uint8_t*)blockette+2))
+#define pMS2B400_AZIMUTH(blockette)         ((float*)((uint8_t*)blockette+4))
+#define pMS2B400_SLOWNESS(blockette)        ((float*)((uint8_t*)blockette+8))
+#define pMS2B400_CONFIGURATION(blockette)   ((uint16_t*)((uint8_t*)blockette+12))
+#define pMS2B400_RESERVED(blockette)        ((uint8_t*)((uint8_t*)blockette+14))
 
 /***************************************************************************
  * miniSEED 2.4 Blockette 405 - beam delay
@@ -398,11 +398,11 @@
  * next offset         uint16_t      2
  * delay values        uint16_t[1]   4
  *
- * Convenience macros for accessing the fields with typing follow:
+ * Convenience macros for accessing the fields via typed pointers follow:
  ***************************************************************************/
-#define MS2B405_TYPE(BUFFER)            (uint16_t)*(BUFFER)
-#define MS2B405_NEXT(BUFFER)            (uint16_t)*((uint8_t)BUFFER+2)
-#define MS2B405_DELAYVALUES(BUFFER)     (uint16_t)*((uint8_t)BUFFER+4)
+#define pMS2B405_TYPE(blockette)            ((uint16_t*)(blockette))
+#define pMS2B405_NEXT(blockette)            ((uint16_t*)((uint8_t*)blockette+2))
+#define pMS2B405_DELAYVALUES(blockette)     ((uint16_t*)((uint8_t*)blockette+4))
 
 /***************************************************************************
  * miniSEED 2.4 Blockette 500 - timing
@@ -425,24 +425,24 @@
  * clock model         char[32]     40
  * clock status        char[128]    72
  *
- * Convenience macros for accessing the fields with typing follow:
+ * Convenience macros for accessing the fields via typed pointers follow:
  ***************************************************************************/
-#define MS2B500_TYPE(BUFFER)            (uint16_t)*(BUFFER)
-#define MS2B500_NEXT(BUFFER)            (uint16_t)*((uint8_t)BUFFER+2)
-#define MS2B500_VCOCORRECTION(BUFFER)   (float)*((uint8_t)BUFFER+4)
-#define MS2B500_YEAR(BUFFER)            (uint16_t)*((uint8_t)BUFFER+8)
-#define MS2B500_DAY(BUFFER)             (uint16_t)*((uint8_t)BUFFER+10)
-#define MS2B500_HOUR(BUFFER)            (uint8_t)*((uint8_t)BUFFER+12)
-#define MS2B500_MIN(BUFFER)             (uint8_t)*((uint8_t)BUFFER+13)
-#define MS2B500_SEC(BUFFER)             (uint8_t)*((uint8_t)BUFFER+14)
-#define MS2B500_UNUSED(BUFFER)          (uint8_t)*((uint8_t)BUFFER+15)
-#define MS2B500_FSEC(BUFFER)            (uint16_t)*((uint8_t)BUFFER+16)
-#define MS2B500_MICROSECOND(BUFFER)     (int8_t)*((uint8_t)BUFFER+18)
-#define MS2B500_RECEPTIONQUALITY(BUFFER) (uint8_t)*((uint8_t)BUFFER+19)
-#define MS2B500_EXCEPTIONCOUNT(BUFFER)  (uint32_t)*((uint8_t)BUFFER+20)
-#define MS2B500_EXCEPTIONTYPE(BUFFER)   (char*)((uint8_t)BUFFER+24)
-#define MS2B500_CLOCKMODEL(BUFFER)      (char*)((uint8_t)BUFFER+40)
-#define MS2B500_CLOCKSTATUS(BUFFER)     (char*)((uint8_t)BUFFER+72)
+#define pMS2B500_TYPE(blockette)            ((uint16_t*)(blockette))
+#define pMS2B500_NEXT(blockette)            ((uint16_t*)((uint8_t*)blockette+2))
+#define pMS2B500_VCOCORRECTION(blockette)   ((float*)((uint8_t*)blockette+4))
+#define pMS2B500_YEAR(blockette)            ((uint16_t*)((uint8_t*)blockette+8))
+#define pMS2B500_DAY(blockette)             ((uint16_t*)((uint8_t*)blockette+10))
+#define pMS2B500_HOUR(blockette)            ((uint8_t*)((uint8_t*)blockette+12))
+#define pMS2B500_MIN(blockette)             ((uint8_t*)((uint8_t*)blockette+13))
+#define pMS2B500_SEC(blockette)             ((uint8_t*)((uint8_t*)blockette+14))
+#define pMS2B500_UNUSED(blockette)          ((uint8_t*)((uint8_t*)blockette+15))
+#define pMS2B500_FSEC(blockette)            ((uint16_t*)((uint8_t*)blockette+16))
+#define pMS2B500_MICROSECOND(blockette)     ((int8_t*)((uint8_t*)blockette+18))
+#define pMS2B500_RECEPTIONQUALITY(blockette) ((uint8_t*)((uint8_t*)blockette+19))
+#define pMS2B500_EXCEPTIONCOUNT(blockette)  ((uint32_t*)((uint8_t*)blockette+20))
+#define pMS2B500_EXCEPTIONTYPE(blockette)   ((char*)((uint8_t*)blockette+24))
+#define pMS2B500_CLOCKMODEL(blockette)      ((char*)((uint8_t*)blockette+40))
+#define pMS2B500_CLOCKSTATUS(blockette)     ((char*)((uint8_t*)blockette+72))
 
 /***************************************************************************
  * miniSEED 2.4 Blockette 1000 - data only SEED (miniSEED)
@@ -455,14 +455,14 @@
  * reclen              uint8_t       6
  * reserved            uint8_t       7
  *
- * Convenience macros for accessing the fields with typing follow:
+ * Convenience macros for accessing the fields via typed pointers follow:
  ***************************************************************************/
-#define MS2B1000_TYPE(BUFFER)            (uint16_t)*(BUFFER)
-#define MS2B1000_NEXT(BUFFER)            (uint16_t)*((uint8_t)BUFFER+2)
-#define MS2B1000_ENCODING(BUFFER)        (uint8_t)*((uint8_t)BUFFER+4)
-#define MS2B1000_BYTEORDER(BUFFER)       (uint8_t)*((uint8_t)BUFFER+5)
-#define MS2B1000_RECLEN(BUFFER)          (uint8_t)*((uint8_t)BUFFER+6)
-#define MS2B1000_RESERVED(BUFFER)        (uint8_t)*((uint8_t)BUFFER+7)
+#define pMS2B1000_TYPE(blockette)            ((uint16_t*)(blockette))
+#define pMS2B1000_NEXT(blockette)            ((uint16_t*)((uint8_t*)blockette+2))
+#define pMS2B1000_ENCODING(blockette)        ((uint8_t*)((uint8_t*)blockette+4))
+#define pMS2B1000_BYTEORDER(blockette)       ((uint8_t*)((uint8_t*)blockette+5))
+#define pMS2B1000_RECLEN(blockette)          ((uint8_t*)((uint8_t*)blockette+6))
+#define pMS2B1000_RESERVED(blockette)        ((uint8_t*)((uint8_t*)blockette+7))
 
 /***************************************************************************
  * miniSEED 2.4 Blockette 1001 - data extension
@@ -475,14 +475,14 @@
  * reserved            uint8_t       6
  * frame count         uint8_t       7
  *
- * Convenience macros for accessing the fields with typing follow:
+ * Convenience macros for accessing the fields via typed pointers follow:
  ***************************************************************************/
-#define MS2B1001_TYPE(BUFFER)            (uint16_t)*(BUFFER)
-#define MS2B1001_NEXT(BUFFER)            (uint16_t)*((uint8_t)BUFFER+2)
-#define MS2B1001_TIMINGQUALITY(BUFFER)   (uint8_t)*((uint8_t)BUFFER+4)
-#define MS2B1001_MICROSECOND(BUFFER)     (int8_t)*((uint8_t)BUFFER+5)
-#define MS2B1001_RESERVED(BUFFER)        (uint8_t)*((uint8_t)BUFFER+7)
-#define MS2B1001_FRAMECOUNT(BUFFER)      (uint8_t)*((uint8_t)BUFFER+6)
+#define pMS2B1001_TYPE(blockette)            ((uint16_t*)(blockette))
+#define pMS2B1001_NEXT(blockette)            ((uint16_t*)((uint8_t*)blockette+2))
+#define pMS2B1001_TIMINGQUALITY(blockette)   ((uint8_t*)((uint8_t*)blockette+4))
+#define pMS2B1001_MICROSECOND(blockette)     ((int8_t*)((uint8_t*)blockette+5))
+#define pMS2B1001_RESERVED(blockette)        ((uint8_t*)((uint8_t*)blockette+6))
+#define pMS2B1001_FRAMECOUNT(blockette)      ((uint8_t*)((uint8_t*)blockette+7))
 
 /***************************************************************************
  * miniSEED 2.4 Blockette 2000 - opaque data
@@ -498,29 +498,28 @@
  * numheaders          uint8_t      14
  * payload             char[1]      15
  *
- * Convenience macros for accessing the fields with typing follow:
+ * Convenience macros for accessing the fields via typed pointers follow:
  ***************************************************************************/
-#define MS2B2000_TYPE(BUFFER)            (uint16_t)*(BUFFER)
-#define MS2B2000_NEXT(BUFFER)            (uint16_t)*((uint8_t)BUFFER+2)
-#define MS2B2000_LENGTH(BUFFER)          (uint16_t)*((uint8_t)BUFFER+4)
-#define MS2B2000_DATAOFFSET(BUFFER)      (uint16_t)*((uint8_t)BUFFER+6)
-#define MS2B2000_RECNUM(BUFFER)          (uint32_t)*((uint8_t)BUFFER+8)
-#define MS2B2000_BYTEORDER(BUFFER)       (uint8_t)*((uint8_t)BUFFER+12)
-#define MS2B2000_FLAGS(BUFFER)           (uint8_t)*((uint8_t)BUFFER+13)
-#define MS2B2000_NUMHEADERS(BUFFER)      (uint8_t)*((uint8_t)BUFFER+14)
-#define MS2B2000_PAYLOAD(BUFFER)         (char*)((uint8_t)BUFFER+15)
-
-/* Macro to test a character for miniSEED 2.x data record indicators */
-#define MS2_ISDATAINDICATOR(X) (X=='D' || X=='R' || X=='Q' || X=='M')
+#define pMS2B2000_TYPE(blockette)            ((uint16_t*)(blockette))
+#define pMS2B2000_NEXT(blockette)            ((uint16_t*)((uint8_t*)blockette+2))
+#define pMS2B2000_LENGTH(blockette)          ((uint16_t*)((uint8_t*)blockette+4))
+#define pMS2B2000_DATAOFFSET(blockette)      ((uint16_t*)((uint8_t*)blockette+6))
+#define pMS2B2000_RECNUM(blockette)          ((uint32_t*)((uint8_t*)blockette+8))
+#define pMS2B2000_BYTEORDER(blockette)       ((uint8_t*)((uint8_t*)blockette+12))
+#define pMS2B2000_FLAGS(blockette)           ((uint8_t*)((uint8_t*)blockette+13))
+#define pMS2B2000_NUMHEADERS(blockette)      ((uint8_t*)((uint8_t*)blockette+14))
+#define pMS2B2000_PAYLOAD(blockette)         ((char*)((uint8_t*)blockette+15))
 
 /* Macro to test for sane year and day values, used primarily to
- * determine if byte order swapping is needed.
+ * determine if byte order swapping is needed for miniSEED 2.x.
  *
  * Year : between 1900 and 2100
  * Day  : between 1 and 366
  *
  * This test is non-unique (non-deterministic) for days 1, 256 and 257
  * in the year 2056 because the swapped values are also within range.
+ * If you are using this in 2056 to determine the byte order of miniSEED 2
+ * you have my deepest sympathies.
  */
 #define MS_ISVALIDYEARDAY(Y,D) (Y >= 1900 && Y <= 2100 && D >= 1 && D <= 366)
 
