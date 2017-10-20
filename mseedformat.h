@@ -8,6 +8,7 @@
 #define MSEEDFORMAT_H 1
 
 #include <stdint.h>
+#include "libmseed.h"
 
 /***************************************************************************
  * miniSEED 2.4 Fixed Section of Data Header
@@ -509,6 +510,65 @@
 #define pMS2B2000_FLAGS(blockette)           ((uint8_t*)((uint8_t*)blockette+13))
 #define pMS2B2000_NUMHEADERS(blockette)      ((uint8_t*)((uint8_t*)blockette+14))
 #define pMS2B2000_PAYLOAD(blockette)         ((char*)((uint8_t*)blockette+15))
+
+/***************************************************************************
+ * Simple static inline convienence functions to swap bytes to "host
+ * order", as determined by the swap flag.
+ ***************************************************************************/
+static inline int16_t
+HO2d (int16_t value, int swapflag)
+{
+  if (swapflag)
+  {
+    ms_gswap2a (&value);
+  }
+  return value;
+}
+static inline uint16_t
+HO2u (uint16_t value, int swapflag)
+{
+  if (swapflag)
+  {
+    ms_gswap2a (&value);
+  }
+  return value;
+}
+static inline int32_t
+HO4d (int32_t value, int swapflag)
+{
+  if (swapflag)
+  {
+    ms_gswap4a (&value);
+  }
+  return value;
+}
+static inline uint32_t
+HO4u (uint32_t value, int swapflag)
+{
+  if (swapflag)
+  {
+    ms_gswap4a (&value);
+  }
+  return value;
+}
+static inline float
+HO4f (float value, int swapflag)
+{
+  if (swapflag)
+  {
+    ms_gswap4a (&value);
+  }
+  return value;
+}
+static inline double
+HO8f (double value, int swapflag)
+{
+  if (swapflag)
+  {
+    ms_gswap8a (&value);
+  }
+  return value;
+}
 
 /* Macro to test for sane year and day values, used primarily to
  * determine if byte order swapping is needed for miniSEED 2.x.

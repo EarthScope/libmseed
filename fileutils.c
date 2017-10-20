@@ -569,7 +569,8 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
     {
       nstime_t endtime = msr3_endtime (msr);
 
-      if (ms3_matchselect (selections, msr->tsid, msr->starttime, endtime, NULL) == NULL)
+      if (ms3_matchselect (selections, msr->tsid, msr->starttime,
+                           endtime, msr->pubversion, NULL) == NULL)
       {
         continue;
       }

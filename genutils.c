@@ -17,7 +17,7 @@
 #include "gmtime64.h"
 
 static nstime_t ms_time2nstime_int (int year, int day, int hour,
-                                    int min, int sec, uint32_t usec);
+                                    int min, int sec, uint32_t nsec);
 
 /* A constant number of seconds between the NTP and Posix/Unix time epoch */
 #define NTPPOSIXEPOCHDELTA 2208988800LL

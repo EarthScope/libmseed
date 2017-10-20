@@ -54,182 +54,17 @@ int
 msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
                     int8_t dataflag, int8_t verbose)
 {
-  int8_t headerswapflag = 0;
-  int8_t dataswapflag = 0;
-  int retval;
+  //int8_t headerswapflag = 0;
+  //int8_t dataswapflag = 0;
+  //int retval;
 
-  MS3Record *msr = NULL;
+  //MS3Record *msr = NULL;
 
   if (!ppmsr)
   {
     ms_log (2, "msr3_unpack_mseed3(): ppmsr argument cannot be NULL\n");
     return MS_GENERROR;
   }
-
-  /* /\* Verify that record includes a valid header *\/ */
-  /* if (!MS_ISVALIDHEADER (record)) */
-  /* { */
-  /*   ms_recsrcname (record, srcname, 1); */
-  /*   ms_log (2, "msr_unpack(%s) Record header & quality indicator unrecognized: '%c'\n", srcname); */
-  /*   ms_log (2, "msr_unpack(%s) This is not a valid miniSEED record\n", srcname); */
-
-  /*   return MS_NOTSEED; */
-  /* } */
-
-  /* /\* Verify that passed record length is within supported range *\/ */
-  /* if (reclen < MINRECLEN || reclen > MAXRECLEN) */
-  /* { */
-  /*   ms_recsrcname (record, srcname, 1); */
-  /*   ms_log (2, "msr_unpack(%s): Record length is out of range: %d\n", srcname, reclen); */
-  /*   return MS_OUTOFRANGE; */
-  /* } */
-
-  /* /\* Initialize the MS3Record *\/ */
-  /* if (!(*ppmsr = msr3_init (*ppmsr))) */
-  /*   return MS_GENERROR; */
-
-  /* /\* Shortcut pointer, historical and help readability *\/ */
-  /* msr = *ppmsr; */
-
-  /* /\* Set raw record pointer and record length *\/ */
-  /* msr->record = record; */
-  /* msr->reclen = reclen; */
-
-  /* /\* Check environment variables if necessary *\/ */
-  /* if (unpackheaderbyteorder == -2 || */
-  /*     unpackdatabyteorder == -2 || */
-  /*     unpackencodingformat == -2 || */
-  /*     unpackencodingfallback == -2) */
-  /*   if (check_environment (verbose)) */
-  /*     return MS_GENERROR; */
-
-  /* /\* Allocate and copy fixed section of data header *\/ */
-  /* msr->fsdh = realloc (msr->fsdh, sizeof (struct fsdh_s)); */
-
-  /* if (msr->fsdh == NULL) */
-  /* { */
-  /*   ms_log (2, "msr_unpack(): Cannot allocate memory\n"); */
-  /*   return MS_GENERROR; */
-  /* } */
-
-  /* memcpy (msr->fsdh, record, sizeof (struct fsdh_s)); */
-
-  /* /\* Check to see if byte swapping is needed by testing the year and day *\/ */
-  /* if (!MS_ISVALIDYEARDAY (msr->fsdh->start_time.year, msr->fsdh->start_time.day)) */
-  /*   headerswapflag = dataswapflag = 1; */
-
-  /* /\* Swap byte order? *\/ */
-  /* if (headerswapflag) */
-  /* { */
-  /*   MS_SWAPBTIME (&msr->fsdh->start_time); */
-  /*   ms_gswap2a (&msr->fsdh->numsamples); */
-  /*   ms_gswap2a (&msr->fsdh->samprate_fact); */
-  /*   ms_gswap2a (&msr->fsdh->samprate_mult); */
-  /*   ms_gswap4a (&msr->fsdh->time_correct); */
-  /*   ms_gswap2a (&msr->fsdh->data_offset); */
-  /*   ms_gswap2a (&msr->fsdh->blockette_offset); */
-  /* } */
-
-  /* /\* Populate some of the common header fields *\/ */
-  /* strncpy (sequence_number, msr->fsdh->sequence_number, 6); */
-  /* sequence_number[6] = '\0'; */
-  /* msr->sequence_number = (int32_t)strtol (sequence_number, NULL, 10); */
-  /* msr->dataquality = msr->fsdh->dataquality; */
-  /* ms_strncpcleantail (msr->network, msr->fsdh->network, 2); */
-  /* ms_strncpcleantail (msr->station, msr->fsdh->station, 5); */
-  /* ms_strncpcleantail (msr->location, msr->fsdh->location, 2); */
-  /* ms_strncpcleantail (msr->channel, msr->fsdh->channel, 3); */
-  /* msr->samplecnt = msr->fsdh->numsamples; */
-
-  /* /\* Generate source name for MS3Record *\/ */
-  /* if (msr_srcname (msr, srcname, 1) == NULL) */
-  /* { */
-  /*   ms_log (2, "msr_unpack(): Cannot generate srcname\n"); */
-  /*   return MS_GENERROR; */
-  /* } */
-
-  /* /\* Report byte swapping status *\/ */
-  /* if (verbose > 2) */
-  /* { */
-  /*   if (headerswapflag) */
-  /*     ms_log (1, "%s: Byte swapping needed for unpacking of header\n", srcname); */
-  /*   else */
-  /*     ms_log (1, "%s: Byte swapping NOT needed for unpacking of header\n", srcname); */
-  /* } */
-
-  /* /\* Populate remaining common header fields *\/ */
-  /* msr->starttime = msr_starttime (msr); */
-  /* msr->samprate = msr_samprate (msr); */
-
-  /* /\* Set MS3Record->byteorder if data byte order is forced *\/ */
-  /* if (unpackdatabyteorder >= 0) */
-  /* { */
-  /*   msr->byteorder = unpackdatabyteorder; */
-  /* } */
-
-  /* /\* Check if encoding format is forced *\/ */
-  /* if (unpackencodingformat >= 0) */
-  /* { */
-  /*   msr->encoding = unpackencodingformat; */
-  /* } */
-
-  /* /\* Use encoding format fallback if defined and no encoding is set, */
-  /*    also make sure the byteorder is set by default to big endian *\/ */
-  /* if (unpackencodingfallback >= 0 && msr->encoding == -1) */
-  /* { */
-  /*   msr->encoding = unpackencodingfallback; */
-
-  /*   if (msr->byteorder == -1) */
-  /*   { */
-  /*     msr->byteorder = 1; */
-  /*   } */
-  /* } */
-
-  /* /\* Unpack the data samples if requested *\/ */
-  /* if (dataflag && msr->samplecnt > 0) */
-  /* { */
-  /*   int8_t dswapflag = headerswapflag; */
-  /*   int8_t bigendianhost = ms_bigendianhost (); */
-
-  /*   /\* Determine byte order of the data and set the dswapflag as */
-  /*      needed; if no Blkt1000 or UNPACK_DATA_BYTEORDER environment */
-  /*      variable setting assume the order is the same as the header *\/ */
-  /*   if (msr->Blkt1000 != 0 && unpackdatabyteorder < 0) */
-  /*   { */
-  /*     dswapflag = 0; */
-
-  /*     /\* If BE host and LE data need swapping *\/ */
-  /*     if (bigendianhost && msr->byteorder == 0) */
-  /*       dswapflag = 1; */
-  /*     /\* If LE host and BE data (or bad byte order value) need swapping *\/ */
-  /*     else if (!bigendianhost && msr->byteorder > 0) */
-  /*       dswapflag = 1; */
-  /*   } */
-  /*   else if (unpackdatabyteorder >= 0) */
-  /*   { */
-  /*     dswapflag = dataswapflag; */
-  /*   } */
-
-  /*   if (verbose > 2 && dswapflag) */
-  /*     ms_log (1, "%s: Byte swapping needed for unpacking of data samples\n", srcname); */
-  /*   else if (verbose > 2) */
-  /*     ms_log (1, "%s: Byte swapping NOT needed for unpacking of data samples\n", srcname); */
-
-  /*   retval = msr_unpack_data (msr, dswapflag, verbose); */
-
-  /*   if (retval < 0) */
-  /*     return retval; */
-  /*   else */
-  /*     msr->numsamples = retval; */
-  /* } */
-  /* else */
-  /* { */
-  /*   if (msr->datasamples) */
-  /*     free (msr->datasamples); */
-
-  /*   msr->datasamples = 0; */
-  /*   msr->numsamples = 0; */
-  /* } */
 
   return MS_NOERROR;
 } /* End of msr3_unpack_mseed3() */
@@ -282,9 +117,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   uint16_t blkt_type;
   uint16_t next_blkt;
 
-  if (!msr)
+  if (!record)
   {
-    ms_log (2, "msr3_unpack_mseed2(): msr argument must be specified\n");
+    ms_log (2, "msr3_unpack_mseed2(): record argument must be specified\n");
     return MS_GENERROR;
   }
 
@@ -329,25 +164,12 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   if (!MS_ISVALIDYEARDAY (*pMS2FSDH_YEAR (record), *pMS2FSDH_DAY (record)))
     headerswapflag = dataswapflag = 1;
 
-  /* Swap byte order? */
-  if (headerswapflag)
-  {
-    ms_gswap2a (pMS2FSDH_YEAR (record));
-    ms_gswap2a (pMS2FSDH_DAY (record));
-    ms_gswap2a (pMS2FSDH_FSEC (record));
-    ms_gswap2a (pMS2FSDH_NUMSAMPLES (record));
-    ms_gswap2a (pMS2FSDH_SAMPLERATEFACT (record));
-    ms_gswap2a (pMS2FSDH_SAMPLERATEMULT (record));
-    ms_gswap4a (pMS2FSDH_TIMECORRECT (record));
-    ms_gswap2a (pMS2FSDH_DATAOFFSET (record));
-    ms_gswap2a (pMS2FSDH_BLOCKETTEOFFSET (record));
-  }
-
   /* Populate some of the common header fields */
   ms2_recordtsid (record, msr->tsid);
   msr->formatversion = 2;
-  msr->samprate = ms_nomsamprate (*pMS2FSDH_SAMPLERATEFACT (record), *pMS2FSDH_SAMPLERATEMULT (record));
-  msr->samplecnt = *pMS2FSDH_NUMSAMPLES (record);
+  msr->samprate = ms_nomsamprate (HO2d(*pMS2FSDH_SAMPLERATEFACT (record), headerswapflag),
+                                  HO2d(*pMS2FSDH_SAMPLERATEMULT (record), headerswapflag));
+  msr->samplecnt = HO2u(*pMS2FSDH_NUMSAMPLES (record), headerswapflag);
 
   /* Map data quality indicator to publication version */
   if (*pMS2FSDH_DATAQUALITY (record) == 'M')
@@ -376,7 +198,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   }
 
   /* Traverse the blockettes */
-  blkt_offset = *pMS2FSDH_BLOCKETTEOFFSET (record);
+  blkt_offset = HO2u(*pMS2FSDH_BLOCKETTEOFFSET (record), headerswapflag);
 
   while ((blkt_offset != 0) &&
          (blkt_offset < reclen) &&
@@ -415,7 +237,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     if (blkt_type == 100)
     {
       /* Set actual sample rate */
-      msr->samprate = *pMS2B100_SAMPRATE(record + blkt_offset);
+      msr->samprate = HO4f(*pMS2B100_SAMPRATE(record + blkt_offset), headerswapflag);
 
       if (headerswapflag)
       {
@@ -626,47 +448,51 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
   /* Check that the data offset is after the blockette chain */
   if (blkt_end &&
-      *pMS2FSDH_NUMSAMPLES(record) &&
-      *pMS2FSDH_DATAOFFSET(record) < blkt_end)
+      HO2u(*pMS2FSDH_NUMSAMPLES(record), headerswapflag) &&
+      HO2u(*pMS2FSDH_DATAOFFSET(record), headerswapflag) < blkt_end)
   {
     ms_log (1, "%s: Warning: Data offset in fixed header (%d) is within the blockette chain ending at %d\n",
-            msr->tsid, *pMS2FSDH_DATAOFFSET(record), blkt_end);
+            msr->tsid, HO2u(*pMS2FSDH_DATAOFFSET(record), headerswapflag), blkt_end);
   }
 
   /* Check that the blockette count matches the number parsed */
-  if (*pMS2FSDH_NUMSAMPLES(record) != blkt_count)
+  if (*pMS2FSDH_NUMBLOCKETTES(record) != blkt_count)
   {
     ms_log (1, "%s: Warning: Number of blockettes in fixed header (%d) does not match the number parsed (%d)\n",
-            msr->tsid, *pMS2FSDH_NUMSAMPLES(record), blkt_count);
+            msr->tsid, *pMS2FSDH_NUMBLOCKETTES(record), blkt_count);
   }
 
   /* Calculate start time */
-  msr->starttime = ms_time2nstime (*pMS2FSDH_YEAR (record),
-                                   *pMS2FSDH_DAY (record),
+  msr->starttime = ms_time2nstime (HO2u(*pMS2FSDH_YEAR (record), headerswapflag),
+                                   HO2u(*pMS2FSDH_DAY (record), headerswapflag),
                                    *pMS2FSDH_HOUR (record),
                                    *pMS2FSDH_MIN (record),
                                    *pMS2FSDH_SEC (record),
-                                   (uint32_t)*pMS2FSDH_FSEC (record) * (NSTMODULUS / 10000));
+                                   (uint32_t)HO2u(*pMS2FSDH_FSEC (record), headerswapflag) * (NSTMODULUS / 10000));
   if (msr->starttime == NSTERROR)
   {
     ms_log (2, "%s: Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
-            *pMS2FSDH_YEAR (record), *pMS2FSDH_DAY (record), *pMS2FSDH_HOUR (record),
-            *pMS2FSDH_MIN (record), *pMS2FSDH_SEC (record), *pMS2FSDH_FSEC (record));
+            HO2u(*pMS2FSDH_YEAR (record), headerswapflag),
+            HO2u(*pMS2FSDH_DAY (record), headerswapflag),
+            *pMS2FSDH_HOUR (record),
+            *pMS2FSDH_MIN (record),
+            *pMS2FSDH_SEC (record),
+            HO2u(*pMS2FSDH_FSEC (record), headerswapflag));
     return MS_GENERROR;
   }
 
   /* Check if a time correction is included and if it has been applied,
    * bit 1 of activity flags indicates if it has been appiled */
-  if (*pMS2FSDH_TIMECORRECT (record) != 0 &&
+  if (HO4d (*pMS2FSDH_TIMECORRECT (record), headerswapflag) != 0 &&
       !(*pMS2FSDH_ACTFLAGS (record) & 0x02))
   {
-    msr->starttime += (nstime_t)*pMS2FSDH_TIMECORRECT (record) * (NSTMODULUS / 10000);
+    msr->starttime += (nstime_t)HO4d (*pMS2FSDH_TIMECORRECT (record), headerswapflag) * (NSTMODULUS / 10000);
   }
 
   /* Apply microsecond precision if Blockette 1001 is present */
   if (B1001offset)
   {
-    msr->starttime += (nstime_t)*pMS2B1001_MICROSECOND (record) * (NSTMODULUS / 1000000);
+    msr->starttime += (nstime_t)*pMS2B1001_MICROSECOND (record + B1001offset) * (NSTMODULUS / 1000000);
   }
 
   /* Unpack the data samples if requested */
@@ -683,10 +509,10 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       dswapflag = 0;
 
       /* If BE host and LE data need swapping */
-      if (bigendianhost && *pMS2B1000_BYTEORDER(record) == 0)
+      if (bigendianhost && *pMS2B1000_BYTEORDER (record + B1000offset) == 0)
         dswapflag = 1;
       /* If LE host and BE data (or bad byte order value) need swapping */
-      else if (!bigendianhost && *pMS2B1000_BYTEORDER(record) > 0)
+      else if (!bigendianhost && *pMS2B1000_BYTEORDER (record + B1000offset) > 0)
         dswapflag = 1;
     }
 
@@ -771,7 +597,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
   }
   else if (msr->formatversion == 2)
   {
-    dataoffset = *pMS2FSDH_DATAOFFSET(msr->record);
+    dataoffset = HO2u(*pMS2FSDH_DATAOFFSET(msr->record), swapflag);
   }
   else
   {
