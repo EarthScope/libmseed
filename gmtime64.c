@@ -37,6 +37,7 @@ THE SOFTWARE.
 */
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <time.h>
 
 static const char days_in_month[2][12] = {

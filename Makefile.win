@@ -17,7 +17,7 @@ OBJS=	fileutils.obj	\
 	msrutils.obj	\
 	pack.obj	\
 	packdata.obj	\
-	traceutils.obj	\
+	gmtime64.obj	\
 	tracelist.obj	\
 	parseutils.obj	\
 	unpack.obj	\
