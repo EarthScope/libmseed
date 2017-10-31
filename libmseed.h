@@ -313,6 +313,11 @@ extern void mstl3_printsynclist (MS3TraceList *mstl, char *dccid, int8_t subseco
 extern void mstl3_printgaplist (MS3TraceList *mstl, int8_t timeformat,
                                 double *mingap, double *maxgap);
 
+/* miniSEED 3 extra header routines */
+extern int mseh_to_json (MS3Record *msr, char *output, int outputlength);
+extern int mseh_print (MS3Record *msr, int indent);
+
+
 /* Reading miniSEED records from files */
 typedef struct MS3FileParam_s
 {
