@@ -823,23 +823,6 @@ ms_timestr2nstime (char *timestr)
 } /* End of ms_timestr2nstime() */
 
 /***************************************************************************
- * ms_bigendianhost:
- *
- * Determine the byte order of the host machine.  Due to the lack of
- * portable defines to determine host byte order this run-time test is
- * provided.  The code below actually tests for little-endianess, the
- * only other alternative is assumed to be big endian.
- *
- * Returns 0 if the host is little endian, otherwise 1.
- ***************************************************************************/
-int
-ms_bigendianhost (void)
-{
-  int16_t host = 1;
-  return !(*((int8_t *)(&host)));
-} /* End of ms_bigendianhost() */
-
-/***************************************************************************
  * ms_dabs:
  *
  * Determine the absolute value of an input double, actually just test

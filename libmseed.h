@@ -361,8 +361,19 @@ extern char*    ms_nstime2seedtimestr (nstime_t nstime, char *seedtimestr, int8_
 extern nstime_t ms_time2nstime (int year, int day, int hour, int min, int sec, uint32_t nsec);
 extern nstime_t ms_seedtimestr2nstime (char *seedtimestr);
 extern nstime_t ms_timestr2nstime (char *timestr);
-extern int      ms_bigendianhost (void);
 extern double   ms_dabs (double val);
+
+/***************************************************************************
+ * ms_bigendianhost: Run time test for endianess.
+ *
+ * Returns 0 if the host is little endian, otherwise 1.
+ ***************************************************************************/
+static inline int
+ms_bigendianhost (void)
+{
+  const uint16_t endian = 256;
+  return *(const uint8_t *)&endian;
+}
 
 /* Lookup functions */
 extern uint8_t  ms_samplesize (const char sampletype);
