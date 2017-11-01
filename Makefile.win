@@ -14,7 +14,9 @@ OBJS=	fileutils.obj	\
 	gswap.obj	\
 	lmplatform.obj	\
 	lookup.obj	\
+	cbor.obj	\
 	msrutils.obj	\
+	extraheaders.obj\
 	pack.obj	\
 	packdata.obj	\
 	gmtime64.obj	\
