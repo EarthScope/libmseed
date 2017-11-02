@@ -679,6 +679,9 @@ size_t cbor_map_to_diag (cbor_stream_t *stream, size_t offset, int maxstringprin
 size_t cbor_decode_item (cbor_stream_t *stream, size_t offset,
                          int *type, size_t *length, cbor_item_t *item);
 
+size_t cbor_fetch_map_item (cbor_stream_t *stream, size_t offset,
+                            cbor_item_t *item, const char *path[]);
+
 
 #ifdef __cplusplus
 }

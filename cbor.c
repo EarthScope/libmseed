@@ -1026,14 +1026,14 @@ cbor_decode_item (cbor_stream_t *stream, size_t offset, int *type, size_t *lengt
     return 0;
 
   if (type)
-    *type = CBOR_UNDEFINED;
+    *type = -1;
 
   if (length)
     *length = 0;
 
   if (item)
   {
-    item->type = 0;
+    item->type = -1;
     item->length = 0;
   }
 
@@ -1194,86 +1194,106 @@ cbor_fetch_map_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item, co
   cbor_item_t inneritem;
   size_t readbytes = 0;
   size_t keybytes = 0;
-  size_t valuebytes = 0;
   size_t keyoffset;
+  size_t valuebytes = 0;
   size_t valueoffset;
+  size_t valuelength = 0;
   size_t containerlength;
-  bool is_indefinite;
   int type;
   int keytype;
   int valuetype;
+  int follow;
 
-  if (!stream || !item || !path)
+  if (!stream || !path)
     return 0;
 
   /* Sanity check that at least one path element is specified */
-  if (path[0] == 0)
+  if (!path[0])
     return 0;
 
-  /* Sanity check that we have been passed a CBOR Map */
   offset += readbytes = cbor_decode_item(stream, offset, &type, &containerlength, NULL);
-  if (type != CBOR_MAP)
+
+  /* Check for indefinite Map|Array, which are not supported */
+  if (stream->data[offset] == (CBOR_MAP | CBOR_VAR_FOLLOWS) ||
+      stream->data[offset] == (CBOR_ARRAY | CBOR_VAR_FOLLOWS))
   {
-    ms_log (2, "cbor_fetch_map_item(): Provided CBOR stream is not a Map.\n");
+    ms_log (2, "cbor_fetch_map_item(): Provided CBOR stream is an indefinite Map/Array, not supported\n");
     return 0;
   }
 
-  /* Check for indefinite Maps, which are not supported */
-  if (stream->data[offset] == (CBOR_MAP | CBOR_VAR_FOLLOWS))
+  /* Iterate through Arrays */
+  if (type == CBOR_ARRAY)
   {
-    ms_log (2, "cbor_fetch_map_item(): Provided CBOR stream is an indefinite Map, not supported\n");
-    return 0;
-  }
-
-  /* Search for Map key matching the first element of the path */
-  while (containerlength > 0)
-  {
-    keyoffset = offset;
-    offset += keybytes = cbor_decode_item(stream, offset, &keytype, NULL, NULL);
-
-    if (!keybytes)
+    while (containerlength > 0)
     {
-      ms_log (2, "cbor_fetch_map_item(): Cannot decode Map key\n");
-      return 0;
-    }
+      offset += readbytes = cbor_fetch_map_item(stream, offset, NULL, path);
 
-    valueoffset = offset;
-    offset += valuebytes = cbor_decode_item(stream, offset + keybytes, &valuetype, NULL, NULL);
-
-    if (!valuebytes)
-    {
-      ms_log (2, "cbor_fetch_map_item(): Cannot decode Map value\n");
-      return 0;
-    }
-
-    /* If key is Text, compare to requested path */
-    if (keytype == CBOR_TEXT)
-    {
-      /* Decode key item and compare to first path element */
-      cbor_decode_item(stream, keyoffset, NULL, NULL, &inneritem);
-      if (!strncmp(path[0], inneritem.value.c, inneritem.length))
+      if (!readbytes)
       {
-        /* Decode key */
-        cbor_decode_item(stream, valueoffset, NULL, NULL, &inneritem);
+        ms_log (2, "cbor_fetch_map_item(): Error decoding Array elements\n");
+        return 0;
+      }
 
-        /* If this is the final path element, store in provided item */
-        if (path[1] == 0)
-        {
-          cbor_decode_item(stream, valueoffset, NULL, NULL, &item);
-          return 0;
-        }
+      containerlength--;
+    }
+  }
+  /* Iterate through Maps, keys cannot be Array or Map */
+  if (type == CBOR_MAP)
+  {
+    while (containerlength > 0)
+    {
+      keyoffset = offset;
+      offset += keybytes = cbor_decode_item(stream, offset, &keytype, NULL, NULL);
 
-        /* Otherwise if path element is a map, recurse with the path shifted to next value */
-        else if (inneritem.type == CBOR_MAP)
+      if (!keybytes)
+      {
+        ms_log (2, "cbor_fetch_map_item(): Cannot decode Map key\n");
+        return 0;
+      }
+
+      valueoffset = offset;
+      valuebytes = cbor_decode_item(stream, offset, &valuetype, &valuelength, NULL);
+
+      if (!valuebytes)
+      {
+        ms_log (2, "cbor_fetch_map_item(): Cannot decode Map value\n");
+        return 0;
+      }
+
+      /* Determine if this value matches the path */
+      follow = 0;
+      if (keytype == CBOR_TEXT)
+      {
+        /* Decode key item and compare to first path element */
+        cbor_decode_item(stream, keyoffset, NULL, NULL, &inneritem);
+        fprintf (stderr, "DB: Key: '%.*s'\n", (int)inneritem.length, inneritem.value.c);
+        if (!strncmp(path[0], (char *)inneritem.value.c, inneritem.length))
         {
-          offset += cbor_fetch_map_item (stream, offset, item, path[1]);
+          /* Decode key */
+          cbor_decode_item(stream, valueoffset, NULL, NULL, &inneritem);
+
+          /* If this is the final path element, store in provided item */
+          if (!path[1])
+          {
+            fprintf (stderr, "DB: decoding target item\n");
+            cbor_decode_item(stream, valueoffset, NULL, NULL, item);
+            return 0;
+          }
+
+          follow = 1;
         }
       }
-    }
 
-    readbytes += keybytes + valuebytes;
-    containerlength--;
-  }
+      /* Consume value item, potentially recursing into Array or Map */
+      if (follow)
+        offset += cbor_fetch_map_item (stream, offset, item, &path[1]);
+      else
+        offset += cbor_fetch_map_item (stream, offset, NULL, path);
+
+      readbytes += keybytes + valuebytes;
+      containerlength--;
+    } /* Done looping through Map elements */
+  } /* type == CBOR_MAP */
 
   return readbytes;
 }
