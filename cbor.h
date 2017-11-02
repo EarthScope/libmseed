@@ -169,6 +169,19 @@ extern "C" {
 #define CBOR_TYPE(stream, offset) (stream->data[offset] & CBOR_TYPE_MASK)
 #define CBOR_ADDITIONAL_INFO(stream, offset) (stream->data[offset] & CBOR_INFO_MASK)
 
+/* A general container for a CBOR item */
+typedef struct cbor_item_s {
+  union {
+    unsigned char *c;
+    uint64_t u;
+    int64_t i;
+    float f;
+    double d;
+  } value;
+  int type;
+  size_t length;
+} cbor_item_t;
+
 /**
  * @brief Struct containing CBOR-encoded data
  *
@@ -659,9 +672,13 @@ bool cbor_at_end(const cbor_stream_t *stream, size_t offset);
  *
  * @return Size of last item parsed and printed
  */
-size_t
-cbor_map_to_diag (cbor_stream_t *stream, size_t offset, int maxstringprint,
-                  char *output, size_t *outputoffset, const size_t outputmax);
+size_t cbor_map_to_diag (cbor_stream_t *stream, size_t offset, int maxstringprint,
+                         char *output, size_t *outputoffset, const size_t outputmax);
+
+
+size_t cbor_decode_item (cbor_stream_t *stream, size_t offset,
+                         int *type, size_t *length, cbor_item_t *item);
+
 
 #ifdef __cplusplus
 }

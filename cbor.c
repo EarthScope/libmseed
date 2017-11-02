@@ -256,7 +256,6 @@ decode_int (const cbor_stream_t *s, size_t offset, uint64_t *val)
     return 0;
   }
 
-  *val = 0; /* clear val first */
 
   CBOR_ENSURE_SIZE_READ (s, offset + 1);
 
@@ -265,31 +264,36 @@ decode_int (const cbor_stream_t *s, size_t offset, uint64_t *val)
 
   CBOR_ENSURE_SIZE_READ (s, offset + 1 + bytes_follow);
 
-  switch (bytes_follow)
+  if (val)
   {
-  case 0:
-    *val = ((uint8_t)s->data[offset] & CBOR_INFO_MASK);
-    break;
-  case 1:
-    *val = (uint8_t)s->data[offset+1];
-    break;
-  case 2:
-    memcpy (&u16, (s->data + offset + 1), sizeof(uint16_t));
-    if (!ms_bigendianhost ())
-      ms_gswap2a (&u16);
-    *val = u16;
-    break;
-  case 4:
-    memcpy (&u32, (s->data + offset + 1), sizeof(uint32_t));
-    if (!ms_bigendianhost ())
-      ms_gswap4a (&u32);
-    *val = u32;
-    break;
-  default:
-    memcpy (val, (s->data + offset + 1), sizeof(uint64_t));
-    if (!ms_bigendianhost ())
-      ms_gswap8a (val);
-    break;
+    *val = 0; /* clear val first */
+
+    switch (bytes_follow)
+    {
+    case 0:
+      *val = ((uint8_t)s->data[offset] & CBOR_INFO_MASK);
+      break;
+    case 1:
+      *val = (uint8_t)s->data[offset + 1];
+      break;
+    case 2:
+      memcpy (&u16, (s->data + offset + 1), sizeof (uint16_t));
+      if (!ms_bigendianhost ())
+        ms_gswap2a (&u16);
+      *val = u16;
+      break;
+    case 4:
+      memcpy (&u32, (s->data + offset + 1), sizeof (uint32_t));
+      if (!ms_bigendianhost ())
+        ms_gswap4a (&u32);
+      *val = u32;
+      break;
+    default:
+      memcpy (val, (s->data + offset + 1), sizeof (uint64_t));
+      if (!ms_bigendianhost ())
+        ms_gswap8a (val);
+      break;
+    }
   }
 
   return bytes_follow + 1;
@@ -354,7 +358,7 @@ decode_bytes_no_copy (const cbor_stream_t *s, size_t offset, unsigned char **out
 {
   CBOR_ENSURE_SIZE_READ (s, offset + 1);
 
-  if ((CBOR_TYPE (s, offset) != CBOR_BYTES && CBOR_TYPE (s, offset) != CBOR_TEXT) || !out)
+  if ((CBOR_TYPE (s, offset) != CBOR_BYTES && CBOR_TYPE (s, offset) != CBOR_TEXT))
   {
     return 0;
   }
@@ -368,8 +372,10 @@ decode_bytes_no_copy (const cbor_stream_t *s, size_t offset, unsigned char **out
   }
 
   CBOR_ENSURE_SIZE_READ (s, offset + bytes_start + bytes_length);
-  *out = &(s->data[offset + bytes_start]);
-  *length = bytes_length;
+  if (out)
+    *out = &(s->data[offset + bytes_start]);
+  if (length)
+    *length = bytes_length;
   return (bytes_start + bytes_length);
 }
 
@@ -497,7 +503,7 @@ cbor_serialize_bool (cbor_stream_t *s, bool val)
 size_t
 cbor_deserialize_float_half (const cbor_stream_t *stream, size_t offset, float *val)
 {
-  if (CBOR_TYPE (stream, offset) != CBOR_7 || !val)
+  if (CBOR_TYPE (stream, offset) != CBOR_7)
   {
     return 0;
   }
@@ -506,7 +512,8 @@ cbor_deserialize_float_half (const cbor_stream_t *stream, size_t offset, float *
 
   if (*data == CBOR_FLOAT16)
   {
-    *val = (float)decode_float_half (data + 1);
+    if (val)
+      *val = (float)decode_float_half (data + 1);
     return 3;
   }
 
@@ -530,16 +537,19 @@ cbor_serialize_float_half (cbor_stream_t *s, float val)
 size_t
 cbor_deserialize_float (const cbor_stream_t *stream, size_t offset, float *val)
 {
-  if (CBOR_TYPE (stream, offset) != CBOR_7 || !val)
+  if (CBOR_TYPE (stream, offset) != CBOR_7)
   {
     return 0;
   }
 
   if (stream->data[offset] == CBOR_FLOAT32)
   {
-    memcpy (val, &stream->data[offset+1], sizeof(float));
-    if (!ms_bigendianhost())
-      ms_gswap4a(val);
+    if (val)
+    {
+      memcpy (val, &stream->data[offset+1], sizeof(float));
+      if (!ms_bigendianhost())
+        ms_gswap4a(val);
+    }
 
     return 5;
   }
@@ -566,7 +576,7 @@ cbor_deserialize_double (const cbor_stream_t *stream, size_t offset, double *val
 {
   CBOR_ENSURE_SIZE_READ (stream, offset + 1);
 
-  if (CBOR_TYPE (stream, offset) != CBOR_7 || !val)
+  if (CBOR_TYPE (stream, offset) != CBOR_7)
   {
     return 0;
   }
@@ -574,9 +584,12 @@ cbor_deserialize_double (const cbor_stream_t *stream, size_t offset, double *val
   if (stream->data[offset] == CBOR_FLOAT64)
   {
     CBOR_ENSURE_SIZE_READ (stream, offset + 9);
-    memcpy (val, &stream->data[offset+1], sizeof(double));
-    if (!ms_bigendianhost())
-      ms_gswap8a(val);
+    if (val)
+    {
+      memcpy (val, &stream->data[offset+1], sizeof(double));
+      if (!ms_bigendianhost())
+        ms_gswap8a(val);
+    }
 
     return 9;
   }
@@ -988,3 +1001,279 @@ cbor_map_to_diag (cbor_stream_t *stream, size_t offset, int maxstringprint,
 #undef ADD_PRINTF_OUTPUT
   return readbytes;
 } /* End of cbor_map_to_diag() */
+
+
+/* Decode a CBOR item from stream at offset, return length of serialized item
+ *
+ * type is set to one of the main CBOR types.
+ *
+ * length is the deserialized item length for simple types, or element
+ * count for maps and arrays
+ *
+ * The length parameter is redundant with the item->length value but
+ * is provided separately in order that lengths can be resolved,
+ * specifically map and array lengths, without actually decoding each
+ * item.
+ */
+size_t
+cbor_decode_item (cbor_stream_t *stream, size_t offset, int *type, size_t *length, cbor_item_t *item)
+{
+  size_t readbytes = 0;
+  size_t containerlength = 0;
+  size_t stringlength = 0;
+
+  if (!stream)
+    return 0;
+
+  if (type)
+    *type = CBOR_UNDEFINED;
+
+  if (length)
+    *length = 0;
+
+  if (item)
+  {
+    item->type = 0;
+    item->length = 0;
+  }
+
+  switch (CBOR_TYPE (stream, offset))
+  {
+  case CBOR_UINT:
+    readbytes = decode_int (stream, offset, (item) ? &item->value.u : NULL);
+    if (item)
+    {
+      item->type = CBOR_UINT;
+      item->length = sizeof (uint64_t);
+    }
+    if (type)
+      *type = CBOR_UINT;
+    if (length)
+      *length = sizeof (uint64_t);
+    break;
+
+  case CBOR_NEGINT:
+    readbytes = decode_int (stream, offset, (item) ? &item->value.u : NULL);
+    if (item)
+    {
+      item->value.i = -1 - item->value.u; /* Resolve to negative int */
+      item->type = CBOR_NEGINT;
+      item->length = sizeof (int64_t);
+    }
+    if (type)
+      *type = CBOR_NEGINT;
+    if (length)
+      *length = sizeof (int64_t);
+    break;
+
+  case CBOR_BYTES:
+  case CBOR_TEXT:
+    readbytes = decode_bytes_no_copy (stream, offset,
+                                      (item) ? &item->value.c : NULL,
+                                      (item || length) ? &stringlength : NULL);
+    if (item)
+    {
+      item->type = (CBOR_TYPE (stream, offset) == CBOR_BYTES) ? CBOR_BYTES : CBOR_TEXT;
+      item->length = stringlength;
+    }
+    if (type)
+      *type = (CBOR_TYPE (stream, offset) == CBOR_BYTES) ? CBOR_BYTES : CBOR_TEXT;
+    if (length)
+      *length = stringlength;
+    break;
+
+  case CBOR_ARRAY:
+    containerlength = 0;
+    if (stream->data[offset] == (CBOR_ARRAY | CBOR_VAR_FOLLOWS))
+      readbytes = cbor_deserialize_array_indefinite (stream, offset);
+    else
+      readbytes = cbor_deserialize_array (stream, offset, &containerlength);
+    if (item)
+      item->length = containerlength;
+    if (type)
+      *type = CBOR_ARRAY;
+    if (length)
+      *length = containerlength;
+    break;
+
+  case CBOR_MAP:
+    containerlength = 0;
+    if (stream->data[offset] == (CBOR_MAP | CBOR_VAR_FOLLOWS))
+      readbytes = cbor_deserialize_map_indefinite (stream, offset);
+    else
+      readbytes = cbor_deserialize_map (stream, offset, &containerlength);
+    if (item)
+      item->length = containerlength;
+    if (type)
+      *type = CBOR_MAP;
+    if (length)
+      *length = containerlength;
+    break;
+
+  case CBOR_TAG:
+    readbytes = 1;
+    if (type)
+      *type = CBOR_TAG;
+    break;
+
+  case CBOR_7:
+    switch (stream->data[offset])
+    {
+    case CBOR_FALSE:
+      readbytes = 1;
+      *type = CBOR_FALSE;
+      break;
+
+    case CBOR_TRUE:
+      readbytes = 1;
+      if (type)
+        *type = CBOR_TRUE;
+      break;
+
+    case CBOR_NULL:
+      readbytes = 1;
+      if (type)
+        *type = CBOR_NULL;
+      break;
+
+    case CBOR_UNDEFINED:
+      readbytes = 1;
+      if (type)
+        *type = CBOR_UNDEFINED;
+      break;
+
+    case CBOR_FLOAT16:
+      readbytes = cbor_deserialize_float_half (stream, offset, (item) ? &item->value.f : NULL);
+      if (item)
+        item->type = CBOR_FLOAT16;
+      if (type)
+        *type = CBOR_FLOAT16;
+      if (length)
+        *length = sizeof (float) / 2;
+      break;
+
+    case CBOR_FLOAT32:
+      readbytes = cbor_deserialize_float (stream, offset, (item) ? &item->value.f : NULL);
+      if (item)
+        item->type = CBOR_FLOAT32;
+      if (type)
+        *type = CBOR_FLOAT32;
+      if (length)
+        *length = sizeof (float);
+      break;
+
+    case CBOR_FLOAT64:
+      readbytes = cbor_deserialize_double (stream, offset, (item) ? &item->value.d : NULL);
+      if (item)
+        item->type = CBOR_FLOAT64;
+      if (type)
+        *type = CBOR_FLOAT64;
+      if (length)
+        *length = sizeof (double);
+      break;
+
+    case CBOR_BREAK:
+      readbytes = 1;
+      if (type)
+        *type = CBOR_BREAK;
+      break;
+    }
+    break;
+
+  default:
+    ms_log (2, "cbor_decode_item(): Unrecognized CBOR type: 0x%xd\n", CBOR_TYPE (stream, offset));
+  }
+
+  return readbytes;
+} /* End of cbor_decode_item() */
+
+
+size_t
+cbor_fetch_map_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item, const char *path[])
+{
+  cbor_item_t inneritem;
+  size_t readbytes = 0;
+  size_t keybytes = 0;
+  size_t valuebytes = 0;
+  size_t keyoffset;
+  size_t valueoffset;
+  size_t containerlength;
+  bool is_indefinite;
+  int type;
+  int keytype;
+  int valuetype;
+
+  if (!stream || !item || !path)
+    return 0;
+
+  /* Sanity check that at least one path element is specified */
+  if (path[0] == 0)
+    return 0;
+
+  /* Sanity check that we have been passed a CBOR Map */
+  offset += readbytes = cbor_decode_item(stream, offset, &type, &containerlength, NULL);
+  if (type != CBOR_MAP)
+  {
+    ms_log (2, "cbor_fetch_map_item(): Provided CBOR stream is not a Map.\n");
+    return 0;
+  }
+
+  /* Check for indefinite Maps, which are not supported */
+  if (stream->data[offset] == (CBOR_MAP | CBOR_VAR_FOLLOWS))
+  {
+    ms_log (2, "cbor_fetch_map_item(): Provided CBOR stream is an indefinite Map, not supported\n");
+    return 0;
+  }
+
+  /* Search for Map key matching the first element of the path */
+  while (containerlength > 0)
+  {
+    keyoffset = offset;
+    offset += keybytes = cbor_decode_item(stream, offset, &keytype, NULL, NULL);
+
+    if (!keybytes)
+    {
+      ms_log (2, "cbor_fetch_map_item(): Cannot decode Map key\n");
+      return 0;
+    }
+
+    valueoffset = offset;
+    offset += valuebytes = cbor_decode_item(stream, offset + keybytes, &valuetype, NULL, NULL);
+
+    if (!valuebytes)
+    {
+      ms_log (2, "cbor_fetch_map_item(): Cannot decode Map value\n");
+      return 0;
+    }
+
+    /* If key is Text, compare to requested path */
+    if (keytype == CBOR_TEXT)
+    {
+      /* Decode key item and compare to first path element */
+      cbor_decode_item(stream, keyoffset, NULL, NULL, &inneritem);
+      if (!strncmp(path[0], inneritem.value.c, inneritem.length))
+      {
+        /* Decode key */
+        cbor_decode_item(stream, valueoffset, NULL, NULL, &inneritem);
+
+        /* If this is the final path element, store in provided item */
+        if (path[1] == 0)
+        {
+          cbor_decode_item(stream, valueoffset, NULL, NULL, &item);
+          return 0;
+        }
+
+        /* Otherwise if path element is a map, recurse with the path shifted to next value */
+        else if (inneritem.type == CBOR_MAP)
+        {
+          offset += cbor_fetch_map_item (stream, offset, item, path[1]);
+        }
+      }
+    }
+
+    readbytes += keybytes + valuebytes;
+    containerlength--;
+  }
+
+  return readbytes;
+}
