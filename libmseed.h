@@ -314,8 +314,28 @@ extern void mstl3_printgaplist (MS3TraceList *mstl, int8_t timeformat,
                                 double *mingap, double *maxgap);
 
 /* miniSEED 3 extra header routines */
-extern int mseh_to_json (MS3Record *msr, char *output, int outputlength);
+#define mseh_fetch(msr, valueptr, type, length, ...)                    \
+  mseh_fetch_path (msr, valueptr, type, length, (const char *[]){__VA_ARGS__, NULL})
+
+#define mseh_fetch_int64_t(msr, valueptr, ...)                          \
+  mseh_fetch_path (msr, valueptr, 'i', 0, (const char *[]){__VA_ARGS__, NULL})
+
+#define mseh_fetch_double(msr, valueptr, ...)                           \
+  mseh_fetch_path (msr, valueptr, 'd', 0, (const char *[]){__VA_ARGS__, NULL})
+
+#define mseh_fetch_bytes(msr, buffer, length, ...)                      \
+  mseh_fetch_path (msr, buffer, 'c', length, (const char *[]){__VA_ARGS__, NULL})
+
+#define mseh_fetch_boolean(msr, valueptr, ...)                          \
+  mseh_fetch_path (msr, valueptr, 'b', 0, (const char *[]){__VA_ARGS__, NULL})
+
+#define mseh_exists(msr, ...)                                           \
+  !mseh_fetch_path (msr, NULL, 0, 0, (const char *[]){__VA_ARGS__, NULL})
+
+extern int mseh_fetch_path (MS3Record *msr, void *value, char type, size_t length, const char *path[]);
+
 extern int mseh_print (MS3Record *msr, int indent);
+extern int mseh_to_json (MS3Record *msr, char *output, int outputlength);
 
 
 /* Reading miniSEED records from files */
