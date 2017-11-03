@@ -1140,6 +1140,7 @@ cbor_decode_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item)
 } /* End of cbor_decode_item() */
 
 /*
+ * Fetch the value of a key-value pair identified with a path.
  *
  * Map keys cannot be containers.
  */
@@ -1252,7 +1253,6 @@ cbor_fetch_map_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item, co
 
   return readbytes;
 } /* End of cbor_fetch_map_item() */
-
 
 /* Print a cbor_item_t value.
  *
