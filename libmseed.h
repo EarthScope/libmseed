@@ -314,6 +314,7 @@ extern void mstl3_printgaplist (MS3TraceList *mstl, int8_t timeformat,
                                 double *mingap, double *maxgap);
 
 /* miniSEED 3 extra header routines */
+
 #define mseh_fetch(msr, valueptr, type, length, ...)                    \
   mseh_fetch_path (msr, valueptr, type, length, (const char *[]){__VA_ARGS__, NULL})
 

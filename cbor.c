@@ -1007,7 +1007,8 @@ cbor_map_to_diag (cbor_stream_t *stream, size_t offset, int maxstringprint,
 
 /* Decode a CBOR item from stream at offset.
  *
- * item->type is set to one of the main CBOR types.
+ * item->type is set to one of the main CBOR types and denotes the
+ * original type regardless of representation in cbor_item_t.
  *
  * item->length is the element count for maps and arrays, the number
  * of bytes for string types and is set to 0 for other types.
@@ -1018,30 +1019,38 @@ size_t
 cbor_decode_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item)
 {
   size_t readbytes = 0;
+  uint64_t u64val;
+  float fval;
 
   if (!stream)
     return 0;
 
   if (item)
   {
-    item->value.u = 0;
+    item->value.i = 0;
     item->type = -1;
     item->length = 0;
+    item->offset = offset;
   }
 
   switch (CBOR_TYPE (stream, offset))
   {
   case CBOR_UINT:
-    readbytes = decode_int (stream, offset, (item) ? &item->value.u : NULL);
+    readbytes = decode_int (stream, offset, (item) ? &u64val : NULL);
     if (item)
+    {
+      if (u64val > INT64_MAX)
+        ms_log (2, "cbor_decode_item(): uint64_t too large for int64_t item value: %" PRIu64 "\n", u64val);
+      item->value.i = u64val;
       item->type = CBOR_UINT;
+    }
     break;
 
   case CBOR_NEGINT:
-    readbytes = decode_int (stream, offset, (item) ? &item->value.u : NULL);
+    readbytes = decode_int (stream, offset, (item) ? &u64val : NULL);
     if (item)
     {
-      item->value.i = -1 - item->value.u; /* Resolve to negative int */
+      item->value.i = -1 - u64val; /* Resolve to negative int */
       item->type = CBOR_NEGINT;
     }
     break;
@@ -1107,15 +1116,21 @@ cbor_decode_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item)
       break;
 
     case CBOR_FLOAT16:
-      readbytes = cbor_deserialize_float_half (stream, offset, (item) ? &item->value.f : NULL);
+      readbytes = cbor_deserialize_float_half (stream, offset, (item) ? &fval : NULL);
       if (item)
+      {
+        item->value.d = fval;
         item->type = CBOR_FLOAT16;
+      }
       break;
 
     case CBOR_FLOAT32:
-      readbytes = cbor_deserialize_float (stream, offset, (item) ? &item->value.f : NULL);
+      readbytes = cbor_deserialize_float (stream, offset, (item) ? &fval : NULL);
       if (item)
+      {
+        item->value.d = fval;
         item->type = CBOR_FLOAT32;
+      }
       break;
 
     case CBOR_FLOAT64:
@@ -1140,16 +1155,20 @@ cbor_decode_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item)
 } /* End of cbor_decode_item() */
 
 /*
- * Fetch the value of a key-value pair identified with a path.
+ * Fetch the key and/or value of a key-value pair identified with a
+ * path, where a path is a series of keys in potentially nested Maps.
  *
  * Map keys cannot be containers.
  */
 size_t
-cbor_fetch_map_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item, const char *path[])
+cbor_fetch_map_kv (cbor_stream_t *stream, size_t offset,
+                   cbor_item_t *key, cbor_item_t *value,
+                   const char *path[])
 {
   cbor_item_t currentitem;
   cbor_item_t keyitem;
   cbor_item_t valueitem;
+  size_t keyoffset = 0;
   size_t readbytes = 0;
   size_t keybytes = 0;
   size_t valuebytes = 0;
@@ -1158,13 +1177,6 @@ cbor_fetch_map_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item, co
 
   if (!stream || !path)
     return 0;
-
-  if (item)
-  {
-    item->value.u = 0;
-    item->type = -1;
-    item->length = 0;
-  }
 
   /* Sanity check that at least one path element is specified */
   if (!path[0])
@@ -1176,7 +1188,7 @@ cbor_fetch_map_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item, co
   if (stream->data[offset] == (CBOR_MAP | CBOR_VAR_FOLLOWS) ||
       stream->data[offset] == (CBOR_ARRAY | CBOR_VAR_FOLLOWS))
   {
-    ms_log (2, "cbor_fetch_map_item(): Provided CBOR contains an indefinite Map/Array, not supported\n");
+    ms_log (2, "cbor_fetch_map_kv(): Provided CBOR contains an indefinite Map/Array, not supported\n");
     return 0;
   }
 
@@ -1187,11 +1199,11 @@ cbor_fetch_map_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item, co
 
     while (containerlength > 0)
     {
-      offset += keybytes = cbor_fetch_map_item (stream, offset, NULL, path);
+      offset += keybytes = cbor_fetch_map_kv (stream, offset, NULL, NULL, path);
 
       if (!keybytes)
       {
-        ms_log (2, "cbor_fetch_map_item(): Cannot decode Array element\n");
+        ms_log (2, "cbor_fetch_map_kv(): Cannot decode Array element\n");
         return 0;
       }
 
@@ -1206,11 +1218,12 @@ cbor_fetch_map_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item, co
 
     while (containerlength > 0)
     {
+      keyoffset = offset;
       offset += keybytes = cbor_decode_item(stream, offset, &keyitem);
 
       if (!keybytes)
       {
-        ms_log (2, "cbor_fetch_map_item(): Cannot decode Map key\n");
+        ms_log (2, "cbor_fetch_map_kv(): Cannot decode Map key\n");
         return 0;
       }
 
@@ -1218,7 +1231,7 @@ cbor_fetch_map_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item, co
 
       if (!valuebytes)
       {
-        ms_log (2, "cbor_fetch_map_item(): Cannot decode Map value\n");
+        ms_log (2, "cbor_fetch_map_kv(): Cannot decode Map value\n");
         return 0;
       }
 
@@ -1229,10 +1242,13 @@ cbor_fetch_map_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item, co
         /* Compare to key Text to first path element */
         if (!strncmp(path[0], (char *)keyitem.value.c, keyitem.length))
         {
-          /* If this is the final path element, store in provided item */
+          /* If this is the final path element, store in provided items */
           if (!path[1])
           {
-            cbor_decode_item(stream, offset, item);
+            if (key)
+              cbor_decode_item(stream, keyoffset, key);
+            if (value)
+              cbor_decode_item(stream, offset, value);
             return 0;
           }
 
@@ -1242,9 +1258,9 @@ cbor_fetch_map_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item, co
 
       /* Consume value item, potentially recursing into Array or Map */
       if (follow)
-        offset += valuebytes = cbor_fetch_map_item (stream, offset, item, &path[1]);
+        offset += valuebytes = cbor_fetch_map_kv (stream, offset, key, value, &path[1]);
       else
-        offset += valuebytes = cbor_fetch_map_item (stream, offset, NULL, path);
+        offset += valuebytes = cbor_fetch_map_kv (stream, offset, NULL, NULL, path);
 
       readbytes += keybytes + valuebytes;
       containerlength--;
@@ -1252,7 +1268,102 @@ cbor_fetch_map_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item, co
   } /* type == CBOR_MAP */
 
   return readbytes;
-} /* End of cbor_fetch_map_item() */
+} /* End of cbor_fetch_map_kv() */
+
+/*
+ * Set the value of a key-value pair identified with a path, where a
+ * path is a series of keys in potentially nested Maps.
+ *
+ * This operation involves re-creating the CBOR structure and
+ * replacing the extra header buffer.
+ *
+ * All Maps and the final key-value pair are created if nessesary.
+ *
+ * Map keys cannot be containers.
+ *
+ * Returns 0 on success and non-zero otherwise.
+ */
+size_t
+cbor_set_map_value (cbor_stream_t *stream, cbor_item_t *item, const char *path[])
+{
+  uint8_t newextra[65535];
+  cbor_item_t mapkey;
+  cbor_item_t mapvalue;
+  size_t readbytes = 0;
+  size_t containerlength;
+
+  size_t readoffset = 0;
+  size_t writeoffset = 0;
+
+  const char **mappath;
+  cbor_item_t **pathitems;
+
+  // fetch_map_kv should be fetch_map_value and only get values.
+  // here, pathitems should be a list of values (containers) of the path.
+
+  int pathcount;
+  int pathidx;
+
+  if (!stream || !item || !path)
+    return 0;
+
+  // Search for last existing Map along path, get offset to last container
+  // Add new maps as needed, set to contain single pair(1)
+  // Change or create key-value pair.
+
+  /* Sanity check that at least one path element is specified */
+  if (!path[0])
+    return -1;
+
+  /* Count elements in path and allocate mirror array */
+  pathcount = 0;
+  while (path[pathcount])
+    pathcount++;
+
+  mappath = (const char **)malloc ((pathcount + 1) * sizeof (char *));
+
+  if (!mappath)
+  {
+    ms_log (2, "cbor_set_map_value(): Cannot allocate memory for map path\n");
+    return -1;
+  }
+
+  printf ("DB: pathcount: %d\n", pathcount);
+
+  /* Find the deepest existing Map in path */
+  pathidx = 0;
+  while (path[pathidx])
+  {
+    mappath[pathidx] = path[pathidx];
+    mappath[pathidx + 1] = NULL;
+
+    mapkey.type = mapvalue.type = -1;
+    cbor_fetch_map_kv (stream, 0, &mapkey, NULL, mappath);
+
+    if (mapkey.type == -1)
+    {
+      pathidx--;
+      break;
+    }
+    else if (mapkey.type != CBOR_TEXT)
+    {
+      ms_log (2, "cbor_set_map_value(): Path key '%s' is not a CBOR Text item, it is of type 0x%X\n",
+              path[pathidx], mapkey.type);
+      if (mappath)
+        free (mappath);
+      return -1;
+    }
+
+    pathidx++;
+  }
+
+  printf ("DB: deepest existing is index: %d -> '%s'\n", pathidx, (pathidx >= 0) ? path[pathidx-1] : "ROOT");
+0
+  if (mappath)
+    free (mappath);
+
+  return writeoffset;
+} /* End of cbor_set_map_value() */
 
 /* Print a cbor_item_t value.
  *
@@ -1275,11 +1386,8 @@ cbor_print_item (cbor_item_t *item, int indent, char *prefix, char *suffix)
   switch (item->type)
   {
   case CBOR_UINT:
-    printed += printf ("%" PRIu64, item->value.u);
-    break;
-
   case CBOR_NEGINT:
-    printed += printf ("%" PRId64, item->value.i);
+    printed += printf ("%" PRIi64, item->value.i);
     break;
 
   case CBOR_BYTES:
@@ -1316,13 +1424,7 @@ cbor_print_item (cbor_item_t *item, int indent, char *prefix, char *suffix)
     break;
 
   case CBOR_FLOAT16:
-    printed += printf ("%g", item->value.f);
-    break;
-
   case CBOR_FLOAT32:
-    printed += printf ("%g", item->value.f);
-    break;
-
   case CBOR_FLOAT64:
     printed += printf ("%g", item->value.d);
     break;

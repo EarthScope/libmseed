@@ -41,7 +41,7 @@ int
 mseh_fetch_path (MS3Record *msr, void *value, char type, size_t length, const char *path[])
 {
   cbor_stream_t stream;
-  cbor_item_t item;
+  cbor_item_t vitem;
 
   if (!msr || !path)
     return MS_GENERROR;
@@ -52,54 +52,46 @@ mseh_fetch_path (MS3Record *msr, void *value, char type, size_t length, const ch
   if (!msr->extra)
     return MS_GENERROR;
 
-  cbor_init (&stream, msr->extra, msr->extralength);
-  cbor_fetch_map_item (&stream, 0, &item, path);
+  vitem.type = -1;
 
-  if (item.type < 0)
+  cbor_init (&stream, msr->extra, msr->extralength);
+  cbor_fetch_map_kv (&stream, 0, NULL, &vitem, path);
+
+  if (vitem.type < 0)
     return 1;
 
-  if (type == 'i' && (item.type == CBOR_UINT || item.type == CBOR_NEGINT))
+  if (type == 'i' && (vitem.type == CBOR_UINT || vitem.type == CBOR_NEGINT))
   {
     if (value)
-    {
-      if (item.type == CBOR_UINT)
-        *((int64_t*)value) = item.value.u;  /* Overflow for huge unsigned values */
-      else
-        *((int64_t*)value) = item.value.i;
-    }
+      *((int64_t*)value) = vitem.value.i;
   }
-  else if (type == 'd' && (item.type == CBOR_FLOAT16 || item.type == CBOR_FLOAT32 || item.type == CBOR_FLOAT64))
+  else if (type == 'd' && (vitem.type == CBOR_FLOAT16 || vitem.type == CBOR_FLOAT32 || vitem.type == CBOR_FLOAT64))
   {
     if (value)
-    {
-      if (item.type == CBOR_FLOAT16 || item.type == CBOR_FLOAT32)
-        *((double*)value) = item.value.f;
-      else
-        *((double*)value) = item.value.d;
-    }
+      *((double*)value) = vitem.value.d;
   }
-  else if (type == 'c' && (item.type == CBOR_BYTES || item.type == CBOR_TEXT))
+  else if (type == 'c' && (vitem.type == CBOR_BYTES || vitem.type == CBOR_TEXT))
   {
     if (value)
     {
       /* Copy buffer and terminate */
-      if (length > item.length)
+      if (length > vitem.length)
       {
-        memcpy (value, item.value.c, item.length);
-        ((uint8_t *)value)[item.length] = '\0';
+        memcpy (value, vitem.value.c, vitem.length);
+        ((uint8_t *)value)[vitem.length] = '\0';
       }
       else
       {
-        memcpy (value, item.value.c, length - 1);
+        memcpy (value, vitem.value.c, length - 1);
         ((uint8_t *)value)[length - 1] = '\0';
       }
     }
   }
-  else if (type == 'b' && (item.type == CBOR_TRUE || item.type == CBOR_FALSE))
+  else if (type == 'b' && (vitem.type == CBOR_TRUE || vitem.type == CBOR_FALSE))
   {
     if (value)
     {
-      if (item.type == CBOR_TRUE)
+      if (vitem.type == CBOR_TRUE)
         *((int*)value) = 1;
       else
         *((int*)value) = 0;
