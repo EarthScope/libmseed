@@ -52,10 +52,10 @@ mseh_fetch_path (MS3Record *msr, void *value, char type, size_t length, const ch
   if (!msr->extra)
     return MS_GENERROR;
 
-  vitem.type = -1;
-
   cbor_init (&stream, msr->extra, msr->extralength);
-  cbor_fetch_map_kv (&stream, 0, NULL, &vitem, path);
+
+  vitem.type = -1;
+  cbor_fetch_map_value (&stream, 0, &vitem, path);
 
   if (vitem.type < 0)
     return 1;

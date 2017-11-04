@@ -1161,9 +1161,8 @@ cbor_decode_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item)
  * Map keys cannot be containers.
  */
 size_t
-cbor_fetch_map_kv (cbor_stream_t *stream, size_t offset,
-                   cbor_item_t *key, cbor_item_t *value,
-                   const char *path[])
+cbor_fetch_map_value (cbor_stream_t *stream, size_t offset,
+                      cbor_item_t *value, const char *path[])
 {
   cbor_item_t currentitem;
   cbor_item_t keyitem;
@@ -1188,7 +1187,7 @@ cbor_fetch_map_kv (cbor_stream_t *stream, size_t offset,
   if (stream->data[offset] == (CBOR_MAP | CBOR_VAR_FOLLOWS) ||
       stream->data[offset] == (CBOR_ARRAY | CBOR_VAR_FOLLOWS))
   {
-    ms_log (2, "cbor_fetch_map_kv(): Provided CBOR contains an indefinite Map/Array, not supported\n");
+    ms_log (2, "cbor_fetch_map_value(): Provided CBOR contains an indefinite Map/Array, not supported\n");
     return 0;
   }
 
@@ -1199,11 +1198,11 @@ cbor_fetch_map_kv (cbor_stream_t *stream, size_t offset,
 
     while (containerlength > 0)
     {
-      offset += keybytes = cbor_fetch_map_kv (stream, offset, NULL, NULL, path);
+      offset += keybytes = cbor_fetch_map_value (stream, offset, NULL, path);
 
       if (!keybytes)
       {
-        ms_log (2, "cbor_fetch_map_kv(): Cannot decode Array element\n");
+        ms_log (2, "cbor_fetch_map_value(): Cannot decode Array element\n");
         return 0;
       }
 
@@ -1223,7 +1222,7 @@ cbor_fetch_map_kv (cbor_stream_t *stream, size_t offset,
 
       if (!keybytes)
       {
-        ms_log (2, "cbor_fetch_map_kv(): Cannot decode Map key\n");
+        ms_log (2, "cbor_fetch_map_value(): Cannot decode Map key\n");
         return 0;
       }
 
@@ -1231,7 +1230,7 @@ cbor_fetch_map_kv (cbor_stream_t *stream, size_t offset,
 
       if (!valuebytes)
       {
-        ms_log (2, "cbor_fetch_map_kv(): Cannot decode Map value\n");
+        ms_log (2, "cbor_fetch_map_value(): Cannot decode Map value\n");
         return 0;
       }
 
@@ -1245,8 +1244,6 @@ cbor_fetch_map_kv (cbor_stream_t *stream, size_t offset,
           /* If this is the final path element, store in provided items */
           if (!path[1])
           {
-            if (key)
-              cbor_decode_item(stream, keyoffset, key);
             if (value)
               cbor_decode_item(stream, offset, value);
             return 0;
@@ -1258,9 +1255,9 @@ cbor_fetch_map_kv (cbor_stream_t *stream, size_t offset,
 
       /* Consume value item, potentially recursing into Array or Map */
       if (follow)
-        offset += valuebytes = cbor_fetch_map_kv (stream, offset, key, value, &path[1]);
+        offset += valuebytes = cbor_fetch_map_value (stream, offset, value, &path[1]);
       else
-        offset += valuebytes = cbor_fetch_map_kv (stream, offset, NULL, NULL, path);
+        offset += valuebytes = cbor_fetch_map_value (stream, offset, NULL, path);
 
       readbytes += keybytes + valuebytes;
       containerlength--;
@@ -1268,7 +1265,7 @@ cbor_fetch_map_kv (cbor_stream_t *stream, size_t offset,
   } /* type == CBOR_MAP */
 
   return readbytes;
-} /* End of cbor_fetch_map_kv() */
+} /* End of cbor_fetch_map_value() */
 
 /*
  * Set the value of a key-value pair identified with a path, where a
@@ -1287,7 +1284,7 @@ size_t
 cbor_set_map_value (cbor_stream_t *stream, cbor_item_t *item, const char *path[])
 {
   uint8_t newextra[65535];
-  cbor_item_t mapkey;
+  //cbor_item_t mapkey;
   cbor_item_t mapvalue;
   size_t readbytes = 0;
   size_t containerlength;
@@ -1298,7 +1295,6 @@ cbor_set_map_value (cbor_stream_t *stream, cbor_item_t *item, const char *path[]
   const char **mappath;
   cbor_item_t **pathitems;
 
-  // fetch_map_kv should be fetch_map_value and only get values.
   // here, pathitems should be a list of values (containers) of the path.
 
   int pathcount;
@@ -1337,28 +1333,20 @@ cbor_set_map_value (cbor_stream_t *stream, cbor_item_t *item, const char *path[]
     mappath[pathidx] = path[pathidx];
     mappath[pathidx + 1] = NULL;
 
-    mapkey.type = mapvalue.type = -1;
-    cbor_fetch_map_kv (stream, 0, &mapkey, NULL, mappath);
+    mapvalue.type = -1;
+    cbor_fetch_map_value (stream, 0, &mapvalue, mappath);
 
-    if (mapkey.type == -1)
+    if (mapvalue.type == -1)
     {
       pathidx--;
       break;
-    }
-    else if (mapkey.type != CBOR_TEXT)
-    {
-      ms_log (2, "cbor_set_map_value(): Path key '%s' is not a CBOR Text item, it is of type 0x%X\n",
-              path[pathidx], mapkey.type);
-      if (mappath)
-        free (mappath);
-      return -1;
     }
 
     pathidx++;
   }
 
   printf ("DB: deepest existing is index: %d -> '%s'\n", pathidx, (pathidx >= 0) ? path[pathidx-1] : "ROOT");
-0
+
   if (mappath)
     free (mappath);
 
