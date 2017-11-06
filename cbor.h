@@ -675,7 +675,9 @@ size_t cbor_map_to_diag (cbor_stream_t *stream, size_t offset, int maxstringprin
                          char *output, size_t *outputoffset, const size_t outputmax);
 
 
-size_t cbor_decode_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item);
+size_t cbor_deserialize_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item);
+
+size_t cbor_serialize_item (cbor_stream_t *stream, cbor_item_t *item);
 
 size_t cbor_fetch_map_value (cbor_stream_t *stream, size_t offset,
                              cbor_item_t *value, const char *path[]);
