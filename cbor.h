@@ -674,6 +674,7 @@ bool cbor_at_end(const cbor_stream_t *stream, size_t offset);
 size_t cbor_map_to_diag (cbor_stream_t *stream, size_t offset, int maxstringprint,
                          char *output, size_t *outputoffset, const size_t outputmax);
 
+size_t cbor_serialize_floating (cbor_stream_t *s, double val);
 
 size_t cbor_deserialize_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item);
 

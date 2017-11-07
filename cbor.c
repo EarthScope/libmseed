@@ -1,7 +1,11 @@
 /***************************************************************************
  * cbor.c:
  *
- * CBOR handling routines extracted from RIOT-OS:
+ * This file contains fundamental CBOR serialization/deserialization
+ * routines (from RIOT-OS) and some higher level functions needed for
+ * use in this code base.
+ *
+ * Fundmental CBOR handling routines extracted from RIOT-OS:
  * https://github.com/RIOT-OS/RIOT
  *
  * All copyrights and license notifications are retained below.
@@ -10,8 +14,10 @@
  * 4839a1cbbf71631c529a49b40a53a8f1f8702cb4 to RIOT-OS and has been
  * modified to work in libmseed as follows:
  * - Replace byteswapping routines with those in libmseed
+ * - Allow deserialization routines to work without storing value (to get length)
  * - Formatting to match libmseed source
  * - Removing unneeded code (e.g. [de]serialize_date_time*, priters, dump_memory)
+ * - Add higher-level, general use functions.
  ***************************************************************************/
 
 /*
@@ -109,7 +115,7 @@ encode_float_half (float x)
   unsigned int e = (u.i >> 23) & 0xff; /* Using int is faster here */
 
   /* If zero, or denormal, or exponent underflows too much for a denormal
-     * half, return signed zero. */
+   * half, return signed zero. */
   if (e < 103)
   {
     return bits;
@@ -120,7 +126,7 @@ encode_float_half (float x)
   {
     bits |= 0x7c00u;
     /* If exponent was 0xff and one mantissa bit was set, it means NaN,
-         * not Inf, so make sure we set one mantissa bit too. */
+     * not Inf, so make sure we set one mantissa bit too. */
     bits |= (e == 255) && (u.i & 0x007fffffu);
     return bits;
   }
@@ -130,14 +136,14 @@ encode_float_half (float x)
   {
     m |= 0x0800u;
     /* Extra rounding may overflow and set mantissa to 0 and exponent
-         * to 1, which is OK. */
+     * to 1, which is OK. */
     bits |= (m >> (114 - e)) + ((m >> (113 - e)) & 1);
     return bits;
   }
 
   bits |= ((e - 112) << 10) | (m >> 1);
   /* Extra rounding. An overflow will set mantissa to 0 and increment
-     * the exponent, which is OK. */
+   * the exponent, which is OK. */
   bits += m & 1;
   return bits;
 }
@@ -255,7 +261,6 @@ decode_int (const cbor_stream_t *s, size_t offset, uint64_t *val)
   {
     return 0;
   }
-
 
   CBOR_ENSURE_SIZE_READ (s, offset + 1);
 
@@ -546,9 +551,9 @@ cbor_deserialize_float (const cbor_stream_t *stream, size_t offset, float *val)
   {
     if (val)
     {
-      memcpy (val, &stream->data[offset+1], sizeof(float));
-      if (!ms_bigendianhost())
-        ms_gswap4a(val);
+      memcpy (val, &stream->data[offset + 1], sizeof (float));
+      if (!ms_bigendianhost ())
+        ms_gswap4a (val);
     }
 
     return 5;
@@ -562,8 +567,8 @@ cbor_serialize_float (cbor_stream_t *s, float val)
 {
   CBOR_ENSURE_SIZE (s, 5);
   s->data[s->pos++] = CBOR_FLOAT32;
-  if (!ms_bigendianhost())
-    ms_gswap4a(&val);
+  if (!ms_bigendianhost ())
+    ms_gswap4a (&val);
   memcpy (s->data + s->pos, &val, 4);
   s->pos += 4;
   return 5;
@@ -584,9 +589,9 @@ cbor_deserialize_double (const cbor_stream_t *stream, size_t offset, double *val
     CBOR_ENSURE_SIZE_READ (stream, offset + 9);
     if (val)
     {
-      memcpy (val, &stream->data[offset+1], sizeof(double));
-      if (!ms_bigendianhost())
-        ms_gswap8a(val);
+      memcpy (val, &stream->data[offset + 1], sizeof (double));
+      if (!ms_bigendianhost ())
+        ms_gswap8a (val);
     }
 
     return 9;
@@ -600,8 +605,8 @@ cbor_serialize_double (cbor_stream_t *s, double val)
 {
   CBOR_ENSURE_SIZE (s, 9);
   s->data[s->pos++] = CBOR_FLOAT64;
-  if (!ms_bigendianhost())
-    ms_gswap8a(&val);
+  if (!ms_bigendianhost ())
+    ms_gswap8a (&val);
   memcpy (s->data + s->pos, &val, 8);
   s->pos += 8;
   return 9;
@@ -798,7 +803,6 @@ cbor_at_end (const cbor_stream_t *s, size_t offset)
   return s ? offset >= s->pos - 1 : true;
 }
 
-
 /* Routines below added for libmseed usage */
 
 /* Traverse CBOR (recursively) and print diagnostic output */
@@ -820,7 +824,7 @@ cbor_map_to_diag (cbor_stream_t *stream, size_t offset, int maxstringprint,
   float fval;
   double dval;
 
-  /* Simple macro for adding output to buffer with local variables */
+/* Simple macro for adding output to buffer with local variables */
 #define ADD_PRINTF_OUTPUT(...)                                               \
   remaining = (*outputoffset < outputmax) ? (outputmax - *outputoffset) : 0; \
   *outputoffset += snprintf (output + *outputoffset, remaining, __VA_ARGS__);
@@ -1001,6 +1005,35 @@ cbor_map_to_diag (cbor_stream_t *stream, size_t offset, int maxstringprint,
 } /* End of cbor_map_to_diag() */
 
 
+/* Serialize a floating point number and add to stream.
+ *
+ * This routine determines the smallest of FLOAT16, FLOAT32 or FLOAT64
+ * that is needed to store the value.
+ */
+size_t
+cbor_serialize_floating (cbor_stream_t *s, double val)
+{
+  float fval = val;
+  double tval;
+  uint16_t uval;
+
+  /* Test if value is retained in a FLOAT16 */
+  uval = encode_float_half (fval);
+  if (!ms_bigendianhost ())
+    ms_gswap2a (&uval);
+  tval = decode_float_half ((unsigned char *)&uval);
+  if (val == tval)
+    return cbor_serialize_float_half (s, fval);
+
+  /* Test if value is retained in a FLOAT32 */
+  else if (val == fval)
+    return cbor_serialize_float (s, fval);
+
+  /* Otherwise serialize a full FLOAT64 */
+  else
+    return cbor_serialize_double (s, val);
+}
+
 /* Deserialize a CBOR item from stream at offset.
  *
  * item->type is set to one of the main CBOR types and denotes the
@@ -1066,7 +1099,7 @@ cbor_deserialize_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item)
     if (stream->data[offset] == (CBOR_ARRAY | CBOR_VAR_FOLLOWS))
       readbytes = cbor_deserialize_array_indefinite (stream, offset);
     else
-      readbytes = cbor_deserialize_array (stream, offset, (item) ? &item->length: NULL);
+      readbytes = cbor_deserialize_array (stream, offset, (item) ? &item->length : NULL);
     if (item)
       item->type = CBOR_ARRAY;
     break;
@@ -1075,7 +1108,7 @@ cbor_deserialize_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item)
     if (stream->data[offset] == (CBOR_MAP | CBOR_VAR_FOLLOWS))
       readbytes = cbor_deserialize_map_indefinite (stream, offset);
     else
-      readbytes = cbor_deserialize_map (stream, offset, (item) ? &item->length: NULL);
+      readbytes = cbor_deserialize_map (stream, offset, (item) ? &item->length : NULL);
     if (item)
       item->type = CBOR_MAP;
     break;
@@ -1254,7 +1287,7 @@ cbor_fetch_map_value (cbor_stream_t *stream, size_t offset,
   if (!path[0])
     return 0;
 
-  offset += readbytes = cbor_deserialize_item(stream, offset, &currentitem);
+  offset += readbytes = cbor_deserialize_item (stream, offset, &currentitem);
 
   if (!readbytes)
     return 0;
@@ -1294,7 +1327,7 @@ cbor_fetch_map_value (cbor_stream_t *stream, size_t offset,
     while (containerlength > 0)
     {
       keyoffset = offset;
-      offset += keybytes = cbor_deserialize_item(stream, offset, &keyitem);
+      offset += keybytes = cbor_deserialize_item (stream, offset, &keyitem);
 
       if (!keybytes)
       {
@@ -1302,7 +1335,7 @@ cbor_fetch_map_value (cbor_stream_t *stream, size_t offset,
         return 0;
       }
 
-      valuebytes = cbor_deserialize_item(stream, offset, &valueitem);
+      valuebytes = cbor_deserialize_item (stream, offset, &valueitem);
 
       if (!valuebytes)
       {
@@ -1315,13 +1348,13 @@ cbor_fetch_map_value (cbor_stream_t *stream, size_t offset,
       if (keyitem.type == CBOR_TEXT)
       {
         /* Compare to key Text to first path element */
-        if (!strncmp(path[0], (char *)keyitem.value.c, keyitem.length))
+        if (!strncmp (path[0], (char *)keyitem.value.c, keyitem.length))
         {
           /* If this is the final path element, store in provided items */
           if (!path[1])
           {
             if (value)
-              cbor_deserialize_item(stream, offset, value);
+              cbor_deserialize_item (stream, offset, value);
             return 0;
           }
 
@@ -1380,14 +1413,14 @@ cbor_set_map_value (cbor_stream_t *stream, cbor_item_t *item, const char *path[]
   if (!path[0])
     return 0;
 
-  cbor_init (&newstream, newdata, sizeof(newdata));
+  cbor_init (&newstream, newdata, sizeof (newdata));
   targetitem.type = -1;
   targetitem.offset = 0;
   targetcontainer.type = -1;
   targetcontainer.offset = 0;
 
   /* Determine index of last path element and allocate mirror array */
-  while (path[pathlast+1])
+  while (path[pathlast + 1])
     pathlast++;
 
   /* Search existing CBOR for target container and item */
@@ -1478,7 +1511,7 @@ cbor_set_map_value (cbor_stream_t *stream, cbor_item_t *item, const char *path[]
     /* Add Map entries for each path element needed */
     while (pathidx < pathlast)
     {
-      if (!cbor_serialize_unicode_string(&newstream, path[pathidx]) ||
+      if (!cbor_serialize_unicode_string (&newstream, path[pathidx]) ||
           !cbor_serialize_map (&newstream, 1))
       {
         ms_log (2, "cbor_set_map_value(): Cannot add new Map for '%s'\n", path[pathidx]);
@@ -1489,7 +1522,7 @@ cbor_set_map_value (cbor_stream_t *stream, cbor_item_t *item, const char *path[]
     }
 
     /* Add target key-value items */
-    if (!cbor_serialize_unicode_string(&newstream, path[pathidx]) ||
+    if (!cbor_serialize_unicode_string (&newstream, path[pathidx]) ||
         !cbor_serialize_item (&newstream, item))
     {
       ms_log (2, "cbor_set_map_value(): Cannot serialize target item(s)\n");
@@ -1521,7 +1554,7 @@ cbor_set_map_value (cbor_stream_t *stream, cbor_item_t *item, const char *path[]
         /* Add Map entries for each path element needed */
         while (pathidx < pathlast)
         {
-          if (!cbor_serialize_unicode_string(&newstream, path[pathidx]) ||
+          if (!cbor_serialize_unicode_string (&newstream, path[pathidx]) ||
               !cbor_serialize_map (&newstream, 1))
           {
             ms_log (2, "cbor_set_map_value(): Cannot add new Map for '%s'\n", path[pathidx]);
@@ -1532,7 +1565,7 @@ cbor_set_map_value (cbor_stream_t *stream, cbor_item_t *item, const char *path[]
         }
 
         /* Add target key-value items */
-        if (!cbor_serialize_unicode_string(&newstream, path[pathidx]) ||
+        if (!cbor_serialize_unicode_string (&newstream, path[pathidx]) ||
             !cbor_serialize_item (&newstream, item))
         {
           ms_log (2, "cbor_set_map_value(): Cannot serialize target item(s)\n");
@@ -1568,7 +1601,7 @@ cbor_set_map_value (cbor_stream_t *stream, cbor_item_t *item, const char *path[]
   /* Replace CBOR stream */
   if (stream->data)
     free (stream->data);
-  stream->data = (unsigned char*) malloc (newstream.pos);
+  stream->data = (unsigned char *)malloc (newstream.pos);
   if (!stream->data)
   {
     ms_log (2, "cbor_set_map_value(): Cannot allocate memory for new CBOR\n");
