@@ -1369,108 +1369,98 @@ cbor_set_map_value (cbor_stream_t *stream, cbor_item_t *item, const char *path[]
   cbor_item_t tempitem;
   cbor_item_t targetcontainer;
   cbor_item_t targetitem;
-  size_t nextitem = 0;
 
   const char **mappath;
 
-  int pathlast;
-  int pathidx;
+  int pathlast = -1;
+  int pathidx = -1;
   size_t readoffset;
   size_t readsize;
 
   if (!stream || !item || !path)
     return 0;
 
-  cbor_init (&newstream, newdata, sizeof(newdata));
-
   /* Sanity check that at least one path element is specified */
   if (!path[0])
     return 0;
 
-  /* Sanity check that stream starts with a root map, store as base container */
+  cbor_init (&newstream, newdata, sizeof(newdata));
+  targetitem.type = -1;
+  targetitem.offset = 0;
   targetcontainer.type = -1;
-  cbor_deserialize_item (stream, 0, &targetcontainer);
-
-  if (targetcontainer.type != CBOR_MAP)
-  {
-    ms_log (2, "cbor_set_map_value(): CBOR does not start with a Map, unsupported\n");
-    return 0;
-  }
+  targetcontainer.offset = 0;
 
   /* Determine index of last path element and allocate mirror array */
-  pathlast = -1;
   while (path[pathlast+1])
     pathlast++;
 
-  mappath = (const char **)malloc ((pathlast + 2) * sizeof (char *));
-  if (!mappath)
+  /* Search existing CBOR for target container and item */
+  if (stream->size > 0)
   {
-    ms_log (2, "cbor_set_map_value(): Cannot allocate memory for map path\n");
-    return 0;
-  }
-
-  /* Search for existing path key-values */
-  targetitem.type = -1;
-  targetitem.offset = 0;
-  pathidx = 0;
-  while (path[pathidx])
-  {
-    mappath[pathidx] = path[pathidx];
-    mappath[pathidx + 1] = NULL;
-
-    tempitem.type = -1;
-    cbor_fetch_map_value (stream, 0, &tempitem, mappath);
-
-    /* Done if element in path does not exist */
-    if (tempitem.type == -1)
+    /* Sanity check that stream starts with a root map, store as base container */
+    cbor_deserialize_item (stream, 0, &targetcontainer);
+    if (targetcontainer.type != CBOR_MAP)
     {
-      pathidx--;
-      break;
-    }
-
-    //DEBUG
-    //printf ("DB: pathidx: %d, pathlast: %d, search item: ", pathidx, pathlast);
-    //cbor_print_item(&tempitem, 0, NULL, "\n");
-
-    /* Done if target item is found, store item and offset to item that follows (if any) */
-    if (pathidx == pathlast)
-    {
-      nextitem = tempitem.offset + cbor_deserialize_item (stream, tempitem.offset, &targetitem);
-      break;
-    }
-    /* Check that non-target items are Maps */
-    else if (tempitem.type != CBOR_MAP)
-    {
-      ms_log (2, "cbor_set_map_value(): Path value of key '%s' is not a Map, unsupported\n",
-              path[pathidx]);
-      free (mappath);
+      ms_log (2, "cbor_set_map_value(): CBOR does not start with a Map, unsupported\n");
       return 0;
     }
 
-    /* Store container item on search path */
-    cbor_deserialize_item (stream, tempitem.offset, &targetcontainer);
-    pathidx++;
-  }
-  free (mappath);
+    /* Allocate mirror of path*/
+    mappath = (const char **)malloc ((pathlast + 2) * sizeof (char *));
+    if (!mappath)
+    {
+      ms_log (2, "cbor_set_map_value(): Cannot allocate memory for map path\n");
+      return 0;
+    }
 
-  //DEBUG
-  /* printf ("DB: pathidx: %d, pathlast: %d\n", pathidx, pathlast); */
-  /* printf ("DB: deepest existing is index: %d -> '%s'\n", pathidx, (pathidx >= 0) ? path[pathidx] : "ROOT"); */
+    /* Search for existing path key-values */
+    targetitem.type = -1;
+    targetitem.offset = 0;
+    pathidx = 0;
+    while (path[pathidx])
+    {
+      mappath[pathidx] = path[pathidx];
+      mappath[pathidx + 1] = NULL;
 
-  /* if (targetcontainer.type != -1) */
-  /* { */
-  /*   printf ("DB: target container offset: %zu, type: %d, value: ", targetcontainer.offset, targetcontainer.type); */
-  /*   cbor_print_item (&targetcontainer, 0, NULL, "\n"); */
-  /* } */
-  /* if (targetitem.type != -1) */
-  /* { */
-  /*   printf ("DB: target item offset: %zu, type: %d, value: ", targetitem.offset, targetitem.type); */
-  /*   cbor_print_item (&targetitem, 0, NULL, "\n"); */
-  /* } */
-  //DEBUG
+      tempitem.type = -1;
+      cbor_fetch_map_value (stream, 0, &tempitem, mappath);
 
-  /* Check that final search value is not a container */
-  if (targetcontainer.type != -1 &&
+      /* Done if element in path does not exist */
+      if (tempitem.type == -1)
+      {
+        pathidx--;
+        break;
+      }
+
+      /* Done if target item is found, store item */
+      if (pathidx == pathlast)
+      {
+        cbor_deserialize_item (stream, tempitem.offset, &targetitem);
+        break;
+      }
+      /* Check that non-target items are Maps */
+      else if (tempitem.type != CBOR_MAP)
+      {
+        ms_log (2, "cbor_set_map_value(): Path value of key '%s' is not a Map, unsupported\n",
+                path[pathidx]);
+        free (mappath);
+        return 0;
+      }
+
+      /* Store search path container item */
+      cbor_deserialize_item (stream, tempitem.offset, &targetcontainer);
+      pathidx++;
+    }
+    free (mappath);
+  } /* Done searching existing CBOR */
+
+  /* At this point:
+   * pathidx is set to the index of the last path item found, -1 if not found
+   * targetcontainer is set to the last Map container on path found
+   * targetitem is set if target item was found */
+
+  /* Check that the target item is not a container, which cannot be replaced */
+  if (targetitem.type != -1 &&
       (targetitem.type == CBOR_ARRAY || targetitem.type == CBOR_MAP))
   {
     ms_log (2, "cbor_set_map_value(): Target value of key '%s' is a Map or Array, unsupported\n",
@@ -1478,86 +1468,106 @@ cbor_set_map_value (cbor_stream_t *stream, cbor_item_t *item, const char *path[]
     return 0;
   }
 
-  // targetitem contains last container or target item
-  // nextitem is offset to item following last container or item
-
-  // stream is empty, nothing found, both targets unset: add to end
-  // stream is not empty and path not found, increment root Map and add to end
-
-  // stream is not empty partial path found, increment target container, insert Map(s) and value
-  // stream is not empty and target value found, copy up target, re-serialize target, copy after target
-
-  /* Create root map if original stream is empty */
+  /* No original CBOR, build from scratch */
   if (stream->size == 0)
   {
+    /* Add root Map with 1 entry */
     if (!cbor_serialize_map (&newstream, 1))
     {
       ms_log (2, "cbor_set_map_value(): Cannot add root Map\n");
       return 0;
     }
-  }
+    pathidx = 0;
 
-  readoffset = 0;
-  while (readoffset < stream->size)
+    /* Add Map entries for each path element needed */
+    while (pathidx < pathlast)
+    {
+      if (!cbor_serialize_unicode_string(&newstream, path[pathidx]) ||
+          !cbor_serialize_map (&newstream, 1))
+      {
+        ms_log (2, "cbor_set_map_value(): Cannot add new Map for '%s'\n", path[pathidx]);
+        return 0;
+      }
+
+      pathidx++;
+    }
+
+    /* Add target key-value items */
+    if (!cbor_serialize_unicode_string(&newstream, path[pathidx]) ||
+        !cbor_serialize_item (&newstream, item))
+    {
+      ms_log (2, "cbor_set_map_value(): Cannot serialize target item(s)\n");
+      return 0;
+    }
+  }
+  /* Otherwise, add to existing CBOR */
+  else
   {
-    readsize = cbor_deserialize_item (stream, readoffset, &tempitem);
-
-    if (tempitem.offset == targetcontainer.offset && pathidx < pathlast)
+    readoffset = 0;
+    while (readoffset < stream->size)
     {
-      printf ("DB: at target container, pathidx: %d, pathlast: %d\n", pathidx, pathlast);
+      readsize = cbor_deserialize_item (stream, readoffset, &tempitem);
 
-      /* Increment map length by one entry */
-      if (!cbor_serialize_map (&newstream, tempitem.length + 1))
+      if (targetcontainer.type != -1 &&
+          tempitem.offset == targetcontainer.offset &&
+          pathidx < pathlast)
       {
-        ms_log (2, "cbor_set_map_value(): Cannot add root Map\n");
-        return 0;
+        /* Increment map length by one entry */
+        if (!cbor_serialize_map (&newstream, tempitem.length + 1))
+        {
+          ms_log (2, "cbor_set_map_value(): Cannot add Map\n");
+          return 0;
+        }
+
+        /* Increment path index to next entry */
+        pathidx += 1;
+
+        /* Add Map entries for each path element needed */
+        while (pathidx < pathlast)
+        {
+          if (!cbor_serialize_unicode_string(&newstream, path[pathidx]) ||
+              !cbor_serialize_map (&newstream, 1))
+          {
+            ms_log (2, "cbor_set_map_value(): Cannot add new Map for '%s'\n", path[pathidx]);
+            return 0;
+          }
+
+          pathidx++;
+        }
+
+        /* Add target key-value items */
+        if (!cbor_serialize_unicode_string(&newstream, path[pathidx]) ||
+            !cbor_serialize_item (&newstream, item))
+        {
+          ms_log (2, "cbor_set_map_value(): Cannot serialize target item(s)\n");
+          return 0;
+        }
+      }
+      else if (targetitem.type != -1 &&
+               tempitem.offset == targetitem.offset)
+      {
+        if (!cbor_serialize_item (&newstream, item))
+        {
+          ms_log (2, "cbor_set_map_value(): Cannot serialize item\n");
+          return 0;
+        }
+      }
+      else
+      {
+        /* Copy raw serialized item */
+        if (newstream.pos + readsize > newstream.size)
+        {
+          ms_log (2, "cbor_set_map_value(): New CBOR has grown beyond limit of %zu\n", newstream.size);
+          return 0;
+        }
+
+        memcpy (newstream.data + newstream.pos, stream->data + readoffset, readsize);
+        newstream.pos += readsize;
       }
 
-      /* Add Map entries for each path element needed */
-      while (pathidx < pathlast)
-      {
-        printf ("DB: Adding path: '%s'\n", path[pathidx]);
-
-        //CHAD
-        // Add Text key with path name
-        // Add Map item as value
-        pathidx++;
-      }
-
-      /* Add target item */
-      if (!cbor_serialize_item (&newstream, item))
-      {
-        ms_log (2, "cbor_set_map_value(): Cannot serialize item\n");
-        return 0;
-      }
+      readoffset += readsize;
     }
-    else if (tempitem.offset == targetitem.offset)
-    {
-      if (!cbor_serialize_item (&newstream, item))
-      {
-        ms_log (2, "cbor_set_map_value(): Cannot serialize item\n");
-        return 0;
-      }
-    }
-    else
-    {
-      /* Copy raw serialized item */
-      if (newstream.pos + readsize > newstream.size)
-      {
-        ms_log (2, "cbor_set_map_value(): New CBOR has grown beyond limit of %zu\n", newstream.size);
-        return 0;
-      }
-
-      printf ("DB Copying: ");cbor_print_item (&tempitem, 0, NULL, "\n");
-
-      memcpy (newstream.data + newstream.pos, stream->data + readoffset, readsize);
-      newstream.pos += readsize;
-    }
-
-    readoffset += readsize;
   }
-
-  printf ("DB newstream.size: %zu, newstream.pos: %zu\n", newstream.size, newstream.pos);
 
   /* Replace CBOR stream */
   if (stream->data)

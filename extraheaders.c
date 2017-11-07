@@ -13,7 +13,7 @@
 
 
 /***************************************************************************
- * mseh_fetch:
+ * mseh_fetch_path:
  *
  * Search for and return an extra header value specified as a path of
  * Map elements.  The path of Map elemens is a sequence of Map keys
@@ -102,7 +102,100 @@ mseh_fetch_path (MS3Record *msr, void *value, char type, size_t length, const ch
     return 2;
 
   return 0;
-}
+} /* End of mseh_fetch_path() */
+
+/***************************************************************************
+ * mseh_set_path:
+ *
+ * Set the value of a single extra header value specified as a path of
+ * Map elements.  The path of Map elemens is a sequence of Map keys
+ * for nested structures.  This routine sets the value of the last
+ * Map key in the sequence.
+ *
+ * If the path or final header values do not exist they will be created.
+ *
+ * The 'type' value specifies the data type expected for the value in
+ * 'value':
+ *
+ * type  expected type for 'value'
+ * ----  -------------------------
+ * i     int64_t
+ * d     double
+ * c     unsigned char* (maximum length is: 'length' - 1)
+ * b     int (boolean value of 0 or 1)
+ *
+ * Returns:
+ *   0 on success,
+ *   otherwise a (negative) libmseed error code.
+ ***************************************************************************/
+int
+mseh_set_path (MS3Record *msr, void *value, char type, size_t length, const char *path[])
+{
+  cbor_stream_t stream;
+  cbor_item_t vitem;
+
+  if (!msr || !path || !value)
+    return MS_GENERROR;
+
+  switch (type)
+  {
+  case 'i':
+    vitem.type = CBOR_NEGINT;
+    vtime.value.i = *((int64_t*)value);
+    break;
+  case 'd':
+    vitem.type = CBOR_NEGINT;
+    vtime.value.i = *((int64_t*)value);
+    break;
+
+NEED TO FINISH
+
+  else if (type == 'd' && (vitem.type == CBOR_FLOAT16 || vitem.type == CBOR_FLOAT32 || vitem.type == CBOR_FLOAT64))
+  {
+    if (value)
+      *((double*)value) = vitem.value.d;
+  }
+  else if (type == 'c' && (vitem.type == CBOR_BYTES || vitem.type == CBOR_TEXT))
+  {
+    if (value)
+    {
+      /* Copy buffer and terminate */
+      if (length > vitem.length)
+      {
+        memcpy (value, vitem.value.c, vitem.length);
+        ((uint8_t *)value)[vitem.length] = '\0';
+      }
+      else
+      {
+        memcpy (value, vitem.value.c, length - 1);
+        ((uint8_t *)value)[length - 1] = '\0';
+      }
+    }
+  }
+  else if (type == 'b' && (vitem.type == CBOR_TRUE || vitem.type == CBOR_FALSE))
+  {
+    if (value)
+    {
+      if (vitem.type == CBOR_TRUE)
+        *((int*)value) = 1;
+      else
+        *((int*)value) = 0;
+    }
+  }
+  /* Only return "wrong type" result when type is set */
+  else if (type)
+    return 2;
+
+  cbor_init (&stream, msr->extra, msr->extralength);
+
+  if (!cbor_set_map_value (&stream, &vitem, path))
+    return MS_GENERROR;
+
+  msr->extra = stream.data;
+  msr->exralength = stream.size;
+
+  return 0;
+} /* End of mseh_set_path() */
 
 /***************************************************************************
  * mseh_print:
@@ -118,14 +211,23 @@ mseh_fetch_path (MS3Record *msr, void *value, char type, size_t length, const ch
 int
 mseh_print (MS3Record *msr, int indent)
 {
-  char output[4096];
+  char output[65535];
   int length;
   int idx;
 
   if (!msr)
     return MS_GENERROR;
 
+  if (!msr->extralength)
+    return MS_NOERROR;
+
   length = mseh_to_json (msr, output, sizeof(output));
+
+  if (!length)
+  {
+    ms_log (1, "Warning, something is wrong, JSON-like output from mseh_to_json() is empty\n");
+    return MS_GENERROR;
+  }
 
   if ( output[0] != '{' || output[length-1] != '}')
   {
