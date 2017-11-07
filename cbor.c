@@ -1246,7 +1246,8 @@ cbor_serialize_item (cbor_stream_t *stream, cbor_item_t *item)
     break;
 
   case CBOR_FLOAT64:
-    wrotebytes = cbor_serialize_double (stream, item->value.d);
+    /* Use cbor_serialize_floating() to determine minimum size float */
+    wrotebytes = cbor_serialize_floating (stream, item->value.d);
     break;
 
   case CBOR_BREAK:
