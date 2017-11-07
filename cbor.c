@@ -560,13 +560,11 @@ cbor_deserialize_float (const cbor_stream_t *stream, size_t offset, float *val)
 size_t
 cbor_serialize_float (cbor_stream_t *s, float val)
 {
-  uint32_t encoded_val;
   CBOR_ENSURE_SIZE (s, 5);
   s->data[s->pos++] = CBOR_FLOAT32;
-  encoded_val = val;
   if (!ms_bigendianhost())
-    ms_gswap4a(&encoded_val);
-  memcpy (s->data + s->pos, &encoded_val, 4);
+    ms_gswap4a(&val);
+  memcpy (s->data + s->pos, &val, 4);
   s->pos += 4;
   return 5;
 }
@@ -600,13 +598,11 @@ cbor_deserialize_double (const cbor_stream_t *stream, size_t offset, double *val
 size_t
 cbor_serialize_double (cbor_stream_t *s, double val)
 {
-  uint64_t encoded_val;
   CBOR_ENSURE_SIZE (s, 9);
   s->data[s->pos++] = CBOR_FLOAT64;
-  encoded_val = val;
   if (!ms_bigendianhost())
-    ms_gswap8a(&encoded_val);
-  memcpy (s->data + s->pos, &encoded_val, 8);
+    ms_gswap8a(&val);
+  memcpy (s->data + s->pos, &val, 8);
   s->pos += 8;
   return 9;
 }
@@ -1209,11 +1205,11 @@ cbor_serialize_item (cbor_stream_t *stream, cbor_item_t *item)
     break;
 
   case CBOR_FLOAT16:
-    wrotebytes = cbor_serialize_float_half (stream, (float)item->value.d);
+    wrotebytes = cbor_serialize_float_half (stream, (float)(item->value.d));
     break;
 
   case CBOR_FLOAT32:
-    wrotebytes = cbor_serialize_float (stream, (float)item->value.d);
+    wrotebytes = cbor_serialize_float (stream, (float)(item->value.d));
     break;
 
   case CBOR_FLOAT64:

@@ -336,7 +336,26 @@ extern void mstl3_printgaplist (MS3TraceList *mstl, int8_t timeformat,
 extern int mseh_fetch_path (MS3Record *msr, void *value, char type, size_t length,
                             const char *path[]);
 
+#define mseh_set(msr, valueptr, type, length, ...)                      \
+  mseh_set_path (msr, valueptr, type, length, (const char *[]){__VA_ARGS__, NULL})
+
+#define mseh_set_int64_t(msr, valueptr, ...)                            \
+  mseh_set_path (msr, valueptr, 'i', 0, (const char *[]){__VA_ARGS__, NULL})
+
+#define mseh_set_double(msr, valueptr, ...)                             \
+  mseh_set_path (msr, valueptr, 'd', 0, (const char *[]){__VA_ARGS__, NULL})
+
+#define mseh_set_bytes(msr, valueptr, length, ...)                      \
+  mseh_set_path (msr, valueptr, 'c', length, (const char *[]){__VA_ARGS__, NULL})
+
+#define mseh_set_boolean(msr, valueptr, ...)                            \
+  mseh_set_path (msr, valueptr, 'b', 0, (const char *[]){__VA_ARGS__, NULL})
+
+extern int mseh_set_path (MS3Record *msr, void *value, char type, size_t length,
+                          const char *path[]);
+
 extern int mseh_print (MS3Record *msr, int indent);
+
 extern int mseh_to_json (MS3Record *msr, char *output, int outputlength);
 
 /* Reading miniSEED records from files */

@@ -10,8 +10,6 @@
 #include "libmseed.h"
 #include "cbor.h"
 
-
-
 /***************************************************************************
  * mseh_fetch_path:
  *
@@ -141,50 +139,25 @@ mseh_set_path (MS3Record *msr, void *value, char type, size_t length, const char
   {
   case 'i':
     vitem.type = CBOR_NEGINT;
-    vtime.value.i = *((int64_t*)value);
+    vitem.value.i = *((int64_t *)value);
     break;
   case 'd':
-    vitem.type = CBOR_NEGINT;
-    vtime.value.i = *((int64_t*)value);
+    vitem.type = CBOR_FLOAT64;
+    vitem.value.d = *((double *)value);
     break;
-
-NEED TO FINISH
-
-  else if (type == 'd' && (vitem.type == CBOR_FLOAT16 || vitem.type == CBOR_FLOAT32 || vitem.type == CBOR_FLOAT64))
-  {
-    if (value)
-      *((double*)value) = vitem.value.d;
+  case 'c':
+    vitem.type = CBOR_TEXT;
+    vitem.value.c = (unsigned char *)value;
+    vitem.length = length;
+    break;
+  case 'b':
+    vitem.type = (*((int *)value)) ? CBOR_TRUE : CBOR_FALSE;
+    vitem.value.i = (vitem.type == CBOR_TRUE) ? 1 : 0;
+    break;
+  default:
+    ms_log (2, "mseh_set_path(): Unrecognized type '%d'\n", type);
+    return MS_GENERROR;
   }
-  else if (type == 'c' && (vitem.type == CBOR_BYTES || vitem.type == CBOR_TEXT))
-  {
-    if (value)
-    {
-      /* Copy buffer and terminate */
-      if (length > vitem.length)
-      {
-        memcpy (value, vitem.value.c, vitem.length);
-        ((uint8_t *)value)[vitem.length] = '\0';
-      }
-      else
-      {
-        memcpy (value, vitem.value.c, length - 1);
-        ((uint8_t *)value)[length - 1] = '\0';
-      }
-    }
-  }
-  else if (type == 'b' && (vitem.type == CBOR_TRUE || vitem.type == CBOR_FALSE))
-  {
-    if (value)
-    {
-      if (vitem.type == CBOR_TRUE)
-        *((int*)value) = 1;
-      else
-        *((int*)value) = 0;
-    }
-  }
-  /* Only return "wrong type" result when type is set */
-  else if (type)
-    return 2;
 
   cbor_init (&stream, msr->extra, msr->extralength);
 
@@ -192,7 +165,7 @@ NEED TO FINISH
     return MS_GENERROR;
 
   msr->extra = stream.data;
-  msr->exralength = stream.size;
+  msr->extralength = stream.size;
 
   return 0;
 } /* End of mseh_set_path() */
