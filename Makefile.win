@@ -21,6 +21,7 @@ OBJS=	fileutils.obj	\
 	packdata.obj	\
 	gmtime64.obj	\
 	tracelist.obj	\
+	crc32c.obj	\
 	parseutils.obj	\
 	unpack.obj	\
 	unpackdata.obj  \

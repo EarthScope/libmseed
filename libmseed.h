@@ -407,6 +407,8 @@ extern nstime_t ms_time2nstime (int year, int day, int hour, int min, int sec, u
 extern nstime_t ms_seedtimestr2nstime (char *seedtimestr);
 extern nstime_t ms_timestr2nstime (char *timestr);
 extern double   ms_dabs (double val);
+extern uint32_t ms_crc32c (const uint8_t* input, int length, uint32_t previousCRC32C);
+
 
 /***************************************************************************
  * ms_bigendianhost: Run time test for endianess.
