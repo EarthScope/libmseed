@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified 2016.233
+ * modified 2017.312
  ***************************************************************************/
 
 #include <errno.h>
@@ -31,7 +31,6 @@ static flag verbose = 0;
 static flag ppackets = 0;
 static flag basicsum = 0;
 static int printdata = 0;
-static int reclen = -1;
 static char *inputfile = 0;
 
 static int parameter_proc (int argcount, char **argvec);
@@ -41,7 +40,7 @@ static void term_handler (int sig);
 int
 main (int argc, char **argv)
 {
-  MSRecord *msr = 0;
+  MS3Record *msr = 0;
 
   int64_t totalrecs = 0;
   int64_t totalsamps = 0;
@@ -69,13 +68,13 @@ main (int argc, char **argv)
     return -1;
 
   /* Loop over the input file */
-  while ((retcode = ms_readmsr (&msr, inputfile, reclen, NULL, NULL, 1,
-                                printdata, verbose)) == MS_NOERROR)
+  while ((retcode = ms3_readmsr (&msr, inputfile, NULL, NULL, 1,
+                                 printdata, verbose)) == MS_NOERROR)
   {
     totalrecs++;
     totalsamps += msr->samplecnt;
 
-    msr_print (msr, ppackets);
+    msr3_print (msr, ppackets);
 
     if (printdata && msr->numsamples > 0)
     {
@@ -121,7 +120,7 @@ main (int argc, char **argv)
     ms_log (2, "Cannot read %s: %s\n", inputfile, ms_errorstr (retcode));
 
   /* Make sure everything is cleaned up */
-  ms_readmsr (&msr, NULL, 0, NULL, NULL, 0, 0, 0);
+  ms3_readmsr (&msr, NULL, NULL, NULL, 0, 0, 0);
 
   if (basicsum)
     ms_log (1, "Records: %" PRId64 ", Samples: %" PRId64 "\n",
@@ -173,10 +172,6 @@ parameter_proc (int argcount, char **argvec)
     else if (strcmp (argvec[optind], "-s") == 0)
     {
       basicsum = 1;
-    }
-    else if (strcmp (argvec[optind], "-r") == 0)
-    {
-      reclen = atoi (argvec[++optind]);
     }
     else if (strncmp (argvec[optind], "-", 1) == 0 &&
              strlen (argvec[optind]) > 1)
