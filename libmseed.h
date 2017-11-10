@@ -92,8 +92,8 @@ extern "C" {
   #include <inttypes.h>
 #endif
 
-#define MINRECLEN 36       /* Minimum miniSEED record length */
-#define MAXRECLEN 16777216 /* Maximum miniSEED record length, 16MB */
+#define MINRECLEN 38       /* Minimum miniSEED record length */
+#define MAXRECLEN 131172   /* Maximum miniSEED record length */
 
 /* SEED data encoding types */
 #define DE_ASCII       0
@@ -281,10 +281,10 @@ typedef struct MS3Selections_s {
 extern int msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
                        int8_t dataflag, int8_t verbose);
 
-extern int msr3_pack (MS3Record *msr,
-                      void (*record_handler) (char *, int, void *),
-                      void *handlerdata, int64_t *packedsamples,
-                      int8_t flush, int8_t verbose);
+extern int msr3_pack3 (MS3Record *msr,
+                       void (*record_handler) (char *, int, void *),
+                       void *handlerdata, int64_t *packedsamples,
+                       int8_t flush, int8_t verbose);
 
 extern int msr3_pack_header (MS3Record *msr, int8_t normalize, int8_t verbose);
 
@@ -298,8 +298,8 @@ extern void       msr3_print (MS3Record *msr, int8_t details);
 extern double     msr3_host_latency (MS3Record *msr);
 
 extern int ms3_detect (const char *record, int recbuflen, uint8_t *formatversion);
-extern int ms3_parse_raw (char *record, int maxreclen, int8_t details);
-extern int ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag);
+extern int ms_parse_raw3 (char *record, int maxreclen, int8_t details);
+extern int ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag);
 
 /* MSTraceList related functions */
 extern MS3TraceList* mstl3_init (MS3TraceList *mstl);
@@ -400,6 +400,8 @@ extern int      ms_strncpcleantail (char *dest, const char *source, int length);
 extern int      ms_strncpopen (char *dest, const char *source, int length);
 extern int      ms_doy2md (int year, int jday, int *month, int *mday);
 extern int      ms_md2doy (int year, int month, int mday, int *jday);
+extern int      ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *day,
+                                uint8_t *hour, uint8_t *min, uint8_t *sec, uint32_t *nsec);
 extern char*    ms_nstime2isotimestr (nstime_t nstime, char *isotimestr, int8_t subsecond);
 extern char*    ms_nstime2mdtimestr (nstime_t nstime, char *mdtimestr, int8_t subsecond);
 extern char*    ms_nstime2seedtimestr (nstime_t nstime, char *seedtimestr, int8_t subsecond);

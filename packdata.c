@@ -233,7 +233,8 @@ msr_encode_float64 (double *input, int samplecount, double *output,
  ************************************************************************/
 int
 msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
-                   int outputlength, int32_t diff0, int swapflag)
+                   int outputlength, int32_t diff0, uint16_t *byteswritten,
+                   int swapflag)
 {
   int32_t *frameptr;   /* Frame pointer in output */
   int32_t *Xnp = NULL; /* Reverse integration constant, aka last sample */
@@ -401,9 +402,8 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
   if (swapflag)
     ms_gswap4a (Xnp);
 
-  /* Pad any remaining bytes */
-  if ((frameidx * 64) < outputlength)
-    memset (output + (frameidx * 16), 0, outputlength - (frameidx * 64));
+  if (byteswritten)
+    *byteswritten = frameidx * 64;
 
   return outputsamples;
 } /* End of msr_encode_steim1() */
@@ -423,8 +423,8 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
  ************************************************************************/
 int
 msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
-                   int outputlength, int32_t diff0,
-                   char *srcname, int swapflag)
+                   int outputlength, int32_t diff0, uint16_t *byteswritten,
+                   char *tsid, int swapflag)
 {
   uint32_t *frameptr;  /* Frame pointer in output */
   int32_t *Xnp = NULL; /* Reverse integration constant, aka last sample */
@@ -681,7 +681,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
       else
       {
         ms_log (2, "msr_encode_steim2(%s): Unable to represent difference in <= 30 bits\n",
-                srcname);
+                tsid);
         return -1;
       }
 
@@ -704,9 +704,8 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
   if (swapflag)
     ms_gswap4a (Xnp);
 
-  /* Pad any remaining bytes */
-  if ((frameidx * 64) < outputlength)
-    memset (output + (frameidx * 16), 0, outputlength - (frameidx * 64));
+  if (byteswritten)
+    *byteswritten = frameidx * 64;
 
   return outputsamples;
 } /* End of msr_encode_steim2() */

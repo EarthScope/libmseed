@@ -233,7 +233,200 @@ ms3_detect (const char *record, int recbuflen, uint8_t *formatversion)
 } /* End of ms3_detect() */
 
 /***************************************************************************
- * ms2_parse_raw:
+ * ms3_parse_raw:
+ *
+ * Parse and verify a miniSEED 3.x data record header at the lowest
+ * level, printing error messages for invalid header values and
+ * optionally print raw header values.  The memory at 'record' is
+ * assumed to be a miniSEED record.  Not every possible test is
+ * performed, common errors and those causing libmseed parsing to fail
+ * should be detected.
+ *
+ * The 'details' argument is interpreted as follows:
+ *
+ * details:
+ *  0 = only print error messages for invalid header fields
+ *  1 = print basic fields in addition to invalid field errors
+ *  2 = print all fields in addition to invalid field errors
+ *
+ * This routine is primarily intended to diagnose invalid miniSEED headers.
+ *
+ * Returns 0 when no errors were detected or a positive count of
+ * errors detected.
+ ***************************************************************************/
+int
+ms_parse_raw3 (char *record, int maxreclen, int8_t details)
+{
+  MS3Record msr;
+  char *X;
+  char b;
+
+  int retval = 0;
+  int8_t swapflag;
+  uint8_t tsidlength;
+  char *tsid = "";
+
+  if (!record)
+    return 1;
+
+  if (maxreclen < MINRECLEN)
+    return 1;
+
+  swapflag = (ms_bigendianhost()) ? 1 : 0;
+
+  if (details > 1)
+  {
+    if (swapflag == 1)
+      ms_log (0, "Swapping multi-byte quantities in header\n");
+    else
+      ms_log (0, "Not swapping multi-byte quantities in header\n");
+  }
+
+  tsidlength = *pMS3FSDH_TSIDLENGTH(record);
+
+  /* Check if time series identifier length is unreasonably small */
+  if (tsidlength < 4)
+  {
+    ms_log (2, "Unlikely time series identifier length: '%d'\n", tsidlength);
+    return 1;
+  }
+
+  /* Make sure buffer contains the identifier */
+  if ((MS3FSDH_LENGTH + tsidlength) > maxreclen)
+  {
+    ms_log (2, "Not enough buffer contain the identifer: '%d'\n", maxreclen);
+    return 1;
+  }
+
+  tsid = pMS3FSDH_TSID(record);
+
+  /* Validate fixed section header fields */
+  X = record; /* Pointer of convenience */
+
+  /* Check record indicator == 'MS' */
+  if (*(X) != 'M' || *(X + 1) != 'S')
+  {
+    ms_log (2, "%.*s: Invalid miniSEED 3 record indicator: '%c%c'\n",
+            tsidlength, tsid, X, X + 1);
+    retval++;
+  }
+
+  /* Check data format == 3 */
+  if (((uint8_t)*(X + 2)) != 3)
+  {
+    ms_log (2, "%.*s: Invalid miniSEED format version: '%d'\n",
+            tsidlength, tsid, (uint8_t)*(X + 2));
+    retval++;
+  }
+
+  /* Check start time fields */
+  if (HO2u(*pMS3FSDH_YEAR (record), swapflag) < 1900 || HO2u(*pMS3FSDH_YEAR (record), swapflag) > 2100)
+  {
+    ms_log (2, "%.*s: Unlikely start year (1900-2100): '%d'\n",
+            tsidlength, tsid, HO2u(*pMS3FSDH_YEAR (record), swapflag));
+    retval++;
+  }
+  if (HO2u(*pMS3FSDH_DAY (record), swapflag) < 1 || HO2u(*pMS3FSDH_DAY (record), swapflag) > 366)
+  {
+    ms_log (2, "%.*s: Invalid start day (1-366): '%d'\n",
+            tsidlength, tsid, HO2u(*pMS3FSDH_DAY (record), swapflag));
+    retval++;
+  }
+  if (*pMS3FSDH_HOUR (record) > 23)
+  {
+    ms_log (2, "%.*s: Invalid start hour (0-23): '%d'\n",
+            tsidlength, tsid, *pMS3FSDH_HOUR (record));
+    retval++;
+  }
+  if (*pMS3FSDH_MIN (record) > 59)
+  {
+    ms_log (2, "%.*s: Invalid start minute (0-59): '%d'\n",
+            tsidlength, tsid, *pMS3FSDH_MIN (record));
+    retval++;
+  }
+  if (*pMS3FSDH_SEC (record) > 60)
+  {
+    ms_log (2, "%.*s: Invalid start second (0-60): '%d'\n",
+            tsidlength, tsid, *pMS3FSDH_SEC (record));
+    retval++;
+  }
+  if (HO4u(*pMS3FSDH_NSEC (record), swapflag) > 999999999)
+  {
+    ms_log (2, "%.*s: Invalid start nanoseconds (0-999999999): '%d'\n",
+            tsidlength, tsid, HO2u(*pMS3FSDH_NSEC (record), swapflag));
+    retval++;
+  }
+
+  /* Print raw header details */
+  if (details >= 1)
+  {
+    /* Print header values */
+    ms_log (0, "RECORD -- %.*s\n", tsidlength, tsid);
+    ms_log (0, "       record indicator: '%c%c'\n",
+            pMS3FSDH_INDICATOR (record)[0], pMS3FSDH_INDICATOR (record)[1]);
+    /* Flags */
+    b = *pMS3FSDH_FLAGS (record);
+    ms_log (0, "         activity flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+            bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
+            bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
+    if (details > 1)
+    {
+      if (b & 0x01)
+        ms_log (0, "                         [Bit 0] Calibration signals present\n");
+      if (b & 0x02)
+        ms_log (0, "                         [Bit 1] Time tag questionable\n");
+      if (b & 0x04)
+        ms_log (0, "                         [Bit 2] Clock locked\n");
+      if (b & 0x08)
+        ms_log (0, "                         [Bit 3] Undefined bit set\n");
+      if (b & 0x10)
+        ms_log (0, "                         [Bit 4] Undefined bit set\n");
+      if (b & 0x20)
+        ms_log (0, "                         [Bit 5] Undefined bit set\n");
+      if (b & 0x40)
+        ms_log (0, "                         [Bit 6] Undefined bit set\n");
+      if (b & 0x80)
+        ms_log (0, "                         [Bit 7] Undefined bit set\n");
+    }
+    ms_log (0, "             start time: %u,%u,%u:%u:%u.%09u\n",
+            HO2u(*pMS3FSDH_YEAR (record), swapflag),
+            HO2u(*pMS3FSDH_DAY (record), swapflag),
+            *pMS3FSDH_HOUR (record),
+            *pMS3FSDH_MIN (record),
+            *pMS3FSDH_SEC (record),
+            HO4u(*pMS3FSDH_NSEC (record), swapflag));
+    ms_log (0, "   sample rate+/period-: %d\n", HO8f(*pMS3FSDH_SAMPLERATE (record), swapflag));
+    ms_log (0, "          data encoding: %u\n", *pMS3FSDH_ENCODING (record));
+    ms_log (0, "    publication version: %u\n", *pMS3FSDH_PUBVERSION (record));
+    ms_log (0, "      number of samples: %u\n", HO4u(*pMS3FSDH_NUMSAMPLES (record), swapflag));
+    ms_log (0, "                    CRC: %u\n", HO4u(*pMS3FSDH_CRC (record), swapflag));
+    ms_log (0, "   length of identifier: %u\n", *pMS3FSDH_TSIDLENGTH (record));
+    ms_log (0, "length of extra headers: %u\n", HO2u(*pMS3FSDH_EXTRALENGTH (record), swapflag));
+    ms_log (0, " length of data payload: %u\n", HO2u(*pMS3FSDH_DATALENGTH (record), swapflag));
+  } /* Done printing raw header details */
+
+  /* Print extra headers */
+  msr.extralength = HO2u(*pMS3FSDH_EXTRALENGTH (record), swapflag);
+
+  if (details > 1 && msr.extralength > 0)
+  {
+    ms_log (0, "          extra headers:\n");
+    if ((MS3FSDH_LENGTH + tsidlength + msr.extralength) <= maxreclen)
+    {
+      msr.extra = record + MS3FSDH_LENGTH + tsidlength;
+      mseh_print (&msr, 10);
+    }
+    else
+    {
+      ms_log (0, "      [buffer does not contain all extra headers]\n");
+    }
+  }
+
+  return retval;
+} /* End of ms_parse_raw3() */
+
+/***************************************************************************
+ * ms_parse_raw2:
  *
  * Parse and verify a miniSEED 2.x data record header (fixed section and
  * blockettes) at the lowest level, printing error messages for
@@ -262,7 +455,7 @@ ms3_detect (const char *record, int recbuflen, uint8_t *formatversion)
  * errors detected.
  ***************************************************************************/
 int
-ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
+ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
 {
   double nomsamprate;
   char tsid[21] = {0};
@@ -1074,4 +1267,4 @@ ms2_parse_raw (char *record, int maxreclen, int8_t details, int8_t swapflag)
   }
 
   return retval;
-} /* End of ms2_parse_raw() */
+} /* End of ms_parse_raw2() */

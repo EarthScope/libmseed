@@ -3,8 +3,6 @@
  *
  * Interface declarations for the miniSEED packing routines in
  * packdata.c
- *
- * modified: 2016.273
  ***************************************************************************/
 
 #ifndef PACKDATA_H
@@ -31,10 +29,11 @@ extern int msr_encode_float32 (float *input, int samplecount, float *output,
 extern int msr_encode_float64 (double *input, int samplecount, double *output,
                                int outputlength, int swapflag);
 extern int msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
-                              int outputlength, int32_t diff0, int swapflag);
-extern int msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
-                              int outputlength, int32_t diff0, char *srcname,
+                              int outputlength, int32_t diff0, uint16_t *byteswritten,
                               int swapflag);
+extern int msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
+                              int outputlength, int32_t diff0, uint16_t *byteswritten,
+                              char *tsid, int swapflag);
 
 #ifdef __cplusplus
 }

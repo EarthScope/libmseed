@@ -10,6 +10,56 @@
 #include <stdint.h>
 #include "libmseed.h"
 
+/* Length of Fixed Section of Data Header for miniSEED 3 */
+#define MS3FSDH_LENGTH 38
+
+/***************************************************************************
+ * miniSEED 3.0 Fixed Section of Data Header
+ * 36 bytes, plus length of identifier, plus length of extra headers
+ *
+ * FIELD                   TYPE       OFFSET
+ * record indicator        char[2]       0
+ * format version          uint8_t       2
+ * flags                   uint8_t       3
+ * year                    uint16_t      4
+ * day                     uint16_t      6
+ * hour                    uint8_t       8
+ * min                     uint8_t       9
+ * sec                     uint8_t      10
+ * data encoding           uint8_t      11
+ * nanosecond              uint32_t     12
+ * sample rate/period      float64      16
+ * number of samples       uint32_t     24
+ * CRC of record           uint32_t     28
+ * publication version     uint8_t      32
+ * length of identifer     uint8_t      33
+ * length of extra headers uint16_t     34
+ * length of data payload  uint16_t     36
+ * time series identifier  char         38 + field 10
+ * extra headers           char         38 + field 10 + field 11
+ * data payload            encoded      38 + field 10 + field 11
+ *
+ * Convenience macros for accessing the fields via typed pointers follow:
+ ***************************************************************************/
+#define pMS3FSDH_INDICATOR(record)       ((char*)record)
+#define pMS3FSDH_FORMATVERSION(record)   ((uint8_t*)((uint8_t*)record+2))
+#define pMS3FSDH_FLAGS(record)           ((uint8_t*)((uint8_t*)record+3))
+#define pMS3FSDH_YEAR(record)            ((uint16_t*)((uint8_t*)record+4))
+#define pMS3FSDH_DAY(record)             ((uint16_t*)((uint8_t*)record+6))
+#define pMS3FSDH_HOUR(record)            ((uint8_t*)((uint8_t*)record+8))
+#define pMS3FSDH_MIN(record)             ((uint8_t*)((uint8_t*)record+9))
+#define pMS3FSDH_SEC(record)             ((uint8_t*)((uint8_t*)record+10))
+#define pMS3FSDH_ENCODING(record)        ((uint8_t*)((uint8_t*)record+11))
+#define pMS3FSDH_NSEC(record)            ((uint32_t*)((uint8_t*)record+12))
+#define pMS3FSDH_SAMPLERATE(record)      ((double*)((uint8_t*)record+16))
+#define pMS3FSDH_NUMSAMPLES(record)      ((uint32_t*)((uint8_t*)record+24))
+#define pMS3FSDH_CRC(record)             ((uint32_t*)((uint8_t*)record+28))
+#define pMS3FSDH_PUBVERSION(record)      ((uint8_t*)((uint8_t*)record+32))
+#define pMS3FSDH_TSIDLENGTH(record)      ((uint8_t*)((uint8_t*)record+33))
+#define pMS3FSDH_EXTRALENGTH(record)     ((uint16_t*)((uint8_t*)record+34))
+#define pMS3FSDH_DATALENGTH(record)      ((uint16_t*)((uint8_t*)record+36))
+#define pMS3FSDH_TSID(record)            ((char*)((uint8_t*)record+38))
+
 /***************************************************************************
  * miniSEED 2.4 Fixed Section of Data Header
  * 48 bytes total

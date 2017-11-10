@@ -402,9 +402,6 @@ ms3_readmsr_main (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
           ms_log (2, "Cannot detect record at byte offset %" PRId64 ": %s\n",
                   msfp->filepos, msfile);
 
-          /* Print common errors and raw details of miniSEED 3 if verbose */
-          ms3_parse_raw (MSFPREADPTR (msfp), MSFPBUFLEN (msfp), verbose);
-
           retcode = parseval;
           break;
         }
@@ -634,7 +631,7 @@ ms_record_handler_int (char *record, int reclen, void *ofp)
 /***************************************************************************
  * msr_writemseed:
  *
- * Pack MS3Record data into miniSEED record(s) by calling msr3_pack() and
+ * Pack MS3Record data into miniSEED record(s) by calling msr3_pack3() and
  * write to a specified file.
  *
  * Returns the number of records written on success and -1 on error.
@@ -668,7 +665,7 @@ msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
     msr->encoding = encoding;
     msr->reclen = maxreclen;
 
-    packedrecords = msr3_pack (msr, &ms_record_handler_int, ofp, NULL, 1, verbose - 1);
+    packedrecords = msr3_pack3 (msr, &ms_record_handler_int, ofp, NULL, 1, verbose - 1);
 
     if (packedrecords < 0)
     {

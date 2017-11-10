@@ -384,6 +384,56 @@ ms_md2doy (int year, int month, int mday, int *jday)
 } /* End of ms_md2doy() */
 
 /***************************************************************************
+ * ms_nstime2time:
+ *
+ * Convert an nstime_t to individual time components.
+ *
+ * Returns 0 on success and -1 on error.
+ ***************************************************************************/
+int
+ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *day,
+                uint8_t *hour, uint8_t *min, uint8_t *sec, uint32_t *nsec)
+{
+  struct tm tms;
+  int64_t isec;
+  int ifract;
+
+  /* Reduce to Unix/POSIX epoch time and fractional seconds */
+  isec = MS_NSTIME2EPOCH (nstime);
+  ifract = (int)(nstime - (isec * NSTMODULUS));
+
+  /* Adjust for negative epoch times */
+  if (nstime < 0 && ifract != 0)
+  {
+    isec -= 1;
+    ifract = NSTMODULUS - (-ifract);
+  }
+
+  if (!(ms_gmtime64_r (&isec, &tms)))
+    return -1;
+
+  if (year)
+    *year = tms.tm_year + 1900;
+
+  if (day)
+    *day = tms.tm_yday + 1;
+
+  if (hour)
+    *hour = tms.tm_hour;
+
+  if (min)
+    *min = tms.tm_min;
+
+  if (sec)
+    *sec = tms.tm_sec;
+
+  if (nsec)
+    *nsec = ifract;
+
+  return 0;
+} /* End of ms_nstime2time() */
+
+/***************************************************************************
  * ms_nstime2isotimestr:
  *
  * Build a time string in ISO recommended format from a high precision
