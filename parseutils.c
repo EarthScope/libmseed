@@ -152,10 +152,12 @@ ms3_detect (const char *record, int recbuflen, uint8_t *formatversion)
   {
     *formatversion = 3;
 
-    reclen = 36 /* Length of fixed portion of header */
-             + (uint8_t) * (record + 33) /* Length of time series identifier */
-             + (uint16_t) * (record + 34) /* Length of extra headers */
-             + (uint16_t) * (record + 36); /* Length of data payload */
+    reclen = MS3FSDH_LENGTH /* Length of fixed portion of header */
+             + *pMS3FSDH_TSIDLENGTH (record) /* Length of time series identifier */
+             + *pMS3FSDH_EXTRALENGTH (record) /* Length of extra headers */
+             + *pMS3FSDH_DATALENGTH (record); /* Length of data payload */
+
+    foundlen = 1;
   }
   else if (MS2_ISVALIDHEADER (record))
   {
