@@ -233,7 +233,7 @@ ms3_detect (const char *record, int recbuflen, uint8_t *formatversion)
 } /* End of ms3_detect() */
 
 /***************************************************************************
- * ms3_parse_raw:
+ * ms3_parse_raw3:
  *
  * Parse and verify a miniSEED 3.x data record header at the lowest
  * level, printing error messages for invalid header values and
