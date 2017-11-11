@@ -203,7 +203,6 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     if (packsamples < 0)
     {
       ms_log (2, "msr3_pack3(%s): Error packing data samples\n", msr->tsid);
-      free (rawrec);
       return -1;
     }
 
@@ -244,8 +243,6 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
   if (verbose > 2)
     ms_log (1, "%s: Packed %d total samples\n", msr->tsid, totalpackedsamples);
-
-  free (rawrec);
 
   return recordcnt;
 } /* End of msr_pack() */
