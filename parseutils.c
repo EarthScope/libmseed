@@ -397,11 +397,11 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
             *pMS3FSDH_MIN (record),
             *pMS3FSDH_SEC (record),
             HO4u(*pMS3FSDH_NSEC (record), swapflag));
-    ms_log (0, "   sample rate+/period-: %d\n", HO8f(*pMS3FSDH_SAMPLERATE (record), swapflag));
+    ms_log (0, "   sample rate+/period-: %g\n", HO8f(*pMS3FSDH_SAMPLERATE (record), swapflag));
     ms_log (0, "          data encoding: %u\n", *pMS3FSDH_ENCODING (record));
     ms_log (0, "    publication version: %u\n", *pMS3FSDH_PUBVERSION (record));
     ms_log (0, "      number of samples: %u\n", HO4u(*pMS3FSDH_NUMSAMPLES (record), swapflag));
-    ms_log (0, "                    CRC: %u\n", HO4u(*pMS3FSDH_CRC (record), swapflag));
+    ms_log (0, "                    CRC: 0x%X\n", HO4u(*pMS3FSDH_CRC (record), swapflag));
     ms_log (0, "   length of identifier: %u\n", *pMS3FSDH_TSIDLENGTH (record));
     ms_log (0, "length of extra headers: %u\n", HO2u(*pMS3FSDH_EXTRALENGTH (record), swapflag));
     ms_log (0, " length of data payload: %u\n", HO2u(*pMS3FSDH_DATALENGTH (record), swapflag));

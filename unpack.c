@@ -54,16 +54,121 @@ int
 msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
                     int8_t dataflag, int8_t verbose)
 {
-  //int8_t headerswapflag = 0;
-  //int8_t dataswapflag = 0;
-  //int retval;
+  int8_t swapflag = 0;
+  uint8_t tsidlength = 0;
+  int retval;
 
-  //MS3Record *msr = NULL;
+  MS3Record *msr = NULL;
+
+  if (!record)
+  {
+    ms_log (2, "msr3_unpack_mseed3(): record argument must be specified\n");
+    return MS_GENERROR;
+  }
 
   if (!ppmsr)
   {
     ms_log (2, "msr3_unpack_mseed3(): ppmsr argument cannot be NULL\n");
     return MS_GENERROR;
+  }
+
+  /* Verify that passed record length is within supported range */
+  if (reclen < MINRECLEN || reclen > MAXRECLEN)
+  {
+    ms_log (2, "msr3_unpack_mseed2(): Record length is out of allowed range: %d\n", reclen);
+    return MS_OUTOFRANGE;
+  }
+
+  /* Verify that record includes a valid header */
+  if (!MS3_ISVALIDHEADER (record))
+  {
+    ms_log (2, "msr3_unpack_mseed3() Record header unrecognized, not a valid miniSEED record\n");
+    return MS_NOTSEED;
+  }
+
+  /* Initialize the MS3Record */
+  if (!(*ppmsr = msr3_init (*ppmsr)))
+    return MS_GENERROR;
+
+  /* Shortcut pointer, historical and helps readability */
+  msr = *ppmsr;
+
+  /* Set raw record pointer and record length */
+  msr->record = record;
+  msr->reclen = reclen;
+
+  /* miniSEED 3 is little endian */
+  swapflag = (ms_bigendianhost()) ? 1 : 0;
+
+  /* Report byte swapping status */
+  if (verbose > 2)
+  {
+    if (swapflag)
+      ms_log (1, "%s: Byte swapping needed for unpacking of header\n", msr->tsid);
+    else
+      ms_log (1, "%s: Byte swapping NOT needed for unpacking of header\n", msr->tsid);
+  }
+
+  /* Populate some of the common header fields */
+  msr->formatversion = *pMS3FSDH_FORMATVERSION(record);
+  msr->flags = *pMS3FSDH_FLAGS(record);
+  msr->starttime = ms_time2nstime (HO2u(*pMS3FSDH_YEAR(record), swapflag),
+                                   HO2u(*pMS3FSDH_DAY(record), swapflag),
+                                   *pMS3FSDH_HOUR(record),
+                                   *pMS3FSDH_MIN(record),
+                                   *pMS3FSDH_SEC(record),
+                                   HO4u(*pMS3FSDH_NSEC(record), swapflag));
+  msr->encoding = *pMS3FSDH_ENCODING(record);
+  msr->samprate = HO8f(*pMS3FSDH_SAMPLERATE(record), swapflag);
+  msr->samplecnt = HO4u(*pMS3FSDH_NUMSAMPLES(record), swapflag);
+  msr->crc = HO4u(*pMS3FSDH_CRC(record), swapflag);
+  msr->pubversion = *pMS3FSDH_PUBVERSION(record);
+
+  tsidlength = *pMS3FSDH_TSIDLENGTH(record);
+
+  if (tsidlength > sizeof(msr->tsid))
+  {
+    ms_log (2, "msr3_unpack_mseed2(%.*s): Time series identifier is longer (%d) than supported (%d)\n",
+            tsidlength, pMS3FSDH_TSID(record), tsidlength, (int)sizeof(msr->tsid));
+    return MS_GENERROR;
+  }
+
+  strncpy (msr->tsid, pMS3FSDH_TSID(record), tsidlength);
+
+  msr->extralength = HO2u(*pMS3FSDH_EXTRALENGTH(record), swapflag);
+  if (msr->extralength)
+  {
+    if ((msr->extra = malloc (msr->extralength)) == NULL)
+    {
+      ms_log (2, "msr3_unpack_mseed2(%s): Cannot allocate memory for extra headers\n", msr->tsid);
+      return MS_GENERROR;
+    }
+
+    memcpy (msr->extra, record + tsidlength, msr->extralength);
+  }
+
+  msr->datalength = HO2u(*pMS3FSDH_DATALENGTH(record), swapflag);
+
+  //TODO, check for alignment on data payload and warn if verbose >= 2
+  // pointer to data: record + tsidlength + msr->extralength
+
+  /* Unpack the data samples if requested */
+  if (dataflag && msr->samplecnt > 0)
+  {
+    retval = msr3_unpack_data (msr, swapflag, verbose);
+
+    if (retval < 0)
+      return retval;
+    else
+      msr->numsamples = retval;
+  }
+  else
+  {
+    if (msr->datasamples)
+      free (msr->datasamples);
+
+    msr->datasamples = 0;
+    msr->numsamples = 0;
   }
 
   return MS_NOERROR;
@@ -100,11 +205,12 @@ int
 msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
                     int8_t dataflag, int8_t verbose)
 {
-  int8_t headerswapflag = 0;
-  int8_t dataswapflag = 0;
+  int8_t swapflag = 0;
   int B1000offset = 0;
   int B1001offset = 0;
   int retval;
+  int plusone = 1;
+  int minusone = -1;
 
   MS3Record *msr = NULL;
   char errortsid[50];
@@ -162,43 +268,90 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
   /* Check to see if byte swapping is needed by testing the year and day */
   if (!MS_ISVALIDYEARDAY (*pMS2FSDH_YEAR (record), *pMS2FSDH_DAY (record)))
-    headerswapflag = dataswapflag = 1;
-
-  /* Populate some of the common header fields */
-  ms2_recordtsid (record, msr->tsid);
-  msr->formatversion = 2;
-  msr->samprate = ms_nomsamprate (HO2d(*pMS2FSDH_SAMPLERATEFACT (record), headerswapflag),
-                                  HO2d(*pMS2FSDH_SAMPLERATEMULT (record), headerswapflag));
-  msr->samplecnt = HO2u(*pMS2FSDH_NUMSAMPLES (record), headerswapflag);
-
-  /* Map data quality indicator to publication version */
-  if (*pMS2FSDH_DATAQUALITY (record) == 'M')
-    msr->pubversion = 3;
-  if (*pMS2FSDH_DATAQUALITY (record) == 'Q')
-    msr->pubversion = 2;
-  if (*pMS2FSDH_DATAQUALITY (record) == 'R')
-    msr->pubversion = 1;
-  else
-    msr->pubversion = 0;
-
-  //CHAD
-  /* Combine 3 flags fields into new one */
-
-  //EXTRA
-  //  msr->dataquality = msr->fsdh->dataquality;
-  //  FSDH flags not combined into remaining flag
+    swapflag = 1;
 
   /* Report byte swapping status */
   if (verbose > 2)
   {
-    if (headerswapflag)
+    if (swapflag)
       ms_log (1, "%s: Byte swapping needed for unpacking of header\n", msr->tsid);
     else
       ms_log (1, "%s: Byte swapping NOT needed for unpacking of header\n", msr->tsid);
   }
 
+  /* Populate some of the common header fields */
+  ms2_recordtsid (record, msr->tsid);
+  msr->formatversion = 2;
+  msr->samprate = ms_nomsamprate (HO2d(*pMS2FSDH_SAMPLERATEFACT (record), swapflag),
+                                  HO2d(*pMS2FSDH_SAMPLERATEMULT (record), swapflag));
+  msr->samplecnt = HO2u(*pMS2FSDH_NUMSAMPLES (record), swapflag);
+
+  /* Map data quality indicator to publication version */
+  if (*pMS2FSDH_DATAQUALITY (record) == 'M')
+    msr->pubversion = 4;
+  else if (*pMS2FSDH_DATAQUALITY (record) == 'Q')
+    msr->pubversion = 3;
+  else if (*pMS2FSDH_DATAQUALITY (record) == 'D')
+    msr->pubversion = 2;
+  else if (*pMS2FSDH_DATAQUALITY (record) == 'R')
+    msr->pubversion = 1;
+  else
+    msr->pubversion = 0;
+
+  //TODO
+  // Make sure the below detection and setting is correct
+
+  /* Map activity bits */
+  if (*pMS2FSDH_ACTFLAGS(record) & 0x01) /* Bit 0 */
+    msr->flags |= 0x01;
+  if (*pMS2FSDH_ACTFLAGS(record) & 0x04) /* Bit 2 */
+    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "EventBegin");
+  if (*pMS2FSDH_ACTFLAGS(record) & 0x08) /* Bit 3 */
+    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "EventEnd");
+  if (*pMS2FSDH_ACTFLAGS(record) & 0x10) /* Bit 4 */
+    mseh_set_int64_t (msr, &plusone, "FDSN", "Flags", "LeapSecond");
+  if (*pMS2FSDH_ACTFLAGS(record) & 0x20) /* Bit 5 */
+    mseh_set_int64_t (msr, &minusone, "FDSN", "Flags", "LeapSecond");
+  if (*pMS2FSDH_ACTFLAGS(record) & 0x40) /* Bit 6 */
+    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "EventInProgress");
+
+  /* Map I/O and clock flags */
+  if (*pMS2FSDH_IOFLAGS(record) & 0x01) /* Bit 0 */
+    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "StationVolumeParityError");
+  if (*pMS2FSDH_IOFLAGS(record) & 0x02) /* Bit 1 */
+    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "LongRecordRead");
+  if (*pMS2FSDH_IOFLAGS(record) & 0x04) /* Bit 2 */
+    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "ShortRecordRead");
+  if (*pMS2FSDH_IOFLAGS(record) & 0x08) /* Bit 3 */
+    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "StartOfTimeSeries");
+  if (*pMS2FSDH_IOFLAGS(record) & 0x10) /* Bit 4 */
+    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "EndOfTimeSeries");
+  if (*pMS2FSDH_IOFLAGS(record) & 0x20) /* Bit 5 */
+    msr->flags |= 0x04;
+
+  /* Map data quality flags */
+  if (*pMS2FSDH_DQFLAGS(record) & 0x01) /* Bit 0 */
+    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "AmplifierSaturation");
+  if (*pMS2FSDH_DQFLAGS(record) & 0x02) /* Bit 1 */
+    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "DigitizerClipping");
+  if (*pMS2FSDH_DQFLAGS(record) & 0x04) /* Bit 2 */
+    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "Spikes");
+  if (*pMS2FSDH_DQFLAGS(record) & 0x08) /* Bit 3 */
+    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "Glitches");
+  if (*pMS2FSDH_DQFLAGS(record) & 0x10) /* Bit 4 */
+    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "MissingData");
+  if (*pMS2FSDH_DQFLAGS(record) & 0x20) /* Bit 5 */
+    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "TelemetrySyncError");
+  if (*pMS2FSDH_DQFLAGS(record) & 0x40) /* Bit 6 */
+    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "FilterCharging");
+  if (*pMS2FSDH_DQFLAGS(record) & 0x80) /* Bit 7 */
+    msr->flags |= 0x02;
+
+  //TODO
+  // Extra headers for blockette values.
+
   /* Traverse the blockettes */
-  blkt_offset = HO2u(*pMS2FSDH_BLOCKETTEOFFSET (record), headerswapflag);
+  blkt_offset = HO2u(*pMS2FSDH_BLOCKETTEOFFSET (record), swapflag);
 
   while ((blkt_offset != 0) &&
          (blkt_offset < reclen) &&
@@ -208,14 +361,14 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     memcpy (&blkt_type, record + blkt_offset, 2);
     memcpy (&next_blkt, record + blkt_offset + 2, 2);
 
-    if (headerswapflag)
+    if (swapflag)
     {
       ms_gswap2 (&blkt_type);
       ms_gswap2 (&next_blkt);
     }
 
     /* Get blockette length */
-    blkt_length = ms2_blktlen (blkt_type, record + blkt_offset, headerswapflag);
+    blkt_length = ms2_blktlen (blkt_type, record + blkt_offset, swapflag);
 
     if (blkt_length == 0)
     {
@@ -237,9 +390,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     if (blkt_type == 100)
     {
       /* Set actual sample rate */
-      msr->samprate = HO4f(*pMS2B100_SAMPRATE(record + blkt_offset), headerswapflag);
+      msr->samprate = HO4f(*pMS2B100_SAMPRATE(record + blkt_offset), swapflag);
 
-      if (headerswapflag)
+      if (swapflag)
       {
         ms_gswap4 (&msr->samprate);
       }
@@ -249,7 +402,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       //EXTRA B200 at (record + blkt_offset)
 
-      if (headerswapflag)
+      if (swapflag)
       {
         //ms_gswap4 (pMS2B200_AMPLITUDE(record + blkt_offset));
         //ms_gswap4 (pMS2B200_PERIOD(record + blkt_offset));
@@ -264,7 +417,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       //EXTRA B201 at (record + blkt_offset)
 
-      if (headerswapflag)
+      if (swapflag)
       {
         //ms_gswap4 (pMS2B201_AMPLITUDE(record + blkt_offset));
         //ms_gswap4 (pMS2B201_PERIOD(record + blkt_offset));
@@ -279,7 +432,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       //EXTRA B300 at (record + blkt_offset)
 
-      if (headerswapflag)
+      if (swapflag)
       {
         //ms_gswap2 (pMS2B300_YEAR (record + blkt_offset));
         //ms_gswap2 (pMS2B300_DAY (record + blkt_offset));
@@ -295,7 +448,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       //EXTRA B310 at (record + blkt_offset)
 
-      if (headerswapflag)
+      if (swapflag)
       {
         //ms_gswap2 (pMS2B310_YEAR (record + blkt_offset));
         //ms_gswap2 (pMS2B310_DAY (record + blkt_offset));
@@ -311,7 +464,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       //EXTRA B320 at (record + blkt_offset)
 
-      if (headerswapflag)
+      if (swapflag)
       {
         //ms_gswap2 (pMS2B320_YEAR (record + blkt_offset));
         //ms_gswap2 (pMS2B320_DAY (record + blkt_offset));
@@ -326,7 +479,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       //EXTRA B390 at (record + blkt_offset)
 
-      if (headerswapflag)
+      if (swapflag)
       {
         //ms_gswap2 (pMS2B390_YEAR (record + blkt_offset));
         //ms_gswap2 (pMS2B390_DAY (record + blkt_offset));
@@ -340,7 +493,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       //EXTRA B395 at (record + blkt_offset)
 
-      if (headerswapflag)
+      if (swapflag)
       {
         //ms_gswap2 (pMS2B395_YEAR (record + blkt_offset));
         //ms_gswap2 (pMS2B395_DAY (record + blkt_offset));
@@ -362,7 +515,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       //EXTRA B500 at (record + blkt_offset)
 
-      if (headerswapflag)
+      if (swapflag)
       {
         //ms_gswap4 (pMS2B500_VCOCORRECTION (record + blkt_offset));
         //ms_gswap2 (pMS2B500_YEAR (record + blkt_offset));
@@ -400,7 +553,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       //EXTRA B2000 at (record + blkt_offset), ?? What to do with this?
 
-      if (headerswapflag)
+      if (swapflag)
       {
         //ms_gswap2 (pMS2B2000_LENGTH (record + blkt_offset));
         //ms_gswap2 (pMS2B2000_DATAOFFSET (record + blkt_offset));
@@ -448,11 +601,11 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
   /* Check that the data offset is after the blockette chain */
   if (blkt_end &&
-      HO2u(*pMS2FSDH_NUMSAMPLES(record), headerswapflag) &&
-      HO2u(*pMS2FSDH_DATAOFFSET(record), headerswapflag) < blkt_end)
+      HO2u(*pMS2FSDH_NUMSAMPLES(record), swapflag) &&
+      HO2u(*pMS2FSDH_DATAOFFSET(record), swapflag) < blkt_end)
   {
     ms_log (1, "%s: Warning: Data offset in fixed header (%d) is within the blockette chain ending at %d\n",
-            msr->tsid, HO2u(*pMS2FSDH_DATAOFFSET(record), headerswapflag), blkt_end);
+            msr->tsid, HO2u(*pMS2FSDH_DATAOFFSET(record), swapflag), blkt_end);
   }
 
   /* Check that the blockette count matches the number parsed */
@@ -463,30 +616,30 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   }
 
   /* Calculate start time */
-  msr->starttime = ms_time2nstime (HO2u(*pMS2FSDH_YEAR (record), headerswapflag),
-                                   HO2u(*pMS2FSDH_DAY (record), headerswapflag),
+  msr->starttime = ms_time2nstime (HO2u(*pMS2FSDH_YEAR (record), swapflag),
+                                   HO2u(*pMS2FSDH_DAY (record), swapflag),
                                    *pMS2FSDH_HOUR (record),
                                    *pMS2FSDH_MIN (record),
                                    *pMS2FSDH_SEC (record),
-                                   (uint32_t)HO2u(*pMS2FSDH_FSEC (record), headerswapflag) * (NSTMODULUS / 10000));
+                                   (uint32_t)HO2u(*pMS2FSDH_FSEC (record), swapflag) * (NSTMODULUS / 10000));
   if (msr->starttime == NSTERROR)
   {
     ms_log (2, "%s: Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
-            HO2u(*pMS2FSDH_YEAR (record), headerswapflag),
-            HO2u(*pMS2FSDH_DAY (record), headerswapflag),
+            HO2u(*pMS2FSDH_YEAR (record), swapflag),
+            HO2u(*pMS2FSDH_DAY (record), swapflag),
             *pMS2FSDH_HOUR (record),
             *pMS2FSDH_MIN (record),
             *pMS2FSDH_SEC (record),
-            HO2u(*pMS2FSDH_FSEC (record), headerswapflag));
+            HO2u(*pMS2FSDH_FSEC (record), swapflag));
     return MS_GENERROR;
   }
 
   /* Check if a time correction is included and if it has been applied,
    * bit 1 of activity flags indicates if it has been appiled */
-  if (HO4d (*pMS2FSDH_TIMECORRECT (record), headerswapflag) != 0 &&
+  if (HO4d (*pMS2FSDH_TIMECORRECT (record), swapflag) != 0 &&
       !(*pMS2FSDH_ACTFLAGS (record) & 0x02))
   {
-    msr->starttime += (nstime_t)HO4d (*pMS2FSDH_TIMECORRECT (record), headerswapflag) * (NSTMODULUS / 10000);
+    msr->starttime += (nstime_t)HO4d (*pMS2FSDH_TIMECORRECT (record), swapflag) * (NSTMODULUS / 10000);
   }
 
   /* Apply microsecond precision if Blockette 1001 is present */
@@ -498,7 +651,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   /* Unpack the data samples if requested */
   if (dataflag && msr->samplecnt > 0)
   {
-    int8_t dswapflag = headerswapflag;
+    int8_t dswapflag = swapflag;
     int8_t bigendianhost = ms_bigendianhost ();
 
     /* Determine byte order of the data and set the dswapflag as
@@ -590,10 +743,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
   /* Determine offset to data */
   if (msr->formatversion == 3)
   {
-    // These accessors do not exist as of their writing
-    //dataoffset = 36 + *pMS3FSDH_TSIDLENGTH(msr->record) + *pMS3FSDH_EXTRALENGTH(msr->record);
-    ms_log (2, "msr3_unpack_data(%s): Unpacking of miniSEED 3 not yet supported\n", msr->tsid);
-    return MS_GENERROR;
+    dataoffset = MS3FSDH_LENGTH + strlen(msr->tsid) + msr->extralength;
   }
   else if (msr->formatversion == 2)
   {
@@ -724,6 +874,9 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
     if (verbose > 1)
       ms_log (1, "%s: Unpacking Steim1 data frames\n", msr->tsid);
 
+    /* Always big endian Steim1 */
+    swapflag = (ms_bigendianhost()) ? 0 : 1;
+
     nsamples = msr_decode_steim1 ((int32_t *)dbuf, datasize, msr->samplecnt,
                                   msr->datasamples, unpacksize, msr->tsid, swapflag);
 
@@ -736,6 +889,9 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
   case DE_STEIM2:
     if (verbose > 1)
       ms_log (1, "%s: Unpacking Steim2 data frames\n", msr->tsid);
+
+    /* Always big endian Steim2 */
+    swapflag = (ms_bigendianhost()) ? 0 : 1;
 
     nsamples = msr_decode_steim2 ((int32_t *)dbuf, datasize, msr->samplecnt,
                                   msr->datasamples, unpacksize, msr->tsid, swapflag);

@@ -74,11 +74,8 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   uint8_t sec;
   uint32_t nsec;
 
-  double samprate;
-  uint32_t numsamples;
   uint32_t crc;
   uint8_t tsidlength;
-  uint16_t extralength;
   uint16_t datalength;
   char *extraptr;
   char *dataptr;
@@ -134,37 +131,32 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     return -1;
   }
 
-  samprate = msr->samprate;
   tsidlength = strlen (msr->tsid);
-  extralength = msr->extralength;
-
   extraptr = rawrec + MS3FSDH_LENGTH + tsidlength;
-  dataptr = extraptr + extralength;
-
-  if (swapflag)
-  {
-    ms_gswap2a (&year);
-    ms_gswap2a (&day);
-    ms_gswap4a (&nsec);
-    ms_gswap4a (&samprate);
-    ms_gswap2a (&extralength);
-  }
+  dataptr = extraptr + msr->extralength;
 
   /* Build fixed header */
   rawrec[0] = 'M';
   rawrec[1] = 'S';
-  *pMS3FSDH_FORMATVERSION(rawrec) = 3;
-  *pMS3FSDH_FLAGS(rawrec) = msr->flags;
-  memcpy (pMS3FSDH_YEAR(rawrec), &year, sizeof (uint16_t));
-  memcpy (pMS3FSDH_DAY(rawrec), &day, sizeof (uint16_t));
-  *pMS3FSDH_HOUR(rawrec) = hour;
-  *pMS3FSDH_MIN(rawrec) = min;
-  *pMS3FSDH_SEC(rawrec) = sec;
-  *pMS3FSDH_ENCODING(rawrec) = msr->encoding;
-  memcpy (pMS3FSDH_NSEC(rawrec), &nsec, sizeof (uint32_t));
-  memcpy (pMS3FSDH_SAMPLERATE(rawrec), &samprate, sizeof (double));
+  *pMS3FSDH_FORMATVERSION (rawrec) = 3;
+  *pMS3FSDH_FLAGS (rawrec) = msr->flags;
+  *pMS3FSDH_YEAR (rawrec) = HO2u (year, swapflag);
+  *pMS3FSDH_DAY (rawrec) = HO2u (day, swapflag);
+  *pMS3FSDH_HOUR (rawrec) = hour;
+  *pMS3FSDH_MIN (rawrec) = min;
+  *pMS3FSDH_SEC (rawrec) = sec;
+  *pMS3FSDH_ENCODING (rawrec) = msr->encoding;
+  *pMS3FSDH_NSEC (rawrec) = HO4u (nsec, swapflag);
+
+  /* If rate positive and less than one, convert to period notation */
+  if (msr->samprate != 0.0 && msr->samprate > 0 && msr->samprate < 1.0)
+    *pMS3FSDH_SAMPLERATE(rawrec) = HO8f((-1.0 / msr->samprate), swapflag);
+  else
+    *pMS3FSDH_SAMPLERATE(rawrec) = HO8f(msr->samprate, swapflag);
+
   *pMS3FSDH_PUBVERSION(rawrec) = msr->pubversion;
   *pMS3FSDH_TSIDLENGTH(rawrec) = tsidlength;
+  *pMS3FSDH_EXTRALENGTH(rawrec) = HO2u(msr->extralength, swapflag);
   memcpy (pMS3FSDH_TSID(rawrec), msr->tsid, tsidlength);
 
   if (msr->extralength > 0)
@@ -213,17 +205,13 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     memcpy (dataptr, encoded, datalength);
 
     /* Update number of samples and data length */
-    numsamples = HO4u (packsamples, swapflag);
-    memcpy (pMS3FSDH_NUMSAMPLES(rawrec), &numsamples, sizeof(uint32_t));
+    *pMS3FSDH_NUMSAMPLES(rawrec) = HO4u (packsamples, swapflag);
+    *pMS3FSDH_DATALENGTH(rawrec) = HO2u (datalength, swapflag);
 
-    datalength = HO2u (datalength, swapflag);
-    memcpy (pMS3FSDH_DATALENGTH(rawrec), &datalength, sizeof(uint16_t));
-
-    /* Calculate CRC and set */
+    /* Calculate CRC (with CRC field set to 0) and set */
     memset (pMS3FSDH_CRC(rawrec), 0, sizeof(uint32_t));
     crc = ms_crc32c ((const uint8_t*)rawrec, reclen, 0);
-    crc = HO4u (crc, swapflag);
-    memcpy (pMS3FSDH_CRC(rawrec), &crc, sizeof(uint32_t));
+    *pMS3FSDH_CRC(rawrec) = HO4u (crc, swapflag);
 
     if (verbose > 0)
       ms_log (1, "%s: Packed %d samples into %d byte record\n", msr->tsid, packsamples, reclen);
@@ -245,7 +233,7 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     ms_log (1, "%s: Packed %d total samples\n", msr->tsid, totalpackedsamples);
 
   return recordcnt;
-} /* End of msr_pack() */
+} /* End of msr3_pack3() */
 
 /************************************************************************
  *  msr_pack_data:

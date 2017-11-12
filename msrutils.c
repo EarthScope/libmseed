@@ -233,7 +233,7 @@ msr3_print (MS3Record *msr, int8_t details)
             msr->tsid, msr->pubversion, msr->reclen, msr->formatversion);
     ms_log (0, "             start time: %s\n", time);
     ms_log (0, "      number of samples: %d\n", msr->samplecnt);
-    ms_log (0, "       sample rate (Hz): %.10g\n", msr->samprate);
+    ms_log (0, "       sample rate (Hz): %.10g\n", msr_sampratehz(msr));
 
     if (details > 1)
     {
@@ -261,13 +261,14 @@ msr3_print (MS3Record *msr, int8_t details)
 
     ms_log (0, "                    CRC: 0x%0X\n", msr->crc);
     ms_log (0, "    extra header length: %d bytes\n", msr->extralength);
-    ms_log (0, "         payload length: %d bytes\n", msr->payloadlength);
+    ms_log (0, "    data payload length: %d bytes\n", msr->datalength);
     ms_log (0, "       payload encoding: %s (val: %d)\n",
             (char *)ms_encodingstr (msr->encoding), msr->encoding);
 
     if (details > 1 && msr->extralength > 0 && msr->extra)
     {
-      //CHAD, print extra headers
+      ms_log (0, "          extra headers:\n");
+      mseh_print (msr, 10);
     }
   }
   else

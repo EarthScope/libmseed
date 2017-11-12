@@ -215,7 +215,7 @@ typedef struct MS3Record_s {
   int64_t         samplecnt;         /* Number of samples in record */
   uint32_t        crc;               /* CRC of entire record */
   uint16_t        extralength;       /* Length of extra headers in bytes */
-  uint16_t        payloadlength;     /* Length of data payload in bytes */
+  uint16_t        datalength;        /* Length of data payload in bytes */
   void           *extra;             /* Pointer to extra headers */
 
   /* Data sample fields */
@@ -422,6 +422,20 @@ ms_bigendianhost (void)
 {
   const uint16_t endian = 256;
   return *(const uint8_t *)&endian;
+}
+
+/***************************************************************************
+ * msr_sampratehz: Return sample rate in Hz, converting if necessary.
+ *
+ * Returns 0 if the host is little endian, otherwise 1.
+ ***************************************************************************/
+static inline double
+msr_sampratehz (MS3Record *msr)
+{
+  if (msr->samprate < 0.0)
+    return (-1.0 / msr->samprate);
+  else
+    return msr->samprate;
 }
 
 /* Lookup functions */
