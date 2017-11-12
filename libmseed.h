@@ -358,6 +358,8 @@ extern int mseh_print (MS3Record *msr, int indent);
 
 extern int mseh_to_json (MS3Record *msr, char *output, int outputlength);
 
+extern int mseh_print_raw (unsigned char *cbor, size_t length);
+
 /* Reading miniSEED records from files */
 typedef struct MS3FileParam_s
 {

@@ -144,7 +144,7 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
       return MS_GENERROR;
     }
 
-    memcpy (msr->extra, record + tsidlength, msr->extralength);
+    memcpy (msr->extra, record + MS3FSDH_LENGTH + tsidlength, msr->extralength);
   }
 
   msr->datalength = HO2u(*pMS3FSDH_DATALENGTH(record), swapflag);
@@ -209,11 +209,15 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   int B1000offset = 0;
   int B1001offset = 0;
   int retval;
-  int plusone = 1;
-  int minusone = -1;
 
   MS3Record *msr = NULL;
   char errortsid[50];
+
+  int plusone = 1;
+  int minusone = -1;
+  int64_t ival;
+  double dval;
+  char *cp;
 
   /* For blockette parsing */
   int blkt_offset;
@@ -298,22 +302,19 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   else
     msr->pubversion = 0;
 
-  //TODO
-  // Make sure the below detection and setting is correct
-
   /* Map activity bits */
   if (*pMS2FSDH_ACTFLAGS(record) & 0x01) /* Bit 0 */
     msr->flags |= 0x01;
   if (*pMS2FSDH_ACTFLAGS(record) & 0x04) /* Bit 2 */
-    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "EventBegin");
+    mseh_set_boolean (msr, &plusone, "FDSN", "Event", "EventBegin");
   if (*pMS2FSDH_ACTFLAGS(record) & 0x08) /* Bit 3 */
-    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "EventEnd");
+    mseh_set_boolean (msr, &plusone, "FDSN", "Event", "EventEnd");
   if (*pMS2FSDH_ACTFLAGS(record) & 0x10) /* Bit 4 */
-    mseh_set_int64_t (msr, &plusone, "FDSN", "Flags", "LeapSecond");
+    mseh_set_int64_t (msr, &plusone, "FDSN", "Time", "LeapSecond");
   if (*pMS2FSDH_ACTFLAGS(record) & 0x20) /* Bit 5 */
-    mseh_set_int64_t (msr, &minusone, "FDSN", "Flags", "LeapSecond");
+    mseh_set_int64_t (msr, &minusone, "FDSN", "Time", "LeapSecond");
   if (*pMS2FSDH_ACTFLAGS(record) & 0x40) /* Bit 6 */
-    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "EventInProgress");
+    mseh_set_boolean (msr, &plusone, "FDSN", "Event", "EventInProgress");
 
   /* Map I/O and clock flags */
   if (*pMS2FSDH_IOFLAGS(record) & 0x01) /* Bit 0 */
@@ -346,6 +347,13 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "FilterCharging");
   if (*pMS2FSDH_DQFLAGS(record) & 0x80) /* Bit 7 */
     msr->flags |= 0x02;
+
+  ival = HO4u(*pMS2FSDH_TIMECORRECT(record), swapflag);
+  if (ival != 0)
+  {
+    dval = ival / 10000.0;
+    mseh_set_double (msr, &dval, "FDSN", "Time", "TimeCorrect");
+  }
 
   //TODO
   // Extra headers for blockette values.
@@ -389,13 +397,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
     if (blkt_type == 100)
     {
-      /* Set actual sample rate */
       msr->samprate = HO4f(*pMS2B100_SAMPRATE(record + blkt_offset), swapflag);
-
-      if (swapflag)
-      {
-        ms_gswap4 (&msr->samprate);
-      }
     }
 
     else if (blkt_type == 200)

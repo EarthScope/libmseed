@@ -268,7 +268,7 @@ msr3_print (MS3Record *msr, int8_t details)
     if (details > 1 && msr->extralength > 0 && msr->extra)
     {
       ms_log (0, "          extra headers:\n");
-      mseh_print (msr, 10);
+      mseh_print (msr, 16);
     }
   }
   else

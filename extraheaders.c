@@ -246,7 +246,6 @@ mseh_print (MS3Record *msr, int indent)
   return MS_NOERROR;
 } /* End of mseh_print() */
 
-
 /***************************************************************************
  * mseh_to_json:
  *
@@ -288,3 +287,45 @@ mseh_to_json (MS3Record *msr, char *output, int outputlength)
 
   return (int)outputoffset;
 } /* End of mseh_to_json() */
+
+/***************************************************************************
+ * mseh_print_raw:
+ *
+ * Print the extra header (CBOR Map) structure in the specified buffer.
+ *
+ * Returns number of bytes printed on success, otherwise a negative
+ * libmseed error code.
+ ***************************************************************************/
+int
+mseh_print_raw (unsigned char *cbor, size_t length)
+{
+  cbor_stream_t stream;
+  char output[65535];
+  size_t readsize;
+  size_t offset = 0;
+  size_t outputoffset = 0;
+
+  if (!cbor)
+    return MS_GENERROR;
+
+  cbor_init (&stream, cbor, length);
+  output[outputoffset] = '\0';
+
+  /* Traverse CBOR items and build diagnostic/JSON-like output */
+  while (offset < stream.size)
+  {
+    offset += readsize = cbor_map_to_diag (&stream, offset, 60, output, &outputoffset, sizeof(output));
+
+    if (readsize == 0)
+    {
+      ms_log (2, "mseh_to_json(): Cannot decode CBOR, game over\n");
+      return MS_GENERROR;
+    }
+  }
+
+  output[outputoffset] = '\0';
+
+  printf ("%s\n", output);
+
+  return (int)outputoffset;
+} /* End of mseh_print_raw() */
