@@ -23,6 +23,10 @@
 #include "mseedformat.h"
 #include "unpackdata.h"
 
+/* Test POINTER for alignment with BYTE_COUNT sized quantities */
+#define is_aligned(POINTER, BYTE_COUNT) \
+  (((uintptr_t) (const void *)(POINTER)) % (BYTE_COUNT) == 0)
+
 /***************************************************************************
  * msr3_unpack_mseed3:
  *
@@ -109,7 +113,7 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
       ms_log (1, "%s: Byte swapping NOT needed for unpacking of header\n", msr->tsid);
   }
 
-  /* Populate some of the common header fields */
+  /* Populate the header fields */
   msr->formatversion = *pMS3FSDH_FORMATVERSION(record);
   msr->flags = *pMS3FSDH_FLAGS(record);
   msr->starttime = ms_time2nstime (HO2u(*pMS3FSDH_YEAR(record), swapflag),
@@ -148,9 +152,6 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
   }
 
   msr->datalength = HO2u(*pMS3FSDH_DATALENGTH(record), swapflag);
-
-  //TODO, check for alignment on data payload and warn if verbose >= 2
-  // pointer to data: record + tsidlength + msr->extralength
 
   /* Unpack the data samples if requested */
   if (dataflag && msr->samplecnt > 0)
@@ -217,7 +218,6 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   int minusone = -1;
   int64_t ival;
   double dval;
-  char *cp;
 
   /* For blockette parsing */
   int blkt_offset;
@@ -698,23 +698,29 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 /************************************************************************
  *  msr3_unpack_data:
  *
- *  Unpack miniSEED data samples for a given MS3Record.  The packed
- *  data is accessed in the record indicated by MS3Record->record and
- *  the unpacked samples are placed in MS3Record->datasamples.  The
- *  resulting data samples are either 32-bit integers, 32-bit floats
- *  or 64-bit floats in host byte order.
+ *  Unpack miniSEED data samples for a given MS3Record.  The
+ *  packed/encoded data is accessed in the record indicated by
+ *  MS3Record->record and the unpacked samples are placed in
+ *  MS3Record->datasamples.  The resulting data samples are either
+ *  text characters, 32-bit integers, 32-bit floats or 64-bit floats
+ *  in host byte order.
+ *
+ *  An internal buffer is allocated if the encoded data is not aligned
+ *  for the sample size, which is a decent indicator of the alignment
+ *  needed for decoding efficiently.
  *
  *  Return number of samples unpacked or negative libmseed error code.
  ************************************************************************/
 int
 msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
 {
-  int64_t datasize; /* byte size of data samples in record */
-  int64_t nsamples; /* number of samples unpacked */
+  size_t datasize; /* byte size of data samples in record */
+  int nsamples; /* number of samples unpacked */
   size_t unpacksize; /* byte size of unpacked samples */
-  int32_t samplesize = 0; /* size of the data samples in bytes */
-  int32_t dataoffset = 0;
-  const char *dbuf;
+  int8_t samplesize = 0; /* size of the data samples in bytes */
+  uint32_t dataoffset = 0;
+  const char *encoded = NULL;
+  char *encoded_allocated = NULL;
 
   if (!msr)
     return MS_GENERROR;
@@ -746,10 +752,12 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
   if (msr->formatversion == 3)
   {
     dataoffset = MS3FSDH_LENGTH + strlen(msr->tsid) + msr->extralength;
+    datasize = msr->datalength;
   }
   else if (msr->formatversion == 2)
   {
     dataoffset = HO2u(*pMS2FSDH_DATAOFFSET(msr->record), swapflag);
+    datasize = msr->reclen - dataoffset;
   }
   else
   {
@@ -765,9 +773,6 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
             msr->tsid, dataoffset);
     return MS_GENERROR;
   }
-
-  dbuf = msr->record + dataoffset;
-  datasize = msr->reclen - dataoffset;
 
   switch (msr->encoding)
   {
@@ -795,6 +800,21 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
     break;
   }
 
+  encoded = msr->record + dataoffset;
+
+  /* Copy encoded data to aligned/malloc'd buffer if not aligned for sample size */
+  if (!is_aligned(encoded, samplesize))
+  {
+    if ((encoded_allocated = malloc (datasize)) == NULL)
+    {
+      ms_log (2, "msr3_unpack_data(): Cannot allocate memory for encoded data\n");
+      return MS_GENERROR;
+    }
+
+    memcpy (encoded_allocated, encoded, datasize);
+    encoded = encoded_allocated;
+  }
+
   /* Calculate buffer size needed for unpacked samples */
   unpacksize = msr->samplecnt * samplesize;
 
@@ -806,6 +826,8 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
     if (msr->datasamples == NULL)
     {
       ms_log (2, "msr3_unpack_data(%s): Cannot (re)allocate memory\n", msr->tsid);
+      if (encoded_allocated)
+        free (encoded_allocated);
       return MS_GENERROR;
     }
   }
@@ -828,7 +850,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
       ms_log (1, "%s: Found ASCII data\n", msr->tsid);
 
     nsamples = msr->samplecnt;
-    memcpy (msr->datasamples, dbuf, nsamples);
+    memcpy (msr->datasamples, encoded, nsamples);
     msr->sampletype = 'a';
     break;
 
@@ -836,7 +858,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
     if (verbose > 1)
       ms_log (1, "%s: Unpacking INT16 data samples\n", msr->tsid);
 
-    nsamples = msr_decode_int16 ((int16_t *)dbuf, msr->samplecnt,
+    nsamples = msr_decode_int16 ((int16_t *)encoded, msr->samplecnt,
                                  msr->datasamples, unpacksize, swapflag);
 
     msr->sampletype = 'i';
@@ -846,7 +868,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
     if (verbose > 1)
       ms_log (1, "%s: Unpacking INT32 data samples\n", msr->tsid);
 
-    nsamples = msr_decode_int32 ((int32_t *)dbuf, msr->samplecnt,
+    nsamples = msr_decode_int32 ((int32_t *)encoded, msr->samplecnt,
                                  msr->datasamples, unpacksize, swapflag);
 
     msr->sampletype = 'i';
@@ -856,7 +878,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
     if (verbose > 1)
       ms_log (1, "%s: Unpacking FLOAT32 data samples\n", msr->tsid);
 
-    nsamples = msr_decode_float32 ((float *)dbuf, msr->samplecnt,
+    nsamples = msr_decode_float32 ((float *)encoded, msr->samplecnt,
                                    msr->datasamples, unpacksize, swapflag);
 
     msr->sampletype = 'f';
@@ -866,7 +888,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
     if (verbose > 1)
       ms_log (1, "%s: Unpacking FLOAT64 data samples\n", msr->tsid);
 
-    nsamples = msr_decode_float64 ((double *)dbuf, msr->samplecnt,
+    nsamples = msr_decode_float64 ((double *)encoded, msr->samplecnt,
                                    msr->datasamples, unpacksize, swapflag);
 
     msr->sampletype = 'd';
@@ -879,11 +901,14 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
     /* Always big endian Steim1 */
     swapflag = (ms_bigendianhost()) ? 0 : 1;
 
-    nsamples = msr_decode_steim1 ((int32_t *)dbuf, datasize, msr->samplecnt,
+    nsamples = msr_decode_steim1 ((int32_t *)encoded, datasize, msr->samplecnt,
                                   msr->datasamples, unpacksize, msr->tsid, swapflag);
 
     if (nsamples < 0)
-      return MS_GENERROR;
+    {
+      nsamples = MS_GENERROR;
+      break;
+    }
 
     msr->sampletype = 'i';
     break;
@@ -895,11 +920,14 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
     /* Always big endian Steim2 */
     swapflag = (ms_bigendianhost()) ? 0 : 1;
 
-    nsamples = msr_decode_steim2 ((int32_t *)dbuf, datasize, msr->samplecnt,
+    nsamples = msr_decode_steim2 ((int32_t *)encoded, datasize, msr->samplecnt,
                                   msr->datasamples, unpacksize, msr->tsid, swapflag);
 
     if (nsamples < 0)
-      return MS_GENERROR;
+    {
+      nsamples = MS_GENERROR;
+      break;
+    }
 
     msr->sampletype = 'i';
     break;
@@ -917,7 +945,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
         ms_log (1, "%s: Unpacking GEOSCOPE 16bit gain ranged/4bit exponent data samples\n", msr->tsid);
     }
 
-    nsamples = msr_decode_geoscope ((char *)dbuf, msr->samplecnt, msr->datasamples,
+    nsamples = msr_decode_geoscope ((char *)encoded, msr->samplecnt, msr->datasamples,
                                     unpacksize, msr->encoding, msr->tsid, swapflag);
 
     msr->sampletype = 'f';
@@ -927,7 +955,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
     if (verbose > 1)
       ms_log (1, "%s: Unpacking CDSN encoded data samples\n", msr->tsid);
 
-    nsamples = msr_decode_cdsn ((int16_t *)dbuf, msr->samplecnt, msr->datasamples,
+    nsamples = msr_decode_cdsn ((int16_t *)encoded, msr->samplecnt, msr->datasamples,
                                 unpacksize, swapflag);
 
     msr->sampletype = 'i';
@@ -937,7 +965,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
     if (verbose > 1)
       ms_log (1, "%s: Unpacking SRO encoded data samples\n", msr->tsid);
 
-    nsamples = msr_decode_sro ((int16_t *)dbuf, msr->samplecnt, msr->datasamples,
+    nsamples = msr_decode_sro ((int16_t *)encoded, msr->samplecnt, msr->datasamples,
                                unpacksize, msr->tsid, swapflag);
 
     msr->sampletype = 'i';
@@ -947,7 +975,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
     if (verbose > 1)
       ms_log (1, "%s: Unpacking DWWSSN encoded data samples\n", msr->tsid);
 
-    nsamples = msr_decode_dwwssn ((int16_t *)dbuf, msr->samplecnt, msr->datasamples,
+    nsamples = msr_decode_dwwssn ((int16_t *)encoded, msr->samplecnt, msr->datasamples,
                                   unpacksize, swapflag);
 
     msr->sampletype = 'i';
@@ -957,10 +985,14 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
     ms_log (2, "%s: Unsupported encoding format %d (%s)\n",
             msr->tsid, msr->encoding, (char *)ms_encodingstr (msr->encoding));
 
-    return MS_UNKNOWNFORMAT;
+    nsamples = MS_UNKNOWNFORMAT;
+    break;
   }
 
-  if (nsamples != msr->samplecnt)
+  if (encoded_allocated)
+    free (encoded_allocated);
+
+  if (nsamples >= 0 && nsamples != msr->samplecnt)
   {
     ms_log (2, "msr3_unpack_data(%s): only decoded %d samples of %d expected\n",
             msr->tsid, nsamples, msr->samplecnt);
