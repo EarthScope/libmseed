@@ -45,9 +45,9 @@ static int msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabyte
  * If the flush flag != 0 all of the data will be packed into data
  * records even though the last one will probably not be filled.
  *
- * Default values are: record length = 4096, encoding = 11 (Steim2)
- * and byteorder = 0 (LSBF).  The defaults are triggered when
- * msr->reclen, msr->encoding and msr->byteorder are -1 respectively.
+ * Default values are: record length = 4096, encoding = 11 (Steim2).
+ * The defaults are triggered when msr->reclen and msr->encoding are
+ * -1 respectively.
  *
  * Returns the number of records created on success and -1 on error.
  ***************************************************************************/
@@ -55,8 +55,10 @@ int
 msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
             void *handlerdata, int64_t *packedsamples, int8_t flush, int8_t verbose)
 {
-  char rawrec[MAXRECLEN];
-  char encoded[65535];  /* Separate encoded data buffer for alignment */
+  char *rawrec = NULL;
+  char *encoded = NULL;  /* Separate encoded data buffer for alignment */
+  int extraoffset = 0;
+  int dataoffset = 0;
   int8_t swapflag;
 
   int samplesize;
@@ -77,8 +79,6 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   uint32_t crc;
   uint8_t tsidlength;
   uint16_t datalength;
-  char *extraptr;
-  char *dataptr;
 
   if (!msr)
     return -1;
@@ -89,7 +89,7 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     return -1;
   }
 
-  /* Set default indicator, record length, byte order and encoding if needed */
+  /* Set default record length and encoding if needed */
   if (msr->reclen == -1)
     msr->reclen = 4096;
   if (msr->encoding == -1)
@@ -99,6 +99,13 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   {
     ms_log (2, "msr3_pack3(%s): Record length is out of range: %d\n",
             msr->tsid, msr->reclen);
+    return -1;
+  }
+
+  if (msr->reclen < (MS3FSDH_LENGTH + msr->extralength))
+  {
+    ms_log (2, "msr3_pack3(%s): Record length (%d) is not large enough for header (%d) and extra (%d)\n",
+            msr->tsid, msr->reclen, MS3FSDH_LENGTH, msr->extralength);
     return -1;
   }
 
@@ -132,8 +139,17 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   }
 
   tsidlength = strlen (msr->tsid);
-  extraptr = rawrec + MS3FSDH_LENGTH + tsidlength;
-  dataptr = extraptr + msr->extralength;
+  extraoffset = MS3FSDH_LENGTH + tsidlength;
+  dataoffset = extraoffset + msr->extralength;
+
+  /* Allocate space for data record */
+  rawrec = (char *)malloc (msr->reclen);
+
+  if (rawrec == NULL)
+  {
+    ms_log (2, "msr3_pack3(%s): Cannot allocate memory\n", msr->tsid);
+    return -1;
+  }
 
   /* Build fixed header */
   rawrec[0] = 'M';
@@ -160,10 +176,10 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   memcpy (pMS3FSDH_TSID(rawrec), msr->tsid, tsidlength);
 
   if (msr->extralength > 0)
-    memcpy (extraptr, msr->extra, msr->extralength);
+    memcpy (rawrec + extraoffset, msr->extra, msr->extralength);
 
   /* Determine the max data bytes and sample count */
-  maxdatabytes = msr->reclen - (dataptr - rawrec);
+  maxdatabytes = msr->reclen - dataoffset;
 
   if (msr->encoding == DE_STEIM1)
   {
@@ -176,6 +192,19 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   else
   {
     maxsamples = maxdatabytes / samplesize;
+  }
+
+  /* Allocate space for encoded data separately for alignment */
+  if (msr->numsamples > 0)
+  {
+    encoded = (char *)malloc (maxdatabytes);
+
+    if (encoded == NULL)
+    {
+      ms_log (2, "msr3_pack3(%s): Cannot allocate memory\n", msr->tsid);
+      free (rawrec);
+      return -1;
+    }
   }
 
   /* Pack samples into records */
@@ -195,6 +224,8 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     if (packsamples < 0)
     {
       ms_log (2, "msr3_pack3(%s): Error packing data samples\n", msr->tsid);
+      free (encoded);
+      free (rawrec);
       return -1;
     }
 
@@ -202,7 +233,7 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     reclen = MS3FSDH_LENGTH + tsidlength + msr->extralength + datalength;
 
     /* Copy encoded data into record */
-    memcpy (dataptr, encoded, datalength);
+    memcpy (rawrec + dataoffset, encoded, datalength);
 
     /* Update number of samples and data length */
     *pMS3FSDH_NUMSAMPLES(rawrec) = HO4u (packsamples, swapflag);
@@ -231,6 +262,11 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
   if (verbose > 2)
     ms_log (1, "%s: Packed %d total samples\n", msr->tsid, totalpackedsamples);
+
+  if (encoded)
+    free (encoded);
+
+  free (rawrec);
 
   return recordcnt;
 } /* End of msr3_pack3() */
