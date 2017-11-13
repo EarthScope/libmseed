@@ -685,6 +685,9 @@ size_t cbor_fetch_map_value (cbor_stream_t *stream, size_t offset,
 
 size_t cbor_set_map_value (cbor_stream_t *stream, cbor_item_t *item, const char *path[]);
 
+size_t cbor_append_map_array (cbor_stream_t *stream, const char *key[],
+                              cbor_item_t *item[], const char *path[]);
+
 size_t cbor_print_item (cbor_item_t *item, int indent, char *prefix, char *suffix);
 
 

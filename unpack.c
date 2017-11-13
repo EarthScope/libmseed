@@ -214,8 +214,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   MS3Record *msr = NULL;
   char errortsid[50];
 
-  int plusone = 1;
-  int minusone = -1;
+  int ione = 1;
   int64_t ival;
   double dval;
 
@@ -306,45 +305,51 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   if (*pMS2FSDH_ACTFLAGS(record) & 0x01) /* Bit 0 */
     msr->flags |= 0x01;
   if (*pMS2FSDH_ACTFLAGS(record) & 0x04) /* Bit 2 */
-    mseh_set_boolean (msr, &plusone, "FDSN", "Event", "EventBegin");
+    mseh_set_boolean (msr, &ione, "FDSN", "Event", "EventBegin");
   if (*pMS2FSDH_ACTFLAGS(record) & 0x08) /* Bit 3 */
-    mseh_set_boolean (msr, &plusone, "FDSN", "Event", "EventEnd");
+    mseh_set_boolean (msr, &ione, "FDSN", "Event", "EventEnd");
   if (*pMS2FSDH_ACTFLAGS(record) & 0x10) /* Bit 4 */
-    mseh_set_int64_t (msr, &plusone, "FDSN", "Time", "LeapSecond");
+  {
+    ival = 1;
+    mseh_set_int64_t (msr, &ival, "FDSN", "Time", "LeapSecond");
+  }
   if (*pMS2FSDH_ACTFLAGS(record) & 0x20) /* Bit 5 */
-    mseh_set_int64_t (msr, &minusone, "FDSN", "Time", "LeapSecond");
+  {
+    ival = -1;
+    mseh_set_int64_t (msr, &ival, "FDSN", "Time", "LeapSecond");
+  }
   if (*pMS2FSDH_ACTFLAGS(record) & 0x40) /* Bit 6 */
-    mseh_set_boolean (msr, &plusone, "FDSN", "Event", "EventInProgress");
+    mseh_set_boolean (msr, &ione, "FDSN", "Event", "EventInProgress");
 
   /* Map I/O and clock flags */
   if (*pMS2FSDH_IOFLAGS(record) & 0x01) /* Bit 0 */
-    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "StationVolumeParityError");
+    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "StationVolumeParityError");
   if (*pMS2FSDH_IOFLAGS(record) & 0x02) /* Bit 1 */
-    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "LongRecordRead");
+    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "LongRecordRead");
   if (*pMS2FSDH_IOFLAGS(record) & 0x04) /* Bit 2 */
-    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "ShortRecordRead");
+    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "ShortRecordRead");
   if (*pMS2FSDH_IOFLAGS(record) & 0x08) /* Bit 3 */
-    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "StartOfTimeSeries");
+    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "StartOfTimeSeries");
   if (*pMS2FSDH_IOFLAGS(record) & 0x10) /* Bit 4 */
-    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "EndOfTimeSeries");
+    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "EndOfTimeSeries");
   if (*pMS2FSDH_IOFLAGS(record) & 0x20) /* Bit 5 */
     msr->flags |= 0x04;
 
   /* Map data quality flags */
   if (*pMS2FSDH_DQFLAGS(record) & 0x01) /* Bit 0 */
-    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "AmplifierSaturation");
+    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "AmplifierSaturation");
   if (*pMS2FSDH_DQFLAGS(record) & 0x02) /* Bit 1 */
-    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "DigitizerClipping");
+    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "DigitizerClipping");
   if (*pMS2FSDH_DQFLAGS(record) & 0x04) /* Bit 2 */
-    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "Spikes");
+    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "Spikes");
   if (*pMS2FSDH_DQFLAGS(record) & 0x08) /* Bit 3 */
-    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "Glitches");
+    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "Glitches");
   if (*pMS2FSDH_DQFLAGS(record) & 0x10) /* Bit 4 */
-    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "MissingData");
+    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "MissingData");
   if (*pMS2FSDH_DQFLAGS(record) & 0x20) /* Bit 5 */
-    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "TelemetrySyncError");
+    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "TelemetrySyncError");
   if (*pMS2FSDH_DQFLAGS(record) & 0x40) /* Bit 6 */
-    mseh_set_boolean (msr, &plusone, "FDSN", "Flags", "FilterCharging");
+    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "FilterCharging");
   if (*pMS2FSDH_DQFLAGS(record) & 0x80) /* Bit 7 */
     msr->flags |= 0x02;
 
@@ -352,7 +357,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   if (ival != 0)
   {
     dval = ival / 10000.0;
-    mseh_set_double (msr, &dval, "FDSN", "Time", "TimeCorrect");
+    mseh_set_double (msr, &dval, "FDSN", "Time", "Correct");
   }
 
   //TODO
@@ -548,19 +553,13 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       B1001offset = blkt_offset;
 
-      //EXTRA B1001 at (record + blkt_offset), timing quality
+      ival = *pMS2B1001_TIMINGQUALITY(record + blkt_offset);
+      mseh_set_int64_t (msr, &ival, "FDSN", "Time", "Quality");
     }
 
     else if (blkt_type == 2000)
     {
-      //EXTRA B2000 at (record + blkt_offset), ?? What to do with this?
-
-      if (swapflag)
-      {
-        //ms_gswap2 (pMS2B2000_LENGTH (record + blkt_offset));
-        //ms_gswap2 (pMS2B2000_DATAOFFSET (record + blkt_offset));
-        //ms_gswap4 (pMS2B2000_RECNUM (record + blkt_offset));
-      }
+      ms_log (1, "msr3_unpack_mseed2(%s): WARNING Blockette 2000 is present but discarded\n", msr->tsid);
     }
 
     else
