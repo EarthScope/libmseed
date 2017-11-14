@@ -354,6 +354,13 @@ extern int mseh_fetch_path (MS3Record *msr, void *value, char type, size_t lengt
 extern int mseh_set_path (MS3Record *msr, void *value, char type, size_t length,
                           const char *path[]);
 
+extern int mseh_add_event_detection (MS3Record *msr, char *type, char *detector,
+                                     double signalamplitude, double signalperiod,
+                                     double backgroundestimate, char *detectionwave,
+                                     nstime_t onsettime, double snr,
+                                     int medlookback, int medpickalgorithm,
+                                     const char *path[]);
+
 extern int mseh_print (MS3Record *msr, int indent);
 
 extern int mseh_to_json (MS3Record *msr, char *output, int outputlength);

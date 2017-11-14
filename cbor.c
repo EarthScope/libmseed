@@ -1349,7 +1349,8 @@ cbor_fetch_map_value (cbor_stream_t *stream, size_t offset,
       if (keyitem.type == CBOR_TEXT)
       {
         /* Compare to key Text to first path element */
-        if (!strncmp (path[0], (char *)keyitem.value.c, keyitem.length))
+        if (strlen(path[0]) == keyitem.length &&
+            !strncmp (path[0], (char *)keyitem.value.c, keyitem.length))
         {
           /* If this is the final path element, store in provided items */
           if (!path[1])
@@ -1378,6 +1379,108 @@ cbor_fetch_map_value (cbor_stream_t *stream, size_t offset,
 } /* End of cbor_fetch_map_value() */
 
 /*
+ * Search for an item (a Map value) along a path, where a path is a
+ * series of keys in potentially nested Maps.  Map keys cannot be
+ * containers.
+ *
+ * The 'targetcontainer' will be set to the last path container found.
+ * The 'targetitem' will be set to the value item of the last key in
+ * the path if it exists.
+ *
+ * If either 'targetcontainer' or 'targetitem' are not found their
+ * type is set to -1 and their offset is set to 0.
+ *
+ * Returns the index of the last path item found, -1 if not found.
+ */
+int
+cbor_find_map_path (cbor_stream_t *stream, cbor_item_t *targetcontainer,
+                    cbor_item_t *targetitem, const char *path[])
+{
+  cbor_item_t tempitem;
+  const char **mappath;
+
+  int pathlast = -1;
+  int pathidx = -1;
+
+  if (!stream || !targetcontainer || !targetitem || !path)
+    return 0;
+
+  /* Sanity check that at least one path element is specified */
+  if (!path[0])
+    return -1;
+
+  targetitem->type = -1;
+  targetitem->offset = 0;
+  targetcontainer->type = -1;
+  targetcontainer->offset = 0;
+
+  /* Determine index of last path element */
+  while (path[pathlast + 1])
+    pathlast++;
+
+  /* Search existing CBOR for target container and item */
+  if (stream->size > 0)
+  {
+    /* Sanity check that stream starts with a root map, store as base container */
+    cbor_deserialize_item (stream, 0, targetcontainer);
+    if (targetcontainer->type != CBOR_MAP)
+    {
+      ms_log (2, "cbor_find_map_path(): CBOR does not start with a Map, unsupported\n");
+      return 0;
+    }
+
+    /* Allocate mirror of path*/
+    mappath = (const char **)malloc ((pathlast + 2) * sizeof (char *));
+    if (!mappath)
+    {
+      ms_log (2, "cbor_find_map_path(): Cannot allocate memory for map path\n");
+      return 0;
+    }
+
+    /* Search for existing path key-values */
+    targetitem->type = -1;
+    targetitem->offset = 0;
+    for (pathidx = 0; path[pathidx]; pathidx++)
+    {
+      mappath[pathidx] = path[pathidx];
+      mappath[pathidx + 1] = NULL;
+
+      tempitem.type = -1;
+      cbor_fetch_map_value (stream, 0, &tempitem, mappath);
+
+      /* Done if element in path does not exist */
+      if (tempitem.type == -1)
+      {
+        pathidx--;
+        break;
+      }
+
+      /* Done if target item is found, store item */
+      if (pathidx == pathlast)
+      {
+        cbor_deserialize_item (stream, tempitem.offset, targetitem);
+        break;
+      }
+      /* Check that non-target items are Maps */
+      else if (tempitem.type != CBOR_MAP)
+      {
+        ms_log (2, "cbor_find_map_path(): Path value of key '%s' is not a Map, unsupported\n",
+                path[pathidx]);
+        free (mappath);
+        return 0;
+      }
+
+      /* Store search path container item */
+      cbor_deserialize_item (stream, tempitem.offset, targetcontainer);
+    }
+
+    free (mappath);
+  } /* Done searching existing CBOR */
+
+  return pathidx;
+} /* End of cbor_find_map_path() */
+
+/*
  * Set the value of a key-value pair identified with a path, where a
  * path is a series of keys in potentially nested Maps.
  *
@@ -1400,8 +1503,6 @@ cbor_set_map_value (cbor_stream_t *stream, cbor_item_t *item, const char *path[]
   cbor_item_t targetcontainer;
   cbor_item_t targetitem;
 
-  const char **mappath;
-
   int pathlast = -1;
   int pathidx = -1;
   size_t readoffset;
@@ -1415,73 +1516,12 @@ cbor_set_map_value (cbor_stream_t *stream, cbor_item_t *item, const char *path[]
     return 0;
 
   cbor_init (&newstream, newdata, sizeof (newdata));
-  targetitem.type = -1;
-  targetitem.offset = 0;
-  targetcontainer.type = -1;
-  targetcontainer.offset = 0;
 
   /* Determine index of last path element */
   while (path[pathlast + 1])
     pathlast++;
 
-  /* Search existing CBOR for target container and item */
-  if (stream->size > 0)
-  {
-    /* Sanity check that stream starts with a root map, store as base container */
-    cbor_deserialize_item (stream, 0, &targetcontainer);
-    if (targetcontainer.type != CBOR_MAP)
-    {
-      ms_log (2, "cbor_set_map_value(): CBOR does not start with a Map, unsupported\n");
-      return 0;
-    }
-
-    /* Allocate mirror of path*/
-    mappath = (const char **)malloc ((pathlast + 2) * sizeof (char *));
-    if (!mappath)
-    {
-      ms_log (2, "cbor_set_map_value(): Cannot allocate memory for map path\n");
-      return 0;
-    }
-
-    /* Search for existing path key-values */
-    targetitem.type = -1;
-    targetitem.offset = 0;
-    for (pathidx = 0; path[pathidx]; pathidx++)
-    {
-      mappath[pathidx] = path[pathidx];
-      mappath[pathidx + 1] = NULL;
-
-      tempitem.type = -1;
-      cbor_fetch_map_value (stream, 0, &tempitem, mappath);
-
-      /* Done if element in path does not exist */
-      if (tempitem.type == -1)
-      {
-        pathidx--;
-        break;
-      }
-
-      /* Done if target item is found, store item */
-      if (pathidx == pathlast)
-      {
-        cbor_deserialize_item (stream, tempitem.offset, &targetitem);
-        break;
-      }
-      /* Check that non-target items are Maps */
-      else if (tempitem.type != CBOR_MAP)
-      {
-        ms_log (2, "cbor_set_map_value(): Path value of key '%s' is not a Map, unsupported\n",
-                path[pathidx]);
-        free (mappath);
-        return 0;
-      }
-
-      /* Store search path container item */
-      cbor_deserialize_item (stream, tempitem.offset, &targetcontainer);
-    }
-
-    free (mappath);
-  } /* Done searching existing CBOR */
+  pathidx = cbor_find_map_path (stream, &targetcontainer, &targetitem, path);
 
   /* At this point:
    * pathidx is set to the index of the last path item found, -1 if not found
@@ -1534,9 +1574,10 @@ cbor_set_map_value (cbor_stream_t *stream, cbor_item_t *item, const char *path[]
     {
       readsize = cbor_deserialize_item (stream, readoffset, &tempitem);
 
+      /* If target container reached and no target item was found */
       if (targetcontainer.type != -1 &&
-          tempitem.offset == targetcontainer.offset &&
-          pathidx < pathlast)
+          targetitem.type == -1 &&
+          tempitem.offset == targetcontainer.offset)
       {
         /* Increment map length by one entry */
         if (!cbor_serialize_map (&newstream, tempitem.length + 1))
@@ -1567,6 +1608,7 @@ cbor_set_map_value (cbor_stream_t *stream, cbor_item_t *item, const char *path[]
           return 0;
         }
       }
+      /* If target item reached */
       else if (targetitem.type != -1 &&
                tempitem.offset == targetitem.offset)
       {
@@ -1632,8 +1674,6 @@ cbor_append_map_array (cbor_stream_t *stream, const char *key[],
   cbor_item_t targetcontainer;
   cbor_item_t targetitem;
 
-  const char **mappath;
-
   int keylast = -1;
   int itemlast = -1;
   int pathlast = -1;
@@ -1650,10 +1690,6 @@ cbor_append_map_array (cbor_stream_t *stream, const char *key[],
     return 0;
 
   cbor_init (&newstream, newdata, sizeof (newdata));
-  targetitem.type = -1;
-  targetitem.offset = 0;
-  targetcontainer.type = -1;
-  targetcontainer.offset = 0;
 
   /* Determine index of last elements of input arrays */
   while (key[keylast + 1])
@@ -1670,64 +1706,7 @@ cbor_append_map_array (cbor_stream_t *stream, const char *key[],
     return 0;
   }
 
-  /* Search existing CBOR for target container and item */
-  if (stream->size > 0)
-  {
-    /* Sanity check that stream starts with a root map, store as base container */
-    cbor_deserialize_item (stream, 0, &targetcontainer);
-    if (targetcontainer.type != CBOR_MAP)
-    {
-      ms_log (2, "cbor_append_map_array(): CBOR does not start with a Map, unsupported\n");
-      return 0;
-    }
-
-    /* Allocate mirror of path*/
-    mappath = (const char **)malloc ((pathlast + 2) * sizeof (char *));
-    if (!mappath)
-    {
-      ms_log (2, "cbor_append_map_array(): Cannot allocate memory for map path\n");
-      return 0;
-    }
-
-    /* Search for existing path key-values */
-    targetitem.type = -1;
-    targetitem.offset = 0;
-    for (pathidx = 0; path[pathidx]; pathidx++)
-    {
-      mappath[pathidx] = path[pathidx];
-      mappath[pathidx + 1] = NULL;
-
-      tempitem.type = -1;
-      cbor_fetch_map_value (stream, 0, &tempitem, mappath);
-
-      /* Done if element in path does not exist */
-      if (tempitem.type == -1)
-      {
-        pathidx--;
-        break;
-      }
-
-      /* Done if target item is found, store item */
-      if (pathidx == pathlast)
-      {
-        cbor_deserialize_item (stream, tempitem.offset, &targetitem);
-        break;
-      }
-      /* Check that non-target items are Maps */
-      else if (tempitem.type != CBOR_MAP)
-      {
-        ms_log (2, "cbor_append_map_array(): Path value of key '%s' is not a Map, unsupported\n",
-                path[pathidx]);
-        free (mappath);
-        return 0;
-      }
-
-      /* Store search path container item */
-      cbor_deserialize_item (stream, tempitem.offset, &targetcontainer);
-    }
-
-    free (mappath);
-  } /* Done searching existing CBOR */
+  pathidx = cbor_find_map_path (stream, &targetcontainer, &targetitem, path);
 
   /* At this point:
    * pathidx is set to the index of the last path item found, -1 if not found
@@ -1753,11 +1732,8 @@ cbor_append_map_array (cbor_stream_t *stream, const char *key[],
     }
 
     /* Add Map entries for each path element needed */
-    for (pathidx = 0; pathidx <= pathlast; pathidx++)
+    for (pathidx = 0; pathidx < pathlast; pathidx++)
     {
-      //DEBUG
-      printf ("Adding key ('%s') with Map value\n", path[pathidx]);
-
       if (!cbor_serialize_unicode_string (&newstream, path[pathidx]) ||
           !cbor_serialize_map (&newstream, 1))
       {
@@ -1766,11 +1742,9 @@ cbor_append_map_array (cbor_stream_t *stream, const char *key[],
       }
     }
 
-    //DEBUG
-    printf ("Adding Array with Map length %d\n", keylast + 1);
-
-    /* Add target Array and single-entry Map */
-    if (!cbor_serialize_array (&newstream, 1) ||
+    /* Add target key string, value Array and single-entry Map */
+    if (!cbor_serialize_unicode_string (&newstream, path[pathidx]) ||
+        !cbor_serialize_array (&newstream, 1) ||
         !cbor_serialize_map (&newstream, keylast + 1))
     {
       ms_log (2, "cbor_append_map_array(): Cannot add new Array and Map item(s)\n");
@@ -1780,9 +1754,6 @@ cbor_append_map_array (cbor_stream_t *stream, const char *key[],
     /* Add Map entries for each key-item element needed */
     for (keyidx = 0; keyidx <= keylast; keyidx++)
     {
-      //DEBUG
-      printf ("KEY(%d): '%s', keylast: %d\n", keyidx, key[keyidx], keylast);
-
       if (!cbor_serialize_unicode_string (&newstream, key[keyidx]) ||
           !cbor_serialize_item (&newstream, item[keyidx]))
       {
@@ -1799,9 +1770,10 @@ cbor_append_map_array (cbor_stream_t *stream, const char *key[],
     {
       readsize = cbor_deserialize_item (stream, readoffset, &tempitem);
 
+      /* If target container reached and no target item was found */
       if (targetcontainer.type != -1 &&
-          tempitem.offset == targetcontainer.offset &&
-          pathidx < pathlast)
+          targetitem.type == -1 &&
+          tempitem.offset == targetcontainer.offset)
       {
         /* Increment map length by one entry */
         if (!cbor_serialize_map (&newstream, tempitem.length + 1))
@@ -1814,7 +1786,7 @@ cbor_append_map_array (cbor_stream_t *stream, const char *key[],
         pathidx += 1;
 
         /* Add Map entries for each path element needed */
-        for (;pathidx <= pathlast; pathidx++)
+        for (;pathidx < pathlast; pathidx++)
         {
           if (!cbor_serialize_unicode_string (&newstream, path[pathidx]) ||
               !cbor_serialize_map (&newstream, 1))
@@ -1824,8 +1796,9 @@ cbor_append_map_array (cbor_stream_t *stream, const char *key[],
           }
         }
 
-        /* Add target Array and single-entry Map */
-        if (!cbor_serialize_array (&newstream, 1) ||
+        /* Add target key string, value Array and single-entry Map */
+        if (!cbor_serialize_unicode_string (&newstream, path[pathidx]) ||
+            !cbor_serialize_array (&newstream, 1) ||
             !cbor_serialize_map (&newstream, keylast + 1))
         {
           ms_log (2, "cbor_append_map_array(): Cannot add new Array and Map item(s)\n");
@@ -1843,16 +1816,28 @@ cbor_append_map_array (cbor_stream_t *stream, const char *key[],
           }
         }
       }
+      /* If target item reached */
       else if (targetitem.type != -1 &&
                tempitem.offset == targetitem.offset)
       {
-/*
-        if (!cbor_serialize_item (&newstream, item))
+        /* Replace Array (incrementing length) and add single-entry Map */
+        if (!cbor_serialize_array (&newstream, targetitem.length + 1) ||
+            !cbor_serialize_map (&newstream, keylast + 1))
         {
-          ms_log (2, "cbor_append_map_array(): Cannot serialize item\n");
+          ms_log (2, "cbor_append_map_array(): Cannot replace Array and add new Map item(s)\n");
           return 0;
         }
-*/
+
+        /* Add Map entries for each key-item element needed */
+        for (keyidx = 0; keyidx <= keylast; keyidx++)
+        {
+          if (!cbor_serialize_unicode_string (&newstream, key[keyidx]) ||
+              !cbor_serialize_item (&newstream, item[keyidx]))
+          {
+            ms_log (2, "cbor_append_map_array(): Cannot serialize target item(s)\n");
+            return 0;
+          }
+        }
       }
       else
       {

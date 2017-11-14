@@ -14,7 +14,7 @@
  * mseh_fetch_path:
  *
  * Search for and return an extra header value specified as a path of
- * Map elements.  The path of Map elemens is a sequence of Map keys
+ * Map elements.  The path of Map elements is a sequence of Map keys
  * for nested structures.  This routine fetches the value of the last
  * Map key in the sequence.
  *
@@ -106,7 +106,7 @@ mseh_fetch_path (MS3Record *msr, void *value, char type, size_t length, const ch
  * mseh_set_path:
  *
  * Set the value of a single extra header value specified as a path of
- * Map elements.  The path of Map elemens is a sequence of Map keys
+ * Map elements.  The path of Map elements is a sequence of Map keys
  * for nested structures.  This routine sets the value of the last
  * Map key in the sequence.
  *
@@ -171,6 +171,152 @@ mseh_set_path (MS3Record *msr, void *value, char type, size_t length, const char
 } /* End of mseh_set_path() */
 
 /***************************************************************************
+ * mseh_add_event_detection:
+ *
+ * Each of the content values is optional, if a specific value is
+ * passed it will not be included in the extra header structure.
+ *
+ * (char *) type                Detector type (e.g. "Murdock"), NULL = not included
+ * (char *) detector            Detector name, NULL = not included
+ * (double) signalamplitude     SignalAmplitude, 0.0 = not included
+ * (double) signalperiod        Signal period, 0.0 = not included
+ * (double) backgroundestimate  Background estimate, 0.0 = not included
+ * (char *) detectionwave       Detection wave (e.g. "Dilitation"), NULL = not included
+ * (nstime_t) onsettime         Onset time, NSTERROR = not included
+ * (double) snr                 Signal to noise ratio, 0.0 = not included
+ * (int) medlookback            Murdock event detection lookback value, -1 = not included
+ * (int) medpickalgorithm       Murdock event detection pick algoritm, -1 = not included
+ * (const char *path[])         Path to detection Array, if NULL {"FDSN", "Event", "Detection"}
+ *
+ * Returns:
+ *   0 on success,
+ *   otherwise a (negative) libmseed error code.
+ ***************************************************************************/
+int
+mseh_add_event_detection (MS3Record *msr, char *type, char *detector,
+                          double signalamplitude, double signalperiod,
+                          double backgroundestimate, char *detectionwave,
+                          nstime_t onsettime, double snr,
+                          int medlookback, int medpickalgorithm,
+                          const char *path[])
+{
+#define MAXITEMS 11
+  cbor_stream_t stream;
+  cbor_item_t item[MAXITEMS];
+  cbor_item_t *itemp[MAXITEMS];
+  const char *keyp[MAXITEMS];
+  char timestr[30];
+  int idx = 0;
+
+  if (!msr)
+    return MS_GENERROR;
+
+  if (type)
+  {
+    keyp[idx] = "Type";
+    item[idx].type = CBOR_TEXT;
+    item[idx].value.c = (unsigned char *)type;
+    item[idx].length = strlen(type);
+    idx++;
+  }
+  if (detector)
+  {
+    keyp[idx] = "Detector";
+    item[idx].type = CBOR_TEXT;
+    item[idx].value.c = (unsigned char *)detector;
+    item[idx].length = strlen(detector);
+    idx++;
+  }
+  if (signalamplitude != 0.0)
+  {
+    keyp[idx] = "SignalAmplitude";
+    item[idx].type = CBOR_FLOAT64;
+    item[idx].value.d = signalamplitude;
+    item[idx].length = 0;
+    idx++;
+  }
+  if (signalperiod != 0.0)
+  {
+    keyp[idx] = "SignalPeriod";
+    item[idx].type = CBOR_FLOAT64;
+    item[idx].value.d = signalperiod;
+    item[idx].length = 0;
+    idx++;
+  }
+  if (backgroundestimate != 0.0)
+  {
+    keyp[idx] = "BackgroundEstimate";
+    item[idx].type = CBOR_FLOAT64;
+    item[idx].value.d = backgroundestimate;
+    item[idx].length = 0;
+    idx++;
+  }
+  if (detectionwave)
+  {
+    keyp[idx] = "DetectionWave";
+    item[idx].type = CBOR_TEXT;
+    item[idx].value.c = (unsigned char *)detectionwave;
+    item[idx].length = strlen(detectionwave);
+    idx++;
+  }
+  if (onsettime != NSTERROR)
+  {
+    ms_nstime2isotimestr (onsettime, timestr, 1);
+    keyp[idx] = "OnsetTime";
+    item[idx].type = CBOR_TEXT;
+    item[idx].value.c = (unsigned char *)timestr;
+    item[idx].length = strlen(timestr);
+    idx++;
+  }
+  if (snr != 0.0)
+  {
+    keyp[idx] = "SNR";
+    item[idx].type = CBOR_FLOAT64;
+    item[idx].value.d = snr;
+    item[idx].length = 0;
+    idx++;
+  }
+  if (medlookback >= 0)
+  {
+    keyp[idx] = "MEDLookback";
+    item[idx].type = CBOR_UINT;
+    item[idx].value.i = medlookback;
+    item[idx].length = 0;
+    idx++;
+  }
+  if (medpickalgorithm >= 0)
+  {
+    keyp[idx] = "MEDPickAlgorithm";
+    item[idx].type = CBOR_UINT;
+    item[idx].value.i = medpickalgorithm;
+    item[idx].length = 0;
+    idx++;
+  }
+
+  keyp[idx] = NULL;
+  itemp[idx] = NULL;
+
+  while (idx > 0)
+  {
+    idx--;
+    itemp[idx] = &item[idx];
+  }
+
+  cbor_init (&stream, msr->extra, msr->extralength);
+
+  /* Append Map entry to Array at specified or default path */
+  if (!cbor_append_map_array (&stream, keyp, itemp,
+                              (path) ? path : (const char *[]){"FDSN", "Event", "Detection", NULL}))
+    return MS_GENERROR;
+
+  msr->extra = stream.data;
+  msr->extralength = stream.size;
+
+  return 0;
+#undef MAXITEMS
+} /* End of mseh_add_event_detection() */
+
+/***************************************************************************
  * mseh_print:
  *
  * Print the extra header (CBOR Map) structure for the specified
@@ -187,6 +333,7 @@ mseh_print (MS3Record *msr, int indent)
   char output[65535];
   int length;
   int idx;
+  int instring = 0;
 
   if (!msr)
     return MS_GENERROR;
@@ -212,34 +359,49 @@ mseh_print (MS3Record *msr, int indent)
   ms_log (0, "%*s", indent, "");
   for (idx = 1; idx < (length - 1); idx++)
   {
-    if ( output[idx] == ':')
-      ms_log (0, ": ");
-    else if ( output[idx] == ',')
+    /* Toggle "in string" flag for double quotes */
+    if (output[idx] == '"')
+      instring = (instring) ? 0 : 1;
+
+    if (!instring)
     {
-      ms_log (0, ",\n%*s", indent, "");
-    }
-    else if ( output[idx] == '{' )
-    {
-      indent += 2;
-      ms_log (0, "{\n%*s", indent, "");
-    }
-    else if ( output[idx] == '[' )
-    {
-      indent += 2;
-      ms_log (0, "[\n%*s", indent, "");
-    }
-    else if ( output[idx] == '}' )
-    {
-      indent -= 2;
-      ms_log (0, "\n%*s}", indent, "");
-    }
-    else if ( output[idx] == ']' )
-    {
-      indent -= 2;
-      ms_log (0, "\n%*s]", indent, "");
+      if ( output[idx] == ':')
+      {
+        ms_log (0, ": ");
+      }
+      else if ( output[idx] == ',')
+      {
+        ms_log (0, ",\n%*s", indent, "");
+      }
+      else if ( output[idx] == '{' )
+      {
+        indent += 2;
+        ms_log (0, "{\n%*s", indent, "");
+      }
+      else if ( output[idx] == '[' )
+      {
+        indent += 2;
+        ms_log (0, "[\n%*s", indent, "");
+      }
+      else if ( output[idx] == '}' )
+      {
+        indent -= 2;
+        ms_log (0, "\n%*s}", indent, "");
+      }
+      else if ( output[idx] == ']' )
+      {
+        indent -= 2;
+        ms_log (0, "\n%*s]", indent, "");
+      }
+      else
+      {
+        ms_log (0, "%c", output[idx]);
+      }
     }
     else
+    {
       ms_log (0, "%c", output[idx]);
+    }
   }
   ms_log (0, "\n");
 

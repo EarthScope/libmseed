@@ -683,6 +683,9 @@ size_t cbor_serialize_item (cbor_stream_t *stream, cbor_item_t *item);
 size_t cbor_fetch_map_value (cbor_stream_t *stream, size_t offset,
                              cbor_item_t *value, const char *path[]);
 
+int cbor_find_map_path (cbor_stream_t *stream, cbor_item_t *targetcontainer,
+                        cbor_item_t *targetitem, const char *path[]);
+
 size_t cbor_set_map_value (cbor_stream_t *stream, cbor_item_t *item, const char *path[]);
 
 size_t cbor_append_map_array (cbor_stream_t *stream, const char *key[],
