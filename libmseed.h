@@ -361,6 +361,16 @@ extern int mseh_add_event_detection (MS3Record *msr, char *type, char *detector,
                                      int medlookback, int medpickalgorithm,
                                      const char *path[]);
 
+extern int mseh_add_calibration (MS3Record *msr, char *type,
+                                 nstime_t begintime, nstime_t endtime,
+                                 int steps, int firstpulsepositive, int alternatesign,
+                                 char *trigger, int continued, double amplitude,
+                                 char *inputunits, char *amplituderange,
+                                 double duration, double sineperiod, double stepbetween,
+                                 char *inputchannel, double refamplitude,
+                                 char *coupling, char *rolloff, char *noise,
+                                 const char *path[]);
+
 extern int mseh_print (MS3Record *msr, int indent);
 
 extern int mseh_to_json (MS3Record *msr, char *output, int outputlength);

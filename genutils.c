@@ -443,7 +443,11 @@ ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *day,
  * string of 30 characters, i.e. '2001-07-29T12:38:00.000000000' + NULL.
  *
  * The 'subseconds' flag controls whenther the sub second portion of the
- * time is included or not.
+ * time is included or not:
+ *  1 = include subseconds
+ *  0 = do not include subseconds
+ * -1 = include subseconds if non-zero
+ *
  *
  * Returns a pointer to the resulting string or NULL on error.
  ***************************************************************************/
@@ -472,7 +476,7 @@ ms_nstime2isotimestr (nstime_t nstime, char *isotimestr, int8_t subseconds)
   if (!(ms_gmtime64_r (&isec, &tms)))
     return NULL;
 
-  if (subseconds)
+  if (subseconds == 1 || (subseconds == -1 && ifract))
     /* Assuming ifract has at least nanosecond precision */
     ret = snprintf (isotimestr, 30, "%4d-%02d-%02dT%02d:%02d:%02d.%09d",
                     tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
@@ -498,7 +502,10 @@ ms_nstime2isotimestr (nstime_t nstime, char *isotimestr, int8_t subseconds)
  * string of 30 characters, i.e. '2001-07-29 12:38:00.000000000' + NULL.
  *
  * The 'subseconds' flag controls whenther the sub second portion of the
- * time is included or not.
+ * time is included or not:
+ *  1 = include subseconds
+ *  0 = do not include subseconds
+ * -1 = include subseconds if non-zero
  *
  * Returns a pointer to the resulting string or NULL on error.
  ***************************************************************************/
@@ -527,7 +534,7 @@ ms_nstime2mdtimestr (nstime_t nstime, char *mdtimestr, flag subseconds)
   if (!(ms_gmtime64_r (&isec, &tms)))
     return NULL;
 
-  if (subseconds)
+  if (subseconds == 1 || (subseconds == -1 && ifract))
     /* Assuming ifract has at least nanosecond precision */
     ret = snprintf (mdtimestr, 30, "%4d-%02d-%02d %02d:%02d:%02d.%09d",
                     tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
@@ -552,7 +559,10 @@ ms_nstime2mdtimestr (nstime_t nstime, char *mdtimestr, flag subseconds)
  * string of 28 characters, i.e. '2001,195,12:38:00.000000000' + NULL.
  *
  * The 'subseconds' flag controls whenther the sub second portion of the
- * time is included or not.
+ * time is included or not:
+ *  1 = include subseconds
+ *  0 = do not include subseconds
+ * -1 = include subseconds if non-zero
  *
  * Returns a pointer to the resulting string or NULL on error.
  ***************************************************************************/
@@ -581,7 +591,7 @@ ms_nstime2seedtimestr (nstime_t nstime, char *seedtimestr, flag subseconds)
   if (!(ms_gmtime64_r (&isec, &tms)))
     return NULL;
 
-  if (subseconds)
+  if (subseconds == 1 || (subseconds == -1 && ifract))
     /* Assuming ifract has at least microsecond precision */
     ret = snprintf (seedtimestr, 28, "%4d,%03d,%02d:%02d:%02d.%09d",
                     tms.tm_year + 1900, tms.tm_yday + 1,
