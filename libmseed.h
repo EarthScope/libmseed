@@ -325,17 +325,18 @@ extern void mstl3_printgaplist (MS3TraceList *mstl, int8_t timeformat,
  */
 typedef struct MSEHEventDetection_s
 {
-  char type[30]; /**< Detector type (e.g. "Murdock"), NULL = not included */
-  char detector[30]; /**< Detector name, NULL = not included  */
+  char type[30]; /**< Detector type (e.g. "MURDOCK"), zero length = not included */
+  char detector[30]; /**< Detector name, zero length = not included  */
   double signalamplitude; /**< SignalAmplitude, 0.0 = not included */
   double signalperiod; /**< Signal period, 0.0 = not included */
   double backgroundestimate; /**< Background estimate, 0.0 = not included */
-  char detectionwave[30]; /**< Detection wave (e.g. "Dilitation"), NULL = not included */
+  char detectionwave[30]; /**< Detection wave (e.g. "DILATATION"), zero length = not included */
+  char units[30]; /**< Units of amplitude and background estimate (e.g. "COUNTS"), zero length = not included */
   nstime_t onsettime; /**< Onset time, NSTERROR = not included */
-  double snr; /**< Signal to noise ratio, 0.0 = not included */
+  uint8_t snrvalues[6]; /**< Signal to noise ratio, all zeros = not included */
   int medlookback; /**< Murdock event detection lookback value, -1 = not included */
   int medpickalgorithm; /**< Murdock event detection pick algoritm, -1 = not included */
-  struct MSEHEventDetection_s *next; /**< Pointer to next detection, NULL if none */
+  struct MSEHEventDetection_s *next; /**< Pointer to next detection, zero length if none */
 } MSEHEventDetection;
 
 /**

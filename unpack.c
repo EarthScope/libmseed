@@ -226,6 +226,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   uint16_t blkt_type;
   uint16_t next_blkt;
 
+  MSEHEventDetection eventdetection;
+  MSEHCalibration calibration;
+
   if (!record)
   {
     ms_log (2, "msr3_unpack_mseed2(): record argument must be specified\n");
@@ -407,31 +410,99 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
     else if (blkt_type == 200)
     {
-      //EXTRA B200 at (record + blkt_offset)
+      strncpy (eventdetection.type, "GENERIC", sizeof (eventdetection.type));
+      eventdetection.signalamplitude = HO4f (*pMS2B200_AMPLITUDE (record + blkt_offset), swapflag);
+      eventdetection.signalperiod = HO4f (*pMS2B200_PERIOD (record + blkt_offset), swapflag);
+      eventdetection.backgroundestimate = HO4f (*pMS2B200_BACKGROUNDEST (record + blkt_offset), swapflag);
 
-      if (swapflag)
+      /* If bit 2 is set, set compression wave according to bit 0 */
+      if (*pMS2B200_FLAGS (record + blkt_offset) & 0x04)
       {
-        //ms_gswap4 (pMS2B200_AMPLITUDE(record + blkt_offset));
-        //ms_gswap4 (pMS2B200_PERIOD(record + blkt_offset));
-        //ms_gswap4 (pMS2B200_BACKGROUNDEST(record + blkt_offset));
-        //ms_gswap2 (pMS2B200_YEAR (record + blkt_offset));
-        //ms_gswap2 (pMS2B200_DAY (record + blkt_offset));
-        //ms_gswap2 (pMS2B200_FSEC (record + blkt_offset));
+        if (*pMS2B200_FLAGS (record + blkt_offset) & 0x01)
+          strncpy (eventdetection.detectionwave, "DILATATION", sizeof (eventdetection.detectionwave));
+        else
+          strncpy (eventdetection.detectionwave, "COMPRESSION", sizeof (eventdetection.detectionwave));
+      }
+      else
+        eventdetection.detectionwave[0] = '\0';
+
+      if (*pMS2B200_FLAGS (record + blkt_offset) & 0x02)
+        strncpy (eventdetection.units, "DECONVOLVED", sizeof (eventdetection.units));
+      else
+        strncpy (eventdetection.units, "COUNTS", sizeof (eventdetection.units));
+
+      eventdetection.onsettime = ms_time2nstime (HO2u (*pMS2B200_YEAR (record + blkt_offset), swapflag),
+                                                 HO2u (*pMS2B200_DAY (record + blkt_offset), swapflag),
+                                                 *pMS2B200_HOUR (record + blkt_offset),
+                                                 *pMS2B200_MIN (record + blkt_offset),
+                                                 *pMS2B200_SEC (record + blkt_offset),
+                                                 (uint32_t)HO2u (*pMS2B200_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
+      if (eventdetection.onsettime == NSTERROR)
+      {
+        ms_log (2, "%s: Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
+                HO2u (*pMS2B200_YEAR (record), swapflag),
+                HO2u (*pMS2B200_DAY (record), swapflag),
+                *pMS2B200_HOUR (record),
+                *pMS2B200_MIN (record),
+                *pMS2B200_SEC (record),
+                HO2u (*pMS2B200_FSEC (record), swapflag));
+        return MS_GENERROR;
+      }
+
+      memset (eventdetection.snrvalues, 0, 6);
+      eventdetection.medlookback = -1;
+      eventdetection.medpickalgorithm = -1;
+      strncpy (eventdetection.detector, pMS2B200_DETECTOR (record + blkt_offset), sizeof (eventdetection.detector));
+      eventdetection.next = NULL;
+
+      if (mseh_add_event_detection (msr, &eventdetection, NULL))
+      {
+        ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 200 to extra headers\n", msr->tsid);
+        return MS_GENERROR;
       }
     }
 
     else if (blkt_type == 201)
     {
-      //EXTRA B201 at (record + blkt_offset)
+      strncpy (eventdetection.type, "MURDOCK", sizeof (eventdetection.type));
+      eventdetection.signalamplitude = HO4f (*pMS2B201_AMPLITUDE (record + blkt_offset), swapflag);
+      eventdetection.signalperiod = HO4f (*pMS2B201_PERIOD (record + blkt_offset), swapflag);
+      eventdetection.backgroundestimate = HO4f (*pMS2B201_BACKGROUNDEST (record + blkt_offset), swapflag);
 
-      if (swapflag)
+      /* If bit 0 is set, dilatation wave otherwise compression */
+      if (*pMS2B201_FLAGS (record + blkt_offset) & 0x01)
+        strncpy (eventdetection.detectionwave, "DILATATION", sizeof (eventdetection.detectionwave));
+      else
+        strncpy (eventdetection.detectionwave, "COMPRESSION", sizeof (eventdetection.detectionwave));
+
+      eventdetection.onsettime = ms_time2nstime (HO2u (*pMS2B201_YEAR (record + blkt_offset), swapflag),
+                                                 HO2u (*pMS2B201_DAY (record + blkt_offset), swapflag),
+                                                 *pMS2B201_HOUR (record + blkt_offset),
+                                                 *pMS2B201_MIN (record + blkt_offset),
+                                                 *pMS2B201_SEC (record + blkt_offset),
+                                                 (uint32_t)HO2u (*pMS2B201_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
+      if (eventdetection.onsettime == NSTERROR)
       {
-        //ms_gswap4 (pMS2B201_AMPLITUDE(record + blkt_offset));
-        //ms_gswap4 (pMS2B201_PERIOD(record + blkt_offset));
-        //ms_gswap4 (pMS2B201_BACKGROUNDEST(record + blkt_offset));
-        //ms_gswap2 (pMS2B201_YEAR (record + blkt_offset));
-        //ms_gswap2 (pMS2B201_DAY (record + blkt_offset));
-        //ms_gswap2 (pMS2B201_FSEC (record + blkt_offset));
+        ms_log (2, "%s: Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
+                HO2u (*pMS2B201_YEAR (record), swapflag),
+                HO2u (*pMS2B201_DAY (record), swapflag),
+                *pMS2B201_HOUR (record),
+                *pMS2B201_MIN (record),
+                *pMS2B201_SEC (record),
+                HO2u (*pMS2B201_FSEC (record), swapflag));
+        return MS_GENERROR;
+      }
+
+      memcpy (eventdetection.snrvalues, pMS2B201_SNRVALUES (record + blkt_offset), 6);
+      eventdetection.medlookback = *pMS2B201_LOOPBACK (record + blkt_offset);
+      eventdetection.medpickalgorithm = *pMS2B201_PICKALGORITHM (record + blkt_offset);
+      strncpy (eventdetection.detector, pMS2B201_DETECTOR (record + blkt_offset), sizeof (eventdetection.detector));
+      eventdetection.next = NULL;
+
+      if (mseh_add_event_detection (msr, &eventdetection, NULL))
+      {
+        ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 200 to extra headers\n", msr->tsid);
+        return MS_GENERROR;
       }
     }
 

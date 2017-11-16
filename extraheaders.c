@@ -243,6 +243,14 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
     item[idx].length = strlen(eventdetection->detectionwave);
     idx++;
   }
+  if (eventdetection->units[0])
+  {
+    keyp[idx] = "Units";
+    item[idx].type = CBOR_TEXT;
+    item[idx].value.c = (unsigned char *)eventdetection->units;
+    item[idx].length = strlen(eventdetection->units);
+    idx++;
+  }
   if (eventdetection->onsettime != NSTERROR)
   {
     cp = ms_nstime2isotimestr (eventdetection->onsettime, onsetstr, -1);
@@ -257,11 +265,11 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
     item[idx].length = strlen (onsetstr);
     idx++;
   }
-  if (eventdetection->snr != 0.0)
+  if (!memcmp (eventdetection->snrvalues, (uint8_t []){0,0,0,0,0,0}, 6))
   {
-    keyp[idx] = "SNR";
-    item[idx].type = CBOR_FLOAT64;
-    item[idx].value.d = eventdetection->snr;
+    keyp[idx] = "SNRValues";
+    item[idx].type = CBOR_ARRAY; //TODO build this array of 6 x uint8_t values
+    item[idx].value.c = eventdetection->snrvalues;
     item[idx].length = 0;
     idx++;
   }
