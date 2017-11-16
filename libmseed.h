@@ -313,7 +313,62 @@ extern void mstl3_printsynclist (MS3TraceList *mstl, char *dccid, int8_t subseco
 extern void mstl3_printgaplist (MS3TraceList *mstl, int8_t timeformat,
                                 double *mingap, double *maxgap);
 
-/* miniSEED 3 extra header routines */
+/* miniSEED 3 extra headers */
+
+/**
+ * @brief A container for an event detection parameters for use in extra headers
+ *
+ * Actual values are optional, with special values indicating an unset
+ * state.
+ *
+ * @see mseh_add_event_detection
+ */
+typedef struct MSEHEventDetection_s
+{
+  char type[30]; /**< Detector type (e.g. "Murdock"), NULL = not included */
+  char detector[30]; /**< Detector name, NULL = not included  */
+  double signalamplitude; /**< SignalAmplitude, 0.0 = not included */
+  double signalperiod; /**< Signal period, 0.0 = not included */
+  double backgroundestimate; /**< Background estimate, 0.0 = not included */
+  char detectionwave[30]; /**< Detection wave (e.g. "Dilitation"), NULL = not included */
+  nstime_t onsettime; /**< Onset time, NSTERROR = not included */
+  double snr; /**< Signal to noise ratio, 0.0 = not included */
+  int medlookback; /**< Murdock event detection lookback value, -1 = not included */
+  int medpickalgorithm; /**< Murdock event detection pick algoritm, -1 = not included */
+  struct MSEHEventDetection_s *next; /**< Pointer to next detection, NULL if none */
+} MSEHEventDetection;
+
+/**
+ * @brief A container for an calibration parameters for use in extra headers
+ *
+ * Actual values are optional, with special values indicating an unset
+ * state.
+ *
+ * @see mseh_add_calibration
+ */
+typedef struct MSEHCalibration_s
+{
+  char type[30]; /**< Calibration type  (e.g. "STEP", "SINE", "PSEUDORANDOM"), zero length = not included */
+  nstime_t begintime; /**< Begin time, NSTERROR = not included */
+  nstime_t endtime; /**< End time, NSTERROR = not included */
+  int steps; /**< Number of step calibrations, -1 = not included */
+  int firstpulsepositive; /**< Boolean, step cal. first pulse, -1 = not included */
+  int alternatesign; /**< Boolean, step cal. alt. sign, -1 = not included */
+  char trigger[30]; /**< Trigger, e.g. AUTOMATIC or MANUAL, NULL = not included */
+  int continued; /**< Boolean, continued from prev. record, -1 = not included */
+  double amplitude; /**< Amp. of calibration signal, 0.0 = not included */
+  char inputunits[30]; /**< Units of input (e.g. volts, amps), NULL = not included */
+  char amplituderange[30]; /**< E.g PEAKTOPTEAK, ZEROTOPEAK, RMS, RANDOM, NULL = not included */
+  double duration; /**< Duration in seconds, 0.0 = not included */
+  double sineperiod; /**< Period of sine, 0.0 = not included */
+  double stepbetween; /**< Interval bewteen steps, 0.0 = not included */
+  char inputchannel[30]; /**< Channel of input, NULL = not included */
+  double refamplitude; /**< Reference amplitude, 0.0 = not included */
+  char coupling[30]; /**< Coupling, e.g. Resistive, Capacitive, NULL = not included */
+  char rolloff[30]; /**< Rolloff of filters, NULL = not included */
+  char noise[30]; /**< Noise for PR cals, e.g. White or Red, NULL = not included */
+  struct MSEHCalibration_s *next; /**< Pointer to next detection, NULL if none */
+} MSEHCalibration;
 
 #define mseh_fetch(msr, valueptr, type, length, ...)                    \
   mseh_fetch_path (msr, valueptr, type, length, (const char *[]){__VA_ARGS__, NULL})
@@ -354,21 +409,10 @@ extern int mseh_fetch_path (MS3Record *msr, void *value, char type, size_t lengt
 extern int mseh_set_path (MS3Record *msr, void *value, char type, size_t length,
                           const char *path[]);
 
-extern int mseh_add_event_detection (MS3Record *msr, char *type, char *detector,
-                                     double signalamplitude, double signalperiod,
-                                     double backgroundestimate, char *detectionwave,
-                                     nstime_t onsettime, double snr,
-                                     int medlookback, int medpickalgorithm,
+extern int mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
                                      const char *path[]);
 
-extern int mseh_add_calibration (MS3Record *msr, char *type,
-                                 nstime_t begintime, nstime_t endtime,
-                                 int steps, int firstpulsepositive, int alternatesign,
-                                 char *trigger, int continued, double amplitude,
-                                 char *inputunits, char *amplituderange,
-                                 double duration, double sineperiod, double stepbetween,
-                                 char *inputchannel, double refamplitude,
-                                 char *coupling, char *rolloff, char *noise,
+extern int mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
                                  const char *path[]);
 
 extern int mseh_print (MS3Record *msr, int indent);

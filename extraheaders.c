@@ -173,31 +173,14 @@ mseh_set_path (MS3Record *msr, void *value, char type, size_t length, const char
 /***************************************************************************
  * mseh_add_event_detection:
  *
- * Each of the content values is optional, if a specific value is
- * passed it will not be included in the extra header structure.
- *
- * (char *) type                Detector type (e.g. "Murdock"), NULL = not included
- * (char *) detector            Detector name, NULL = not included
- * (double) signalamplitude     SignalAmplitude, 0.0 = not included
- * (double) signalperiod        Signal period, 0.0 = not included
- * (double) backgroundestimate  Background estimate, 0.0 = not included
- * (char *) detectionwave       Detection wave (e.g. "Dilitation"), NULL = not included
- * (nstime_t) onsettime         Onset time, NSTERROR = not included
- * (double) snr                 Signal to noise ratio, 0.0 = not included
- * (int) medlookback            Murdock event detection lookback value, -1 = not included
- * (int) medpickalgorithm       Murdock event detection pick algoritm, -1 = not included
- * (const char *path[])         Path to detection Array, if NULL {"FDSN", "Event", "Detection"}
+ * Add specified event detection to the extra headers of the given record.
  *
  * Returns:
  *   0 on success,
  *   otherwise a (negative) libmseed error code.
  ***************************************************************************/
 int
-mseh_add_event_detection (MS3Record *msr, char *type, char *detector,
-                          double signalamplitude, double signalperiod,
-                          double backgroundestimate, char *detectionwave,
-                          nstime_t onsettime, double snr,
-                          int medlookback, int medpickalgorithm,
+mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
                           const char *path[])
 {
 #define MAXITEMS 11
@@ -212,57 +195,57 @@ mseh_add_event_detection (MS3Record *msr, char *type, char *detector,
   if (!msr)
     return MS_GENERROR;
 
-  if (type)
+  if (eventdetection->type[0])
   {
     keyp[idx] = "Type";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)type;
-    item[idx].length = strlen(type);
+    item[idx].value.c = (unsigned char *)eventdetection->type;
+    item[idx].length = strlen(eventdetection->type);
     idx++;
   }
-  if (detector)
+  if (eventdetection->detector[0])
   {
     keyp[idx] = "Detector";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)detector;
-    item[idx].length = strlen(detector);
+    item[idx].value.c = (unsigned char *)eventdetection->detector;
+    item[idx].length = strlen(eventdetection->detector);
     idx++;
   }
-  if (signalamplitude != 0.0)
+  if (eventdetection->signalamplitude != 0.0)
   {
     keyp[idx] = "SignalAmplitude";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].value.d = signalamplitude;
+    item[idx].value.d = eventdetection->signalamplitude;
     item[idx].length = 0;
     idx++;
   }
-  if (signalperiod != 0.0)
+  if (eventdetection->signalperiod != 0.0)
   {
     keyp[idx] = "SignalPeriod";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].value.d = signalperiod;
+    item[idx].value.d = eventdetection->signalperiod;
     item[idx].length = 0;
     idx++;
   }
-  if (backgroundestimate != 0.0)
+  if (eventdetection->backgroundestimate != 0.0)
   {
     keyp[idx] = "BackgroundEstimate";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].value.d = backgroundestimate;
+    item[idx].value.d = eventdetection->backgroundestimate;
     item[idx].length = 0;
     idx++;
   }
-  if (detectionwave)
+  if (eventdetection->detectionwave[0])
   {
     keyp[idx] = "DetectionWave";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)detectionwave;
-    item[idx].length = strlen(detectionwave);
+    item[idx].value.c = (unsigned char *)eventdetection->detectionwave;
+    item[idx].length = strlen(eventdetection->detectionwave);
     idx++;
   }
-  if (onsettime != NSTERROR)
+  if (eventdetection->onsettime != NSTERROR)
   {
-    cp = ms_nstime2isotimestr (onsettime, onsetstr, -1);
+    cp = ms_nstime2isotimestr (eventdetection->onsettime, onsetstr, -1);
     while (*cp)
       cp++;
     *cp++ = 'Z';
@@ -274,27 +257,27 @@ mseh_add_event_detection (MS3Record *msr, char *type, char *detector,
     item[idx].length = strlen (onsetstr);
     idx++;
   }
-  if (snr != 0.0)
+  if (eventdetection->snr != 0.0)
   {
     keyp[idx] = "SNR";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].value.d = snr;
+    item[idx].value.d = eventdetection->snr;
     item[idx].length = 0;
     idx++;
   }
-  if (medlookback >= 0)
+  if (eventdetection->medlookback >= 0)
   {
     keyp[idx] = "MEDLookback";
     item[idx].type = CBOR_UINT;
-    item[idx].value.i = medlookback;
+    item[idx].value.i = eventdetection->medlookback;
     item[idx].length = 0;
     idx++;
   }
-  if (medpickalgorithm >= 0)
+  if (eventdetection->medpickalgorithm >= 0)
   {
     keyp[idx] = "MEDPickAlgorithm";
     item[idx].type = CBOR_UINT;
-    item[idx].value.i = medpickalgorithm;
+    item[idx].value.i = eventdetection->medpickalgorithm;
     item[idx].length = 0;
     idx++;
   }
@@ -325,43 +308,14 @@ mseh_add_event_detection (MS3Record *msr, char *type, char *detector,
 /***************************************************************************
  * mseh_add_calibration:
  *
- * Each of the content values is optional, if a specific value is
- * passed it will not be included in the extra header structure.
- *
- * (char *) type                Detector type (e.g. "STEP", "SINE", "PSEUDORANDOM"), NULL = not included
- * (nstime_t) begintime         Begin time, NSTERROR = not included
- * (nstime_t) endtime           End time, NSTERROR = not included
- * (int) steps                  Number of step calibrations, -1 = not included
- * (int) firstpulsepositive     Boolean, step cal. first pulse, -1 = not included
- * (int) alternatesign          Boolean, step cal. alt. sign, -1 = not included
- * (char *) trigger             Trigger, e.g. AUTOMATIC or MANUAL, NULL = not included
- * (int) continued              Boolean, continued from prev. record, -1 = not included
- * (double) amplitude           Amp. of calibration signal, 0.0 = not included
- * (char *) inputunits          Units of input (e.g. volts, amps), NULL = not included
- * (char *) amplituderange      E.g PEAKTOPTEAK, ZEROTOPEAK, RMS, RANDOM, NULL = not included
- * (double) duration            Cal. duration in seconds, 0.0 = not included
- * (double) sineperiod          Period of sine, 0.0 = not included
- * (double) stepbetween         Interval bewteen steps, 0.0 = not included
- * (char *) inputchannel        Channel of input, NULL = not included
- * (double) refamplitude        Reference amplitude, 0.0 = not included
- * (char *) coupling            Coupling, e.g. Resistive, Capacitive, NULL = not included
- * (char *) rolloff             Rolloff of filters, NULL = not included
- * (char *) noise               Noise for PR cals, e.g. White or Red, NULL = not included
- * (const char *path[])         Path to detection Array, if NULL {"FDSN", "Calibration"}
+ * Add specified calibration to the extra headers of the given record.
  *
  * Returns:
  *   0 on success,
  *   otherwise a (negative) libmseed error code.
  ***************************************************************************/
 int
-mseh_add_calibration (MS3Record *msr, char *type,
-                      nstime_t begintime, nstime_t endtime,
-                      int steps, int firstpulsepositive, int alternatesign,
-                      char *trigger, int continued, double amplitude,
-                      char *inputunits, char *amplituderange,
-                      double duration, double sineperiod, double stepbetween,
-                      char *inputchannel, double refamplitude,
-                      char *coupling, char *rolloff, char *noise,
+mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
                       const char *path[])
 {
 #define MAXITEMS 20
@@ -377,17 +331,17 @@ mseh_add_calibration (MS3Record *msr, char *type,
   if (!msr)
     return MS_GENERROR;
 
-  if (type)
+  if (calibration->type[0])
   {
     keyp[idx] = "Type";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)type;
-    item[idx].length = strlen(type);
+    item[idx].value.c = (unsigned char *)calibration->type;
+    item[idx].length = strlen(calibration->type);
     idx++;
   }
-  if (begintime != NSTERROR)
+  if (calibration->begintime != NSTERROR)
   {
-    cp = ms_nstime2isotimestr (begintime, beginstr, -1);
+    cp = ms_nstime2isotimestr (calibration->begintime, beginstr, -1);
     while (*cp)
       cp++;
     *cp++ = 'Z';
@@ -399,9 +353,9 @@ mseh_add_calibration (MS3Record *msr, char *type,
     item[idx].length = strlen(beginstr);
     idx++;
   }
-  if (endtime != NSTERROR)
+  if (calibration->endtime != NSTERROR)
   {
-    cp = ms_nstime2isotimestr (endtime, endstr, -1);
+    cp = ms_nstime2isotimestr (calibration->endtime, endstr, -1);
     while (*cp)
       cp++;
     *cp++ = 'Z';
@@ -413,132 +367,132 @@ mseh_add_calibration (MS3Record *msr, char *type,
     item[idx].length = strlen(endstr);
     idx++;
   }
-  if (steps >= 0)
+  if (calibration->steps >= 0)
   {
     keyp[idx] = "Steps";
     item[idx].type = CBOR_UINT;
-    item[idx].value.i = steps;
+    item[idx].value.i = calibration->steps;
     item[idx].length = 0;
     idx++;
   }
-  if (firstpulsepositive >= 0)
+  if (calibration->firstpulsepositive >= 0)
   {
     keyp[idx] = "FirstPulsePositive";
-    item[idx].type = (firstpulsepositive) ? CBOR_TRUE : CBOR_FALSE;
-    item[idx].value.i = (firstpulsepositive) ? 1 : 0;
+    item[idx].type = (calibration->firstpulsepositive) ? CBOR_TRUE : CBOR_FALSE;
+    item[idx].value.i = (calibration->firstpulsepositive) ? 1 : 0;
     item[idx].length = 0;
     idx++;
   }
-  if (alternatesign >= 0)
+  if (calibration->alternatesign >= 0)
   {
     keyp[idx] = "AlternateSign";
-    item[idx].type = (alternatesign) ? CBOR_TRUE : CBOR_FALSE;
-    item[idx].value.i = (alternatesign) ? 1 : 0;
+    item[idx].type = (calibration->alternatesign) ? CBOR_TRUE : CBOR_FALSE;
+    item[idx].value.i = (calibration->alternatesign) ? 1 : 0;
     item[idx].length = 0;
     idx++;
   }
-  if (trigger)
+  if (calibration->trigger[0])
   {
     keyp[idx] = "Trigger";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)trigger;
-    item[idx].length = strlen(trigger);
+    item[idx].value.c = (unsigned char *)calibration->trigger;
+    item[idx].length = strlen(calibration->trigger);
     idx++;
   }
-  if (continued >= 0)
+  if (calibration->continued >= 0)
   {
     keyp[idx] = "Continued";
-    item[idx].type = (continued) ? CBOR_TRUE : CBOR_FALSE;
-    item[idx].value.i = (continued) ? 1 : 0;
+    item[idx].type = (calibration->continued) ? CBOR_TRUE : CBOR_FALSE;
+    item[idx].value.i = (calibration->continued) ? 1 : 0;
     item[idx].length = 0;
     idx++;
   }
-  if (amplitude != 0.0)
+  if (calibration->amplitude != 0.0)
   {
     keyp[idx] = "Amplitude";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].value.d = amplitude;
+    item[idx].value.d = calibration->amplitude;
     item[idx].length = 0;
     idx++;
   }
-  if (inputunits)
+  if (calibration->inputunits[0])
   {
     keyp[idx] = "InputUnits";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)inputunits;
-    item[idx].length = strlen(inputunits);
+    item[idx].value.c = (unsigned char *)calibration->inputunits;
+    item[idx].length = strlen(calibration->inputunits);
     idx++;
   }
-  if (amplituderange)
+  if (calibration->amplituderange[0])
   {
     keyp[idx] = "AmplitudeRange";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)amplituderange;
-    item[idx].length = strlen(amplituderange);
+    item[idx].value.c = (unsigned char *)calibration->amplituderange;
+    item[idx].length = strlen(calibration->amplituderange);
     idx++;
   }
-  if (duration != 0.0)
+  if (calibration->duration != 0.0)
   {
     keyp[idx] = "Duration";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].value.d = duration;
+    item[idx].value.d = calibration->duration;
     item[idx].length = 0;
     idx++;
   }
-  if (sineperiod != 0.0)
+  if (calibration->sineperiod != 0.0)
   {
     keyp[idx] = "SinePeriod";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].value.d = sineperiod;
+    item[idx].value.d = calibration->sineperiod;
     item[idx].length = 0;
     idx++;
   }
-  if (stepbetween != 0.0)
+  if (calibration->stepbetween != 0.0)
   {
     keyp[idx] = "StepBetween";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].value.d = stepbetween;
+    item[idx].value.d = calibration->stepbetween;
     item[idx].length = 0;
     idx++;
   }
-  if (inputchannel)
+  if (calibration->inputchannel[0])
   {
     keyp[idx] = "InputChannel";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)inputchannel;
-    item[idx].length = strlen(inputchannel);
+    item[idx].value.c = (unsigned char *)calibration->inputchannel;
+    item[idx].length = strlen(calibration->inputchannel);
     idx++;
   }
-  if (refamplitude != 0.0)
+  if (calibration->refamplitude != 0.0)
   {
     keyp[idx] = "ReferenceAmplitude";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].value.d = refamplitude;
+    item[idx].value.d = calibration->refamplitude;
     item[idx].length = 0;
     idx++;
   }
-  if (coupling)
+  if (calibration->coupling[0])
   {
     keyp[idx] = "Coupling";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)coupling;
-    item[idx].length = strlen(coupling);
+    item[idx].value.c = (unsigned char *)calibration->coupling;
+    item[idx].length = strlen(calibration->coupling);
     idx++;
   }
-  if (rolloff)
+  if (calibration->rolloff[0])
   {
     keyp[idx] = "Rolloff";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)rolloff;
-    item[idx].length = strlen(rolloff);
+    item[idx].value.c = (unsigned char *)calibration->rolloff;
+    item[idx].length = strlen(calibration->rolloff);
     idx++;
   }
-  if (noise)
+  if (calibration->noise[0])
   {
     keyp[idx] = "Noise";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)noise;
-    item[idx].length = strlen(noise);
+    item[idx].value.c = (unsigned char *)calibration->noise;
+    item[idx].length = strlen(calibration->noise);
     idx++;
   }
 
