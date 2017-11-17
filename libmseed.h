@@ -387,7 +387,6 @@ typedef struct MSEHTimingException_s
   int receptionquality; /**< Reception quality, 0 to 100% clock accurracy, <0 = not included */
   uint32_t count; /**< The count thereof, 0 = not included */
   char type[16]; /**< E.g. "MISSING" or "UNEXPECTED", zero length = not included */
-  char clockmodel[32]; /**< Description of clock, e.g. "Quanterra GPS1/QTS", zero length = not included */
   char clockstatus[128]; /**< Description of clock-specific parameters, zero length = not included */
 } MSEHTimingException;
 

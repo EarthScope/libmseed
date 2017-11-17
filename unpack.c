@@ -217,6 +217,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   int ione = 1;
   int64_t ival;
   double dval;
+  char sval[64];
 
   /* For blockette parsing */
   int blkt_offset;
@@ -860,7 +861,6 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       exception.receptionquality = *pMS2B500_RECEPTIONQUALITY(record + blkt_offset);
       exception.count = HO4u(*pMS2B500_EXCEPTIONCOUNT(record + blkt_offset), swapflag);
       ms_strncpcleantail (exception.type, pMS2B500_EXCEPTIONTYPE (record + blkt_offset), 16);
-      ms_strncpcleantail (exception.clockmodel, pMS2B500_CLOCKMODEL (record + blkt_offset), 32);
       ms_strncpcleantail (exception.clockstatus, pMS2B500_CLOCKSTATUS (record + blkt_offset), 128);
 
       if (mseh_add_timing_exception (msr, &exception, NULL))
@@ -868,6 +868,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
         ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 500 to extra headers\n", msr->tsid);
         return MS_GENERROR;
       }
+
+      ms_strncpcleantail (sval, pMS2B500_CLOCKMODEL (record + blkt_offset), 32);
+      mseh_set_bytes (msr, sval, strlen(sval), "FDSN", "Clock", "Model");
     }
 
     else if (blkt_type == 1000)

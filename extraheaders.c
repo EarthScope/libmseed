@@ -546,7 +546,7 @@ int
 mseh_add_timing_exception (MS3Record *msr, MSEHTimingException *exception,
                            const char *path[])
 {
-#define MAXITEMS 8
+#define MAXITEMS 7
   cbor_stream_t stream;
   cbor_item_t item[MAXITEMS];
   cbor_item_t *itemp[MAXITEMS];
@@ -602,14 +602,6 @@ mseh_add_timing_exception (MS3Record *msr, MSEHTimingException *exception,
     item[idx].type = CBOR_TEXT;
     item[idx].value.c = (unsigned char *)exception->type;
     item[idx].length = strlen(exception->type);
-    idx++;
-  }
-  if (exception->clockmodel[0])
-  {
-    keyp[idx] = "ClockModel";
-    item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)exception->clockmodel;
-    item[idx].length = strlen(exception->clockmodel);
     idx++;
   }
   if (exception->clockstatus[0])
