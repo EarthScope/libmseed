@@ -189,6 +189,7 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
   cbor_item_t *itemp[MAXITEMS];
   const char *keyp[MAXITEMS];
   char onsetstr[31];
+  char tempstr[12];
   char *cp;
   int idx = 0;
 
@@ -265,12 +266,17 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
     item[idx].length = strlen (onsetstr);
     idx++;
   }
-  if (!memcmp (eventdetection->snrvalues, (uint8_t []){0,0,0,0,0,0}, 6))
+  if (memcmp (eventdetection->snrvalues, (uint8_t []){0,0,0,0,0,0}, 6))
   {
+    /* Build comma-separated list of values as a string */
+    snprintf (tempstr, sizeof(tempstr), "%u,%u,%u,%u,%u,%u",
+              eventdetection->snrvalues[0], eventdetection->snrvalues[1], eventdetection->snrvalues[2],
+              eventdetection->snrvalues[3], eventdetection->snrvalues[4], eventdetection->snrvalues[5]);
+    tempstr[sizeof(tempstr) - 1] = '\0';
     keyp[idx] = "SNRValues";
-    item[idx].type = CBOR_ARRAY; //TODO build this array of 6 x uint8_t values
-    item[idx].value.c = eventdetection->snrvalues;
-    item[idx].length = 0;
+    item[idx].type = CBOR_TEXT;
+    item[idx].value.c = (unsigned char *) tempstr;
+    item[idx].length = strlen(tempstr);
     idx++;
   }
   if (eventdetection->medlookback >= 0)
@@ -331,8 +337,8 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   cbor_item_t item[MAXITEMS];
   cbor_item_t *itemp[MAXITEMS];
   const char *keyp[MAXITEMS];
-  char beginstr[30];
-  char endstr[30];
+  char beginstr[31];
+  char endstr[31];
   char *cp;
   int idx = 0;
 

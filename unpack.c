@@ -217,6 +217,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   int ione = 1;
   int64_t ival;
   double dval;
+  char tempstr[31];
+  nstime_t temptime;
+  char *cp;
 
   /* For blockette parsing */
   int blkt_offset;
@@ -363,9 +366,6 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     mseh_set_double (msr, &dval, "FDSN", "Time", "Correct");
   }
 
-  //TODO
-  // Extra headers for blockette values.
-
   /* Traverse the blockettes */
   blkt_offset = HO2u(*pMS2FSDH_BLOCKETTEOFFSET (record), swapflag);
 
@@ -408,9 +408,11 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       msr->samprate = HO4f(*pMS2B100_SAMPRATE(record + blkt_offset), swapflag);
     }
 
+    /* Blockette 200, generic event detection */
     else if (blkt_type == 200)
     {
       strncpy (eventdetection.type, "GENERIC", sizeof (eventdetection.type));
+      ms_strncpcleantail (eventdetection.detector, pMS2B200_DETECTOR (record + blkt_offset), 24);
       eventdetection.signalamplitude = HO4f (*pMS2B200_AMPLITUDE (record + blkt_offset), swapflag);
       eventdetection.signalperiod = HO4f (*pMS2B200_PERIOD (record + blkt_offset), swapflag);
       eventdetection.backgroundestimate = HO4f (*pMS2B200_BACKGROUNDEST (record + blkt_offset), swapflag);
@@ -439,7 +441,8 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
                                                  (uint32_t)HO2u (*pMS2B200_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
       if (eventdetection.onsettime == NSTERROR)
       {
-        ms_log (2, "%s: Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
+        ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
+                msr->tsid,
                 HO2u (*pMS2B200_YEAR (record), swapflag),
                 HO2u (*pMS2B200_DAY (record), swapflag),
                 *pMS2B200_HOUR (record),
@@ -452,7 +455,6 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       memset (eventdetection.snrvalues, 0, 6);
       eventdetection.medlookback = -1;
       eventdetection.medpickalgorithm = -1;
-      strncpy (eventdetection.detector, pMS2B200_DETECTOR (record + blkt_offset), sizeof (eventdetection.detector));
       eventdetection.next = NULL;
 
       if (mseh_add_event_detection (msr, &eventdetection, NULL))
@@ -462,9 +464,11 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       }
     }
 
+    /* Blockette 201, Murdock event detection */
     else if (blkt_type == 201)
     {
       strncpy (eventdetection.type, "MURDOCK", sizeof (eventdetection.type));
+      ms_strncpcleantail (eventdetection.detector, pMS2B201_DETECTOR (record + blkt_offset), 24);
       eventdetection.signalamplitude = HO4f (*pMS2B201_AMPLITUDE (record + blkt_offset), swapflag);
       eventdetection.signalperiod = HO4f (*pMS2B201_PERIOD (record + blkt_offset), swapflag);
       eventdetection.backgroundestimate = HO4f (*pMS2B201_BACKGROUNDEST (record + blkt_offset), swapflag);
@@ -483,7 +487,8 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
                                                  (uint32_t)HO2u (*pMS2B201_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
       if (eventdetection.onsettime == NSTERROR)
       {
-        ms_log (2, "%s: Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
+        ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
+                msr->tsid,
                 HO2u (*pMS2B201_YEAR (record), swapflag),
                 HO2u (*pMS2B201_DAY (record), swapflag),
                 *pMS2B201_HOUR (record),
@@ -496,112 +501,371 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       memcpy (eventdetection.snrvalues, pMS2B201_SNRVALUES (record + blkt_offset), 6);
       eventdetection.medlookback = *pMS2B201_LOOPBACK (record + blkt_offset);
       eventdetection.medpickalgorithm = *pMS2B201_PICKALGORITHM (record + blkt_offset);
-      strncpy (eventdetection.detector, pMS2B201_DETECTOR (record + blkt_offset), sizeof (eventdetection.detector));
       eventdetection.next = NULL;
 
       if (mseh_add_event_detection (msr, &eventdetection, NULL))
       {
-        ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 200 to extra headers\n", msr->tsid);
+        ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 201 to extra headers\n", msr->tsid);
         return MS_GENERROR;
       }
     }
 
+    /* Blockette 300, step calibration */
     else if (blkt_type == 300)
     {
-      //EXTRA B300 at (record + blkt_offset)
+      strncpy (calibration.type, "STEP", sizeof (calibration.type));
 
-      if (swapflag)
+      calibration.begintime = ms_time2nstime (HO2u (*pMS2B300_YEAR (record + blkt_offset), swapflag),
+                                              HO2u (*pMS2B300_DAY (record + blkt_offset), swapflag),
+                                              *pMS2B300_HOUR (record + blkt_offset),
+                                              *pMS2B300_MIN (record + blkt_offset),
+                                              *pMS2B300_SEC (record + blkt_offset),
+                                              (uint32_t)HO2u (*pMS2B300_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
+      if (calibration.begintime == NSTERROR)
       {
-        //ms_gswap2 (pMS2B300_YEAR (record + blkt_offset));
-        //ms_gswap2 (pMS2B300_DAY (record + blkt_offset));
-        //ms_gswap2 (pMS2B300_FSEC (record + blkt_offset));
-        //ms_gswap4 (pMS2B300_STEPDURATION (record + blkt_offset));
-        //ms_gswap4 (pMS2B300_INTERVALDURATION (record + blkt_offset));
-        //ms_gswap4 (pMS2B300_AMPLITUDE (record + blkt_offset));
-        //ms_gswap4 (pMS2B300_REFERENCEAMPLITUDE (record + blkt_offset));
+        ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
+                msr->tsid,
+                HO2u (*pMS2B300_YEAR (record), swapflag),
+                HO2u (*pMS2B300_DAY (record), swapflag),
+                *pMS2B300_HOUR (record),
+                *pMS2B300_MIN (record),
+                *pMS2B300_SEC (record),
+                HO2u (*pMS2B300_FSEC (record), swapflag));
+        return MS_GENERROR;
+      }
+
+      calibration.endtime = NSTERROR;
+      calibration.steps = *pMS2B300_NUMCALIBRATIONS(record + blkt_offset);
+
+      /* If bit 0 is set, first puluse is positive */
+      calibration.firstpulsepositive = -1;
+      if (*pMS2B300_FLAGS(record + blkt_offset) & 0x01)
+        calibration.firstpulsepositive = 1;
+
+      /* If bit 1 is set, calibration's alternate sign */
+      calibration.alternatesign = -1;
+      if (*pMS2B300_FLAGS(record + blkt_offset) & 0x02)
+        calibration.alternatesign = 1;
+
+      /* If bit 2 is set, calibration is automatic, otherwise manual */
+      if (*pMS2B300_FLAGS(record + blkt_offset) & 0x04)
+        strncpy (calibration.trigger, "AUTOMATIC", sizeof (calibration.trigger));
+      else
+        strncpy (calibration.trigger, "MANUAL", sizeof (calibration.trigger));
+
+      /* If bit 3 is set, continued from previous record */
+      calibration.continued = -1;
+      if (*pMS2B300_FLAGS(record + blkt_offset) & 0x08)
+        calibration.continued = 1;
+
+      calibration.duration = (double)(HO4u (*pMS2B300_STEPDURATION (record + blkt_offset), swapflag) / 10000.0);
+      calibration.stepbetween = (double)(HO4u (*pMS2B300_INTERVALDURATION (record + blkt_offset), swapflag) / 10000.0);
+      calibration.amplitude = HO4f (*pMS2B300_AMPLITUDE (record + blkt_offset), swapflag);
+      ms_strncpcleantail (calibration.inputchannel, pMS2B300_INPUTCHANNEL (record + blkt_offset), 3);
+      calibration.inputunits[0] = '\0';
+      calibration.amplituderange[0] = '\0';
+      calibration.sineperiod = 0.0;
+      calibration.refamplitude = (double) (HO4u (*pMS2B300_REFERENCEAMPLITUDE (record + blkt_offset), swapflag));
+      ms_strncpcleantail (calibration.coupling, pMS2B300_COUPLING (record + blkt_offset), 12);
+      ms_strncpcleantail (calibration.rolloff, pMS2B300_ROLLOFF (record + blkt_offset), 12);
+      calibration.noise[0] = '\0';
+      calibration.next = NULL;
+
+      if (mseh_add_calibration (msr, &calibration, NULL))
+      {
+        ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 300 to extra headers\n", msr->tsid);
+        return MS_GENERROR;
       }
     }
 
+    /* Blockette 310, sine calibration */
     else if (blkt_type == 310)
     {
-      //EXTRA B310 at (record + blkt_offset)
+      strncpy (calibration.type, "SINE", sizeof (calibration.type));
 
-      if (swapflag)
+      calibration.begintime = ms_time2nstime (HO2u (*pMS2B310_YEAR (record + blkt_offset), swapflag),
+                                              HO2u (*pMS2B310_DAY (record + blkt_offset), swapflag),
+                                              *pMS2B310_HOUR (record + blkt_offset),
+                                              *pMS2B310_MIN (record + blkt_offset),
+                                              *pMS2B310_SEC (record + blkt_offset),
+                                              (uint32_t)HO2u (*pMS2B310_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
+      if (calibration.begintime == NSTERROR)
       {
-        //ms_gswap2 (pMS2B310_YEAR (record + blkt_offset));
-        //ms_gswap2 (pMS2B310_DAY (record + blkt_offset));
-        //ms_gswap2 (pMS2B310_FSEC (record + blkt_offset));
-        //ms_gswap4 (pMS2B310_DURATION (record + blkt_offset));
-        //ms_gswap4 (pMS2B310_PERIOD (record + blkt_offset));
-        //ms_gswap4 (pMS2B310_AMPLITUDE (record + blkt_offset));
-        //ms_gswap4 (pMS2B310_REFERENCEAMPLITUDE (record + blkt_offset));
+        ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
+                msr->tsid,
+                HO2u (*pMS2B310_YEAR (record), swapflag),
+                HO2u (*pMS2B310_DAY (record), swapflag),
+                *pMS2B310_HOUR (record),
+                *pMS2B310_MIN (record),
+                *pMS2B310_SEC (record),
+                HO2u (*pMS2B310_FSEC (record), swapflag));
+        return MS_GENERROR;
+      }
+
+      calibration.endtime = NSTERROR;
+      calibration.steps = -1;
+      calibration.firstpulsepositive = -1;
+      calibration.alternatesign = -1;
+
+      /* If bit 2 is set, calibration is automatic, otherwise manual */
+      if (*pMS2B310_FLAGS(record + blkt_offset) & 0x04)
+        strncpy (calibration.trigger, "AUTOMATIC", sizeof (calibration.trigger));
+      else
+        strncpy (calibration.trigger, "MANUAL", sizeof (calibration.trigger));
+
+      /* If bit 3 is set, continued from previous record */
+      calibration.continued = -1;
+      if (*pMS2B310_FLAGS(record + blkt_offset) & 0x08)
+        calibration.continued = 1;
+
+      calibration.amplituderange[0] = '\0';
+      /* If bit 4 is set, peak to peak amplitude */
+      if (*pMS2B310_FLAGS(record + blkt_offset) & 0x10)
+        strncpy (calibration.amplituderange, "PEAKTOPEAK", sizeof (calibration.amplituderange));
+      /* Otherwise, if bit 5 is set, zero to peak amplitude */
+      else if (*pMS2B310_FLAGS(record + blkt_offset) & 0x20)
+        strncpy (calibration.amplituderange, "ZEROTOPEAK", sizeof (calibration.amplituderange));
+      /* Otherwise, if bit 6 is set, RMS amplitude */
+      else if (*pMS2B310_FLAGS(record + blkt_offset) & 0x40)
+        strncpy (calibration.amplituderange, "RMS", sizeof (calibration.amplituderange));
+
+      calibration.duration = (double)(HO4u (*pMS2B310_DURATION (record + blkt_offset), swapflag) / 10000.0);
+      calibration.sineperiod = HO4f(*pMS2B310_PERIOD(record + blkt_offset), swapflag);
+      calibration.amplitude = HO4f (*pMS2B310_AMPLITUDE (record + blkt_offset), swapflag);
+      ms_strncpcleantail (calibration.inputchannel, pMS2B310_INPUTCHANNEL (record + blkt_offset), 3);
+      calibration.refamplitude = (double) (HO4u (*pMS2B310_REFERENCEAMPLITUDE (record + blkt_offset), swapflag));
+      calibration.stepbetween = 0.0;
+      calibration.inputunits[0] = '\0';
+      ms_strncpcleantail (calibration.coupling, pMS2B310_COUPLING (record + blkt_offset), 12);
+      ms_strncpcleantail (calibration.rolloff, pMS2B310_ROLLOFF (record + blkt_offset), 12);
+      calibration.noise[0] = '\0';
+      calibration.next = NULL;
+
+      if (mseh_add_calibration (msr, &calibration, NULL))
+      {
+        ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 310 to extra headers\n", msr->tsid);
+        return MS_GENERROR;
       }
     }
 
+    /* Blockette 320, pseudo-random calibration */
     else if (blkt_type == 320)
     {
-      //EXTRA B320 at (record + blkt_offset)
+      strncpy (calibration.type, "PSEUDORANDOM", sizeof (calibration.type));
 
-      if (swapflag)
+      calibration.begintime = ms_time2nstime (HO2u (*pMS2B320_YEAR (record + blkt_offset), swapflag),
+                                              HO2u (*pMS2B320_DAY (record + blkt_offset), swapflag),
+                                              *pMS2B320_HOUR (record + blkt_offset),
+                                              *pMS2B320_MIN (record + blkt_offset),
+                                              *pMS2B320_SEC (record + blkt_offset),
+                                              (uint32_t)HO2u (*pMS2B320_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
+      if (calibration.begintime == NSTERROR)
       {
-        //ms_gswap2 (pMS2B320_YEAR (record + blkt_offset));
-        //ms_gswap2 (pMS2B320_DAY (record + blkt_offset));
-        //ms_gswap2 (pMS2B320_FSEC (record + blkt_offset));
-        //ms_gswap4 (pMS2B320_DURATION (record + blkt_offset));
-        //ms_gswap4 (pMS2B320_PTPAMPLITUDE (record + blkt_offset));
-        //ms_gswap4 (pMS2B320_REFERENCEAMPLITUDE (record + blkt_offset));
+        ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
+                msr->tsid,
+                HO2u (*pMS2B320_YEAR (record), swapflag),
+                HO2u (*pMS2B320_DAY (record), swapflag),
+                *pMS2B320_HOUR (record),
+                *pMS2B320_MIN (record),
+                *pMS2B320_SEC (record),
+                HO2u (*pMS2B320_FSEC (record), swapflag));
+        return MS_GENERROR;
+      }
+
+      calibration.endtime = NSTERROR;
+      calibration.steps = -1;
+      calibration.firstpulsepositive = -1;
+      calibration.alternatesign = -1;
+
+      /* If bit 2 is set, calibration is automatic, otherwise manual */
+      if (*pMS2B320_FLAGS(record + blkt_offset) & 0x04)
+        strncpy (calibration.trigger, "AUTOMATIC", sizeof (calibration.trigger));
+      else
+        strncpy (calibration.trigger, "MANUAL", sizeof (calibration.trigger));
+
+      /* If bit 3 is set, continued from previous record */
+      calibration.continued = -1;
+      if (*pMS2B320_FLAGS(record + blkt_offset) & 0x08)
+        calibration.continued = 1;
+
+      calibration.amplituderange[0] = '\0';
+      /* If bit 4 is set, peak to peak amplitude */
+      if (*pMS2B320_FLAGS(record + blkt_offset) & 0x10)
+        strncpy (calibration.amplituderange, "RANDOM", sizeof (calibration.amplituderange));
+
+      calibration.duration = (double)(HO4u (*pMS2B320_DURATION (record + blkt_offset), swapflag) / 10000.0);
+      calibration.amplitude = HO4f (*pMS2B320_PTPAMPLITUDE(record + blkt_offset), swapflag);
+      ms_strncpcleantail (calibration.inputchannel, pMS2B320_INPUTCHANNEL (record + blkt_offset), 3);
+      calibration.refamplitude = (double) (HO4u (*pMS2B320_REFERENCEAMPLITUDE (record + blkt_offset), swapflag));
+      calibration.sineperiod = 0.0;
+      calibration.stepbetween = 0.0;
+      calibration.inputunits[0] = '\0';
+      ms_strncpcleantail (calibration.coupling, pMS2B320_COUPLING (record + blkt_offset), 12);
+      ms_strncpcleantail (calibration.rolloff, pMS2B320_ROLLOFF (record + blkt_offset), 12);
+      ms_strncpcleantail (calibration.noise, pMS2B320_NOISETYPE (record + blkt_offset), 8);
+      calibration.next = NULL;
+
+      if (mseh_add_calibration (msr, &calibration, NULL))
+      {
+        ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 320 to extra headers\n", msr->tsid);
+        return MS_GENERROR;
       }
     }
 
+    /* Blockette 390, generic calibration */
     else if (blkt_type == 390)
     {
-      //EXTRA B390 at (record + blkt_offset)
+      strncpy (calibration.type, "GENERIC", sizeof (calibration.type));
 
-      if (swapflag)
+      calibration.begintime = ms_time2nstime (HO2u (*pMS2B390_YEAR (record + blkt_offset), swapflag),
+                                              HO2u (*pMS2B390_DAY (record + blkt_offset), swapflag),
+                                              *pMS2B390_HOUR (record + blkt_offset),
+                                              *pMS2B390_MIN (record + blkt_offset),
+                                              *pMS2B390_SEC (record + blkt_offset),
+                                              (uint32_t)HO2u (*pMS2B390_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
+      if (calibration.begintime == NSTERROR)
       {
-        //ms_gswap2 (pMS2B390_YEAR (record + blkt_offset));
-        //ms_gswap2 (pMS2B390_DAY (record + blkt_offset));
-        //ms_gswap2 (pMS2B390_FSEC (record + blkt_offset));
-        //ms_gswap4 (pMS2B390_DURATION (record + blkt_offset));
-        //ms_gswap4 (pMS2B390_AMPLITUDE (record + blkt_offset));
+        ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
+                msr->tsid,
+                HO2u (*pMS2B390_YEAR (record), swapflag),
+                HO2u (*pMS2B390_DAY (record), swapflag),
+                *pMS2B390_HOUR (record),
+                *pMS2B390_MIN (record),
+                *pMS2B390_SEC (record),
+                HO2u (*pMS2B390_FSEC (record), swapflag));
+        return MS_GENERROR;
+      }
+
+      calibration.endtime = NSTERROR;
+      calibration.steps = -1;
+      calibration.firstpulsepositive = -1;
+      calibration.alternatesign = -1;
+
+      /* If bit 2 is set, calibration is automatic, otherwise manual */
+      if (*pMS2B390_FLAGS(record + blkt_offset) & 0x04)
+        strncpy (calibration.trigger, "AUTOMATIC", sizeof (calibration.trigger));
+      else
+        strncpy (calibration.trigger, "MANUAL", sizeof (calibration.trigger));
+
+      /* If bit 3 is set, continued from previous record */
+      calibration.continued = -1;
+      if (*pMS2B390_FLAGS(record + blkt_offset) & 0x08)
+        calibration.continued = 1;
+
+      calibration.amplituderange[0] = '\0';
+      calibration.duration = (double)(HO4u (*pMS2B390_DURATION (record + blkt_offset), swapflag) / 10000.0);
+      calibration.amplitude = HO4f (*pMS2B390_AMPLITUDE(record + blkt_offset), swapflag);
+      ms_strncpcleantail (calibration.inputchannel, pMS2B390_INPUTCHANNEL (record + blkt_offset), 3);
+      calibration.refamplitude = 0.0;
+      calibration.sineperiod = 0.0;
+      calibration.stepbetween = 0.0;
+      calibration.inputunits[0] = '\0';
+      calibration.coupling[0] = '\0';
+      calibration.rolloff[0] = '\0';
+      calibration.noise[0] = '\0';
+      calibration.next = NULL;
+
+      if (mseh_add_calibration (msr, &calibration, NULL))
+      {
+        ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 390 to extra headers\n", msr->tsid);
+        return MS_GENERROR;
       }
     }
 
+    /* Blockette 390, calibration abort */
     else if (blkt_type == 395)
     {
-      //EXTRA B395 at (record + blkt_offset)
+      strncpy (calibration.type, "ABORT", sizeof (calibration.type));
 
-      if (swapflag)
+      calibration.begintime = NSTERROR;
+      calibration.endtime = ms_time2nstime (HO2u (*pMS2B395_YEAR (record + blkt_offset), swapflag),
+                                              HO2u (*pMS2B395_DAY (record + blkt_offset), swapflag),
+                                              *pMS2B395_HOUR (record + blkt_offset),
+                                              *pMS2B395_MIN (record + blkt_offset),
+                                              *pMS2B395_SEC (record + blkt_offset),
+                                              (uint32_t)HO2u (*pMS2B395_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
+      if (calibration.endtime == NSTERROR)
       {
-        //ms_gswap2 (pMS2B395_YEAR (record + blkt_offset));
-        //ms_gswap2 (pMS2B395_DAY (record + blkt_offset));
-        //ms_gswap2 (pMS2B395_FSEC (record + blkt_offset));
+        ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
+                msr->tsid,
+                HO2u (*pMS2B395_YEAR (record), swapflag),
+                HO2u (*pMS2B395_DAY (record), swapflag),
+                *pMS2B395_HOUR (record),
+                *pMS2B395_MIN (record),
+                *pMS2B395_SEC (record),
+                HO2u (*pMS2B395_FSEC (record), swapflag));
+        return MS_GENERROR;
+      }
+
+      calibration.steps = -1;
+      calibration.firstpulsepositive = -1;
+      calibration.alternatesign = -1;
+      calibration.trigger[0] = '\0';
+      calibration.continued = -1;
+      calibration.amplituderange[0] = '\0';
+      calibration.duration = 0.0;
+      calibration.amplitude = 0.0;
+      calibration.inputchannel[0] = '\0';
+      calibration.refamplitude = 0.0;
+      calibration.sineperiod = 0.0;
+      calibration.stepbetween = 0.0;
+      calibration.inputunits[0] = '\0';
+      calibration.coupling[0] = '\0';
+      calibration.rolloff[0] = '\0';
+      calibration.noise[0] = '\0';
+      calibration.next = NULL;
+
+      if (mseh_add_calibration (msr, &calibration, NULL))
+      {
+        ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 395 to extra headers\n", msr->tsid);
+        return MS_GENERROR;
       }
     }
 
+    /* Blockette 400, beam blockette */
     else if (blkt_type == 400)
     {
       ms_log (1, "msr3_unpack_mseed2(%s): WARNING Blockette 400 is present but discarded\n", msr->tsid);
     }
 
+    /* Blockette 400, beam delay blockette */
     else if (blkt_type == 405)
     {
       ms_log (1, "msr3_unpack_mseed2(%s): WARNING Blockette 405 is present but discarded\n", msr->tsid);
     }
 
+    /* Blockette 400, timing blockette */
     else if (blkt_type == 500)
     {
-      //EXTRA B500 at (record + blkt_offset)
+      TODO, NEED exception struct and mseh_add_timing_exception
+        to put into "FDSN", "Time", "Exception" as an array.
 
-      if (swapflag)
+      dval = HO4f (*pMS2B500_VCOCORRECTION (record + blkt_offset), swapflag);
+      mseh_set_double (msr, &dval, "FDSN", "Time", "VCOCorrection");
+
+      temptime = ms_time2nstime (HO2u (*pMS2B500_YEAR (record + blkt_offset), swapflag),
+                                 HO2u (*pMS2B500_DAY (record + blkt_offset), swapflag),
+                                 *pMS2B500_HOUR (record + blkt_offset),
+                                 *pMS2B500_MIN (record + blkt_offset),
+                                 *pMS2B500_SEC (record + blkt_offset),
+                                 (uint32_t)HO2u (*pMS2B500_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
+      if (temptime == NSTERROR)
       {
-        //ms_gswap4 (pMS2B500_VCOCORRECTION (record + blkt_offset));
-        //ms_gswap2 (pMS2B500_YEAR (record + blkt_offset));
-        //ms_gswap2 (pMS2B500_DAY (record + blkt_offset));
-        //ms_gswap2 (pMS2B500_FSEC (record + blkt_offset));
-        //ms_gswap4 (pMS2B500_EXCEPTIONCOUNT (record + blkt_offset));
+        ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
+                msr->tsid,
+                HO2u (*pMS2B500_YEAR (record), swapflag),
+                HO2u (*pMS2B500_DAY (record), swapflag),
+                *pMS2B500_HOUR (record),
+                *pMS2B500_MIN (record),
+                *pMS2B500_SEC (record),
+                HO2u (*pMS2B500_FSEC (record), swapflag));
+        return MS_GENERROR;
       }
+
+      TODO, all the rest
     }
+
+    snprintf (tempstr, sizeof(tempstr), "%d
 
     else if (blkt_type == 1000)
     {

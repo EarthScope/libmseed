@@ -355,20 +355,20 @@ typedef struct MSEHCalibration_s
   int steps; /**< Number of step calibrations, -1 = not included */
   int firstpulsepositive; /**< Boolean, step cal. first pulse, -1 = not included */
   int alternatesign; /**< Boolean, step cal. alt. sign, -1 = not included */
-  char trigger[30]; /**< Trigger, e.g. AUTOMATIC or MANUAL, NULL = not included */
+  char trigger[30]; /**< Trigger, e.g. AUTOMATIC or MANUAL, zero length = not included */
   int continued; /**< Boolean, continued from prev. record, -1 = not included */
   double amplitude; /**< Amp. of calibration signal, 0.0 = not included */
-  char inputunits[30]; /**< Units of input (e.g. volts, amps), NULL = not included */
-  char amplituderange[30]; /**< E.g PEAKTOPTEAK, ZEROTOPEAK, RMS, RANDOM, NULL = not included */
+  char inputunits[30]; /**< Units of input (e.g. volts, amps), zero length = not included */
+  char amplituderange[30]; /**< E.g PEAKTOPTEAK, ZEROTOPEAK, RMS, RANDOM, zero length = not included */
   double duration; /**< Duration in seconds, 0.0 = not included */
   double sineperiod; /**< Period of sine, 0.0 = not included */
   double stepbetween; /**< Interval bewteen steps, 0.0 = not included */
-  char inputchannel[30]; /**< Channel of input, NULL = not included */
+  char inputchannel[30]; /**< Channel of input, zero length = not included */
   double refamplitude; /**< Reference amplitude, 0.0 = not included */
-  char coupling[30]; /**< Coupling, e.g. Resistive, Capacitive, NULL = not included */
-  char rolloff[30]; /**< Rolloff of filters, NULL = not included */
-  char noise[30]; /**< Noise for PR cals, e.g. White or Red, NULL = not included */
-  struct MSEHCalibration_s *next; /**< Pointer to next detection, NULL if none */
+  char coupling[30]; /**< Coupling, e.g. Resistive, Capacitive, zero length = not included */
+  char rolloff[30]; /**< Rolloff of filters, zero length = not included */
+  char noise[30]; /**< Noise for PR cals, e.g. White or Red, zero length = not included */
+  struct MSEHCalibration_s *next; /**< Pointer to next detection, zero length if none */
 } MSEHCalibration;
 
 #define mseh_fetch(msr, valueptr, type, length, ...)                    \
