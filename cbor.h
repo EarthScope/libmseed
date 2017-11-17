@@ -171,10 +171,19 @@ extern "C" {
 
 /* A general container for a CBOR item */
 typedef struct cbor_item_s {
+  enum {
+    NONE,
+    UCHARP,
+    CBOR,
+    CBORTAG,
+    INT64,
+    FLOAT64
+  } valuetype;
   union {
-    unsigned char *c;
-    int64_t i;
-    double d;
+    unsigned char *ucharp;
+    unsigned char cbortag;
+    int64_t int64;
+    double float64;
   } value;
   int type;
   size_t length;

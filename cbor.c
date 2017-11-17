@@ -1056,7 +1056,8 @@ cbor_deserialize_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item)
 
   if (item)
   {
-    item->value.i = 0;
+    item->valuetype = NONE;
+    item->value.int64 = 0;
     item->type = -1;
     item->length = 0;
     item->offset = offset;
@@ -1072,7 +1073,8 @@ cbor_deserialize_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item)
     {
       if (u64val > INT64_MAX)
         ms_log (2, "cbor_deserialize_item(): uint64_t too large for int64_t item value: %" PRIu64 "\n", u64val);
-      item->value.i = u64val;
+      item->valuetype = INT64;
+      item->value.int64 = u64val;
       item->type = CBOR_UINT;
     }
     break;
@@ -1081,7 +1083,8 @@ cbor_deserialize_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item)
     readbytes = decode_int (stream, offset, (item) ? &u64val : NULL);
     if (item)
     {
-      item->value.i = -1 - u64val; /* Resolve to negative int */
+      item->valuetype = INT64;
+      item->value.int64 = -1 - u64val; /* Resolve to negative int */
       item->type = CBOR_NEGINT;
     }
     break;
@@ -1089,10 +1092,13 @@ cbor_deserialize_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item)
   case CBOR_BYTES:
   case CBOR_TEXT:
     readbytes = decode_bytes_no_copy (stream, offset,
-                                      (item) ? &item->value.c : NULL,
+                                      (item) ? &item->value.ucharp : NULL,
                                       (item) ? &item->length : NULL);
     if (item)
+    {
+      item->valuetype = UCHARP;
       item->type = (CBOR_TYPE (stream, offset) == CBOR_BYTES) ? CBOR_BYTES : CBOR_TEXT;
+    }
     break;
 
   case CBOR_ARRAY:
@@ -1110,13 +1116,19 @@ cbor_deserialize_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item)
     else
       readbytes = cbor_deserialize_map (stream, offset, (item) ? &item->length : NULL);
     if (item)
+    {
+      item->valuetype = NONE;
       item->type = CBOR_MAP;
+    }
     break;
 
   case CBOR_TAG:
     readbytes = 1;
     if (item)
+    {
+      item->valuetype = NONE;
       item->type = CBOR_TAG;
+    }
     break;
 
   case CBOR_7:
@@ -1125,32 +1137,45 @@ cbor_deserialize_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item)
     case CBOR_FALSE:
       readbytes = 1;
       if (item)
+      {
+        item->valuetype = NONE;
         item->type = CBOR_FALSE;
+      }
       break;
 
     case CBOR_TRUE:
       readbytes = 1;
       if (item)
+      {
+        item->valuetype = NONE;
         item->type = CBOR_TRUE;
+      }
       break;
 
     case CBOR_NULL:
       readbytes = 1;
       if (item)
+      {
+        item->valuetype = NONE;
         item->type = CBOR_NULL;
+      }
       break;
 
     case CBOR_UNDEFINED:
       readbytes = 1;
       if (item)
+      {
+        item->valuetype = NONE;
         item->type = CBOR_UNDEFINED;
+      }
       break;
 
     case CBOR_FLOAT16:
       readbytes = cbor_deserialize_float_half (stream, offset, (item) ? &fval : NULL);
       if (item)
       {
-        item->value.d = fval;
+        item->valuetype = FLOAT64;
+        item->value.float64 = fval;
         item->type = CBOR_FLOAT16;
       }
       break;
@@ -1159,21 +1184,28 @@ cbor_deserialize_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item)
       readbytes = cbor_deserialize_float (stream, offset, (item) ? &fval : NULL);
       if (item)
       {
-        item->value.d = fval;
+        item->valuetype = FLOAT64;
+        item->value.float64 = fval;
         item->type = CBOR_FLOAT32;
       }
       break;
 
     case CBOR_FLOAT64:
-      readbytes = cbor_deserialize_double (stream, offset, (item) ? &item->value.d : NULL);
+      readbytes = cbor_deserialize_double (stream, offset, (item) ? &item->value.float64 : NULL);
       if (item)
+      {
+        item->valuetype = FLOAT64;
         item->type = CBOR_FLOAT64;
+      }
       break;
 
     case CBOR_BREAK:
       readbytes = 1;
       if (item)
+      {
+        item->valuetype = NONE;
         item->type = CBOR_BREAK;
+      }
       break;
     }
     break;
@@ -1202,60 +1234,62 @@ cbor_serialize_item (cbor_stream_t *stream, cbor_item_t *item)
   if (!stream || !item)
     return 0;
 
-  switch (item->type)
+  if (item->valuetype == INT64 &&
+      (item->type == CBOR_UINT || item->type == CBOR_NEGINT))
   {
-  case CBOR_UINT:
-  case CBOR_NEGINT:
-    wrotebytes = cbor_serialize_int64_t (stream, item->value.i);
-    break;
-
-  case CBOR_BYTES:
-    wrotebytes = cbor_serialize_byte_stringl (stream, (const char *)item->value.c, item->length);
-    break;
-
-  case CBOR_TEXT:
-    wrotebytes = cbor_serialize_unicode_string (stream, (const char *)item->value.c);
-    break;
-
-  case CBOR_ARRAY:
+    wrotebytes = cbor_serialize_int64_t (stream, item->value.int64);
+  }
+  else if (item->valuetype == UCHARP && item->type == CBOR_BYTES)
+  {
+    wrotebytes = cbor_serialize_byte_stringl (stream, (const char *)item->value.ucharp, item->length);
+  }
+  else if (item->valuetype == UCHARP && item->type == CBOR_TEXT)
+  {
+    wrotebytes = cbor_serialize_unicode_string (stream, (const char *)item->value.ucharp);
+  }
+  else if (item->valuetype == NONE && item->type == CBOR_ARRAY)
+  {
     wrotebytes = cbor_serialize_array (stream, item->length);
-    break;
-
-  case CBOR_MAP:
+  }
+  else if (item->valuetype == NONE && item->type == CBOR_MAP)
+  {
     wrotebytes = cbor_serialize_map (stream, item->length);
-    break;
-
-  case CBOR_TAG:
-    wrotebytes = cbor_write_tag (stream, item->value.c[0]);
-    break;
-
-  case CBOR_FALSE:
+  }
+  else if (item->valuetype == CBORTAG && item->type == CBOR_TAG)
+  {
+    wrotebytes = cbor_write_tag (stream, item->value.cbortag);
+  }
+  else if (item->valuetype == NONE && item->type == CBOR_FALSE)
+  {
     wrotebytes = cbor_serialize_bool (stream, 0);
-    break;
-
-  case CBOR_TRUE:
+  }
+  else if (item->valuetype == NONE && item->type == CBOR_TRUE)
+  {
     wrotebytes = cbor_serialize_bool (stream, 1);
-    break;
-
-  case CBOR_FLOAT16:
-    wrotebytes = cbor_serialize_float_half (stream, (float)(item->value.d));
-    break;
-
-  case CBOR_FLOAT32:
-    wrotebytes = cbor_serialize_float (stream, (float)(item->value.d));
-    break;
-
-  case CBOR_FLOAT64:
+  }
+  else if (item->valuetype == FLOAT64 &&
+           (item->type == CBOR_FLOAT16 || item->type == CBOR_FLOAT32 || item->type == CBOR_FLOAT64))
+  {
     /* Use cbor_serialize_floating() to determine minimum size float */
-    wrotebytes = cbor_serialize_floating (stream, item->value.d);
-    break;
-
-  case CBOR_BREAK:
+    wrotebytes = cbor_serialize_floating (stream, item->value.float64);
+  }
+  else if (item->valuetype == NONE && item->type == CBOR_BREAK)
+  {
     wrotebytes = cbor_write_break (stream);
-    break;
+  }
+  else if (item->valuetype == CBOR && item->value.ucharp && item->length > 0)
+  {
+    /* Add raw CBOR */
+    CBOR_ENSURE_SIZE (stream, item->length);
 
-  default:
-    ms_log (2, "cbor_serialize_item(): Unrecognized CBOR type: 0x%X\n", item->type);
+    memcpy (&(stream->data[stream->pos]), item->value.ucharp, item->length);
+    stream->pos += item->length;
+    wrotebytes = item->length;
+  }
+  else
+  {
+    ms_log (2, "cbor_serialize_item(): Unrecognized CBOR type (0x%X) and/or value type (%d) combination\n",
+            item->type, item->valuetype);
   }
 
   return wrotebytes;
@@ -1350,7 +1384,7 @@ cbor_fetch_map_value (cbor_stream_t *stream, size_t offset,
       {
         /* Compare to key Text to first path element */
         if (strlen(path[0]) == keyitem.length &&
-            !strncmp (path[0], (char *)keyitem.value.c, keyitem.length))
+            !strncmp (path[0], (char *)keyitem.value.ucharp, keyitem.length))
         {
           /* If this is the final path element, store in provided items */
           if (!path[1])
@@ -1894,12 +1928,12 @@ cbor_print_item (cbor_item_t *item, int indent, char *prefix, char *suffix)
   {
   case CBOR_UINT:
   case CBOR_NEGINT:
-    printed += printf ("%" PRIi64, item->value.i);
+    printed += printf ("%" PRIi64, item->value.int64);
     break;
 
   case CBOR_BYTES:
   case CBOR_TEXT:
-    printed += printf ("%.*s", (int)item->length, item->value.c);
+    printed += printf ("%.*s", (int)item->length, item->value.ucharp);
     break;
 
   case CBOR_ARRAY:
@@ -1933,7 +1967,7 @@ cbor_print_item (cbor_item_t *item, int indent, char *prefix, char *suffix)
   case CBOR_FLOAT16:
   case CBOR_FLOAT32:
   case CBOR_FLOAT64:
-    printed += printf ("%g", item->value.d);
+    printed += printf ("%g", item->value.float64);
     break;
 
   case CBOR_BREAK:

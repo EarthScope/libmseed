@@ -61,12 +61,12 @@ mseh_fetch_path (MS3Record *msr, void *value, char type, size_t length, const ch
   if (type == 'i' && (vitem.type == CBOR_UINT || vitem.type == CBOR_NEGINT))
   {
     if (value)
-      *((int64_t*)value) = vitem.value.i;
+      *((int64_t*)value) = vitem.value.int64;
   }
   else if (type == 'd' && (vitem.type == CBOR_FLOAT16 || vitem.type == CBOR_FLOAT32 || vitem.type == CBOR_FLOAT64))
   {
     if (value)
-      *((double*)value) = vitem.value.d;
+      *((double*)value) = vitem.value.float64;
   }
   else if (type == 'c' && (vitem.type == CBOR_BYTES || vitem.type == CBOR_TEXT))
   {
@@ -75,12 +75,12 @@ mseh_fetch_path (MS3Record *msr, void *value, char type, size_t length, const ch
       /* Copy buffer and terminate */
       if (length > vitem.length)
       {
-        memcpy (value, vitem.value.c, vitem.length);
+        memcpy (value, vitem.value.ucharp, vitem.length);
         ((uint8_t *)value)[vitem.length] = '\0';
       }
       else
       {
-        memcpy (value, vitem.value.c, length - 1);
+        memcpy (value, vitem.value.ucharp, length - 1);
         ((uint8_t *)value)[length - 1] = '\0';
       }
     }
@@ -139,20 +139,24 @@ mseh_set_path (MS3Record *msr, void *value, char type, size_t length, const char
   {
   case 'i':
     vitem.type = CBOR_NEGINT;
-    vitem.value.i = *((int64_t *)value);
+    vitem.valuetype = INT64;
+    vitem.value.int64 = *((int64_t *)value);
     break;
   case 'd':
     vitem.type = CBOR_FLOAT64;
-    vitem.value.d = *((double *)value);
+    vitem.valuetype = FLOAT64;
+    vitem.value.float64 = *((double *)value);
     break;
   case 'c':
     vitem.type = CBOR_TEXT;
-    vitem.value.c = (unsigned char *)value;
+    vitem.valuetype = UCHARP;
+    vitem.value.ucharp = (unsigned char *)value;
     vitem.length = length;
     break;
   case 'b':
     vitem.type = (*((int *)value)) ? CBOR_TRUE : CBOR_FALSE;
-    vitem.value.i = (vitem.type == CBOR_TRUE) ? 1 : 0;
+    vitem.valuetype = NONE;
+    vitem.value.int64 = (vitem.type == CBOR_TRUE) ? 1 : 0;
     break;
   default:
     ms_log (2, "mseh_set_path(): Unrecognized type '%d'\n", type);
@@ -185,11 +189,12 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
 {
 #define MAXITEMS 11
   cbor_stream_t stream;
+  cbor_stream_t array;
   cbor_item_t item[MAXITEMS];
   cbor_item_t *itemp[MAXITEMS];
   const char *keyp[MAXITEMS];
   char onsetstr[31];
-  char tempstr[12];
+  unsigned char arraydata[12];
   char *cp;
   int idx = 0;
 
@@ -200,7 +205,8 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
   {
     keyp[idx] = "Type";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)eventdetection->type;
+    item[idx].valuetype = UCHARP;
+    item[idx].value.ucharp = (unsigned char *)eventdetection->type;
     item[idx].length = strlen(eventdetection->type);
     idx++;
   }
@@ -208,7 +214,8 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
   {
     keyp[idx] = "SignalAmplitude";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].value.d = eventdetection->signalamplitude;
+    item[idx].valuetype = FLOAT64;
+    item[idx].value.float64 = eventdetection->signalamplitude;
     item[idx].length = 0;
     idx++;
   }
@@ -216,7 +223,8 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
   {
     keyp[idx] = "SignalPeriod";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].value.d = eventdetection->signalperiod;
+    item[idx].valuetype = FLOAT64;
+    item[idx].value.float64 = eventdetection->signalperiod;
     item[idx].length = 0;
     idx++;
   }
@@ -224,7 +232,8 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
   {
     keyp[idx] = "BackgroundEstimate";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].value.d = eventdetection->backgroundestimate;
+    item[idx].valuetype = FLOAT64;
+    item[idx].value.float64 = eventdetection->backgroundestimate;
     item[idx].length = 0;
     idx++;
   }
@@ -232,7 +241,8 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
   {
     keyp[idx] = "DetectionWave";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)eventdetection->detectionwave;
+    item[idx].valuetype = UCHARP;
+    item[idx].value.ucharp = (unsigned char *)eventdetection->detectionwave;
     item[idx].length = strlen(eventdetection->detectionwave);
     idx++;
   }
@@ -240,7 +250,8 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
   {
     keyp[idx] = "Units";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)eventdetection->units;
+    item[idx].valuetype = UCHARP;
+    item[idx].value.ucharp = (unsigned char *)eventdetection->units;
     item[idx].length = strlen(eventdetection->units);
     idx++;
   }
@@ -254,28 +265,40 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
 
     keyp[idx] = "OnsetTime";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)onsetstr;
+    item[idx].valuetype = UCHARP;
+    item[idx].value.ucharp = (unsigned char *)onsetstr;
     item[idx].length = strlen (onsetstr);
     idx++;
   }
   if (memcmp (eventdetection->snrvalues, (uint8_t []){0,0,0,0,0,0}, 6))
   {
-    /* Build comma-separated list of values as a string */
-    snprintf (tempstr, sizeof(tempstr), "%u,%u,%u,%u,%u,%u",
-              eventdetection->snrvalues[0], eventdetection->snrvalues[1], eventdetection->snrvalues[2],
-              eventdetection->snrvalues[3], eventdetection->snrvalues[4], eventdetection->snrvalues[5]);
-    tempstr[sizeof(tempstr) - 1] = '\0';
-    keyp[idx] = "SNRValues";
-    item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *) tempstr;
-    item[idx].length = strlen(tempstr);
+    /* Encode a small CBOR array containing the 6 SNR values */
+    cbor_init (&array, arraydata, sizeof(arraydata));
+
+    if (!cbor_serialize_array (&array, 6) ||
+        !cbor_serialize_int (&array, (int)eventdetection->snrvalues[0]) ||
+        !cbor_serialize_int (&array, (int)eventdetection->snrvalues[1]) ||
+        !cbor_serialize_int (&array, (int)eventdetection->snrvalues[2]) ||
+        !cbor_serialize_int (&array, (int)eventdetection->snrvalues[3]) ||
+        !cbor_serialize_int (&array, (int)eventdetection->snrvalues[4]) ||
+        !cbor_serialize_int (&array, (int)eventdetection->snrvalues[5]))
+    {
+      return MS_GENERROR;
+    }
+
+    keyp[idx] = "MEDSNR";
+    item[idx].type = 0;
+    item[idx].valuetype = CBOR;
+    item[idx].value.ucharp = array.data;
+    item[idx].length = array.pos;
     idx++;
   }
   if (eventdetection->medlookback >= 0)
   {
     keyp[idx] = "MEDLookback";
     item[idx].type = CBOR_UINT;
-    item[idx].value.i = eventdetection->medlookback;
+    item[idx].valuetype = INT64;
+    item[idx].value.int64 = eventdetection->medlookback;
     item[idx].length = 0;
     idx++;
   }
@@ -283,7 +306,8 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
   {
     keyp[idx] = "MEDPickAlgorithm";
     item[idx].type = CBOR_UINT;
-    item[idx].value.i = eventdetection->medpickalgorithm;
+    item[idx].valuetype = INT64;
+    item[idx].value.int64 = eventdetection->medpickalgorithm;
     item[idx].length = 0;
     idx++;
   }
@@ -291,7 +315,8 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
   {
     keyp[idx] = "Detector";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)eventdetection->detector;
+    item[idx].valuetype = UCHARP;
+    item[idx].value.ucharp = (unsigned char *)eventdetection->detector;
     item[idx].length = strlen(eventdetection->detector);
     idx++;
   }
@@ -349,7 +374,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "Type";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)calibration->type;
+    item[idx].value.ucharp = (unsigned char *)calibration->type;
     item[idx].length = strlen(calibration->type);
     idx++;
   }
@@ -363,7 +388,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
 
     keyp[idx] = "BeginTime";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)beginstr;
+    item[idx].value.ucharp = (unsigned char *)beginstr;
     item[idx].length = strlen(beginstr);
     idx++;
   }
@@ -377,7 +402,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
 
     keyp[idx] = "EndTime";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)endstr;
+    item[idx].value.ucharp = (unsigned char *)endstr;
     item[idx].length = strlen(endstr);
     idx++;
   }
@@ -385,7 +410,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "Steps";
     item[idx].type = CBOR_UINT;
-    item[idx].value.i = calibration->steps;
+    item[idx].value.int64 = calibration->steps;
     item[idx].length = 0;
     idx++;
   }
@@ -393,7 +418,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "FirstPulsePositive";
     item[idx].type = (calibration->firstpulsepositive) ? CBOR_TRUE : CBOR_FALSE;
-    item[idx].value.i = (calibration->firstpulsepositive) ? 1 : 0;
+    item[idx].value.int64 = (calibration->firstpulsepositive) ? 1 : 0;
     item[idx].length = 0;
     idx++;
   }
@@ -401,7 +426,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "AlternateSign";
     item[idx].type = (calibration->alternatesign) ? CBOR_TRUE : CBOR_FALSE;
-    item[idx].value.i = (calibration->alternatesign) ? 1 : 0;
+    item[idx].value.int64 = (calibration->alternatesign) ? 1 : 0;
     item[idx].length = 0;
     idx++;
   }
@@ -409,7 +434,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "Trigger";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)calibration->trigger;
+    item[idx].value.ucharp = (unsigned char *)calibration->trigger;
     item[idx].length = strlen(calibration->trigger);
     idx++;
   }
@@ -417,7 +442,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "Continued";
     item[idx].type = (calibration->continued) ? CBOR_TRUE : CBOR_FALSE;
-    item[idx].value.i = (calibration->continued) ? 1 : 0;
+    item[idx].value.int64 = (calibration->continued) ? 1 : 0;
     item[idx].length = 0;
     idx++;
   }
@@ -425,7 +450,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "Amplitude";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].value.d = calibration->amplitude;
+    item[idx].value.float64 = calibration->amplitude;
     item[idx].length = 0;
     idx++;
   }
@@ -433,7 +458,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "InputUnits";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)calibration->inputunits;
+    item[idx].value.ucharp = (unsigned char *)calibration->inputunits;
     item[idx].length = strlen(calibration->inputunits);
     idx++;
   }
@@ -441,7 +466,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "AmplitudeRange";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)calibration->amplituderange;
+    item[idx].value.ucharp = (unsigned char *)calibration->amplituderange;
     item[idx].length = strlen(calibration->amplituderange);
     idx++;
   }
@@ -449,7 +474,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "Duration";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].value.d = calibration->duration;
+    item[idx].value.float64 = calibration->duration;
     item[idx].length = 0;
     idx++;
   }
@@ -457,7 +482,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "SinePeriod";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].value.d = calibration->sineperiod;
+    item[idx].value.float64 = calibration->sineperiod;
     item[idx].length = 0;
     idx++;
   }
@@ -465,7 +490,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "StepBetween";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].value.d = calibration->stepbetween;
+    item[idx].value.float64 = calibration->stepbetween;
     item[idx].length = 0;
     idx++;
   }
@@ -473,7 +498,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "InputChannel";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)calibration->inputchannel;
+    item[idx].value.ucharp = (unsigned char *)calibration->inputchannel;
     item[idx].length = strlen(calibration->inputchannel);
     idx++;
   }
@@ -481,7 +506,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "ReferenceAmplitude";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].value.d = calibration->refamplitude;
+    item[idx].value.float64 = calibration->refamplitude;
     item[idx].length = 0;
     idx++;
   }
@@ -489,7 +514,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "Coupling";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)calibration->coupling;
+    item[idx].value.ucharp = (unsigned char *)calibration->coupling;
     item[idx].length = strlen(calibration->coupling);
     idx++;
   }
@@ -497,7 +522,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "Rolloff";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)calibration->rolloff;
+    item[idx].value.ucharp = (unsigned char *)calibration->rolloff;
     item[idx].length = strlen(calibration->rolloff);
     idx++;
   }
@@ -505,7 +530,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "Noise";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)calibration->noise;
+    item[idx].value.ucharp = (unsigned char *)calibration->noise;
     item[idx].length = strlen(calibration->noise);
     idx++;
   }
@@ -562,7 +587,8 @@ mseh_add_timing_exception (MS3Record *msr, MSEHTimingException *exception,
   {
     keyp[idx] = "VCOCorrection";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].value.d = exception->vcocorrection;
+    item[idx].valuetype = FLOAT64;
+    item[idx].value.float64 = exception->vcocorrection;
     item[idx].length = 0;
     idx++;
   }
@@ -576,7 +602,8 @@ mseh_add_timing_exception (MS3Record *msr, MSEHTimingException *exception,
 
     keyp[idx] = "Time";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)timestr;
+    item[idx].valuetype = UCHARP;
+    item[idx].value.ucharp = (unsigned char *)timestr;
     item[idx].length = strlen(timestr);
     idx++;
   }
@@ -584,7 +611,8 @@ mseh_add_timing_exception (MS3Record *msr, MSEHTimingException *exception,
   {
     keyp[idx] = "ReceptionQuality";
     item[idx].type = CBOR_UINT;
-    item[idx].value.i = exception->receptionquality;
+    item[idx].valuetype = INT64;
+    item[idx].value.int64 = exception->receptionquality;
     item[idx].length = 0;
     idx++;
   }
@@ -592,7 +620,8 @@ mseh_add_timing_exception (MS3Record *msr, MSEHTimingException *exception,
   {
     keyp[idx] = "Count";
     item[idx].type = CBOR_UINT;
-    item[idx].value.i = exception->count;
+    item[idx].valuetype = INT64;
+    item[idx].value.int64 = exception->count;
     item[idx].length = 0;
     idx++;
   }
@@ -600,7 +629,8 @@ mseh_add_timing_exception (MS3Record *msr, MSEHTimingException *exception,
   {
     keyp[idx] = "Type";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)exception->type;
+    item[idx].valuetype = UCHARP;
+    item[idx].value.ucharp = (unsigned char *)exception->type;
     item[idx].length = strlen(exception->type);
     idx++;
   }
@@ -608,7 +638,8 @@ mseh_add_timing_exception (MS3Record *msr, MSEHTimingException *exception,
   {
     keyp[idx] = "ClockStatus";
     item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)exception->clockstatus;
+    item[idx].valuetype = UCHARP;
+    item[idx].value.ucharp = (unsigned char *)exception->clockstatus;
     item[idx].length = strlen(exception->clockstatus);
     idx++;
   }
