@@ -309,9 +309,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   if (*pMS2FSDH_ACTFLAGS(record) & 0x01) /* Bit 0 */
     msr->flags |= 0x01;
   if (*pMS2FSDH_ACTFLAGS(record) & 0x04) /* Bit 2 */
-    mseh_set_boolean (msr, &ione, "FDSN", "Event", "EventBegin");
+    mseh_set_boolean (msr, &ione, "FDSN", "Event", "Begin");
   if (*pMS2FSDH_ACTFLAGS(record) & 0x08) /* Bit 3 */
-    mseh_set_boolean (msr, &ione, "FDSN", "Event", "EventEnd");
+    mseh_set_boolean (msr, &ione, "FDSN", "Event", "End");
   if (*pMS2FSDH_ACTFLAGS(record) & 0x10) /* Bit 4 */
   {
     ival = 1;
@@ -323,7 +323,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     mseh_set_int64_t (msr, &ival, "FDSN", "Time", "LeapSecond");
   }
   if (*pMS2FSDH_ACTFLAGS(record) & 0x40) /* Bit 6 */
-    mseh_set_boolean (msr, &ione, "FDSN", "Event", "EventInProgress");
+    mseh_set_boolean (msr, &ione, "FDSN", "Event", "InProgress");
 
   /* Map I/O and clock flags */
   if (*pMS2FSDH_IOFLAGS(record) & 0x01) /* Bit 0 */
@@ -361,7 +361,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   if (ival != 0)
   {
     dval = ival / 10000.0;
-    mseh_set_double (msr, &dval, "FDSN", "Time", "Correct");
+    mseh_set_double (msr, &dval, "FDSN", "Time", "Correction");
   }
 
   /* Traverse the blockettes */

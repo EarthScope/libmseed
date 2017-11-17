@@ -204,14 +204,6 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
     item[idx].length = strlen(eventdetection->type);
     idx++;
   }
-  if (eventdetection->detector[0])
-  {
-    keyp[idx] = "Detector";
-    item[idx].type = CBOR_TEXT;
-    item[idx].value.c = (unsigned char *)eventdetection->detector;
-    item[idx].length = strlen(eventdetection->detector);
-    idx++;
-  }
   if (eventdetection->signalamplitude != 0.0)
   {
     keyp[idx] = "SignalAmplitude";
@@ -293,6 +285,14 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
     item[idx].type = CBOR_UINT;
     item[idx].value.i = eventdetection->medpickalgorithm;
     item[idx].length = 0;
+    idx++;
+  }
+  if (eventdetection->detector[0])
+  {
+    keyp[idx] = "Detector";
+    item[idx].type = CBOR_TEXT;
+    item[idx].value.c = (unsigned char *)eventdetection->detector;
+    item[idx].length = strlen(eventdetection->detector);
     idx++;
   }
 
