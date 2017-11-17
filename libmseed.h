@@ -371,6 +371,26 @@ typedef struct MSEHCalibration_s
   struct MSEHCalibration_s *next; /**< Pointer to next detection, zero length if none */
 } MSEHCalibration;
 
+/**
+ * @brief A container for an timing exception parameters for use in extra headers
+ *
+ * Actual values are optional, with special values indicating an unset
+ * state.
+ *
+ * @see mseh_add_timing_exception
+ */
+typedef struct MSEHTimingException_s
+{
+  float vcocorrection; /**< VCO correction, from 0 to 100%, -1.0 not included */
+  nstime_t time; /**< Time of exception, NSTERROR = not included */
+  int usec; /**< [DEPRECATED] microsecond time offset, 0 = not included */
+  int receptionquality; /**< Reception quality, 0 to 100% clock accurracy, -1 = not included */
+  uint32_t exceptioncount; /**< The count thereof, 0 = not included */
+  char exceptiontype[16]; /**< E.g. "MISSING" or "UNEXPECTED", zero length = not included */
+  char clockmodel[32]; /**< Description of clock, e.g. "Quanterra GPS1/QTS", zero length = not included */
+  char clockstatus[128]; /**< Description of clock-specific parameters, zero length = not included */
+} MSEHTimingException;
+
 #define mseh_fetch(msr, valueptr, type, length, ...)                    \
   mseh_fetch_path (msr, valueptr, type, length, (const char *[]){__VA_ARGS__, NULL})
 
