@@ -381,12 +381,12 @@ typedef struct MSEHCalibration_s
  */
 typedef struct MSEHTimingException_s
 {
-  float vcocorrection; /**< VCO correction, from 0 to 100%, -1.0 not included */
+  float vcocorrection; /**< VCO correction, from 0 to 100%, <0 = not included */
   nstime_t time; /**< Time of exception, NSTERROR = not included */
   int usec; /**< [DEPRECATED] microsecond time offset, 0 = not included */
-  int receptionquality; /**< Reception quality, 0 to 100% clock accurracy, -1 = not included */
-  uint32_t exceptioncount; /**< The count thereof, 0 = not included */
-  char exceptiontype[16]; /**< E.g. "MISSING" or "UNEXPECTED", zero length = not included */
+  int receptionquality; /**< Reception quality, 0 to 100% clock accurracy, <0 = not included */
+  uint32_t count; /**< The count thereof, 0 = not included */
+  char type[16]; /**< E.g. "MISSING" or "UNEXPECTED", zero length = not included */
   char clockmodel[32]; /**< Description of clock, e.g. "Quanterra GPS1/QTS", zero length = not included */
   char clockstatus[128]; /**< Description of clock-specific parameters, zero length = not included */
 } MSEHTimingException;
@@ -435,6 +435,9 @@ extern int mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventde
 
 extern int mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
                                  const char *path[]);
+
+extern int mseh_add_timing_exception (MS3Record *msr, MSEHTimingException *exception,
+                                      const char *path[]);
 
 extern int mseh_print (MS3Record *msr, int indent);
 

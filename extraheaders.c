@@ -1,4 +1,4 @@
-/***************************************************************************
+ /***************************************************************************
  * extraheaders.c
  *
  * Routines for dealing with libmseed extra headers stored as a CBOR Map.
@@ -532,6 +532,117 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   return 0;
 #undef MAXITEMS
 } /* End of mseh_add_calibration() */
+
+/***************************************************************************
+ * mseh_add_timing_exception:
+ *
+ * Add specified timing exception to the extra headers of the given record.
+ *
+ * Returns:
+ *   0 on success,
+ *   otherwise a (negative) libmseed error code.
+ ***************************************************************************/
+int
+mseh_add_timing_exception (MS3Record *msr, MSEHTimingException *exception,
+                           const char *path[])
+{
+#define MAXITEMS 8
+  cbor_stream_t stream;
+  cbor_item_t item[MAXITEMS];
+  cbor_item_t *itemp[MAXITEMS];
+  const char *keyp[MAXITEMS];
+  char timestr[31];
+  char *cp;
+  int idx = 0;
+
+  if (!msr)
+    return MS_GENERROR;
+
+  if (exception->vcocorrection >= 0.0)
+  {
+    keyp[idx] = "VCOCorrection";
+    item[idx].type = CBOR_FLOAT64;
+    item[idx].value.d = exception->vcocorrection;
+    item[idx].length = 0;
+    idx++;
+  }
+  if (exception->time != NSTERROR)
+  {
+    cp = ms_nstime2isotimestr (exception->time, timestr, -1);
+    while (*cp)
+      cp++;
+    *cp++ = 'Z';
+    *cp = '\0';
+
+    keyp[idx] = "Time";
+    item[idx].type = CBOR_TEXT;
+    item[idx].value.c = (unsigned char *)timestr;
+    item[idx].length = strlen(timestr);
+    idx++;
+  }
+  if (exception->receptionquality >= 0)
+  {
+    keyp[idx] = "ReceptionQuality";
+    item[idx].type = CBOR_UINT;
+    item[idx].value.i = exception->receptionquality;
+    item[idx].length = 0;
+    idx++;
+  }
+  if (exception->count > 0)
+  {
+    keyp[idx] = "Count";
+    item[idx].type = CBOR_UINT;
+    item[idx].value.i = exception->count;
+    item[idx].length = 0;
+    idx++;
+  }
+  if (exception->type[0])
+  {
+    keyp[idx] = "Type";
+    item[idx].type = CBOR_TEXT;
+    item[idx].value.c = (unsigned char *)exception->type;
+    item[idx].length = strlen(exception->type);
+    idx++;
+  }
+  if (exception->clockmodel[0])
+  {
+    keyp[idx] = "ClockModel";
+    item[idx].type = CBOR_TEXT;
+    item[idx].value.c = (unsigned char *)exception->clockmodel;
+    item[idx].length = strlen(exception->clockmodel);
+    idx++;
+  }
+  if (exception->clockstatus[0])
+  {
+    keyp[idx] = "ClockStatus";
+    item[idx].type = CBOR_TEXT;
+    item[idx].value.c = (unsigned char *)exception->clockstatus;
+    item[idx].length = strlen(exception->clockstatus);
+    idx++;
+  }
+
+  keyp[idx] = NULL;
+  itemp[idx] = NULL;
+
+  while (idx > 0)
+  {
+    idx--;
+    itemp[idx] = &item[idx];
+  }
+
+  cbor_init (&stream, msr->extra, msr->extralength);
+
+  /* Append Map entry to Array at specified or default path */
+  if (!cbor_append_map_array (&stream, keyp, itemp,
+                              (path) ? path : (const char *[]){"FDSN", "Time", "Exception", NULL}))
+    return MS_GENERROR;
+
+  msr->extra = stream.data;
+  msr->extralength = stream.size;
+
+  return 0;
+#undef MAXITEMS
+} /* End of mseh_add_timing_exception() */
 
 /***************************************************************************
  * mseh_print:

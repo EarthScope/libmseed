@@ -217,9 +217,6 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   int ione = 1;
   int64_t ival;
   double dval;
-  char tempstr[31];
-  nstime_t temptime;
-  char *cp;
 
   /* For blockette parsing */
   int blkt_offset;
@@ -231,6 +228,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
   MSEHEventDetection eventdetection;
   MSEHCalibration calibration;
+  MSEHTimingException exception;
 
   if (!record)
   {
@@ -772,7 +770,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       }
     }
 
-    /* Blockette 390, calibration abort */
+    /* Blockette 395, calibration abort */
     else if (blkt_type == 395)
     {
       strncpy (calibration.type, "ABORT", sizeof (calibration.type));
@@ -834,22 +832,18 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       ms_log (1, "msr3_unpack_mseed2(%s): WARNING Blockette 405 is present but discarded\n", msr->tsid);
     }
 
-    /* Blockette 400, timing blockette */
+    /* Blockette 500, timing blockette */
     else if (blkt_type == 500)
     {
-      TODO, NEED exception struct and mseh_add_timing_exception
-        to put into "FDSN", "Time", "Exception" as an array.
+      exception.vcocorrection = HO4f(*pMS2B500_VCOCORRECTION(record + blkt_offset), swapflag);
 
-      dval = HO4f (*pMS2B500_VCOCORRECTION (record + blkt_offset), swapflag);
-      mseh_set_double (msr, &dval, "FDSN", "Time", "VCOCorrection");
-
-      temptime = ms_time2nstime (HO2u (*pMS2B500_YEAR (record + blkt_offset), swapflag),
-                                 HO2u (*pMS2B500_DAY (record + blkt_offset), swapflag),
-                                 *pMS2B500_HOUR (record + blkt_offset),
-                                 *pMS2B500_MIN (record + blkt_offset),
-                                 *pMS2B500_SEC (record + blkt_offset),
-                                 (uint32_t)HO2u (*pMS2B500_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
-      if (temptime == NSTERROR)
+      exception.time = ms_time2nstime (HO2u (*pMS2B500_YEAR (record + blkt_offset), swapflag),
+                                       HO2u (*pMS2B500_DAY (record + blkt_offset), swapflag),
+                                       *pMS2B500_HOUR (record + blkt_offset),
+                                       *pMS2B500_MIN (record + blkt_offset),
+                                       *pMS2B500_SEC (record + blkt_offset),
+                                       (uint32_t)HO2u (*pMS2B500_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
+      if (exception.time == NSTERROR)
       {
         ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
                 msr->tsid,
@@ -862,10 +856,19 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
         return MS_GENERROR;
       }
 
-      TODO, all the rest
-    }
+      exception.usec = *pMS2B500_MICROSECOND(record + blkt_offset);
+      exception.receptionquality = *pMS2B500_RECEPTIONQUALITY(record + blkt_offset);
+      exception.count = HO4u(*pMS2B500_EXCEPTIONCOUNT(record + blkt_offset), swapflag);
+      ms_strncpcleantail (exception.type, pMS2B500_EXCEPTIONTYPE (record + blkt_offset), 16);
+      ms_strncpcleantail (exception.clockmodel, pMS2B500_CLOCKMODEL (record + blkt_offset), 32);
+      ms_strncpcleantail (exception.clockstatus, pMS2B500_CLOCKSTATUS (record + blkt_offset), 128);
 
-    snprintf (tempstr, sizeof(tempstr), "%d
+      if (mseh_add_timing_exception (msr, &exception, NULL))
+      {
+        ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 500 to extra headers\n", msr->tsid);
+        return MS_GENERROR;
+      }
+    }
 
     else if (blkt_type == 1000)
     {
