@@ -290,6 +290,9 @@ extern int msr3_pack_header (MS3Record *msr, int8_t normalize, int8_t verbose);
 
 extern int msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose);
 
+extern int msr3_data_bounds (MS3Record *msr, int swapflag,
+                             uint32_t *dataoffset, uint16_t *datasize);
+
 extern MS3Record* msr3_init (MS3Record *msr);
 extern void       msr3_free (MS3Record **ppmsr);
 extern MS3Record* msr3_duplicate (MS3Record *msr, int8_t datadup);
