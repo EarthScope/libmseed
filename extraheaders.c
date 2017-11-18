@@ -139,12 +139,12 @@ mseh_set_path (MS3Record *msr, void *value, char type, size_t length, const char
   {
   case 'i':
     vitem.type = CBOR_NEGINT;
-    vitem.valuetype = INT64;
+    vitem.valuetype = INT64T;
     vitem.value.int64 = *((int64_t *)value);
     break;
   case 'd':
     vitem.type = CBOR_FLOAT64;
-    vitem.valuetype = FLOAT64;
+    vitem.valuetype = FLOAT64T;
     vitem.value.float64 = *((double *)value);
     break;
   case 'c':
@@ -214,7 +214,7 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
   {
     keyp[idx] = "SignalAmplitude";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].valuetype = FLOAT64;
+    item[idx].valuetype = FLOAT64T;
     item[idx].value.float64 = eventdetection->signalamplitude;
     item[idx].length = 0;
     idx++;
@@ -223,7 +223,7 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
   {
     keyp[idx] = "SignalPeriod";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].valuetype = FLOAT64;
+    item[idx].valuetype = FLOAT64T;
     item[idx].value.float64 = eventdetection->signalperiod;
     item[idx].length = 0;
     idx++;
@@ -232,7 +232,7 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
   {
     keyp[idx] = "BackgroundEstimate";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].valuetype = FLOAT64;
+    item[idx].valuetype = FLOAT64T;
     item[idx].value.float64 = eventdetection->backgroundestimate;
     item[idx].length = 0;
     idx++;
@@ -297,7 +297,7 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
   {
     keyp[idx] = "MEDLookback";
     item[idx].type = CBOR_UINT;
-    item[idx].valuetype = INT64;
+    item[idx].valuetype = INT64T;
     item[idx].value.int64 = eventdetection->medlookback;
     item[idx].length = 0;
     idx++;
@@ -306,7 +306,7 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
   {
     keyp[idx] = "MEDPickAlgorithm";
     item[idx].type = CBOR_UINT;
-    item[idx].valuetype = INT64;
+    item[idx].valuetype = INT64T;
     item[idx].value.int64 = eventdetection->medpickalgorithm;
     item[idx].length = 0;
     idx++;
@@ -587,7 +587,7 @@ mseh_add_timing_exception (MS3Record *msr, MSEHTimingException *exception,
   {
     keyp[idx] = "VCOCorrection";
     item[idx].type = CBOR_FLOAT64;
-    item[idx].valuetype = FLOAT64;
+    item[idx].valuetype = FLOAT64T;
     item[idx].value.float64 = exception->vcocorrection;
     item[idx].length = 0;
     idx++;
@@ -611,7 +611,7 @@ mseh_add_timing_exception (MS3Record *msr, MSEHTimingException *exception,
   {
     keyp[idx] = "ReceptionQuality";
     item[idx].type = CBOR_UINT;
-    item[idx].valuetype = INT64;
+    item[idx].valuetype = INT64T;
     item[idx].value.int64 = exception->receptionquality;
     item[idx].length = 0;
     idx++;
@@ -620,7 +620,7 @@ mseh_add_timing_exception (MS3Record *msr, MSEHTimingException *exception,
   {
     keyp[idx] = "Count";
     item[idx].type = CBOR_UINT;
-    item[idx].valuetype = INT64;
+    item[idx].valuetype = INT64T;
     item[idx].value.int64 = exception->count;
     item[idx].length = 0;
     idx++;

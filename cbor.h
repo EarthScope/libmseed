@@ -176,8 +176,8 @@ typedef struct cbor_item_s {
     UCHARP,
     CBOR,
     CBORTAG,
-    INT64,
-    FLOAT64
+    INT64T,
+    FLOAT64T
   } valuetype;
   union {
     unsigned char *ucharp;

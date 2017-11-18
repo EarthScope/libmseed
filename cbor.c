@@ -1073,7 +1073,7 @@ cbor_deserialize_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item)
     {
       if (u64val > INT64_MAX)
         ms_log (2, "cbor_deserialize_item(): uint64_t too large for int64_t item value: %" PRIu64 "\n", u64val);
-      item->valuetype = INT64;
+      item->valuetype = INT64T;
       item->value.int64 = u64val;
       item->type = CBOR_UINT;
     }
@@ -1083,7 +1083,7 @@ cbor_deserialize_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item)
     readbytes = decode_int (stream, offset, (item) ? &u64val : NULL);
     if (item)
     {
-      item->valuetype = INT64;
+      item->valuetype = INT64T;
       item->value.int64 = -1 - u64val; /* Resolve to negative int */
       item->type = CBOR_NEGINT;
     }
@@ -1174,7 +1174,7 @@ cbor_deserialize_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item)
       readbytes = cbor_deserialize_float_half (stream, offset, (item) ? &fval : NULL);
       if (item)
       {
-        item->valuetype = FLOAT64;
+        item->valuetype = FLOAT64T;
         item->value.float64 = fval;
         item->type = CBOR_FLOAT16;
       }
@@ -1184,7 +1184,7 @@ cbor_deserialize_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item)
       readbytes = cbor_deserialize_float (stream, offset, (item) ? &fval : NULL);
       if (item)
       {
-        item->valuetype = FLOAT64;
+        item->valuetype = FLOAT64T;
         item->value.float64 = fval;
         item->type = CBOR_FLOAT32;
       }
@@ -1194,7 +1194,7 @@ cbor_deserialize_item (cbor_stream_t *stream, size_t offset, cbor_item_t *item)
       readbytes = cbor_deserialize_double (stream, offset, (item) ? &item->value.float64 : NULL);
       if (item)
       {
-        item->valuetype = FLOAT64;
+        item->valuetype = FLOAT64T;
         item->type = CBOR_FLOAT64;
       }
       break;
@@ -1234,7 +1234,7 @@ cbor_serialize_item (cbor_stream_t *stream, cbor_item_t *item)
   if (!stream || !item)
     return 0;
 
-  if (item->valuetype == INT64 &&
+  if (item->valuetype == INT64T &&
       (item->type == CBOR_UINT || item->type == CBOR_NEGINT))
   {
     wrotebytes = cbor_serialize_int64_t (stream, item->value.int64);
@@ -1267,7 +1267,7 @@ cbor_serialize_item (cbor_stream_t *stream, cbor_item_t *item)
   {
     wrotebytes = cbor_serialize_bool (stream, 1);
   }
-  else if (item->valuetype == FLOAT64 &&
+  else if (item->valuetype == FLOAT64T &&
            (item->type == CBOR_FLOAT16 || item->type == CBOR_FLOAT32 || item->type == CBOR_FLOAT64))
   {
     /* Use cbor_serialize_floating() to determine minimum size float */
@@ -1500,7 +1500,7 @@ cbor_find_map_path (cbor_stream_t *stream, cbor_item_t *targetcontainer,
       {
         ms_log (2, "cbor_find_map_path(): Path value of key '%s' is not a Map, unsupported\n",
                 path[pathidx]);
-        free (mappath);
+        free ((void *)mappath);
         return 0;
       }
 
@@ -1508,7 +1508,7 @@ cbor_find_map_path (cbor_stream_t *stream, cbor_item_t *targetcontainer,
       cbor_deserialize_item (stream, tempitem.offset, targetcontainer);
     }
 
-    free (mappath);
+    free ((void *)mappath);
   } /* Done searching existing CBOR */
 
   return pathidx;

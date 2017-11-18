@@ -19,8 +19,8 @@ OBJS=	fileutils.obj	\
 	extraheaders.obj\
 	pack.obj	\
 	packdata.obj	\
-	gmtime64.obj	\
 	tracelist.obj	\
+	gmtime64.obj	\
 	crc32c.obj	\
 	parseutils.obj	\
 	unpack.obj	\
