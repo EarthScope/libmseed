@@ -415,7 +415,7 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
     ms_log (0, "          extra headers:\n");
     if ((MS3FSDH_LENGTH + tsidlength + msr.extralength) <= maxreclen)
     {
-      msr.extra = record + MS3FSDH_LENGTH + tsidlength;
+      msr.extra = (uint8_t *)record + MS3FSDH_LENGTH + tsidlength;
       mseh_print (&msr, 10);
     }
     else

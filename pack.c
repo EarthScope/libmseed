@@ -57,27 +57,18 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 {
   char *rawrec = NULL;
   char *encoded = NULL;  /* Separate encoded data buffer for alignment */
-  int extraoffset = 0;
   int dataoffset = 0;
-  int8_t swapflag;
 
   int samplesize;
   int maxdatabytes;
   int maxsamples;
   int recordcnt = 0;
-  int packsamples, packoffset;
+  int packsamples;
+  int packoffset;
   int64_t totalpackedsamples;
   int32_t reclen;
 
-  uint16_t year;
-  uint16_t day;
-  uint8_t hour;
-  uint8_t min;
-  uint8_t sec;
-  uint32_t nsec;
-
   uint32_t crc;
-  uint8_t tsidlength;
   uint16_t datalength;
 
   if (!msr)
@@ -125,22 +116,7 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   }
 
   /* Check to see if byte swapping is needed, miniSEED 3 is little endian */
-  swapflag = (ms_bigendianhost ()) ? 1 : 0;
-
-  if (verbose > 2 && swapflag)
-    ms_log (1, "%s: Byte swapping needed for packing of header\n", msr->tsid);
-
-  /* Break down start time into individual components */
-  if (ms_nstime2time (msr->starttime, &year, &day, &hour, &min, &sec, &nsec))
-  {
-    ms_log (2, "msr3_pack3(%s): Cannot convert starttime: %" PRId64 "\n",
-            msr->tsid, msr->starttime);
-    return -1;
-  }
-
-  tsidlength = strlen (msr->tsid);
-  extraoffset = MS3FSDH_LENGTH + tsidlength;
-  dataoffset = extraoffset + msr->extralength;
+  msr->swapflag = (ms_bigendianhost ()) ? 1 : 0;
 
   /* Allocate space for data record */
   rawrec = (char *)malloc (msr->reclen);
@@ -151,32 +127,8 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     return -1;
   }
 
-  /* Build fixed header */
-  rawrec[0] = 'M';
-  rawrec[1] = 'S';
-  *pMS3FSDH_FORMATVERSION (rawrec) = 3;
-  *pMS3FSDH_FLAGS (rawrec) = msr->flags;
-  *pMS3FSDH_YEAR (rawrec) = HO2u (year, swapflag);
-  *pMS3FSDH_DAY (rawrec) = HO2u (day, swapflag);
-  *pMS3FSDH_HOUR (rawrec) = hour;
-  *pMS3FSDH_MIN (rawrec) = min;
-  *pMS3FSDH_SEC (rawrec) = sec;
-  *pMS3FSDH_ENCODING (rawrec) = msr->encoding;
-  *pMS3FSDH_NSEC (rawrec) = HO4u (nsec, swapflag);
-
-  /* If rate positive and less than one, convert to period notation */
-  if (msr->samprate != 0.0 && msr->samprate > 0 && msr->samprate < 1.0)
-    *pMS3FSDH_SAMPLERATE(rawrec) = HO8f((-1.0 / msr->samprate), swapflag);
-  else
-    *pMS3FSDH_SAMPLERATE(rawrec) = HO8f(msr->samprate, swapflag);
-
-  *pMS3FSDH_PUBVERSION(rawrec) = msr->pubversion;
-  *pMS3FSDH_TSIDLENGTH(rawrec) = tsidlength;
-  *pMS3FSDH_EXTRALENGTH(rawrec) = HO2u(msr->extralength, swapflag);
-  memcpy (pMS3FSDH_TSID(rawrec), msr->tsid, tsidlength);
-
-  if (msr->extralength > 0)
-    memcpy (rawrec + extraoffset, msr->extra, msr->extralength);
+  /* Pack fixed header and extra headers, returned size is data offset */
+  dataoffset = msr3_pack_header3 (msr, rawrec, msr->reclen, verbose);
 
   /* Determine the max data bytes and sample count */
   maxdatabytes = msr->reclen - dataoffset;
@@ -218,7 +170,7 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     packsamples = msr_pack_data (encoded,
                                  (char *)msr->datasamples + packoffset,
                                  (int)(msr->numsamples - totalpackedsamples), maxdatabytes,
-                                 msr->sampletype, msr->encoding, swapflag,
+                                 msr->sampletype, msr->encoding, msr->swapflag,
                                  &datalength, msr->tsid, verbose);
 
     if (packsamples < 0)
@@ -230,19 +182,19 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     }
 
     packoffset += packsamples * samplesize;
-    reclen = MS3FSDH_LENGTH + tsidlength + msr->extralength + datalength;
+    reclen = dataoffset + datalength;
 
     /* Copy encoded data into record */
     memcpy (rawrec + dataoffset, encoded, datalength);
 
     /* Update number of samples and data length */
-    *pMS3FSDH_NUMSAMPLES(rawrec) = HO4u (packsamples, swapflag);
-    *pMS3FSDH_DATALENGTH(rawrec) = HO2u (datalength, swapflag);
+    *pMS3FSDH_NUMSAMPLES(rawrec) = HO4u (packsamples, msr->swapflag);
+    *pMS3FSDH_DATALENGTH(rawrec) = HO2u (datalength, msr->swapflag);
 
     /* Calculate CRC (with CRC field set to 0) and set */
     memset (pMS3FSDH_CRC(rawrec), 0, sizeof(uint32_t));
     crc = ms_crc32c ((const uint8_t*)rawrec, reclen, 0);
-    *pMS3FSDH_CRC(rawrec) = HO4u (crc, swapflag);
+    *pMS3FSDH_CRC(rawrec) = HO4u (crc, msr->swapflag);
 
     if (verbose > 0)
       ms_log (1, "%s: Packed %d samples into %d byte record\n", msr->tsid, packsamples, reclen);
@@ -270,6 +222,100 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
   return recordcnt;
 } /* End of msr3_pack3() */
+
+/***************************************************************************
+ * msr3_pack_header3:
+ *
+ * Pack a miniSEED version 3 header into the specified buffer.
+ *
+ * Default values are: maximum record length = 4096, encoding = 11 (Steim2).
+ * The defaults are triggered when msr->reclen and msr->encoding are
+ * -1 respectively.
+ *
+ * Returns the size of the header (fixed and extra) on success, otherwise -1.
+ ***************************************************************************/
+int
+msr3_pack_header3 (MS3Record *msr, char *record, uint32_t reclen, int8_t verbose)
+{
+  int extraoffset = 0;
+  uint8_t tsidlength;
+
+  uint16_t year;
+  uint16_t day;
+  uint8_t hour;
+  uint8_t min;
+  uint8_t sec;
+  uint32_t nsec;
+
+  if (!msr || !record)
+    return -1;
+
+  /* Set default record length and encoding if needed */
+  if (msr->reclen == -1)
+    msr->reclen = 4096;
+  if (msr->encoding == -1)
+    msr->encoding = DE_STEIM2;
+
+  if (msr->reclen < MINRECLEN || msr->reclen > MAXRECLEN)
+  {
+    ms_log (2, "msr3_pack_header3(%s): Record length is out of range: %d\n",
+            msr->tsid, msr->reclen);
+    return -1;
+  }
+
+  if (reclen < (MS3FSDH_LENGTH + msr->extralength))
+  {
+    ms_log (2, "msr3_pack_header3(%s): Buffer length (%d) is not large enough for fixed header (%d) and extra (%d)\n",
+            msr->tsid, msr->reclen, MS3FSDH_LENGTH, msr->extralength);
+    return -1;
+  }
+
+  /* Check to see if byte swapping is needed, miniSEED 3 is little endian */
+  msr->swapflag = (ms_bigendianhost ()) ? 1 : 0;
+
+  if (verbose > 2 && msr->swapflag)
+    ms_log (1, "%s: Byte swapping needed for packing of header\n", msr->tsid);
+
+  /* Break down start time into individual components */
+  if (ms_nstime2time (msr->starttime, &year, &day, &hour, &min, &sec, &nsec))
+  {
+    ms_log (2, "msr3_pack_header3(%s): Cannot convert starttime: %" PRId64 "\n",
+            msr->tsid, msr->starttime);
+    return -1;
+  }
+
+  tsidlength = strlen (msr->tsid);
+  extraoffset = MS3FSDH_LENGTH + tsidlength;
+
+  /* Build fixed header */
+  record[0] = 'M';
+  record[1] = 'S';
+  *pMS3FSDH_FORMATVERSION (record) = 3;
+  *pMS3FSDH_FLAGS (record) = msr->flags;
+  *pMS3FSDH_YEAR (record) = HO2u (year, msr->swapflag);
+  *pMS3FSDH_DAY (record) = HO2u (day, msr->swapflag);
+  *pMS3FSDH_HOUR (record) = hour;
+  *pMS3FSDH_MIN (record) = min;
+  *pMS3FSDH_SEC (record) = sec;
+  *pMS3FSDH_ENCODING (record) = msr->encoding;
+  *pMS3FSDH_NSEC (record) = HO4u (nsec, msr->swapflag);
+
+  /* If rate positive and less than one, convert to period notation */
+  if (msr->samprate != 0.0 && msr->samprate > 0 && msr->samprate < 1.0)
+    *pMS3FSDH_SAMPLERATE(record) = HO8f((-1.0 / msr->samprate), msr->swapflag);
+  else
+    *pMS3FSDH_SAMPLERATE(record) = HO8f(msr->samprate, msr->swapflag);
+
+  *pMS3FSDH_PUBVERSION(record) = msr->pubversion;
+  *pMS3FSDH_TSIDLENGTH(record) = tsidlength;
+  *pMS3FSDH_EXTRALENGTH(record) = HO2u(msr->extralength, msr->swapflag);
+  memcpy (pMS3FSDH_TSID(record), msr->tsid, tsidlength);
+
+  if (msr->extralength > 0)
+    memcpy (record + extraoffset, msr->extra, msr->extralength);
+
+  return (MS3FSDH_LENGTH + tsidlength + msr->extralength);
+} /* End of msr3_pack_header3() */
 
 /************************************************************************
  *  msr_pack_data:

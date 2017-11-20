@@ -116,8 +116,13 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
  * list for the appropriate MS3TraceID and MS3TraceSeg and either adding
  * data to it or creating a new MS3TraceID and/or MS3TraceSeg if needed.
  *
- * If the dataquality flag is true the data quality bytes must also
- * match otherwise they are ignored.
+ * TODO:
+ * If the splitversion flag is true the publication versions will be
+ * kept separate, i.e. they must be the same to be merged. Otherwise
+ * different versions of otherwise matching traces are merged.  If
+ * more than one version contributes to a given segment, its
+ * publication version will be the set to the largest contributing
+ * version.
  *
  * If the autoheal flag is true extra processing is invoked to conjoin
  * trace segments that fit together after the MS3Record coverage is
@@ -131,7 +136,7 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
  * Return a pointer to the MS3TraceSeg updated or 0 on error.
  ***************************************************************************/
 MS3TraceSeg *
-mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t dataquality,
+mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
               int8_t autoheal, double timetol, double sampratetol)
 {
   MS3TraceID *id = 0;
@@ -916,6 +921,148 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
 
   return 0;
 } /* End of mstl3_convertsamples() */
+
+/***************************************************************************
+ * mstl3_pack:
+ *
+ * Pack MS3TraceList data into miniSEED records using the specified
+ * record length and data encoding format.  The datasamples array and
+ * numsamples field will be adjusted (reduced) based on how many
+ * samples were packed.
+ *
+ * As each record is filled and finished they are passed to
+ * record_handler which expects 1) a char * to the record, 2) the
+ * length of the record and 3) a pointer supplied by the original
+ * caller containing optional private data (handlerdata).  It is the
+ * responsibility of record_handler to process the record, the memory
+ * will be re-used or freed when record_handler returns.
+ *
+ * If the flush flag is > 0 all of the data will be packed into data
+ * records even though the last one will probably not be filled.
+ *
+ * If the extra argument is not NULL it is expected to indicate a
+ * buffer of length extralength that contains extraheaders that will
+ * be added to each output record.
+ *
+ * Returns the number of records created on success and -1 on error.
+ ***************************************************************************/
+int
+mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
+            void *handlerdata, int reclen, int8_t encoding,
+            int64_t *packedsamples, int8_t flush, int8_t verbose,
+            uint8_t *extra, uint16_t extralength)
+{
+  MS3Record *msr = NULL;
+  MS3TraceID *id = NULL;
+  MS3TraceSeg *seg = NULL;
+
+  int totalpackedrecords = 0;
+  int64_t totalpackedsamples = 0;
+  int segpackedrecords = 0;
+  int64_t segpackedsamples = 0;
+  int samplesize;
+  int64_t bufsize;
+
+  if (!mstl || !record_handler)
+  {
+    return -1;
+  }
+
+  if (packedsamples)
+    *packedsamples = 0;
+
+  msr = msr3_init (NULL);
+
+  if (msr == NULL)
+  {
+    ms_log (2, "mstl3_pack(): Error initializing msr, out of memory?\n");
+    return -1;
+  }
+
+  msr->reclen = reclen;
+  msr->encoding = encoding;
+
+  if (extra && extralength > 0)
+  {
+    msr->extra = extra;
+    msr->extralength = extralength;
+  }
+
+  /* Loop through trace list */
+  id = mstl->traces;
+  while (id)
+  {
+    strncpy (msr->tsid, id->tsid, sizeof(msr->tsid));
+    msr->pubversion = id->pubversion;
+
+    /* Loop through segment list */
+    seg = id->first;
+    while (seg)
+    {
+      msr->starttime = seg->starttime;
+      msr->samprate = seg->samprate;
+      msr->samplecnt = seg->samplecnt;
+      msr->datasamples = seg->datasamples;
+      msr->numsamples = seg->numsamples;
+      msr->sampletype = seg->sampletype;
+
+      segpackedrecords = msr3_pack3 (msr, record_handler, handlerdata, &segpackedsamples, flush, verbose);
+
+      if (verbose > 1)
+      {
+        ms_log (1, "Packed %d records for %s segment\n", segpackedrecords, msr->tsid);
+      }
+
+      /* Adjust segment start time, data array and sample count */
+      if (segpackedsamples > 0)
+      {
+        /* The new start time was calculated my msr_pack */
+        seg->starttime = msr->starttime;
+
+        samplesize = ms_samplesize (seg->sampletype);
+        bufsize = (seg->numsamples - segpackedsamples) * samplesize;
+
+        if (bufsize > 0)
+        {
+          memmove (seg->datasamples,
+                   (uint8_t *)seg->datasamples + (segpackedsamples * samplesize),
+                   (size_t)bufsize);
+
+          seg->datasamples = realloc (seg->datasamples, (size_t)bufsize);
+
+          if (seg->datasamples == NULL)
+          {
+            ms_log (2, "mstl3_pack(): Cannot (re)allocate datasamples buffer\n");
+            return -1;
+          }
+        }
+        else
+        {
+          if (seg->datasamples)
+            free (seg->datasamples);
+          seg->datasamples = NULL;
+        }
+
+        seg->samplecnt -= segpackedsamples;
+        seg->numsamples -= segpackedsamples;
+      }
+
+      totalpackedrecords += segpackedrecords;
+      totalpackedsamples += segpackedsamples;
+
+      seg = seg->next;
+    }
+
+    id = id->next;
+  }
+
+  msr3_free (&msr);
+
+  if (packedsamples)
+    *packedsamples = totalpackedsamples;
+
+  return totalpackedrecords;
+} /* End of mstl3_pack() */
 
 /***************************************************************************
  * mstl3_printtracelist:

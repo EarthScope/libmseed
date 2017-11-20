@@ -1,0 +1,20 @@
+
+* Selection file mapping, matching.  How to handle wildcard locations?
+
+* miniSEED 2.4 packing?
+
+* MSBuild project for building, MS Visual Studio 2017 dropped support for NMake
+
+* Handle splitversion in mstl3_addmsr().
+
+* Optional, validation of CRC on read
+
+Extra handling:
+- Fetch/extraction for event detection, calibration and timing structures
+- Delete methods?
+
+Loss from miniSEED 2.x:
+- Beam 400 & 405
+- Blockette 2000
+- Multiple "Clock Model" designations if multiple Blockette 500s
+- "sequence" numbers

@@ -58,7 +58,6 @@ int
 msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
                     int8_t dataflag, int8_t verbose)
 {
-  int8_t swapflag = 0;
   uint8_t tsidlength = 0;
   int retval;
 
@@ -102,12 +101,12 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
   msr->reclen = reclen;
 
   /* miniSEED 3 is little endian */
-  swapflag = (ms_bigendianhost ()) ? 1 : 0;
+  msr->swapflag = (ms_bigendianhost ()) ? 1 : 0;
 
   /* Report byte swapping status */
   if (verbose > 2)
   {
-    if (swapflag)
+    if (msr->swapflag)
       ms_log (1, "%s: Byte swapping needed for unpacking of header\n", msr->tsid);
     else
       ms_log (1, "%s: Byte swapping NOT needed for unpacking of header\n", msr->tsid);
@@ -116,16 +115,16 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
   /* Populate the header fields */
   msr->formatversion = *pMS3FSDH_FORMATVERSION (record);
   msr->flags = *pMS3FSDH_FLAGS (record);
-  msr->starttime = ms_time2nstime (HO2u (*pMS3FSDH_YEAR (record), swapflag),
-                                   HO2u (*pMS3FSDH_DAY (record), swapflag),
+  msr->starttime = ms_time2nstime (HO2u (*pMS3FSDH_YEAR (record), msr->swapflag),
+                                   HO2u (*pMS3FSDH_DAY (record), msr->swapflag),
                                    *pMS3FSDH_HOUR (record),
                                    *pMS3FSDH_MIN (record),
                                    *pMS3FSDH_SEC (record),
-                                   HO4u (*pMS3FSDH_NSEC (record), swapflag));
+                                   HO4u (*pMS3FSDH_NSEC (record), msr->swapflag));
   msr->encoding = *pMS3FSDH_ENCODING (record);
-  msr->samprate = HO8f (*pMS3FSDH_SAMPLERATE (record), swapflag);
-  msr->samplecnt = HO4u (*pMS3FSDH_NUMSAMPLES (record), swapflag);
-  msr->crc = HO4u (*pMS3FSDH_CRC (record), swapflag);
+  msr->samprate = HO8f (*pMS3FSDH_SAMPLERATE (record), msr->swapflag);
+  msr->samplecnt = HO4u (*pMS3FSDH_NUMSAMPLES (record), msr->swapflag);
+  msr->crc = HO4u (*pMS3FSDH_CRC (record), msr->swapflag);
   msr->pubversion = *pMS3FSDH_PUBVERSION (record);
 
   tsidlength = *pMS3FSDH_TSIDLENGTH (record);
@@ -139,7 +138,7 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
 
   strncpy (msr->tsid, pMS3FSDH_TSID (record), tsidlength);
 
-  msr->extralength = HO2u (*pMS3FSDH_EXTRALENGTH (record), swapflag);
+  msr->extralength = HO2u (*pMS3FSDH_EXTRALENGTH (record), msr->swapflag);
   if (msr->extralength)
   {
     if ((msr->extra = malloc (msr->extralength)) == NULL)
@@ -151,12 +150,12 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
     memcpy (msr->extra, record + MS3FSDH_LENGTH + tsidlength, msr->extralength);
   }
 
-  msr->datalength = HO2u (*pMS3FSDH_DATALENGTH (record), swapflag);
+  msr->datalength = HO2u (*pMS3FSDH_DATALENGTH (record), msr->swapflag);
 
   /* Unpack the data samples if requested */
   if (dataflag && msr->samplecnt > 0)
   {
-    retval = msr3_unpack_data (msr, swapflag, verbose);
+    retval = msr3_unpack_data (msr, verbose);
 
     if (retval < 0)
       return retval;
@@ -206,7 +205,6 @@ int
 msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
                     int8_t dataflag, int8_t verbose)
 {
-  int8_t swapflag = 0;
   int B1000offset = 0;
   int B1001offset = 0;
   int retval;
@@ -276,12 +274,12 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
   /* Check to see if byte swapping is needed by testing the year and day */
   if (!MS_ISVALIDYEARDAY (*pMS2FSDH_YEAR (record), *pMS2FSDH_DAY (record)))
-    swapflag = 1;
+    msr->swapflag = 1;
 
   /* Report byte swapping status */
   if (verbose > 2)
   {
-    if (swapflag)
+    if (msr->swapflag)
       ms_log (1, "%s: Byte swapping needed for unpacking of header\n", msr->tsid);
     else
       ms_log (1, "%s: Byte swapping NOT needed for unpacking of header\n", msr->tsid);
@@ -290,9 +288,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   /* Populate some of the common header fields */
   ms2_recordtsid (record, msr->tsid);
   msr->formatversion = 2;
-  msr->samprate = ms_nomsamprate (HO2d (*pMS2FSDH_SAMPLERATEFACT (record), swapflag),
-                                  HO2d (*pMS2FSDH_SAMPLERATEMULT (record), swapflag));
-  msr->samplecnt = HO2u (*pMS2FSDH_NUMSAMPLES (record), swapflag);
+  msr->samprate = ms_nomsamprate (HO2d (*pMS2FSDH_SAMPLERATEFACT (record), msr->swapflag),
+                                  HO2d (*pMS2FSDH_SAMPLERATEMULT (record), msr->swapflag));
+  msr->samplecnt = HO2u (*pMS2FSDH_NUMSAMPLES (record), msr->swapflag);
 
   /* Map data quality indicator to publication version */
   if (*pMS2FSDH_DATAQUALITY (record) == 'M')
@@ -358,7 +356,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   if (*pMS2FSDH_DQFLAGS (record) & 0x80) /* Bit 7 */
     msr->flags |= 0x02;
 
-  ival = HO4u (*pMS2FSDH_TIMECORRECT (record), swapflag);
+  ival = HO4u (*pMS2FSDH_TIMECORRECT (record), msr->swapflag);
   if (ival != 0)
   {
     dval = ival / 10000.0;
@@ -366,7 +364,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   }
 
   /* Traverse the blockettes */
-  blkt_offset = HO2u (*pMS2FSDH_BLOCKETTEOFFSET (record), swapflag);
+  blkt_offset = HO2u (*pMS2FSDH_BLOCKETTEOFFSET (record), msr->swapflag);
 
   while ((blkt_offset != 0) &&
          (blkt_offset < reclen) &&
@@ -376,14 +374,14 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     memcpy (&blkt_type, record + blkt_offset, 2);
     memcpy (&next_blkt, record + blkt_offset + 2, 2);
 
-    if (swapflag)
+    if (msr->swapflag)
     {
       ms_gswap2 (&blkt_type);
       ms_gswap2 (&next_blkt);
     }
 
     /* Get blockette length */
-    blkt_length = ms2_blktlen (blkt_type, record + blkt_offset, swapflag);
+    blkt_length = ms2_blktlen (blkt_type, record + blkt_offset, msr->swapflag);
 
     if (blkt_length == 0)
     {
@@ -404,7 +402,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
     if (blkt_type == 100)
     {
-      msr->samprate = HO4f (*pMS2B100_SAMPRATE (record + blkt_offset), swapflag);
+      msr->samprate = HO4f (*pMS2B100_SAMPRATE (record + blkt_offset), msr->swapflag);
     }
 
     /* Blockette 200, generic event detection */
@@ -412,9 +410,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       strncpy (eventdetection.type, "GENERIC", sizeof (eventdetection.type));
       ms_strncpcleantail (eventdetection.detector, pMS2B200_DETECTOR (record + blkt_offset), 24);
-      eventdetection.signalamplitude = HO4f (*pMS2B200_AMPLITUDE (record + blkt_offset), swapflag);
-      eventdetection.signalperiod = HO4f (*pMS2B200_PERIOD (record + blkt_offset), swapflag);
-      eventdetection.backgroundestimate = HO4f (*pMS2B200_BACKGROUNDEST (record + blkt_offset), swapflag);
+      eventdetection.signalamplitude = HO4f (*pMS2B200_AMPLITUDE (record + blkt_offset), msr->swapflag);
+      eventdetection.signalperiod = HO4f (*pMS2B200_PERIOD (record + blkt_offset), msr->swapflag);
+      eventdetection.backgroundestimate = HO4f (*pMS2B200_BACKGROUNDEST (record + blkt_offset), msr->swapflag);
 
       /* If bit 2 is set, set compression wave according to bit 0 */
       if (*pMS2B200_FLAGS (record + blkt_offset) & 0x04)
@@ -432,22 +430,22 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       else
         strncpy (eventdetection.units, "COUNTS", sizeof (eventdetection.units));
 
-      eventdetection.onsettime = ms_time2nstime (HO2u (*pMS2B200_YEAR (record + blkt_offset), swapflag),
-                                                 HO2u (*pMS2B200_DAY (record + blkt_offset), swapflag),
+      eventdetection.onsettime = ms_time2nstime (HO2u (*pMS2B200_YEAR (record + blkt_offset), msr->swapflag),
+                                                 HO2u (*pMS2B200_DAY (record + blkt_offset), msr->swapflag),
                                                  *pMS2B200_HOUR (record + blkt_offset),
                                                  *pMS2B200_MIN (record + blkt_offset),
                                                  *pMS2B200_SEC (record + blkt_offset),
-                                                 (uint32_t)HO2u (*pMS2B200_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
+                                                 (uint32_t)HO2u (*pMS2B200_FSEC (record + blkt_offset), msr->swapflag) * (NSTMODULUS / 10000));
       if (eventdetection.onsettime == NSTERROR)
       {
         ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
                 msr->tsid,
-                HO2u (*pMS2B200_YEAR (record), swapflag),
-                HO2u (*pMS2B200_DAY (record), swapflag),
+                HO2u (*pMS2B200_YEAR (record), msr->swapflag),
+                HO2u (*pMS2B200_DAY (record), msr->swapflag),
                 *pMS2B200_HOUR (record),
                 *pMS2B200_MIN (record),
                 *pMS2B200_SEC (record),
-                HO2u (*pMS2B200_FSEC (record), swapflag));
+                HO2u (*pMS2B200_FSEC (record), msr->swapflag));
         return MS_GENERROR;
       }
 
@@ -468,9 +466,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       strncpy (eventdetection.type, "MURDOCK", sizeof (eventdetection.type));
       ms_strncpcleantail (eventdetection.detector, pMS2B201_DETECTOR (record + blkt_offset), 24);
-      eventdetection.signalamplitude = HO4f (*pMS2B201_AMPLITUDE (record + blkt_offset), swapflag);
-      eventdetection.signalperiod = HO4f (*pMS2B201_PERIOD (record + blkt_offset), swapflag);
-      eventdetection.backgroundestimate = HO4f (*pMS2B201_BACKGROUNDEST (record + blkt_offset), swapflag);
+      eventdetection.signalamplitude = HO4f (*pMS2B201_AMPLITUDE (record + blkt_offset), msr->swapflag);
+      eventdetection.signalperiod = HO4f (*pMS2B201_PERIOD (record + blkt_offset), msr->swapflag);
+      eventdetection.backgroundestimate = HO4f (*pMS2B201_BACKGROUNDEST (record + blkt_offset), msr->swapflag);
 
       /* If bit 0 is set, dilatation wave otherwise compression */
       if (*pMS2B201_FLAGS (record + blkt_offset) & 0x01)
@@ -478,22 +476,22 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       else
         strncpy (eventdetection.detectionwave, "COMPRESSION", sizeof (eventdetection.detectionwave));
 
-      eventdetection.onsettime = ms_time2nstime (HO2u (*pMS2B201_YEAR (record + blkt_offset), swapflag),
-                                                 HO2u (*pMS2B201_DAY (record + blkt_offset), swapflag),
+      eventdetection.onsettime = ms_time2nstime (HO2u (*pMS2B201_YEAR (record + blkt_offset), msr->swapflag),
+                                                 HO2u (*pMS2B201_DAY (record + blkt_offset), msr->swapflag),
                                                  *pMS2B201_HOUR (record + blkt_offset),
                                                  *pMS2B201_MIN (record + blkt_offset),
                                                  *pMS2B201_SEC (record + blkt_offset),
-                                                 (uint32_t)HO2u (*pMS2B201_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
+                                                 (uint32_t)HO2u (*pMS2B201_FSEC (record + blkt_offset), msr->swapflag) * (NSTMODULUS / 10000));
       if (eventdetection.onsettime == NSTERROR)
       {
         ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
                 msr->tsid,
-                HO2u (*pMS2B201_YEAR (record), swapflag),
-                HO2u (*pMS2B201_DAY (record), swapflag),
+                HO2u (*pMS2B201_YEAR (record), msr->swapflag),
+                HO2u (*pMS2B201_DAY (record), msr->swapflag),
                 *pMS2B201_HOUR (record),
                 *pMS2B201_MIN (record),
                 *pMS2B201_SEC (record),
-                HO2u (*pMS2B201_FSEC (record), swapflag));
+                HO2u (*pMS2B201_FSEC (record), msr->swapflag));
         return MS_GENERROR;
       }
 
@@ -514,22 +512,22 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       strncpy (calibration.type, "STEP", sizeof (calibration.type));
 
-      calibration.begintime = ms_time2nstime (HO2u (*pMS2B300_YEAR (record + blkt_offset), swapflag),
-                                              HO2u (*pMS2B300_DAY (record + blkt_offset), swapflag),
+      calibration.begintime = ms_time2nstime (HO2u (*pMS2B300_YEAR (record + blkt_offset), msr->swapflag),
+                                              HO2u (*pMS2B300_DAY (record + blkt_offset), msr->swapflag),
                                               *pMS2B300_HOUR (record + blkt_offset),
                                               *pMS2B300_MIN (record + blkt_offset),
                                               *pMS2B300_SEC (record + blkt_offset),
-                                              (uint32_t)HO2u (*pMS2B300_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
+                                              (uint32_t)HO2u (*pMS2B300_FSEC (record + blkt_offset), msr->swapflag) * (NSTMODULUS / 10000));
       if (calibration.begintime == NSTERROR)
       {
         ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
                 msr->tsid,
-                HO2u (*pMS2B300_YEAR (record), swapflag),
-                HO2u (*pMS2B300_DAY (record), swapflag),
+                HO2u (*pMS2B300_YEAR (record), msr->swapflag),
+                HO2u (*pMS2B300_DAY (record), msr->swapflag),
                 *pMS2B300_HOUR (record),
                 *pMS2B300_MIN (record),
                 *pMS2B300_SEC (record),
-                HO2u (*pMS2B300_FSEC (record), swapflag));
+                HO2u (*pMS2B300_FSEC (record), msr->swapflag));
         return MS_GENERROR;
       }
 
@@ -557,14 +555,14 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       if (*pMS2B300_FLAGS (record + blkt_offset) & 0x08)
         calibration.continued = 1;
 
-      calibration.duration = (double)(HO4u (*pMS2B300_STEPDURATION (record + blkt_offset), swapflag) / 10000.0);
-      calibration.stepbetween = (double)(HO4u (*pMS2B300_INTERVALDURATION (record + blkt_offset), swapflag) / 10000.0);
-      calibration.amplitude = HO4f (*pMS2B300_AMPLITUDE (record + blkt_offset), swapflag);
+      calibration.duration = (double)(HO4u (*pMS2B300_STEPDURATION (record + blkt_offset), msr->swapflag) / 10000.0);
+      calibration.stepbetween = (double)(HO4u (*pMS2B300_INTERVALDURATION (record + blkt_offset), msr->swapflag) / 10000.0);
+      calibration.amplitude = HO4f (*pMS2B300_AMPLITUDE (record + blkt_offset), msr->swapflag);
       ms_strncpcleantail (calibration.inputchannel, pMS2B300_INPUTCHANNEL (record + blkt_offset), 3);
       calibration.inputunits[0] = '\0';
       calibration.amplituderange[0] = '\0';
       calibration.sineperiod = 0.0;
-      calibration.refamplitude = (double)(HO4u (*pMS2B300_REFERENCEAMPLITUDE (record + blkt_offset), swapflag));
+      calibration.refamplitude = (double)(HO4u (*pMS2B300_REFERENCEAMPLITUDE (record + blkt_offset), msr->swapflag));
       ms_strncpcleantail (calibration.coupling, pMS2B300_COUPLING (record + blkt_offset), 12);
       ms_strncpcleantail (calibration.rolloff, pMS2B300_ROLLOFF (record + blkt_offset), 12);
       calibration.noise[0] = '\0';
@@ -582,22 +580,22 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       strncpy (calibration.type, "SINE", sizeof (calibration.type));
 
-      calibration.begintime = ms_time2nstime (HO2u (*pMS2B310_YEAR (record + blkt_offset), swapflag),
-                                              HO2u (*pMS2B310_DAY (record + blkt_offset), swapflag),
+      calibration.begintime = ms_time2nstime (HO2u (*pMS2B310_YEAR (record + blkt_offset), msr->swapflag),
+                                              HO2u (*pMS2B310_DAY (record + blkt_offset), msr->swapflag),
                                               *pMS2B310_HOUR (record + blkt_offset),
                                               *pMS2B310_MIN (record + blkt_offset),
                                               *pMS2B310_SEC (record + blkt_offset),
-                                              (uint32_t)HO2u (*pMS2B310_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
+                                              (uint32_t)HO2u (*pMS2B310_FSEC (record + blkt_offset), msr->swapflag) * (NSTMODULUS / 10000));
       if (calibration.begintime == NSTERROR)
       {
         ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
                 msr->tsid,
-                HO2u (*pMS2B310_YEAR (record), swapflag),
-                HO2u (*pMS2B310_DAY (record), swapflag),
+                HO2u (*pMS2B310_YEAR (record), msr->swapflag),
+                HO2u (*pMS2B310_DAY (record), msr->swapflag),
                 *pMS2B310_HOUR (record),
                 *pMS2B310_MIN (record),
                 *pMS2B310_SEC (record),
-                HO2u (*pMS2B310_FSEC (record), swapflag));
+                HO2u (*pMS2B310_FSEC (record), msr->swapflag));
         return MS_GENERROR;
       }
 
@@ -628,11 +626,11 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       else if (*pMS2B310_FLAGS (record + blkt_offset) & 0x40)
         strncpy (calibration.amplituderange, "RMS", sizeof (calibration.amplituderange));
 
-      calibration.duration = (double)(HO4u (*pMS2B310_DURATION (record + blkt_offset), swapflag) / 10000.0);
-      calibration.sineperiod = HO4f (*pMS2B310_PERIOD (record + blkt_offset), swapflag);
-      calibration.amplitude = HO4f (*pMS2B310_AMPLITUDE (record + blkt_offset), swapflag);
+      calibration.duration = (double)(HO4u (*pMS2B310_DURATION (record + blkt_offset), msr->swapflag) / 10000.0);
+      calibration.sineperiod = HO4f (*pMS2B310_PERIOD (record + blkt_offset), msr->swapflag);
+      calibration.amplitude = HO4f (*pMS2B310_AMPLITUDE (record + blkt_offset), msr->swapflag);
       ms_strncpcleantail (calibration.inputchannel, pMS2B310_INPUTCHANNEL (record + blkt_offset), 3);
-      calibration.refamplitude = (double)(HO4u (*pMS2B310_REFERENCEAMPLITUDE (record + blkt_offset), swapflag));
+      calibration.refamplitude = (double)(HO4u (*pMS2B310_REFERENCEAMPLITUDE (record + blkt_offset), msr->swapflag));
       calibration.stepbetween = 0.0;
       calibration.inputunits[0] = '\0';
       ms_strncpcleantail (calibration.coupling, pMS2B310_COUPLING (record + blkt_offset), 12);
@@ -652,22 +650,22 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       strncpy (calibration.type, "PSEUDORANDOM", sizeof (calibration.type));
 
-      calibration.begintime = ms_time2nstime (HO2u (*pMS2B320_YEAR (record + blkt_offset), swapflag),
-                                              HO2u (*pMS2B320_DAY (record + blkt_offset), swapflag),
+      calibration.begintime = ms_time2nstime (HO2u (*pMS2B320_YEAR (record + blkt_offset), msr->swapflag),
+                                              HO2u (*pMS2B320_DAY (record + blkt_offset), msr->swapflag),
                                               *pMS2B320_HOUR (record + blkt_offset),
                                               *pMS2B320_MIN (record + blkt_offset),
                                               *pMS2B320_SEC (record + blkt_offset),
-                                              (uint32_t)HO2u (*pMS2B320_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
+                                              (uint32_t)HO2u (*pMS2B320_FSEC (record + blkt_offset), msr->swapflag) * (NSTMODULUS / 10000));
       if (calibration.begintime == NSTERROR)
       {
         ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
                 msr->tsid,
-                HO2u (*pMS2B320_YEAR (record), swapflag),
-                HO2u (*pMS2B320_DAY (record), swapflag),
+                HO2u (*pMS2B320_YEAR (record), msr->swapflag),
+                HO2u (*pMS2B320_DAY (record), msr->swapflag),
                 *pMS2B320_HOUR (record),
                 *pMS2B320_MIN (record),
                 *pMS2B320_SEC (record),
-                HO2u (*pMS2B320_FSEC (record), swapflag));
+                HO2u (*pMS2B320_FSEC (record), msr->swapflag));
         return MS_GENERROR;
       }
 
@@ -692,10 +690,10 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       if (*pMS2B320_FLAGS (record + blkt_offset) & 0x10)
         strncpy (calibration.amplituderange, "RANDOM", sizeof (calibration.amplituderange));
 
-      calibration.duration = (double)(HO4u (*pMS2B320_DURATION (record + blkt_offset), swapflag) / 10000.0);
-      calibration.amplitude = HO4f (*pMS2B320_PTPAMPLITUDE (record + blkt_offset), swapflag);
+      calibration.duration = (double)(HO4u (*pMS2B320_DURATION (record + blkt_offset), msr->swapflag) / 10000.0);
+      calibration.amplitude = HO4f (*pMS2B320_PTPAMPLITUDE (record + blkt_offset), msr->swapflag);
       ms_strncpcleantail (calibration.inputchannel, pMS2B320_INPUTCHANNEL (record + blkt_offset), 3);
-      calibration.refamplitude = (double)(HO4u (*pMS2B320_REFERENCEAMPLITUDE (record + blkt_offset), swapflag));
+      calibration.refamplitude = (double)(HO4u (*pMS2B320_REFERENCEAMPLITUDE (record + blkt_offset), msr->swapflag));
       calibration.sineperiod = 0.0;
       calibration.stepbetween = 0.0;
       calibration.inputunits[0] = '\0';
@@ -716,22 +714,22 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       strncpy (calibration.type, "GENERIC", sizeof (calibration.type));
 
-      calibration.begintime = ms_time2nstime (HO2u (*pMS2B390_YEAR (record + blkt_offset), swapflag),
-                                              HO2u (*pMS2B390_DAY (record + blkt_offset), swapflag),
+      calibration.begintime = ms_time2nstime (HO2u (*pMS2B390_YEAR (record + blkt_offset), msr->swapflag),
+                                              HO2u (*pMS2B390_DAY (record + blkt_offset), msr->swapflag),
                                               *pMS2B390_HOUR (record + blkt_offset),
                                               *pMS2B390_MIN (record + blkt_offset),
                                               *pMS2B390_SEC (record + blkt_offset),
-                                              (uint32_t)HO2u (*pMS2B390_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
+                                              (uint32_t)HO2u (*pMS2B390_FSEC (record + blkt_offset), msr->swapflag) * (NSTMODULUS / 10000));
       if (calibration.begintime == NSTERROR)
       {
         ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
                 msr->tsid,
-                HO2u (*pMS2B390_YEAR (record), swapflag),
-                HO2u (*pMS2B390_DAY (record), swapflag),
+                HO2u (*pMS2B390_YEAR (record), msr->swapflag),
+                HO2u (*pMS2B390_DAY (record), msr->swapflag),
                 *pMS2B390_HOUR (record),
                 *pMS2B390_MIN (record),
                 *pMS2B390_SEC (record),
-                HO2u (*pMS2B390_FSEC (record), swapflag));
+                HO2u (*pMS2B390_FSEC (record), msr->swapflag));
         return MS_GENERROR;
       }
 
@@ -752,8 +750,8 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
         calibration.continued = 1;
 
       calibration.amplituderange[0] = '\0';
-      calibration.duration = (double)(HO4u (*pMS2B390_DURATION (record + blkt_offset), swapflag) / 10000.0);
-      calibration.amplitude = HO4f (*pMS2B390_AMPLITUDE (record + blkt_offset), swapflag);
+      calibration.duration = (double)(HO4u (*pMS2B390_DURATION (record + blkt_offset), msr->swapflag) / 10000.0);
+      calibration.amplitude = HO4f (*pMS2B390_AMPLITUDE (record + blkt_offset), msr->swapflag);
       ms_strncpcleantail (calibration.inputchannel, pMS2B390_INPUTCHANNEL (record + blkt_offset), 3);
       calibration.refamplitude = 0.0;
       calibration.sineperiod = 0.0;
@@ -777,22 +775,22 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       strncpy (calibration.type, "ABORT", sizeof (calibration.type));
 
       calibration.begintime = NSTERROR;
-      calibration.endtime = ms_time2nstime (HO2u (*pMS2B395_YEAR (record + blkt_offset), swapflag),
-                                            HO2u (*pMS2B395_DAY (record + blkt_offset), swapflag),
+      calibration.endtime = ms_time2nstime (HO2u (*pMS2B395_YEAR (record + blkt_offset), msr->swapflag),
+                                            HO2u (*pMS2B395_DAY (record + blkt_offset), msr->swapflag),
                                             *pMS2B395_HOUR (record + blkt_offset),
                                             *pMS2B395_MIN (record + blkt_offset),
                                             *pMS2B395_SEC (record + blkt_offset),
-                                            (uint32_t)HO2u (*pMS2B395_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
+                                            (uint32_t)HO2u (*pMS2B395_FSEC (record + blkt_offset), msr->swapflag) * (NSTMODULUS / 10000));
       if (calibration.endtime == NSTERROR)
       {
         ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
                 msr->tsid,
-                HO2u (*pMS2B395_YEAR (record), swapflag),
-                HO2u (*pMS2B395_DAY (record), swapflag),
+                HO2u (*pMS2B395_YEAR (record), msr->swapflag),
+                HO2u (*pMS2B395_DAY (record), msr->swapflag),
                 *pMS2B395_HOUR (record),
                 *pMS2B395_MIN (record),
                 *pMS2B395_SEC (record),
-                HO2u (*pMS2B395_FSEC (record), swapflag));
+                HO2u (*pMS2B395_FSEC (record), msr->swapflag));
         return MS_GENERROR;
       }
 
@@ -836,30 +834,30 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     /* Blockette 500, timing blockette */
     else if (blkt_type == 500)
     {
-      exception.vcocorrection = HO4f (*pMS2B500_VCOCORRECTION (record + blkt_offset), swapflag);
+      exception.vcocorrection = HO4f (*pMS2B500_VCOCORRECTION (record + blkt_offset), msr->swapflag);
 
-      exception.time = ms_time2nstime (HO2u (*pMS2B500_YEAR (record + blkt_offset), swapflag),
-                                       HO2u (*pMS2B500_DAY (record + blkt_offset), swapflag),
+      exception.time = ms_time2nstime (HO2u (*pMS2B500_YEAR (record + blkt_offset), msr->swapflag),
+                                       HO2u (*pMS2B500_DAY (record + blkt_offset), msr->swapflag),
                                        *pMS2B500_HOUR (record + blkt_offset),
                                        *pMS2B500_MIN (record + blkt_offset),
                                        *pMS2B500_SEC (record + blkt_offset),
-                                       (uint32_t)HO2u (*pMS2B500_FSEC (record + blkt_offset), swapflag) * (NSTMODULUS / 10000));
+                                       (uint32_t)HO2u (*pMS2B500_FSEC (record + blkt_offset), msr->swapflag) * (NSTMODULUS / 10000));
       if (exception.time == NSTERROR)
       {
         ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
                 msr->tsid,
-                HO2u (*pMS2B500_YEAR (record), swapflag),
-                HO2u (*pMS2B500_DAY (record), swapflag),
+                HO2u (*pMS2B500_YEAR (record), msr->swapflag),
+                HO2u (*pMS2B500_DAY (record), msr->swapflag),
                 *pMS2B500_HOUR (record),
                 *pMS2B500_MIN (record),
                 *pMS2B500_SEC (record),
-                HO2u (*pMS2B500_FSEC (record), swapflag));
+                HO2u (*pMS2B500_FSEC (record), msr->swapflag));
         return MS_GENERROR;
       }
 
       exception.usec = *pMS2B500_MICROSECOND (record + blkt_offset);
       exception.receptionquality = *pMS2B500_RECEPTIONQUALITY (record + blkt_offset);
-      exception.count = HO4u (*pMS2B500_EXCEPTIONCOUNT (record + blkt_offset), swapflag);
+      exception.count = HO4u (*pMS2B500_EXCEPTIONCOUNT (record + blkt_offset), msr->swapflag);
       ms_strncpcleantail (exception.type, pMS2B500_EXCEPTIONTYPE (record + blkt_offset), 16);
       ms_strncpcleantail (exception.clockstatus, pMS2B500_CLOCKSTATUS (record + blkt_offset), 128);
 
@@ -943,11 +941,11 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
   /* Check that the data offset is after the blockette chain */
   if (blkt_end &&
-      HO2u (*pMS2FSDH_NUMSAMPLES (record), swapflag) &&
-      HO2u (*pMS2FSDH_DATAOFFSET (record), swapflag) < blkt_end)
+      HO2u (*pMS2FSDH_NUMSAMPLES (record), msr->swapflag) &&
+      HO2u (*pMS2FSDH_DATAOFFSET (record), msr->swapflag) < blkt_end)
   {
     ms_log (1, "%s: Warning: Data offset in fixed header (%d) is within the blockette chain ending at %d\n",
-            msr->tsid, HO2u (*pMS2FSDH_DATAOFFSET (record), swapflag), blkt_end);
+            msr->tsid, HO2u (*pMS2FSDH_DATAOFFSET (record), msr->swapflag), blkt_end);
   }
 
   /* Check that the blockette count matches the number parsed */
@@ -958,30 +956,30 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   }
 
   /* Calculate start time */
-  msr->starttime = ms_time2nstime (HO2u (*pMS2FSDH_YEAR (record), swapflag),
-                                   HO2u (*pMS2FSDH_DAY (record), swapflag),
+  msr->starttime = ms_time2nstime (HO2u (*pMS2FSDH_YEAR (record), msr->swapflag),
+                                   HO2u (*pMS2FSDH_DAY (record), msr->swapflag),
                                    *pMS2FSDH_HOUR (record),
                                    *pMS2FSDH_MIN (record),
                                    *pMS2FSDH_SEC (record),
-                                   (uint32_t)HO2u (*pMS2FSDH_FSEC (record), swapflag) * (NSTMODULUS / 10000));
+                                   (uint32_t)HO2u (*pMS2FSDH_FSEC (record), msr->swapflag) * (NSTMODULUS / 10000));
   if (msr->starttime == NSTERROR)
   {
     ms_log (2, "%s: Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
-            HO2u (*pMS2FSDH_YEAR (record), swapflag),
-            HO2u (*pMS2FSDH_DAY (record), swapflag),
+            HO2u (*pMS2FSDH_YEAR (record), msr->swapflag),
+            HO2u (*pMS2FSDH_DAY (record), msr->swapflag),
             *pMS2FSDH_HOUR (record),
             *pMS2FSDH_MIN (record),
             *pMS2FSDH_SEC (record),
-            HO2u (*pMS2FSDH_FSEC (record), swapflag));
+            HO2u (*pMS2FSDH_FSEC (record), msr->swapflag));
     return MS_GENERROR;
   }
 
   /* Check if a time correction is included and if it has been applied,
    * bit 1 of activity flags indicates if it has been appiled */
-  if (HO4d (*pMS2FSDH_TIMECORRECT (record), swapflag) != 0 &&
+  if (HO4d (*pMS2FSDH_TIMECORRECT (record), msr->swapflag) != 0 &&
       !(*pMS2FSDH_ACTFLAGS (record) & 0x02))
   {
-    msr->starttime += (nstime_t)HO4d (*pMS2FSDH_TIMECORRECT (record), swapflag) * (NSTMODULUS / 10000);
+    msr->starttime += (nstime_t)HO4d (*pMS2FSDH_TIMECORRECT (record), msr->swapflag) * (NSTMODULUS / 10000);
   }
 
   /* Apply microsecond precision if Blockette 1001 is present */
@@ -990,33 +988,37 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     msr->starttime += (nstime_t)*pMS2B1001_MICROSECOND (record + B1001offset) * (NSTMODULUS / 1000000);
   }
 
+  msr->datalength = msr->reclen - HO2u (*pMS2FSDH_DATAOFFSET (record), msr->swapflag);
+
   /* Unpack the data samples if requested */
   if (dataflag && msr->samplecnt > 0)
   {
-    int8_t dswapflag = swapflag;
+    uint8_t saveswapflag = msr->swapflag;
     int8_t bigendianhost = ms_bigendianhost ();
 
     /* Determine byte order of the data and set the dswapflag as
-       needed; if no Blkt1000 or UNPACK_DATA_BYTEORDER environment
-       variable setting assume the order is the same as the header */
+     * needed; if no Blkt1000 or UNPACK_DATA_BYTEORDER environment
+     * variable setting assume the order is the same as the header */
     if (B1000offset)
     {
-      dswapflag = 0;
+      msr->swapflag = 0;
 
       /* If BE host and LE data need swapping */
       if (bigendianhost && *pMS2B1000_BYTEORDER (record + B1000offset) == 0)
-        dswapflag = 1;
+        msr->swapflag = 1;
       /* If LE host and BE data (or bad byte order value) need swapping */
       else if (!bigendianhost && *pMS2B1000_BYTEORDER (record + B1000offset) > 0)
-        dswapflag = 1;
+        msr->swapflag = 1;
     }
 
-    if (verbose > 2 && dswapflag)
+    if (verbose > 2 && msr->swapflag)
       ms_log (1, "%s: Byte swapping needed for unpacking of data samples\n", msr->tsid);
     else if (verbose > 2)
       ms_log (1, "%s: Byte swapping NOT needed for unpacking of data samples\n", msr->tsid);
 
-    retval = msr3_unpack_data (msr, dswapflag, verbose);
+    retval = msr3_unpack_data (msr, verbose);
+
+    msr->swapflag = saveswapflag;
 
     if (retval < 0)
       return retval;
@@ -1049,8 +1051,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
  *  Return 0 on success or negative libmseed error code.
  ************************************************************************/
 int
-msr3_data_bounds (MS3Record *msr, int swapflag,
-                  uint32_t *dataoffset, uint16_t *datasize)
+msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint16_t *datasize)
 {
   uint8_t nullframe[64] = {0};
 
@@ -1065,7 +1066,7 @@ msr3_data_bounds (MS3Record *msr, int swapflag,
   }
   else if (msr->formatversion == 2)
   {
-    *dataoffset = HO2u (*pMS2FSDH_DATAOFFSET (msr->record), swapflag);
+    *dataoffset = HO2u (*pMS2FSDH_DATAOFFSET (msr->record), msr->swapflag);
     *datasize = msr->reclen - *dataoffset;
   }
   else
@@ -1088,7 +1089,7 @@ msr3_data_bounds (MS3Record *msr, int swapflag,
   }
 
   return 0;
-}
+} /* End of msr3_data_bounds() */
 
 /************************************************************************
  *  msr3_unpack_data:
@@ -1107,7 +1108,7 @@ msr3_data_bounds (MS3Record *msr, int swapflag,
  *  Return number of samples unpacked or negative libmseed error code.
  ************************************************************************/
 int
-msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
+msr3_unpack_data (MS3Record *msr, int8_t verbose)
 {
   uint16_t datasize; /* byte size of data samples in record */
   int nsamples; /* number of samples unpacked */
@@ -1116,6 +1117,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
   uint32_t dataoffset = 0;
   const char *encoded = NULL;
   char *encoded_allocated = NULL;
+  uint8_t localswapflag;
 
   if (!msr)
     return MS_GENERROR;
@@ -1144,7 +1146,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
   }
 
   /* Determine offset to data and length of data payload */
-  if (msr3_data_bounds (msr, swapflag, &dataoffset, &datasize))
+  if (msr3_data_bounds (msr, &dataoffset, &datasize))
     return MS_GENERROR;
 
   /* Sanity check data offset before creating a pointer based on the value */
@@ -1240,7 +1242,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
       ms_log (1, "%s: Unpacking INT16 data samples\n", msr->tsid);
 
     nsamples = msr_decode_int16 ((int16_t *)encoded, msr->samplecnt,
-                                 msr->datasamples, unpacksize, swapflag);
+                                 msr->datasamples, unpacksize, msr->swapflag);
 
     msr->sampletype = 'i';
     break;
@@ -1250,7 +1252,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
       ms_log (1, "%s: Unpacking INT32 data samples\n", msr->tsid);
 
     nsamples = msr_decode_int32 ((int32_t *)encoded, msr->samplecnt,
-                                 msr->datasamples, unpacksize, swapflag);
+                                 msr->datasamples, unpacksize, msr->swapflag);
 
     msr->sampletype = 'i';
     break;
@@ -1260,7 +1262,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
       ms_log (1, "%s: Unpacking FLOAT32 data samples\n", msr->tsid);
 
     nsamples = msr_decode_float32 ((float *)encoded, msr->samplecnt,
-                                   msr->datasamples, unpacksize, swapflag);
+                                   msr->datasamples, unpacksize, msr->swapflag);
 
     msr->sampletype = 'f';
     break;
@@ -1270,7 +1272,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
       ms_log (1, "%s: Unpacking FLOAT64 data samples\n", msr->tsid);
 
     nsamples = msr_decode_float64 ((double *)encoded, msr->samplecnt,
-                                   msr->datasamples, unpacksize, swapflag);
+                                   msr->datasamples, unpacksize, msr->swapflag);
 
     msr->sampletype = 'd';
     break;
@@ -1280,10 +1282,10 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
       ms_log (1, "%s: Unpacking Steim1 data frames\n", msr->tsid);
 
     /* Always big endian Steim1 */
-    swapflag = (ms_bigendianhost ()) ? 0 : 1;
+    localswapflag = (ms_bigendianhost ()) ? 0 : 1;
 
     nsamples = msr_decode_steim1 ((int32_t *)encoded, datasize, msr->samplecnt,
-                                  msr->datasamples, unpacksize, msr->tsid, swapflag);
+                                  msr->datasamples, unpacksize, msr->tsid, localswapflag);
 
     if (nsamples < 0)
     {
@@ -1299,10 +1301,10 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
       ms_log (1, "%s: Unpacking Steim2 data frames\n", msr->tsid);
 
     /* Always big endian Steim2 */
-    swapflag = (ms_bigendianhost ()) ? 0 : 1;
+    localswapflag = (ms_bigendianhost ()) ? 0 : 1;
 
     nsamples = msr_decode_steim2 ((int32_t *)encoded, datasize, msr->samplecnt,
-                                  msr->datasamples, unpacksize, msr->tsid, swapflag);
+                                  msr->datasamples, unpacksize, msr->tsid, localswapflag);
 
     if (nsamples < 0)
     {
@@ -1327,7 +1329,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
     }
 
     nsamples = msr_decode_geoscope ((char *)encoded, msr->samplecnt, msr->datasamples,
-                                    unpacksize, msr->encoding, msr->tsid, swapflag);
+                                    unpacksize, msr->encoding, msr->tsid, msr->swapflag);
 
     msr->sampletype = 'f';
     break;
@@ -1337,7 +1339,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
       ms_log (1, "%s: Unpacking CDSN encoded data samples\n", msr->tsid);
 
     nsamples = msr_decode_cdsn ((int16_t *)encoded, msr->samplecnt, msr->datasamples,
-                                unpacksize, swapflag);
+                                unpacksize, msr->swapflag);
 
     msr->sampletype = 'i';
     break;
@@ -1347,7 +1349,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
       ms_log (1, "%s: Unpacking SRO encoded data samples\n", msr->tsid);
 
     nsamples = msr_decode_sro ((int16_t *)encoded, msr->samplecnt, msr->datasamples,
-                               unpacksize, msr->tsid, swapflag);
+                               unpacksize, msr->tsid, msr->swapflag);
 
     msr->sampletype = 'i';
     break;
@@ -1357,7 +1359,7 @@ msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose)
       ms_log (1, "%s: Unpacking DWWSSN encoded data samples\n", msr->tsid);
 
     nsamples = msr_decode_dwwssn ((int16_t *)encoded, msr->samplecnt, msr->datasamples,
-                                  unpacksize, swapflag);
+                                  unpacksize, msr->swapflag);
 
     msr->sampletype = 'i';
     break;

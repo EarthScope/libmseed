@@ -124,18 +124,14 @@ extern "C" {
  * Default, native modulus defines tick interval as a nanosecond.
  * Compatibility moduls defines tick interval as millisecond. */
 #define NSTMODULUS 1000000000
-//#define HPTMODULUS 1000000
 
 /* Error code for routines that normally return a high precision time.
  * The time value corresponds to '1902-1-1 00:00:00.00000000'. */
 #define NSTERROR -2145916800000000000LL
-    //#define HPTERROR -2145916800000000LL
 
 /* Macros to scale between Unix/POSIX epoch time & high precision times */
-#define MS_EPOCH2NSTIME(X) X * (hptime_t) NSTMODULUS
+#define MS_EPOCH2NSTIME(X) X * (nstime_t) NSTMODULUS
 #define MS_NSTIME2EPOCH(X) X / NSTMODULUS
-    //#define MS_EPOCH2HPTIME(X) X * (hptime_t) HPTMODULUS
-    //#define MS_HPTIME2EPOCH(X) X / HPTMODULUS
 
 /* Macro to test default sample rate tolerance: abs(1-sr1/sr2) < 0.0001 */
 #define MS_ISRATETOLERABLE(A,B) (ms_dabs (1.0 - (A / B)) < 0.0001)
@@ -195,7 +191,6 @@ extern "C" {
 
 /* Define libmseed time type */
 typedef int64_t nstime_t;
-typedef int64_t hptime_t;
 
 /* A single byte flag type */
 typedef int8_t flag;
@@ -203,6 +198,7 @@ typedef int8_t flag;
 typedef struct MS3Record_s {
   char           *record;            /* Raw miniSEED record, if available */
   int32_t         reclen;            /* Length of miniSEED record in bytes */
+  uint8_t         swapflag;          /* Byte swap indicator */
 
   /* Common header fields in accessible form */
   char            tsid[64];          /* Time series identifier as URN */
@@ -216,7 +212,7 @@ typedef struct MS3Record_s {
   uint32_t        crc;               /* CRC of entire record */
   uint16_t        extralength;       /* Length of extra headers in bytes */
   uint16_t        datalength;        /* Length of data payload in bytes */
-  void           *extra;             /* Pointer to extra headers */
+  uint8_t        *extra;             /* Pointer to extra headers */
 
   /* Data sample fields */
   void           *datasamples;       /* Data samples, 'numsamples' of type 'sampletype'*/
@@ -286,17 +282,16 @@ extern int msr3_pack3 (MS3Record *msr,
                        void *handlerdata, int64_t *packedsamples,
                        int8_t flush, int8_t verbose);
 
-extern int msr3_pack_header (MS3Record *msr, int8_t normalize, int8_t verbose);
+extern int msr3_pack_header3 (MS3Record *msr, char *record, uint32_t reclen, int8_t verbose);
 
-extern int msr3_unpack_data (MS3Record *msr, int swapflag, int8_t verbose);
+extern int msr3_unpack_data (MS3Record *msr, int8_t verbose);
 
-extern int msr3_data_bounds (MS3Record *msr, int swapflag,
-                             uint32_t *dataoffset, uint16_t *datasize);
+extern int msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint16_t *datasize);
 
 extern MS3Record* msr3_init (MS3Record *msr);
 extern void       msr3_free (MS3Record **ppmsr);
 extern MS3Record* msr3_duplicate (MS3Record *msr, int8_t datadup);
-extern hptime_t   msr3_endtime (MS3Record *msr);
+extern nstime_t   msr3_endtime (MS3Record *msr);
 extern void       msr3_print (MS3Record *msr, int8_t details);
 extern double     msr3_host_latency (MS3Record *msr);
 
@@ -307,9 +302,15 @@ extern int ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t sw
 /* MSTraceList related functions */
 extern MS3TraceList* mstl3_init (MS3TraceList *mstl);
 extern void          mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr);
-extern MS3TraceSeg*  mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t pubversion,
+extern MS3TraceSeg*  mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
                                    int8_t autoheal, double timetol, double sampratetol);
 extern int mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate);
+
+extern int mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
+                       void *handlerdata, int reclen, int8_t encoding,
+                       int64_t *packedsamples, int8_t flush, int8_t verbose,
+                       uint8_t *extra, uint16_t extralength);
+
 extern void mstl3_printtracelist (MS3TraceList *mstl, int8_t timeformat,
                                   int8_t details, int8_t gaps);
 extern void mstl3_printsynclist (MS3TraceList *mstl, char *dccid, int8_t subsecond);
