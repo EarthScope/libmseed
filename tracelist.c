@@ -1006,7 +1006,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
       msr->numsamples = seg->numsamples;
       msr->sampletype = seg->sampletype;
 
-      segpackedrecords = msr3_pack3 (msr, record_handler, handlerdata, &segpackedsamples, flush, verbose);
+      segpackedrecords = msr3_pack (msr, record_handler, handlerdata, &segpackedsamples, flush, verbose);
 
       if (verbose > 1)
       {

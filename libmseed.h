@@ -277,10 +277,10 @@ typedef struct MS3Selections_s {
 extern int msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
                        int8_t dataflag, int8_t verbose);
 
-extern int msr3_pack3 (MS3Record *msr,
-                       void (*record_handler) (char *, int, void *),
-                       void *handlerdata, int64_t *packedsamples,
-                       int8_t flush, int8_t verbose);
+extern int msr3_pack (MS3Record *msr,
+                      void (*record_handler) (char *, int, void *),
+                      void *handlerdata, int64_t *packedsamples,
+                      int8_t flush, int8_t verbose);
 
 extern int msr3_pack_header3 (MS3Record *msr, char *record, uint32_t reclen, int8_t verbose);
 

@@ -18,6 +18,10 @@
 #include "packdata.h"
 
 /* Function(s) internal to this file */
+static int msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
+                             void *handlerdata, int64_t *packedsamples,
+                             int8_t flush, int8_t verbose);
+
 static int msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
                           char sampletype, int8_t encoding, int8_t swapflag,
                           uint16_t *byteswritten, char *tsid, int8_t verbose);
@@ -25,11 +29,8 @@ static int msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabyte
 /***************************************************************************
  * msr3_pack3:
  *
- * Pack data into miniSEED records.  Using the record header values
- * in the MS3Record as a template the common header fields are packed
- * into the record header, blockettes in the blockettes chain are
- * packed and data samples are packed in the encoding format indicated
- * by the MS3Record->encoding field.
+ * Pack data into miniSEED records. Packing is performed according to the
+ * version at MS3Record->formatversion.
  *
  * The MS3Record->datasamples array and MS3Record->numsamples value will
  * not be changed by this routine.  It is the responsibility of the
@@ -52,8 +53,61 @@ static int msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabyte
  * Returns the number of records created on success and -1 on error.
  ***************************************************************************/
 int
-msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
-            void *handlerdata, int64_t *packedsamples, int8_t flush, int8_t verbose)
+msr3_pack (MS3Record *msr, void (*record_handler) (char *, int, void *),
+           void *handlerdata, int64_t *packedsamples, int8_t flush, int8_t verbose)
+{
+  int packedrecs = 0;
+
+  if (!msr)
+    return -1;
+
+  if (!record_handler)
+  {
+    ms_log (2, "msr3_pack(): record_handler() function pointer not set!\n");
+    return -1;
+  }
+
+  /* Set default record length and encoding if needed */
+  if (msr->reclen == -1)
+    msr->reclen = 4096;
+  if (msr->encoding == -1)
+    msr->encoding = DE_STEIM2;
+
+  if (msr->reclen < MINRECLEN || msr->reclen > MAXRECLEN)
+  {
+    ms_log (2, "msr3_pack(%s): Record length is out of range: %d\n",
+            msr->tsid, msr->reclen);
+    return -1;
+  }
+
+  if (msr->formatversion == 2)
+  {
+    /* TODO */
+    //packedrecs = msr3_pack_mseed2(msr, record_handler, handlerdata, packedsamples,
+    //                           flush, verbose);
+    ms_log (1, "miniSEED version 2 packing not yet supported\n");
+    return -1;
+  }
+  else /* Pack version 3 by default */
+  {
+    packedrecs = msr3_pack_mseed3 (msr, record_handler, handlerdata, packedsamples,
+                                   flush, verbose);
+  }
+
+  return packedrecs;
+} /* End of msr3_pack() */
+
+/***************************************************************************
+ * msr3_pack_mseed3:
+ *
+ * Pack data into miniSEED version 3 records.
+ *
+ * Returns the number of records created on success and -1 on error.
+ ***************************************************************************/
+int
+msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
+                  void *handlerdata, int64_t *packedsamples,
+                  int8_t flush, int8_t verbose)
 {
   char *rawrec = NULL;
   char *encoded = NULL;  /* Separate encoded data buffer for alignment */
@@ -76,33 +130,20 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
   if (!record_handler)
   {
-    ms_log (2, "msr3_pack3(): record_handler() function pointer not set!\n");
-    return -1;
-  }
-
-  /* Set default record length and encoding if needed */
-  if (msr->reclen == -1)
-    msr->reclen = 4096;
-  if (msr->encoding == -1)
-    msr->encoding = DE_STEIM2;
-
-  if (msr->reclen < MINRECLEN || msr->reclen > MAXRECLEN)
-  {
-    ms_log (2, "msr3_pack3(%s): Record length is out of range: %d\n",
-            msr->tsid, msr->reclen);
+    ms_log (2, "msr3_pack_mseed3(): record_handler() function pointer not set!\n");
     return -1;
   }
 
   if (msr->reclen < (MS3FSDH_LENGTH + msr->extralength))
   {
-    ms_log (2, "msr3_pack3(%s): Record length (%d) is not large enough for header (%d) and extra (%d)\n",
+    ms_log (2, "msr3_pack_mseed3(%s): Record length (%d) is not large enough for header (%d) and extra (%d)\n",
             msr->tsid, msr->reclen, MS3FSDH_LENGTH, msr->extralength);
     return -1;
   }
 
   if (msr->numsamples <= 0)
   {
-    ms_log (2, "msr3_pack3(%s): No samples to pack\n", msr->tsid);
+    ms_log (2, "msr3_pack_mseed3(%s): No samples to pack\n", msr->tsid);
     return -1;
   }
 
@@ -110,7 +151,7 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
   if (!samplesize)
   {
-    ms_log (2, "msr3_pack3(%s): Unknown sample type '%c'\n",
+    ms_log (2, "msr3_pack_mseed3(%s): Unknown sample type '%c'\n",
             msr->tsid, msr->sampletype);
     return -1;
   }
@@ -123,7 +164,7 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
   if (rawrec == NULL)
   {
-    ms_log (2, "msr3_pack3(%s): Cannot allocate memory\n", msr->tsid);
+    ms_log (2, "msr3_pack_mseed3(%s): Cannot allocate memory\n", msr->tsid);
     return -1;
   }
 
@@ -153,7 +194,7 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
     if (encoded == NULL)
     {
-      ms_log (2, "msr3_pack3(%s): Cannot allocate memory\n", msr->tsid);
+      ms_log (2, "msr3_pack_mseed3(%s): Cannot allocate memory\n", msr->tsid);
       free (rawrec);
       return -1;
     }
@@ -175,7 +216,7 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
     if (packsamples < 0)
     {
-      ms_log (2, "msr3_pack3(%s): Error packing data samples\n", msr->tsid);
+      ms_log (2, "msr3_pack_mseed3(%s): Error packing data samples\n", msr->tsid);
       free (encoded);
       free (rawrec);
       return -1;
@@ -221,7 +262,7 @@ msr3_pack3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   free (rawrec);
 
   return recordcnt;
-} /* End of msr3_pack3() */
+} /* End of msr3_pack_mseed3() */
 
 /***************************************************************************
  * msr3_pack_header3:
