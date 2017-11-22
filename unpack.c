@@ -107,9 +107,9 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
   if (verbose > 2)
   {
     if (msr->swapflag)
-      ms_log (1, "%s: Byte swapping needed for unpacking of header\n", msr->tsid);
+      ms_log (1, "Byte swapping needed for unpacking of header\n");
     else
-      ms_log (1, "%s: Byte swapping NOT needed for unpacking of header\n", msr->tsid);
+      ms_log (1, "Byte swapping NOT needed for unpacking of header\n");
   }
 
   /* Populate the header fields */
@@ -280,9 +280,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   if (verbose > 2)
   {
     if (msr->swapflag)
-      ms_log (1, "%s: Byte swapping needed for unpacking of header\n", msr->tsid);
+      ms_log (1, "Byte swapping needed for unpacking of header\n");
     else
-      ms_log (1, "%s: Byte swapping NOT needed for unpacking of header\n", msr->tsid);
+      ms_log (1, "Byte swapping NOT needed for unpacking of header\n");
   }
 
   /* Populate some of the common header fields */

@@ -282,6 +282,8 @@ extern int msr3_pack (MS3Record *msr,
                       void *handlerdata, int64_t *packedsamples,
                       int8_t flush, int8_t verbose);
 
+extern int msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t reclen, int8_t verbose);
+
 extern int msr3_pack_header3 (MS3Record *msr, char *record, uint32_t reclen, int8_t verbose);
 
 extern int msr3_unpack_data (MS3Record *msr, int8_t verbose);
