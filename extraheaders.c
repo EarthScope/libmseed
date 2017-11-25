@@ -374,6 +374,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "Type";
     item[idx].type = CBOR_TEXT;
+    item[idx].valuetype = UCHARP;
     item[idx].value.ucharp = (unsigned char *)calibration->type;
     item[idx].length = strlen(calibration->type);
     idx++;
@@ -388,6 +389,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
 
     keyp[idx] = "BeginTime";
     item[idx].type = CBOR_TEXT;
+    item[idx].valuetype = UCHARP;
     item[idx].value.ucharp = (unsigned char *)beginstr;
     item[idx].length = strlen(beginstr);
     idx++;
@@ -402,6 +404,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
 
     keyp[idx] = "EndTime";
     item[idx].type = CBOR_TEXT;
+    item[idx].valuetype = UCHARP;
     item[idx].value.ucharp = (unsigned char *)endstr;
     item[idx].length = strlen(endstr);
     idx++;
@@ -410,6 +413,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "Steps";
     item[idx].type = CBOR_UINT;
+    item[idx].valuetype = INT64T;
     item[idx].value.int64 = calibration->steps;
     item[idx].length = 0;
     idx++;
@@ -418,6 +422,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "FirstPulsePositive";
     item[idx].type = (calibration->firstpulsepositive) ? CBOR_TRUE : CBOR_FALSE;
+    item[idx].valuetype = INT64T;
     item[idx].value.int64 = (calibration->firstpulsepositive) ? 1 : 0;
     item[idx].length = 0;
     idx++;
@@ -426,6 +431,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "AlternateSign";
     item[idx].type = (calibration->alternatesign) ? CBOR_TRUE : CBOR_FALSE;
+    item[idx].valuetype = INT64T;
     item[idx].value.int64 = (calibration->alternatesign) ? 1 : 0;
     item[idx].length = 0;
     idx++;
@@ -434,6 +440,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "Trigger";
     item[idx].type = CBOR_TEXT;
+    item[idx].valuetype = UCHARP;
     item[idx].value.ucharp = (unsigned char *)calibration->trigger;
     item[idx].length = strlen(calibration->trigger);
     idx++;
@@ -442,6 +449,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "Continued";
     item[idx].type = (calibration->continued) ? CBOR_TRUE : CBOR_FALSE;
+    item[idx].valuetype = INT64T;
     item[idx].value.int64 = (calibration->continued) ? 1 : 0;
     item[idx].length = 0;
     idx++;
@@ -450,6 +458,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "Amplitude";
     item[idx].type = CBOR_FLOAT64;
+    item[idx].valuetype = FLOAT64T;
     item[idx].value.float64 = calibration->amplitude;
     item[idx].length = 0;
     idx++;
@@ -458,6 +467,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "InputUnits";
     item[idx].type = CBOR_TEXT;
+    item[idx].valuetype = UCHARP;
     item[idx].value.ucharp = (unsigned char *)calibration->inputunits;
     item[idx].length = strlen(calibration->inputunits);
     idx++;
@@ -466,6 +476,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "AmplitudeRange";
     item[idx].type = CBOR_TEXT;
+    item[idx].valuetype = UCHARP;
     item[idx].value.ucharp = (unsigned char *)calibration->amplituderange;
     item[idx].length = strlen(calibration->amplituderange);
     idx++;
@@ -474,6 +485,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "Duration";
     item[idx].type = CBOR_FLOAT64;
+    item[idx].valuetype = FLOAT64T;
     item[idx].value.float64 = calibration->duration;
     item[idx].length = 0;
     idx++;
@@ -482,6 +494,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "SinePeriod";
     item[idx].type = CBOR_FLOAT64;
+    item[idx].valuetype = FLOAT64T;
     item[idx].value.float64 = calibration->sineperiod;
     item[idx].length = 0;
     idx++;
@@ -490,6 +503,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "StepBetween";
     item[idx].type = CBOR_FLOAT64;
+    item[idx].valuetype = FLOAT64T;
     item[idx].value.float64 = calibration->stepbetween;
     item[idx].length = 0;
     idx++;
@@ -498,6 +512,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "InputChannel";
     item[idx].type = CBOR_TEXT;
+    item[idx].valuetype = UCHARP;
     item[idx].value.ucharp = (unsigned char *)calibration->inputchannel;
     item[idx].length = strlen(calibration->inputchannel);
     idx++;
@@ -506,6 +521,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "ReferenceAmplitude";
     item[idx].type = CBOR_FLOAT64;
+    item[idx].valuetype = FLOAT64T;
     item[idx].value.float64 = calibration->refamplitude;
     item[idx].length = 0;
     idx++;
@@ -514,6 +530,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "Coupling";
     item[idx].type = CBOR_TEXT;
+    item[idx].valuetype = UCHARP;
     item[idx].value.ucharp = (unsigned char *)calibration->coupling;
     item[idx].length = strlen(calibration->coupling);
     idx++;
@@ -522,6 +539,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "Rolloff";
     item[idx].type = CBOR_TEXT;
+    item[idx].valuetype = UCHARP;
     item[idx].value.ucharp = (unsigned char *)calibration->rolloff;
     item[idx].length = strlen(calibration->rolloff);
     idx++;
@@ -530,6 +548,7 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
   {
     keyp[idx] = "Noise";
     item[idx].type = CBOR_TEXT;
+    item[idx].valuetype = UCHARP;
     item[idx].value.ucharp = (unsigned char *)calibration->noise;
     item[idx].length = strlen(calibration->noise);
     idx++;

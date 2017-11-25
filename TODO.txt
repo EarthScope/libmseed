@@ -18,3 +18,11 @@ Loss from miniSEED 2.x:
 - Blockette 2000
 - Multiple "Clock Model" designations if multiple Blockette 500s
 - "sequence" numbers
+
+Things that need consideration:
+
+- Identifiers: underscores?  special handling for locations?
+- byte order, final decision
+- extra header container
+- extra header time format (YYYYDDDThh:mm:ss.ffffffffZ, always Z) ? or YYYY-MM-DDThh:mm:ss for extremely broad support
+

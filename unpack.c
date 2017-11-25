@@ -115,12 +115,20 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
   /* Populate the header fields */
   msr->formatversion = *pMS3FSDH_FORMATVERSION (record);
   msr->flags = *pMS3FSDH_FLAGS (record);
+
   msr->starttime = ms_time2nstime (HO2u (*pMS3FSDH_YEAR (record), msr->swapflag),
                                    HO2u (*pMS3FSDH_DAY (record), msr->swapflag),
                                    *pMS3FSDH_HOUR (record),
                                    *pMS3FSDH_MIN (record),
                                    *pMS3FSDH_SEC (record),
                                    HO4u (*pMS3FSDH_NSEC (record), msr->swapflag));
+  if (msr->starttime == NSTERROR)
+  {
+    ms_log (2, "msr3_unpack_mseed3(%.*s): Cannot convert start time to internal time stamp\n",
+            tsidlength, pMS3FSDH_TSID (record));
+    return MS_GENERROR;
+  }
+
   msr->encoding = *pMS3FSDH_ENCODING (record);
   msr->samprate = HO8f (*pMS3FSDH_SAMPLERATE (record), msr->swapflag);
   msr->samplecnt = HO4u (*pMS3FSDH_NUMSAMPLES (record), msr->swapflag);
@@ -131,7 +139,7 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
 
   if (tsidlength > sizeof (msr->tsid))
   {
-    ms_log (2, "msr3_unpack_mseed2(%.*s): Time series identifier is longer (%d) than supported (%d)\n",
+    ms_log (2, "msr3_unpack_mseed3(%.*s): Time series identifier is longer (%d) than supported (%d)\n",
             tsidlength, pMS3FSDH_TSID (record), tsidlength, (int)sizeof (msr->tsid));
     return MS_GENERROR;
   }
@@ -430,24 +438,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       else
         strncpy (eventdetection.units, "COUNTS", sizeof (eventdetection.units));
 
-      eventdetection.onsettime = ms_time2nstime (HO2u (*pMS2B200_YEAR (record + blkt_offset), msr->swapflag),
-                                                 HO2u (*pMS2B200_DAY (record + blkt_offset), msr->swapflag),
-                                                 *pMS2B200_HOUR (record + blkt_offset),
-                                                 *pMS2B200_MIN (record + blkt_offset),
-                                                 *pMS2B200_SEC (record + blkt_offset),
-                                                 (uint32_t)HO2u (*pMS2B200_FSEC (record + blkt_offset), msr->swapflag) * (NSTMODULUS / 10000));
+      eventdetection.onsettime = ms_btime2nstime ((uint8_t*)pMS2B200_YEAR (record + blkt_offset), msr->swapflag);
       if (eventdetection.onsettime == NSTERROR)
-      {
-        ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
-                msr->tsid,
-                HO2u (*pMS2B200_YEAR (record), msr->swapflag),
-                HO2u (*pMS2B200_DAY (record), msr->swapflag),
-                *pMS2B200_HOUR (record),
-                *pMS2B200_MIN (record),
-                *pMS2B200_SEC (record),
-                HO2u (*pMS2B200_FSEC (record), msr->swapflag));
         return MS_GENERROR;
-      }
 
       memset (eventdetection.snrvalues, 0, 6);
       eventdetection.medlookback = -1;
@@ -476,24 +469,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       else
         strncpy (eventdetection.detectionwave, "COMPRESSION", sizeof (eventdetection.detectionwave));
 
-      eventdetection.onsettime = ms_time2nstime (HO2u (*pMS2B201_YEAR (record + blkt_offset), msr->swapflag),
-                                                 HO2u (*pMS2B201_DAY (record + blkt_offset), msr->swapflag),
-                                                 *pMS2B201_HOUR (record + blkt_offset),
-                                                 *pMS2B201_MIN (record + blkt_offset),
-                                                 *pMS2B201_SEC (record + blkt_offset),
-                                                 (uint32_t)HO2u (*pMS2B201_FSEC (record + blkt_offset), msr->swapflag) * (NSTMODULUS / 10000));
+      eventdetection.onsettime = ms_btime2nstime ((uint8_t*)pMS2B201_YEAR (record + blkt_offset), msr->swapflag);
       if (eventdetection.onsettime == NSTERROR)
-      {
-        ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
-                msr->tsid,
-                HO2u (*pMS2B201_YEAR (record), msr->swapflag),
-                HO2u (*pMS2B201_DAY (record), msr->swapflag),
-                *pMS2B201_HOUR (record),
-                *pMS2B201_MIN (record),
-                *pMS2B201_SEC (record),
-                HO2u (*pMS2B201_FSEC (record), msr->swapflag));
         return MS_GENERROR;
-      }
 
       memcpy (eventdetection.snrvalues, pMS2B201_SNRVALUES (record + blkt_offset), 6);
       eventdetection.medlookback = *pMS2B201_LOOPBACK (record + blkt_offset);
@@ -512,24 +490,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       strncpy (calibration.type, "STEP", sizeof (calibration.type));
 
-      calibration.begintime = ms_time2nstime (HO2u (*pMS2B300_YEAR (record + blkt_offset), msr->swapflag),
-                                              HO2u (*pMS2B300_DAY (record + blkt_offset), msr->swapflag),
-                                              *pMS2B300_HOUR (record + blkt_offset),
-                                              *pMS2B300_MIN (record + blkt_offset),
-                                              *pMS2B300_SEC (record + blkt_offset),
-                                              (uint32_t)HO2u (*pMS2B300_FSEC (record + blkt_offset), msr->swapflag) * (NSTMODULUS / 10000));
+      calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B300_YEAR (record + blkt_offset), msr->swapflag);
       if (calibration.begintime == NSTERROR)
-      {
-        ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
-                msr->tsid,
-                HO2u (*pMS2B300_YEAR (record), msr->swapflag),
-                HO2u (*pMS2B300_DAY (record), msr->swapflag),
-                *pMS2B300_HOUR (record),
-                *pMS2B300_MIN (record),
-                *pMS2B300_SEC (record),
-                HO2u (*pMS2B300_FSEC (record), msr->swapflag));
         return MS_GENERROR;
-      }
 
       calibration.endtime = NSTERROR;
       calibration.steps = *pMS2B300_NUMCALIBRATIONS (record + blkt_offset);
@@ -580,24 +543,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       strncpy (calibration.type, "SINE", sizeof (calibration.type));
 
-      calibration.begintime = ms_time2nstime (HO2u (*pMS2B310_YEAR (record + blkt_offset), msr->swapflag),
-                                              HO2u (*pMS2B310_DAY (record + blkt_offset), msr->swapflag),
-                                              *pMS2B310_HOUR (record + blkt_offset),
-                                              *pMS2B310_MIN (record + blkt_offset),
-                                              *pMS2B310_SEC (record + blkt_offset),
-                                              (uint32_t)HO2u (*pMS2B310_FSEC (record + blkt_offset), msr->swapflag) * (NSTMODULUS / 10000));
+      calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B310_YEAR (record + blkt_offset), msr->swapflag);
       if (calibration.begintime == NSTERROR)
-      {
-        ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
-                msr->tsid,
-                HO2u (*pMS2B310_YEAR (record), msr->swapflag),
-                HO2u (*pMS2B310_DAY (record), msr->swapflag),
-                *pMS2B310_HOUR (record),
-                *pMS2B310_MIN (record),
-                *pMS2B310_SEC (record),
-                HO2u (*pMS2B310_FSEC (record), msr->swapflag));
         return MS_GENERROR;
-      }
 
       calibration.endtime = NSTERROR;
       calibration.steps = -1;
@@ -650,24 +598,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       strncpy (calibration.type, "PSEUDORANDOM", sizeof (calibration.type));
 
-      calibration.begintime = ms_time2nstime (HO2u (*pMS2B320_YEAR (record + blkt_offset), msr->swapflag),
-                                              HO2u (*pMS2B320_DAY (record + blkt_offset), msr->swapflag),
-                                              *pMS2B320_HOUR (record + blkt_offset),
-                                              *pMS2B320_MIN (record + blkt_offset),
-                                              *pMS2B320_SEC (record + blkt_offset),
-                                              (uint32_t)HO2u (*pMS2B320_FSEC (record + blkt_offset), msr->swapflag) * (NSTMODULUS / 10000));
+      calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B320_YEAR (record + blkt_offset), msr->swapflag);
       if (calibration.begintime == NSTERROR)
-      {
-        ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
-                msr->tsid,
-                HO2u (*pMS2B320_YEAR (record), msr->swapflag),
-                HO2u (*pMS2B320_DAY (record), msr->swapflag),
-                *pMS2B320_HOUR (record),
-                *pMS2B320_MIN (record),
-                *pMS2B320_SEC (record),
-                HO2u (*pMS2B320_FSEC (record), msr->swapflag));
         return MS_GENERROR;
-      }
 
       calibration.endtime = NSTERROR;
       calibration.steps = -1;
@@ -714,24 +647,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       strncpy (calibration.type, "GENERIC", sizeof (calibration.type));
 
-      calibration.begintime = ms_time2nstime (HO2u (*pMS2B390_YEAR (record + blkt_offset), msr->swapflag),
-                                              HO2u (*pMS2B390_DAY (record + blkt_offset), msr->swapflag),
-                                              *pMS2B390_HOUR (record + blkt_offset),
-                                              *pMS2B390_MIN (record + blkt_offset),
-                                              *pMS2B390_SEC (record + blkt_offset),
-                                              (uint32_t)HO2u (*pMS2B390_FSEC (record + blkt_offset), msr->swapflag) * (NSTMODULUS / 10000));
+      calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B390_YEAR (record + blkt_offset), msr->swapflag);
       if (calibration.begintime == NSTERROR)
-      {
-        ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
-                msr->tsid,
-                HO2u (*pMS2B390_YEAR (record), msr->swapflag),
-                HO2u (*pMS2B390_DAY (record), msr->swapflag),
-                *pMS2B390_HOUR (record),
-                *pMS2B390_MIN (record),
-                *pMS2B390_SEC (record),
-                HO2u (*pMS2B390_FSEC (record), msr->swapflag));
         return MS_GENERROR;
-      }
 
       calibration.endtime = NSTERROR;
       calibration.steps = -1;
@@ -775,24 +693,10 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       strncpy (calibration.type, "ABORT", sizeof (calibration.type));
 
       calibration.begintime = NSTERROR;
-      calibration.endtime = ms_time2nstime (HO2u (*pMS2B395_YEAR (record + blkt_offset), msr->swapflag),
-                                            HO2u (*pMS2B395_DAY (record + blkt_offset), msr->swapflag),
-                                            *pMS2B395_HOUR (record + blkt_offset),
-                                            *pMS2B395_MIN (record + blkt_offset),
-                                            *pMS2B395_SEC (record + blkt_offset),
-                                            (uint32_t)HO2u (*pMS2B395_FSEC (record + blkt_offset), msr->swapflag) * (NSTMODULUS / 10000));
+
+      calibration.endtime = ms_btime2nstime ((uint8_t*)pMS2B395_YEAR (record + blkt_offset), msr->swapflag);
       if (calibration.endtime == NSTERROR)
-      {
-        ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
-                msr->tsid,
-                HO2u (*pMS2B395_YEAR (record), msr->swapflag),
-                HO2u (*pMS2B395_DAY (record), msr->swapflag),
-                *pMS2B395_HOUR (record),
-                *pMS2B395_MIN (record),
-                *pMS2B395_SEC (record),
-                HO2u (*pMS2B395_FSEC (record), msr->swapflag));
         return MS_GENERROR;
-      }
 
       calibration.steps = -1;
       calibration.firstpulsepositive = -1;
@@ -836,24 +740,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       exception.vcocorrection = HO4f (*pMS2B500_VCOCORRECTION (record + blkt_offset), msr->swapflag);
 
-      exception.time = ms_time2nstime (HO2u (*pMS2B500_YEAR (record + blkt_offset), msr->swapflag),
-                                       HO2u (*pMS2B500_DAY (record + blkt_offset), msr->swapflag),
-                                       *pMS2B500_HOUR (record + blkt_offset),
-                                       *pMS2B500_MIN (record + blkt_offset),
-                                       *pMS2B500_SEC (record + blkt_offset),
-                                       (uint32_t)HO2u (*pMS2B500_FSEC (record + blkt_offset), msr->swapflag) * (NSTMODULUS / 10000));
+      exception.time = ms_btime2nstime ((uint8_t*)pMS2B500_YEAR (record + blkt_offset), msr->swapflag);
       if (exception.time == NSTERROR)
-      {
-        ms_log (2, "msr3_unpack_mseed2(%s): Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
-                msr->tsid,
-                HO2u (*pMS2B500_YEAR (record), msr->swapflag),
-                HO2u (*pMS2B500_DAY (record), msr->swapflag),
-                *pMS2B500_HOUR (record),
-                *pMS2B500_MIN (record),
-                *pMS2B500_SEC (record),
-                HO2u (*pMS2B500_FSEC (record), msr->swapflag));
         return MS_GENERROR;
-      }
 
       exception.usec = *pMS2B500_MICROSECOND (record + blkt_offset);
       exception.receptionquality = *pMS2B500_RECEPTIONQUALITY (record + blkt_offset);
@@ -867,6 +756,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
         return MS_GENERROR;
       }
 
+      /* Clock model maps to a single value at FDSN::Clock::Model */
       ms_strncpcleantail (sval, pMS2B500_CLOCKMODEL (record + blkt_offset), 32);
       mseh_set_bytes (msr, sval, strlen (sval), "FDSN", "Clock", "Model");
     }
@@ -956,21 +846,11 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   }
 
   /* Calculate start time */
-  msr->starttime = ms_time2nstime (HO2u (*pMS2FSDH_YEAR (record), msr->swapflag),
-                                   HO2u (*pMS2FSDH_DAY (record), msr->swapflag),
-                                   *pMS2FSDH_HOUR (record),
-                                   *pMS2FSDH_MIN (record),
-                                   *pMS2FSDH_SEC (record),
-                                   (uint32_t)HO2u (*pMS2FSDH_FSEC (record), msr->swapflag) * (NSTMODULUS / 10000));
+  msr->starttime = ms_btime2nstime ((uint8_t*)pMS2FSDH_YEAR (record), msr->swapflag);
   if (msr->starttime == NSTERROR)
   {
-    ms_log (2, "%s: Cannot time values to internal time: %d,%d,%d,%d,%d,%d\n",
-            HO2u (*pMS2FSDH_YEAR (record), msr->swapflag),
-            HO2u (*pMS2FSDH_DAY (record), msr->swapflag),
-            *pMS2FSDH_HOUR (record),
-            *pMS2FSDH_MIN (record),
-            *pMS2FSDH_SEC (record),
-            HO2u (*pMS2FSDH_FSEC (record), msr->swapflag));
+    ms_log (2, "msr3_unpack_mseed2(%s): Cannot convert start time to internal time stamp\n",
+            msr->tsid);
     return MS_GENERROR;
   }
 
