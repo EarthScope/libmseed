@@ -34,13 +34,13 @@
  * All approriate fields are byteswapped, if needed, and pointers to
  * structured data are set.
  *
- * If 'dataflag' is true the data samples are unpacked/decompressed
- * and the MS3Record->datasamples pointer is set appropriately.  The
- * data samples will be either 32-bit integers, 32-bit floats or
- * 64-bit floats (doubles) with the same byte order as the host
- * machine.  The MS3Record->numsamples will be set to the actual
- * number of samples unpacked/decompressed and MS3Record->sampletype
- * will indicated the sample type.
+ * If MSF_UNPACKDATA is set in flags the data samples are
+ * unpacked/decompressed and the MS3Record->datasamples pointer is set
+ * appropriately.  The data samples will be either 32-bit integers,
+ * 32-bit floats or 64-bit floats (doubles) with the same byte order
+ * as the host machine.  The MS3Record->numsamples will be set to the
+ * actual number of samples unpacked/decompressed and
+ * MS3Record->sampletype will indicated the sample type.
  *
  * All appropriate values will be byte-swapped to the host order,
  * including the data samples.
@@ -56,7 +56,7 @@
  ***************************************************************************/
 int
 msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
-                    int8_t dataflag, int8_t verbose)
+                    uint32_t flags, int8_t verbose)
 {
   uint8_t tsidlength = 0;
   int retval;
@@ -161,7 +161,7 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
   msr->datalength = HO2u (*pMS3FSDH_DATALENGTH (record), msr->swapflag);
 
   /* Unpack the data samples if requested */
-  if (dataflag && msr->samplecnt > 0)
+  if ((flags & MSF_UNPACKDATA) && msr->samplecnt > 0)
   {
     retval = msr3_unpack_data (msr, verbose);
 
@@ -189,13 +189,13 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
  * All approriate fields are byteswapped, if needed, and pointers to
  * structured data are set.
  *
- * If 'dataflag' is true the data samples are unpacked/decompressed
- * and the MS3Record->datasamples pointer is set appropriately.  The
- * data samples will be either 32-bit integers, 32-bit floats or
- * 64-bit floats (doubles) with the same byte order as the host
- * machine.  The MS3Record->numsamples will be set to the actual
- * number of samples unpacked/decompressed and MS3Record->sampletype
- * will indicated the sample type.
+ * If MSF_UNPACKDATA is set in flags the data samples are
+ * unpacked/decompressed and the MS3Record->datasamples pointer is set
+ * appropriately.  The data samples will be either 32-bit integers,
+ * 32-bit floats or 64-bit floats (doubles) with the same byte order
+ * as the host machine.  The MS3Record->numsamples will be set to the
+ * actual number of samples unpacked/decompressed and
+ * MS3Record->sampletype will indicated the sample type.
  *
  * All appropriate values will be byte-swapped to the host order,
  * including the data samples.
@@ -211,7 +211,7 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
  ***************************************************************************/
 int
 msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
-                    int8_t dataflag, int8_t verbose)
+                    uint32_t flags, int8_t verbose)
 {
   int B1000offset = 0;
   int B1001offset = 0;
@@ -871,7 +871,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   msr->datalength = msr->reclen - HO2u (*pMS2FSDH_DATAOFFSET (record), msr->swapflag);
 
   /* Unpack the data samples if requested */
-  if (dataflag && msr->samplecnt > 0)
+  if ((flags & MSF_UNPACKDATA) && msr->samplecnt > 0)
   {
     uint8_t saveswapflag = msr->swapflag;
     int8_t bigendianhost = ms_bigendianhost ();
@@ -1261,6 +1261,9 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
             msr->tsid, nsamples, msr->samplecnt);
     return MS_GENERROR;
   }
+
+  if (nsamples > 0)
+    msr->numsamples = nsamples;
 
   return nsamples;
 } /* End of msr3_unpack_data() */

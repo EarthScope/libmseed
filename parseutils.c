@@ -27,7 +27,8 @@
  * The record length is always automatically detected.  For miniSEED
  * 2.x this means the record must contain a 1000 blockette.
  *
- * dataflag will be passed directly to msr_unpack().
+ * If the MSF_UNPACKDATA flag is set in flags, msr_unpack_mseed#()
+ * will called to unpack the data samples.x
  *
  * Return values:
  *   0 : Success, populates the supplied MS3Record.
@@ -37,7 +38,7 @@
  *********************************************************************/
 int
 msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
-            int8_t dataflag, int8_t verbose)
+            uint32_t flags, int8_t verbose)
 {
   int reclen  = 0;
   int retcode = MS_NOERROR;
@@ -88,11 +89,11 @@ msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
   /* Unpack record */
   if (formatversion == 3)
   {
-    retcode = msr3_unpack_mseed3 (record, reclen, ppmsr, dataflag, verbose);
+    retcode = msr3_unpack_mseed3 (record, reclen, ppmsr, flags, verbose);
   }
   else if (formatversion == 2)
   {
-    retcode = msr3_unpack_mseed2 (record, reclen, ppmsr, dataflag, verbose);
+    retcode = msr3_unpack_mseed2 (record, reclen, ppmsr, flags, verbose);
   }
   else
   {
@@ -229,7 +230,7 @@ ms3_detect (const char *record, int recbuflen, uint8_t *formatversion)
   } /* End of miniSEED 2.x detection */
 
   if (!foundlen)
-    return 0;
+    return -1;
   else
     return reclen;
 } /* End of ms3_detect() */

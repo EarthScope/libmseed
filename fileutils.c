@@ -19,7 +19,7 @@
 static int ms_fread (char *buf, int size, int num, FILE *stream);
 
 /* Skip length in bytes when skipping non-data */
-#define SKIPLEN 128
+#define SKIPLEN 1
 
 /* Initialize the global file reading parameters */
 MS3FileParam gMS3FileParam = {NULL, "", NULL, 0, 0, 0, 0, 0};
@@ -36,12 +36,12 @@ MS3FileParam gMS3FileParam = {NULL, "", NULL, 0, 0, 0, 0, 0};
  *********************************************************************/
 int
 ms3_readmsr (MS3Record **ppmsr, const char *msfile, int64_t *fpos,
-             int8_t *last, int8_t skipnotdata, int8_t dataflag, int8_t verbose)
+             int8_t *last, uint32_t flags, int8_t verbose)
 {
   MS3FileParam *msfp = &gMS3FileParam;
 
   return ms3_readmsr_main (&msfp, ppmsr, msfile, fpos, last,
-                           skipnotdata, dataflag, NULL, verbose);
+                           flags, NULL, verbose);
 } /* End of ms3_readmsr() */
 
 /**********************************************************************
@@ -57,11 +57,10 @@ ms3_readmsr (MS3Record **ppmsr, const char *msfile, int64_t *fpos,
  *********************************************************************/
 int
 ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
-               int64_t *fpos, int8_t *last, int8_t skipnotdata,
-               int8_t dataflag, int8_t verbose)
+               int64_t *fpos, int8_t *last, uint32_t flags, int8_t verbose)
 {
   return ms3_readmsr_main (ppmsfp, ppmsr, msfile, fpos, last,
-                           skipnotdata, dataflag, NULL, verbose);
+                           flags, NULL, verbose);
 } /* End of ms_readmsr_r() */
 
 /**********************************************************************
@@ -129,10 +128,10 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  * If *last is not NULL it will be set to 1 when the last record in
  * the file is being returned, otherwise it will be 0.
  *
- * If the skipnotdata flag is true any data chunks read that are not
- * valid data records will be skipped.
+ * If MSF_SKIPNOTDATA is set in flags skip what cannot be identified
+ * as miniSEED.
  *
- * dataflag will be passed directly to msr_unpack().
+ * If MSF_UNPACKDATA is set in flags data samples will be unpacked.
  *
  * After reading all the records in a file the controlling program
  * should call this routine one last time with msfile set to NULL.
@@ -145,8 +144,8 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  *********************************************************************/
 int
 ms3_readmsr_main (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
-                  int64_t *fpos, int8_t *last, int8_t skipnotdata,
-                  int8_t dataflag, MS3Selections *selections, int8_t verbose)
+                  int64_t *fpos, int8_t *last, uint32_t flags,
+                  MS3Selections *selections, int8_t verbose)
 {
   MS3FileParam *msfp;
   int parseval = 0;
@@ -354,9 +353,7 @@ ms3_readmsr_main (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
     /* Attempt to parse record from buffer */
     if (MSFPBUFLEN (msfp) >= MINRECLEN)
     {
-      int parselen = MSFPBUFLEN (msfp);
-
-      parseval = msr3_parse (MSFPREADPTR (msfp), parselen, ppmsr, dataflag, verbose);
+      parseval = msr3_parse (MSFPREADPTR (msfp), MSFPBUFLEN (msfp), ppmsr, flags, verbose);
 
       /* Record detected and parsed */
       if (parseval == 0)
@@ -384,7 +381,7 @@ ms3_readmsr_main (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
       else if (parseval < 0)
       {
         /* Skip non-data if requested */
-        if (skipnotdata)
+        if (flags & MSF_SKIPNOTDATA)
         {
           if (verbose > 1)
           {
@@ -411,7 +408,7 @@ ms3_readmsr_main (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
         /* Check for parse hints that are larger than MAXRECLEN */
         if ((MSFPBUFLEN (msfp) + parseval) > MAXRECLEN)
         {
-          if (skipnotdata)
+          if (flags & MSF_SKIPNOTDATA)
           {
             /* Skip SKIPLEN bytes, update reading offset and file position */
             msfp->readoffset += SKIPLEN;
@@ -481,12 +478,11 @@ ms3_readmsr_main (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
 int
 ms3_readtracelist (MS3TraceList **ppmstl, const char *msfile,
                    double timetol, double sampratetol, int8_t pubversion,
-                   int8_t skipnotdata, int8_t dataflag, int8_t verbose)
+                   uint32_t flags, int8_t verbose)
 {
   return ms3_readtracelist_selection (ppmstl, msfile, timetol,
                                       sampratetol, NULL,
-                                      pubversion, skipnotdata,
-                                      dataflag, verbose);
+                                      pubversion, flags, verbose);
 } /* End of ms3_readtracelist() */
 
 /*********************************************************************
@@ -502,7 +498,7 @@ int
 ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
                            double timetol, double sampratetol,
                            nstime_t starttime, nstime_t endtime, int8_t pubversion,
-                           int8_t skipnotdata, int8_t dataflag, int8_t verbose)
+                           uint32_t flags, int8_t verbose)
 {
   MS3Selections selection;
   MS3SelectTime selecttime;
@@ -518,8 +514,8 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
 
   return ms3_readtracelist_selection (ppmstl, msfile, timetol,
                                       sampratetol, &selection,
-                                      pubversion, skipnotdata,
-                                      dataflag, verbose);
+                                      pubversion, flags,
+                                      verbose);
 } /* End of ms3_readtracelist_timewin() */
 
 /*********************************************************************
@@ -539,7 +535,7 @@ int
 ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
                              double timetol, double sampratetol,
                              MS3Selections *selections, int8_t pubversion,
-                             int8_t skipnotdata, int8_t dataflag, int8_t verbose)
+                             uint32_t flags, int8_t verbose)
 {
   MS3Record *msr = 0;
   MS3FileParam *msfp = 0;
@@ -559,7 +555,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
 
   /* Loop over the input file */
   while ((retcode = ms3_readmsr_main (&msfp, &msr, msfile, NULL, NULL,
-                                      skipnotdata, dataflag, NULL, verbose)) == MS_NOERROR)
+                                      flags, NULL, verbose)) == MS_NOERROR)
   {
     /* Test against selections if supplied */
     if (selections)
@@ -581,7 +577,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
   if (retcode == MS_ENDOFFILE)
     retcode = MS_NOERROR;
 
-  ms3_readmsr_main (&msfp, &msr, NULL, NULL, NULL, 0, 0, NULL, 0);
+  ms3_readmsr_main (&msfp, &msr, NULL, NULL, NULL, 0, NULL, 0);
 
   return retcode;
 } /* End of ms3_readtracelist_selection() */

@@ -12,9 +12,9 @@ extern "C" {
 #endif
 
 extern int msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
-                               int8_t dataflag, int8_t verbose);
+                               uint32_t flags, int8_t verbose);
 extern int msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
-                               int8_t dataflag, int8_t verbose);
+                               uint32_t flags, int8_t verbose);
 
 extern double ms_nomsamprate (int factor, int multiplier);
 extern char *ms2_recordtsid (char *record, char *tsid);

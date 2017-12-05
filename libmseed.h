@@ -273,9 +273,16 @@ typedef struct MS3Selections_s {
   uint8_t pubversion;
 } MS3Selections;
 
+/* miniSEED parsing and packing control flags */
+#define MSF_UNPACKDATA  0x0001  /* Unpack data when parsing */
+#define MSF_SKIPNOTDATA 0x0002  /* Skip what cannot be identified as miniSEED */
+#define MSF_VALIDATECRC 0x0004  /* Validate CRC (if version 3) when parsing */
+#define MSF_SEQUENCE    0x0008  /* Maintain a record-level sequence number */
+#define MSF_FLUSHDATA   0x0010  /* Pack all available data */
+
 /* miniSEED record related functions */
 extern int msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
-                       int8_t dataflag, int8_t verbose);
+                       uint32_t flags, int8_t verbose);
 
 extern int msr3_pack (MS3Record *msr,
                       void (*record_handler) (char *, int, void *),
@@ -464,22 +471,21 @@ typedef struct MS3FileParam_s
 } MS3FileParam;
 
 extern int ms3_readmsr (MS3Record **ppmsr, const char *msfile, int64_t *fpos, int8_t *last,
-                        int8_t skipnotdata, int8_t dataflag, int8_t verbose);
+                        uint32_t flags, int8_t verbose);
 extern int ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
-                          int64_t *fpos, int8_t *last, int8_t skipnotdata, int8_t dataflag, int8_t verbose);
+                          int64_t *fpos, int8_t *last, uint32_t flags, int8_t verbose);
 
 extern int ms3_readmsr_main (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
-                             int64_t *fpos, int8_t *last, int8_t skipnotdata, int8_t dataflag,
+                             int64_t *fpos, int8_t *last, uint32_t flags,
                              MS3Selections *selections, int8_t verbose);
 
 extern int ms3_readtracelist (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
-                              int8_t pubversion, int8_t skipnotdata, int8_t dataflag, int8_t verbose);
+                              int8_t pubversion, uint32_t flags, int8_t verbose);
 extern int ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
-                                      nstime_t starttime, nstime_t endtime, int8_t pubversion, int8_t skipnotdata,
-                                      int8_t dataflag, int8_t verbose);
+                                      nstime_t starttime, nstime_t endtime, int8_t pubversion, uint32_t flags,
+                                      int8_t verbose);
 extern int ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
-                                        MS3Selections *selections, int8_t pubversion, int8_t skipnotdata,
-                                        int8_t dataflag, int8_t verbose);
+                                        MS3Selections *selections, int8_t pubversion, uint32_t flags, int8_t verbose);
 extern int msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
                             int maxreclen, int8_t encoding, int8_t verbose);
 extern int mstl3_writemseed (MS3TraceList *mst, const char *msfile, int8_t overwrite,

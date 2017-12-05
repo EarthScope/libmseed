@@ -7,7 +7,15 @@
 
 * Handle splitversion in mstl3_addmsr().
 
-* Optional, validation of CRC on read
+* Optional, validation of CRC on read, use "bit flags" like open(2)?
+#define MSF_VALIDATECRC 0x0004  /* Validate CRC (if version 3) when parsing */
+#define MSF_SEQUENCE    0x0008  /* Maintain a record-level sequence number */
+#define MSF_FLUSHDATA   0x0010  /* Pack all available data */
+
+* Add msr3_parsebuffer() to parse all records from a buffer.
+
+* Port test code
+
 
 Extra handling:
 - Fetch/extraction for event detection, calibration and timing structures
