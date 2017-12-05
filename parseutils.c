@@ -477,7 +477,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
     return 1;
 
   /* Build time series identifier for this record */
-  ms2_recordtsid (record, tsid);
+  ms2_recordtsid (record, tsid, sizeof (tsid));
 
   /* Check to see if byte swapping is needed by testing the year and day */
   if (swapflag == -1 && !MS_ISVALIDYEARDAY (*pMS2FSDH_YEAR (record), *pMS2FSDH_DAY (record)))

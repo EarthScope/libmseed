@@ -1,5 +1,5 @@
 
-* Selection file mapping, matching.  How to handle wildcard locations?
+* Selection file mapping, matching.  How to handle wildcard locations?  Needs testing.
 
 * miniSEED 2.4 packing?
 

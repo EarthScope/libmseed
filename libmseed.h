@@ -492,7 +492,9 @@ extern int mstl3_writemseed (MS3TraceList *mst, const char *msfile, int8_t overw
                              int maxreclen, int8_t encoding, int8_t verbose);
 
 /* General use functions */
-extern int      ms_parsetsid (char *tsid, char *net, char *sta, char *loc, char *chan);
+extern int      ms_tsid2nslc (char *tsid, char *net, char *sta, char *loc, char *chan);
+extern int      ms_nslc2tsid (char *tsid, int tsidlen, uint16_t flags,
+                              char *net, char *sta, char *loc, char *chan);
 extern int      ms_strncpclean (char *dest, const char *source, int length);
 extern int      ms_strncpcleantail (char *dest, const char *source, int length);
 extern int      ms_strncpopen (char *dest, const char *source, int length);

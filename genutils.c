@@ -26,10 +26,10 @@ static nstime_t ms_time2nstime_int (int year, int day, int hour,
 LeapSecond *leapsecondlist = NULL;
 
 /***************************************************************************
- * ms_parsetsid:
+ * ms_tsid2nslc:
  *
  * Parse a time series identifier into separate components, expecting:
- *  "FDSN:NET.STA.[LOC:]CHAN".
+ *  "FDSN:NET_STA_LOC_CHAN".
  *
  * Memory for each component must already be allocated.  If a specific
  * component is not desired set the appropriate argument to NULL.
@@ -37,7 +37,7 @@ LeapSecond *leapsecondlist = NULL;
  * Returns 0 on success and -1 on error.
  ***************************************************************************/
 int
-ms_parsetsid (char *tsid, char *net, char *sta, char *loc, char *chan)
+ms_tsid2nslc (char *tsid, char *net, char *sta, char *loc, char *chan)
 {
   char *id;
   char *ptr, *top, *next;
@@ -54,7 +54,7 @@ ms_parsetsid (char *tsid, char *net, char *sta, char *loc, char *chan)
 
     /* Verify 3 delimiters */
     id = tsid;
-    while ((id = strchr (id, '.')))
+    while ((id = strchr (id, '_')))
     {
       id++;
       sepcnt++;
@@ -66,13 +66,13 @@ ms_parsetsid (char *tsid, char *net, char *sta, char *loc, char *chan)
 
     if (!(id = strdup (tsid)))
     {
-      ms_log (2, "ms_parsetsid(): Error duplicating identifier");
+      ms_log (2, "ms_tsid2nslc(): Error duplicating identifier");
       return -1;
     }
 
     /* Network */
     top = id;
-    if ((ptr = strchr (top, '.')))
+    if ((ptr = strchr (top, '_')))
     {
       next = ptr + 1;
       *ptr = '\0';
@@ -83,7 +83,7 @@ ms_parsetsid (char *tsid, char *net, char *sta, char *loc, char *chan)
       top = next;
     }
     /* Station */
-    if ((ptr = strchr (top, '.')))
+    if ((ptr = strchr (top, '_')))
     {
       next = ptr + 1;
       *ptr = '\0';
@@ -93,8 +93,8 @@ ms_parsetsid (char *tsid, char *net, char *sta, char *loc, char *chan)
 
       top = next;
     }
-    /* Location, if available */
-    if ((ptr = strchr (top, ':')))
+    /* Location (potentially empty) */
+    if ((ptr = strchr (top, '_')))
     {
       next = ptr + 1;
       *ptr = '\0';
@@ -105,7 +105,7 @@ ms_parsetsid (char *tsid, char *net, char *sta, char *loc, char *chan)
       top = next;
     }
     /* Channel */
-    else if (*top && chan)
+    if (*top && chan)
     {
       strcpy (chan, top);
     }
@@ -116,12 +116,48 @@ ms_parsetsid (char *tsid, char *net, char *sta, char *loc, char *chan)
   }
   else
   {
-    ms_log (2, "ms_parsetsid(): Unrecognized identifier: %s", tsid);
+    ms_log (2, "ms_tsid2nslc(): Unrecognized identifier: %s", tsid);
     return -1;
   }
 
   return 0;
-} /* End of ms_parsetsid() */
+} /* End of ms_tsid2nslc() */
+
+/***************************************************************************
+ * ms_nslc2tsid:
+ *
+ * Create a time series identifier of the form "FDSN:NET_STA_LOC_CHAN"
+ * from individual network, station, location and channel identifiers.
+ *
+ * Memory for the time series identifier must already be allocated.
+ * If a specific component is NULL it will be empty in the resulting
+ * identifier.
+ *
+ * The flags argument is not yet used and should be set to 0.
+ *
+ * Returns length of identifier on success and -1 on error.
+ ***************************************************************************/
+int
+ms_nslc2tsid (char *tsid, int tsidlen, uint16_t flags,
+              char *net, char *sta, char *loc, char *chan)
+{
+  int printed;
+
+  if (!tsid)
+    return -1;
+
+  printed = snprintf (tsid, tsidlen, "FDSN:%s_%s_%s_%s",
+                      (net) ? net : "",
+                      (sta) ? sta : "",
+                      (loc) ? loc : "",
+                      (chan) ? chan : "");
+
+  if (printed >= tsidlen)
+    return -1;
+
+  return printed;
+} /* End of ms_nslc2tsid() */
+
 
 /***************************************************************************
  * ms_strncpclean:

@@ -218,7 +218,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   int retval;
 
   MS3Record *msr = NULL;
-  char errortsid[50];
+  char errortsid[64];
 
   int ione = 1;
   int64_t ival;
@@ -252,7 +252,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   /* Verify that passed record length is within supported range */
   if (reclen < 64 || reclen > MAXRECLEN)
   {
-    ms2_recordtsid (record, errortsid);
+    ms2_recordtsid (record, errortsid, sizeof (errortsid));
     ms_log (2, "msr3_unpack_mseed2(%s): Record length is out of allowd range: %d\n",
             errortsid, reclen);
 
@@ -262,7 +262,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   /* Verify that record includes a valid header */
   if (!MS2_ISVALIDHEADER (record))
   {
-    ms2_recordtsid (record, errortsid);
+    ms2_recordtsid (record, errortsid, sizeof (errortsid));
     ms_log (2, "msr3_unpack_mseed2(%s) Record header unrecognized, not a valid miniSEED record\n",
             errortsid);
 
@@ -294,7 +294,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   }
 
   /* Populate some of the common header fields */
-  ms2_recordtsid (record, msr->tsid);
+  ms2_recordtsid (record, msr->tsid, sizeof (msr->tsid));
   msr->formatversion = 2;
   msr->samprate = ms_nomsamprate (HO2d (*pMS2FSDH_SAMPLERATEFACT (record), msr->swapflag),
                                   HO2d (*pMS2FSDH_SAMPLERATEMULT (record), msr->swapflag));
@@ -1297,34 +1297,28 @@ ms_nomsamprate (int factor, int multiplier)
  * ms2_recordtsid:
  *
  * Generate a time series identifier string for a specified raw
- * miniSEED 2.x data record in the format: 'FDSN:NET.STA.[LOC:]CHAN'.
- * The supplied tsid buffer must have enough room for the resulting
- * string.
+ * miniSEED 2.x data record.
  *
  * Returns a pointer to the resulting string or NULL on error.
  ***************************************************************************/
 char *
-ms2_recordtsid (char *record, char *tsid)
+ms2_recordtsid (char *record, char *tsid, int tsidlen)
 {
-  int idx;
+  char net[3] = {0};
+  char sta[6] = {0};
+  char loc[3] = {0};
+  char chan[4] = {0};
 
   if (!record || !tsid)
     return NULL;
 
-  idx = 0;
-  idx += ms_strncpclean (tsid + idx, "FDSN:", 5);
-  idx += ms_strncpclean (tsid + idx, pMS2FSDH_NETWORK (record), 2);
-  idx += ms_strncpclean (tsid + idx, ".", 1);
-  idx += ms_strncpclean (tsid + idx, pMS2FSDH_STATION (record), 5);
-  idx += ms_strncpclean (tsid + idx, ".", 1);
+  ms_strncpclean (net, pMS2FSDH_NETWORK (record), 2);
+  ms_strncpclean (sta, pMS2FSDH_STATION (record), 5);
+  ms_strncpclean (loc, pMS2FSDH_LOCATION (record), 2);
+  ms_strncpclean (chan, pMS2FSDH_CHANNEL (record), 3);
 
-  if (pMS2FSDH_LOCATION (record)[0] != ' ' &&
-      pMS2FSDH_LOCATION (record)[0] != '\0')
-  {
-    idx += ms_strncpclean (tsid + idx, pMS2FSDH_LOCATION (record), 2);
-    idx += ms_strncpclean (tsid + idx, ":", 1);
-  }
-  idx += ms_strncpclean (tsid + idx, pMS2FSDH_CHANNEL (record), 3);
+  if (ms_nslc2tsid (tsid, tsidlen, 0, net, sta, loc, chan) < 0)
+    return NULL;
 
   return tsid;
 } /* End of ms2_recordtsid() */

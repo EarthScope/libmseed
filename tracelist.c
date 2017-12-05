@@ -1251,7 +1251,7 @@ mstl3_printsynclist (MS3TraceList *mstl, char *dccid, int8_t subsecond)
   id = mstl->traces;
   while (id)
   {
-    ms_parsetsid (id->tsid, net, sta, loc, chan);
+    ms_tsid2nslc (id->tsid, net, sta, loc, chan);
 
     /* Loop through segment list */
     seg = id->first;

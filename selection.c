@@ -281,11 +281,10 @@ ms3_addselect_comp (MS3Selections **ppselections, char *net, char *sta, char *lo
     strcpy (selchan, "*");
   }
 
-  // TODO: wildcard location codes cannot be done that match empty codes:
-
   /* Create the time series identifier globbing match for this entry */
-  snprintf (tsidpattern, sizeof (tsidpattern), "FDSN:%s.%s.%s%s%s",
-            selnet, selsta, selloc, (selloc[0] == '\0') ? "" : ":", selchan);
+  if (ms_nslc2tsid (tsidpattern, sizeof (tsidpattern), 0,
+                    selnet, selsta, selloc, selchan))
+    return -1;
 
   /* Add selection to list */
   if (ms3_addselect (ppselections, tsidpattern, starttime, endtime, pubversion))
