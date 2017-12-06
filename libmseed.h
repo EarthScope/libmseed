@@ -119,6 +119,7 @@ extern "C" {
 #define MS_OUTOFRANGE      -4        /* SEED record length out of range */
 #define MS_UNKNOWNFORMAT   -5        /* Unknown data encoding format */
 #define MS_STBADCOMPFLAG   -6        /* Steim, invalid compression flag(s) */
+#define MS_INVALIDCRC      -7        /* Invalid CRC */
 
 /* Define the high precision time tick interval as 1/modulus seconds.
  * Default, native modulus defines tick interval as a nanosecond.

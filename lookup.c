@@ -3,7 +3,7 @@
  *
  * Generic lookup routines for miniSEED information.
  *
- * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
+ * Written by Chad Trabant, IRIS Data Management Center
  ***************************************************************************/
 
 #include <string.h>
@@ -116,6 +116,8 @@ ms_errorstr (int errorcode)
     return "Unknown data encoding format";
   case MS_STBADCOMPFLAG:
     return "Bad Steim compression flag(s) detected";
+  case MS_INVALIDCRC:
+    return "Invalid CRC detected";
   } /* end switch */
 
   return NULL;

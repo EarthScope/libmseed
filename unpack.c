@@ -34,13 +34,17 @@
  * All approriate fields are byteswapped, if needed, and pointers to
  * structured data are set.
  *
- * If MSF_UNPACKDATA is set in flags the data samples are
+ * If MSF_UNPACKDATA is set in flags, the data samples are
  * unpacked/decompressed and the MS3Record->datasamples pointer is set
  * appropriately.  The data samples will be either 32-bit integers,
  * 32-bit floats or 64-bit floats (doubles) with the same byte order
  * as the host machine.  The MS3Record->numsamples will be set to the
  * actual number of samples unpacked/decompressed and
  * MS3Record->sampletype will indicated the sample type.
+ *
+ * If MSF_VALIDATECRC is set in flags, the CRC in the record will be
+ * validated.  If the calculated CRC does not match, the MS_INVALIDCRC
+ * error is returned.
  *
  * All appropriate values will be byte-swapped to the host order,
  * including the data samples.
@@ -58,10 +62,12 @@ int
 msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
                     uint32_t flags, int8_t verbose)
 {
-  uint8_t tsidlength = 0;
-  int retval;
-
   MS3Record *msr = NULL;
+  uint32_t calculated_crc;
+  uint32_t header_crc;
+  uint8_t tsidlength = 0;
+  int8_t swapflag;
+  int retval;
 
   if (!record)
   {
@@ -89,6 +95,43 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
     return MS_NOTSEED;
   }
 
+  /* miniSEED 3 is little endian */
+  swapflag = (ms_bigendianhost ()) ? 1 : 0;
+
+  if (verbose > 2)
+  {
+    if (swapflag)
+      ms_log (1, "Byte swapping needed for unpacking of header\n");
+    else
+      ms_log (1, "Byte swapping NOT needed for unpacking of header\n");
+  }
+
+  tsidlength = *pMS3FSDH_TSIDLENGTH (record);
+
+  if (tsidlength > sizeof (msr->tsid))
+  {
+    ms_log (2, "msr3_unpack_mseed3(%.*s): Time series identifier is longer (%d) than supported (%d)\n",
+            tsidlength, pMS3FSDH_TSID (record), tsidlength, (int)sizeof (msr->tsid));
+    return MS_GENERROR;
+  }
+
+  /* Validate the CRC */
+  if (flags & MSF_VALIDATECRC)
+  {
+    /* Save header CRC, set value to 0, calculate CRC, restore CRC */
+    header_crc = HO4u (*pMS3FSDH_CRC (record), swapflag);
+    memset (pMS3FSDH_CRC(record), 0, sizeof(uint32_t));
+    calculated_crc = ms_crc32c ((const uint8_t*)record, reclen, 0);
+    *pMS3FSDH_CRC(record) = HO4u (header_crc, swapflag);
+
+    if (header_crc != calculated_crc)
+    {
+      ms_log (2, "msr3_unpack_mseed3(%.*s) CRC is invalid, miniSEED record may be corrupt\n",
+              tsidlength, pMS3FSDH_TSID (record));
+      return MS_INVALIDCRC;
+    }
+  }
+
   /* Initialize the MS3Record */
   if (!(*ppmsr = msr3_init (*ppmsr)))
     return MS_GENERROR;
@@ -100,21 +143,12 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
   msr->record = record;
   msr->reclen = reclen;
 
-  /* miniSEED 3 is little endian */
-  msr->swapflag = (ms_bigendianhost ()) ? 1 : 0;
-
-  /* Report byte swapping status */
-  if (verbose > 2)
-  {
-    if (msr->swapflag)
-      ms_log (1, "Byte swapping needed for unpacking of header\n");
-    else
-      ms_log (1, "Byte swapping NOT needed for unpacking of header\n");
-  }
-
   /* Populate the header fields */
+  msr->swapflag = swapflag;
   msr->formatversion = *pMS3FSDH_FORMATVERSION (record);
   msr->flags = *pMS3FSDH_FLAGS (record);
+
+  strncpy (msr->tsid, pMS3FSDH_TSID (record), tsidlength);
 
   msr->starttime = ms_time2nstime (HO2u (*pMS3FSDH_YEAR (record), msr->swapflag),
                                    HO2u (*pMS3FSDH_DAY (record), msr->swapflag),
@@ -134,17 +168,6 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
   msr->samplecnt = HO4u (*pMS3FSDH_NUMSAMPLES (record), msr->swapflag);
   msr->crc = HO4u (*pMS3FSDH_CRC (record), msr->swapflag);
   msr->pubversion = *pMS3FSDH_PUBVERSION (record);
-
-  tsidlength = *pMS3FSDH_TSIDLENGTH (record);
-
-  if (tsidlength > sizeof (msr->tsid))
-  {
-    ms_log (2, "msr3_unpack_mseed3(%.*s): Time series identifier is longer (%d) than supported (%d)\n",
-            tsidlength, pMS3FSDH_TSID (record), tsidlength, (int)sizeof (msr->tsid));
-    return MS_GENERROR;
-  }
-
-  strncpy (msr->tsid, pMS3FSDH_TSID (record), tsidlength);
 
   msr->extralength = HO2u (*pMS3FSDH_EXTRALENGTH (record), msr->swapflag);
   if (msr->extralength)
