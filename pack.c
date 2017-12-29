@@ -20,7 +20,7 @@
 /* Function(s) internal to this file */
 static int msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
                              void *handlerdata, int64_t *packedsamples,
-                             int8_t flush, int8_t verbose);
+                             uint32_t flags, int8_t verbose);
 
 static int msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
                           char sampletype, int8_t encoding, int8_t swapflag,
@@ -43,7 +43,7 @@ static int msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabyte
  * responsibility of record_handler to process the record, the memory
  * will be re-used or freed when record_handler returns.
  *
- * If the flush flag != 0 all of the data will be packed into data
+ * If the MSF_FLUSHDATA is set all of the data will be packed into data
  * records even though the last one will probably not be filled.
  *
  * Default values are: record length = 4096, encoding = 11 (Steim2).
@@ -54,7 +54,7 @@ static int msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabyte
  ***************************************************************************/
 int
 msr3_pack (MS3Record *msr, void (*record_handler) (char *, int, void *),
-           void *handlerdata, int64_t *packedsamples, int8_t flush, int8_t verbose)
+           void *handlerdata, int64_t *packedsamples, uint32_t flags, int8_t verbose)
 {
   int packedrecs = 0;
 
@@ -84,14 +84,14 @@ msr3_pack (MS3Record *msr, void (*record_handler) (char *, int, void *),
   {
     /* TODO */
     //packedrecs = msr3_pack_mseed2(msr, record_handler, handlerdata, packedsamples,
-    //                           flush, verbose);
+    //                           flags, verbose);
     ms_log (1, "miniSEED version 2 packing not yet supported\n");
     return -1;
   }
   else /* Pack version 3 by default */
   {
     packedrecs = msr3_pack_mseed3 (msr, record_handler, handlerdata, packedsamples,
-                                   flush, verbose);
+                                   flags, verbose);
   }
 
   return packedrecs;
@@ -107,7 +107,7 @@ msr3_pack (MS3Record *msr, void (*record_handler) (char *, int, void *),
 int
 msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
                   void *handlerdata, int64_t *packedsamples,
-                  int8_t flush, int8_t verbose)
+                  uint32_t flags, int8_t verbose)
 {
   char *rawrec = NULL;
   char *encoded = NULL;  /* Separate encoded data buffer for alignment */
@@ -214,7 +214,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   if (packedsamples)
     *packedsamples = 0;
 
-  while ((msr->numsamples - totalpackedsamples) > maxsamples || flush)
+  while ((msr->numsamples - totalpackedsamples) > maxsamples || flags & MSF_FLUSHDATA)
   {
     packsamples = msr_pack_data (encoded,
                                  (char *)msr->datasamples + packoffset,

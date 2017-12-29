@@ -937,8 +937,7 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
  * responsibility of record_handler to process the record, the memory
  * will be re-used or freed when record_handler returns.
  *
- * If the flush flag is > 0 all of the data will be packed into data
- * records even though the last one will probably not be filled.
+ * The flags are passed to msr3_pack().
  *
  * If the extra argument is not NULL it is expected to indicate a
  * buffer of length extralength that contains extraheaders that will
@@ -949,7 +948,7 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
 int
 mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
             void *handlerdata, int reclen, int8_t encoding,
-            int64_t *packedsamples, int8_t flush, int8_t verbose,
+            int64_t *packedsamples, uint32_t flags, int8_t verbose,
             uint8_t *extra, uint16_t extralength)
 {
   MS3Record *msr = NULL;
@@ -1006,7 +1005,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
       msr->numsamples = seg->numsamples;
       msr->sampletype = seg->sampletype;
 
-      segpackedrecords = msr3_pack (msr, record_handler, handlerdata, &segpackedsamples, flush, verbose);
+      segpackedrecords = msr3_pack (msr, record_handler, handlerdata, &segpackedsamples, flags, verbose);
 
       if (verbose > 1)
       {

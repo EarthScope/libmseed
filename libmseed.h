@@ -288,7 +288,7 @@ extern int msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
 extern int msr3_pack (MS3Record *msr,
                       void (*record_handler) (char *, int, void *),
                       void *handlerdata, int64_t *packedsamples,
-                      int8_t flush, int8_t verbose);
+                      uint32_t flags, int8_t verbose);
 
 extern int msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t reclen, int8_t verbose);
 
@@ -318,7 +318,7 @@ extern int mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate);
 
 extern int mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
                        void *handlerdata, int reclen, int8_t encoding,
-                       int64_t *packedsamples, int8_t flush, int8_t verbose,
+                       int64_t *packedsamples, uint32_t flags, int8_t verbose,
                        uint8_t *extra, uint16_t extralength);
 
 extern void mstl3_printtracelist (MS3TraceList *mstl, int8_t timeformat,
