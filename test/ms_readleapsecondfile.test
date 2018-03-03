@@ -1,0 +1,9 @@
+#!/bin/sh
+LD_LIBRARY_PATH=.. \
+DYLD_LIBRARY_PATH=.. \
+# Arrange input file
+infile=ms_readleapsecondfile_input.txt
+echo "3692217600	37	# 1 Jan 2017" > $infile
+./ms_readleapsecondfile_test -i $(pwd)/$infile -o -
+# Clean up input file
+rm $infile
