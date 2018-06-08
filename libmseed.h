@@ -17,7 +17,7 @@
  * License along with this software.
  * If not, see <https://www.gnu.org/licenses/>.
  *
- * Copyright (C) 2017 Chad Trabant
+ * Copyright (C) 2018 Chad Trabant
  * IRIS Data Management Center
  ***************************************************************************/
 
@@ -29,7 +29,7 @@ extern "C" {
 #endif
 
 #define LIBMSEED_VERSION "3.0.0"
-#define LIBMSEED_RELEASE "2017.XXXdev"
+#define LIBMSEED_RELEASE "2018.XXXdev"
 
 /* C99 standard headers */
 #include <stdlib.h>
@@ -147,18 +147,20 @@ extern "C" {
  *   0  = "M"
  *   1  = "S"
  *   2  = 3
- *   8  = valid hour (0-23)
- *   9  = valid minute (0-59)
- *   10 = valid second (0-60)
+ *   4  = valid nanoseconds (0-999999999)
+ *   12 = valid hour (0-23)
+ *   13 = valid minute (0-59)
+ *   14 = valid second (0-60)
  *
  * Usage:
- *   MS3_ISVALIDHEADER ((char *)X)  X buffer must contain at least 27 bytes
+ *   MS3_ISVALIDHEADER ((char *)X)  X buffer must contain at least 15 bytes
  */
-#define MS3_ISVALIDHEADER(X) (                                 \
-    *(X) == 'M' && *(X + 1) == 'S' && *(X + 2) == 3 &&         \
-    (uint8_t) (*(X + 8)) >= 0 && (uint8_t) (*(X + 8)) <= 23 && \
-    (uint8_t) (*(X + 9)) >= 0 && (uint8_t) (*(X + 9)) <= 59 && \
-    (uint8_t) (*(X + 10)) >= 0 && (uint8_t) (*(X + 10)) <= 60 )
+#define MS3_ISVALIDHEADER(X) (                                        \
+    *(X) == 'M' && *(X + 1) == 'S' && *(X + 2) == 3 &&                \
+    (uint32_t) (*(X + 8)) >= 0 && (uint32_t) (*(X + 8)) <= 999999999 && \
+    (uint8_t) (*(X + 12)) >= 0 && (uint8_t) (*(X + 12)) <= 23 &&      \
+    (uint8_t) (*(X + 13)) >= 0 && (uint8_t) (*(X + 13)) <= 59 &&      \
+    (uint8_t) (*(X + 14)) >= 0 && (uint8_t) (*(X + 14)) <= 60)
 
 /* Macro to test memory for a miniSEED 2.x data record signature by checking
  * SEED data record header values at known byte offsets.
