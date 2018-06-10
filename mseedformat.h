@@ -11,7 +11,7 @@
 #include "libmseed.h"
 
 /* Length of Fixed Section of Data Header for miniSEED 3 */
-#define MS3FSDH_LENGTH 38
+#define MS3FSDH_LENGTH 40
 
 /***************************************************************************
  * miniSEED 3.0 Fixed Section of Data Header
@@ -212,7 +212,7 @@
 #define pMS2B201_SEC(blockette)             ((uint8_t*)((uint8_t*)blockette+24))
 #define pMS2B201_UNUSED(blockette)          ((uint8_t*)((uint8_t*)blockette+25))
 #define pMS2B201_FSEC(blockette)            ((uint16_t*)((uint8_t*)blockette+26))
-#define pMS2B201_SNRVALUES(blockette)       ((uint8_t*)((uint8_t*)blockette+28))
+#define pMS2B201_MEDSNR(blockette)          ((uint8_t*)((uint8_t*)blockette+28))
 #define pMS2B201_LOOPBACK(blockette)        ((uint8_t*)((uint8_t*)blockette+34))
 #define pMS2B201_PICKALGORITHM(blockette)   ((uint8_t*)((uint8_t*)blockette+35))
 #define pMS2B201_DETECTOR(blockette)        ((char*)((uint8_t*)blockette+36))

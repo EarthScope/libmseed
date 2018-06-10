@@ -147,7 +147,6 @@ extern "C" {
  *   0  = "M"
  *   1  = "S"
  *   2  = 3
- *   4  = valid nanoseconds (0-999999999)
  *   12 = valid hour (0-23)
  *   13 = valid minute (0-59)
  *   14 = valid second (0-60)
@@ -157,7 +156,6 @@ extern "C" {
  */
 #define MS3_ISVALIDHEADER(X) (                                        \
     *(X) == 'M' && *(X + 1) == 'S' && *(X + 2) == 3 &&                \
-    (uint32_t) (*(X + 8)) >= 0 && (uint32_t) (*(X + 8)) <= 999999999 && \
     (uint8_t) (*(X + 12)) >= 0 && (uint8_t) (*(X + 12)) <= 23 &&      \
     (uint8_t) (*(X + 13)) >= 0 && (uint8_t) (*(X + 13)) <= 59 &&      \
     (uint8_t) (*(X + 14)) >= 0 && (uint8_t) (*(X + 14)) <= 60)
@@ -215,7 +213,7 @@ typedef struct MS3Record_s {
   uint32_t        crc;               /* CRC of entire record */
   uint16_t        extralength;       /* Length of extra headers in bytes */
   uint16_t        datalength;        /* Length of data payload in bytes */
-  uint8_t        *extra;             /* Pointer to extra headers */
+  char           *extra;             /* Pointer to extra headers */
 
   /* Data sample fields */
   void           *datasamples;       /* Data samples, 'numsamples' of type 'sampletype'*/
@@ -321,7 +319,7 @@ extern int mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate);
 extern int mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
                        void *handlerdata, int reclen, int8_t encoding,
                        int64_t *packedsamples, uint32_t flags, int8_t verbose,
-                       uint8_t *extra, uint16_t extralength);
+                       char *extra);
 
 extern void mstl3_printtracelist (MS3TraceList *mstl, int8_t timeformat,
                                   int8_t details, int8_t gaps);
@@ -349,7 +347,7 @@ typedef struct MSEHEventDetection_s
   char detectionwave[30]; /**< Detection wave (e.g. "DILATATION"), zero length = not included */
   char units[30]; /**< Units of amplitude and background estimate (e.g. "COUNTS"), zero length = not included */
   nstime_t onsettime; /**< Onset time, NSTERROR = not included */
-  uint8_t snrvalues[6]; /**< Signal to noise ratio, all zeros = not included */
+  uint8_t medsnr[6]; /**< Signal to noise ratio for Murdock event detection, all zeros = not included */
   int medlookback; /**< Murdock event detection lookback value, -1 = not included */
   int medpickalgorithm; /**< Murdock event detection pick algoritm, -1 = not included */
   struct MSEHEventDetection_s *next; /**< Pointer to next detection, zero length if none */
@@ -406,59 +404,49 @@ typedef struct MSEHTimingException_s
   char clockstatus[128]; /**< Description of clock-specific parameters, zero length = not included */
 } MSEHTimingException;
 
-#define mseh_fetch(msr, valueptr, type, length, ...)                    \
-  mseh_fetch_path (msr, valueptr, type, length, (const char *[]){__VA_ARGS__, NULL})
+#define mseh_get(msr, path, valueptr, type, length) \
+  mseh_get_path (msr, path, valueptr, type, length)
 
-#define mseh_fetch_int64_t(msr, valueptr, ...)                          \
-  mseh_fetch_path (msr, valueptr, 'i', 0, (const char *[]){__VA_ARGS__, NULL})
+#define mseh_get_number(msr, path, valueptr) \
+  mseh_get_path (msr, path, valueptr, 'n', 0)
 
-#define mseh_fetch_double(msr, valueptr, ...)                           \
-  mseh_fetch_path (msr, valueptr, 'd', 0, (const char *[]){__VA_ARGS__, NULL})
+#define mseh_get_string(msr, path, buffer, length) \
+  mseh_get_path (msr, path, buffer, 's', length)
 
-#define mseh_fetch_bytes(msr, buffer, length, ...)                      \
-  mseh_fetch_path (msr, buffer, 'c', length, (const char *[]){__VA_ARGS__, NULL})
+#define mseh_get_boolean(msr, path, valueptr) \
+  mseh_get_path (msr, path, valueptr, 'b', 0)
 
-#define mseh_fetch_boolean(msr, valueptr, ...)                          \
-  mseh_fetch_path (msr, valueptr, 'b', 0, (const char *[]){__VA_ARGS__, NULL})
+#define mseh_exists(msr, path) \
+  !mseh_get_path (msr, path, NULL, 0, 0)
 
-#define mseh_exists(msr, ...)                                           \
-  !mseh_fetch_path (msr, NULL, 0, 0, (const char *[]){__VA_ARGS__, NULL})
+extern int mseh_get_path (MS3Record *msr, const char *path,
+                          void *value, char type, size_t length);
 
-extern int mseh_fetch_path (MS3Record *msr, void *value, char type, size_t length,
-                            const char *path[]);
+#define mseh_set(msr, path, valueptr, type, length) \
+  mseh_set_path (msr, path, valueptr, type, length)
 
-#define mseh_set(msr, valueptr, type, length, ...)                      \
-  mseh_set_path (msr, valueptr, type, length, (const char *[]){__VA_ARGS__, NULL})
+#define mseh_set_number(msr, path, valueptr) \
+  mseh_set_path (msr, path, valueptr, 'n', 0)
 
-#define mseh_set_int64_t(msr, valueptr, ...)                            \
-  mseh_set_path (msr, valueptr, 'i', 0, (const char *[]){__VA_ARGS__, NULL})
+#define mseh_set_string(msr, path, valueptr, length) \
+  mseh_set_path (msr, path, valueptr, 's', length)
 
-#define mseh_set_double(msr, valueptr, ...)                             \
-  mseh_set_path (msr, valueptr, 'd', 0, (const char *[]){__VA_ARGS__, NULL})
+#define mseh_set_boolean(msr, path, valueptr) \
+  mseh_set_path (msr, path, valueptr, 'b', 0)
 
-#define mseh_set_bytes(msr, valueptr, length, ...)                      \
-  mseh_set_path (msr, valueptr, 'c', length, (const char *[]){__VA_ARGS__, NULL})
+extern int mseh_set_path (MS3Record *msr, const char *path,
+                          void *value, char type, size_t length);
 
-#define mseh_set_boolean(msr, valueptr, ...)                            \
-  mseh_set_path (msr, valueptr, 'b', 0, (const char *[]){__VA_ARGS__, NULL})
+extern int mseh_add_event_detection (MS3Record *msr, const char *path,
+                                     MSEHEventDetection *eventdetection);
 
-extern int mseh_set_path (MS3Record *msr, void *value, char type, size_t length,
-                          const char *path[]);
+extern int mseh_add_calibration (MS3Record *msr, const char *path,
+                                 MSEHCalibration *calibration);
 
-extern int mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
-                                     const char *path[]);
-
-extern int mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
-                                 const char *path[]);
-
-extern int mseh_add_timing_exception (MS3Record *msr, MSEHTimingException *exception,
-                                      const char *path[]);
+extern int mseh_add_timing_exception (MS3Record *msr, const char *path,
+                                      MSEHTimingException *exception);
 
 extern int mseh_print (MS3Record *msr, int indent);
-
-extern int mseh_to_json (MS3Record *msr, char *output, int outputlength);
-
-extern int mseh_print_raw (unsigned char *cbor, size_t length);
 
 /* Reading miniSEED records from files */
 typedef struct MS3FileParam_s

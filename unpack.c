@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 
 #include "libmseed.h"
 #include "mseedformat.h"
@@ -244,7 +245,6 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   char errortsid[64];
 
   int ione = 1;
-  int64_t ival;
   double dval;
   char sval[64];
 
@@ -339,59 +339,59 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   if (*pMS2FSDH_ACTFLAGS (record) & 0x01) /* Bit 0 */
     msr->flags |= 0x01;
   if (*pMS2FSDH_ACTFLAGS (record) & 0x04) /* Bit 2 */
-    mseh_set_boolean (msr, &ione, "FDSN", "Event", "Begin");
+    mseh_set_boolean (msr, "FDSN.Event.Begin", &ione);
   if (*pMS2FSDH_ACTFLAGS (record) & 0x08) /* Bit 3 */
-    mseh_set_boolean (msr, &ione, "FDSN", "Event", "End");
+    mseh_set_boolean (msr, "FDSN.Event.End", &ione);
   if (*pMS2FSDH_ACTFLAGS (record) & 0x10) /* Bit 4 */
   {
-    ival = 1;
-    mseh_set_int64_t (msr, &ival, "FDSN", "Time", "LeapSecond");
+    dval = 1;
+    mseh_set_number (msr, "FDSN.Time.LeapSecond", &dval);
   }
   if (*pMS2FSDH_ACTFLAGS (record) & 0x20) /* Bit 5 */
   {
-    ival = -1;
-    mseh_set_int64_t (msr, &ival, "FDSN", "Time", "LeapSecond");
+    dval = -1;
+    mseh_set_number (msr, "FDSN.Time.LeapSecond", &dval);
   }
   if (*pMS2FSDH_ACTFLAGS (record) & 0x40) /* Bit 6 */
-    mseh_set_boolean (msr, &ione, "FDSN", "Event", "InProgress");
+    mseh_set_boolean (msr, "FDSN.Event.InProgress", &ione);
 
   /* Map I/O and clock flags */
   if (*pMS2FSDH_IOFLAGS (record) & 0x01) /* Bit 0 */
-    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "StationVolumeParityError");
+    mseh_set_boolean (msr, "FDSN.Flags.StationVolumeParityError", &ione);
   if (*pMS2FSDH_IOFLAGS (record) & 0x02) /* Bit 1 */
-    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "LongRecordRead");
+    mseh_set_boolean (msr, "FDSN.Flags.LongRecordRead", &ione);
   if (*pMS2FSDH_IOFLAGS (record) & 0x04) /* Bit 2 */
-    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "ShortRecordRead");
+    mseh_set_boolean (msr, "FDSN.Flags.ShortRecordRead", &ione);
   if (*pMS2FSDH_IOFLAGS (record) & 0x08) /* Bit 3 */
-    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "StartOfTimeSeries");
+    mseh_set_boolean (msr, "FDSN.Flags.StartOfTimeSeries", &ione);
   if (*pMS2FSDH_IOFLAGS (record) & 0x10) /* Bit 4 */
-    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "EndOfTimeSeries");
+    mseh_set_boolean (msr, "FDSN.Flags.EndOfTimeSeries", &ione);
   if (*pMS2FSDH_IOFLAGS (record) & 0x20) /* Bit 5 */
     msr->flags |= 0x04;
 
   /* Map data quality flags */
   if (*pMS2FSDH_DQFLAGS (record) & 0x01) /* Bit 0 */
-    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "AmplifierSaturation");
+    mseh_set_boolean (msr, "FDSN.Flags.AmplifierSaturation", &ione);
   if (*pMS2FSDH_DQFLAGS (record) & 0x02) /* Bit 1 */
-    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "DigitizerClipping");
+    mseh_set_boolean (msr, "FDSN.Flags.DigitizerClipping", &ione);
   if (*pMS2FSDH_DQFLAGS (record) & 0x04) /* Bit 2 */
-    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "Spikes");
+    mseh_set_boolean (msr, "FDSN.Flags.Spikes", &ione);
   if (*pMS2FSDH_DQFLAGS (record) & 0x08) /* Bit 3 */
-    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "Glitches");
+    mseh_set_boolean (msr, "FDSN.Flags.Glitches", &ione);
   if (*pMS2FSDH_DQFLAGS (record) & 0x10) /* Bit 4 */
-    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "MissingData");
+    mseh_set_boolean (msr, "FDSN.Flags.MissingData", &ione);
   if (*pMS2FSDH_DQFLAGS (record) & 0x20) /* Bit 5 */
-    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "TelemetrySyncError");
+    mseh_set_boolean (msr, "FDSN.Flags.TelemetrySyncError", &ione);
   if (*pMS2FSDH_DQFLAGS (record) & 0x40) /* Bit 6 */
-    mseh_set_boolean (msr, &ione, "FDSN", "Flags", "FilterCharging");
+    mseh_set_boolean (msr, "FDSN.Flags.FilterCharging", &ione);
   if (*pMS2FSDH_DQFLAGS (record) & 0x80) /* Bit 7 */
     msr->flags |= 0x02;
 
-  ival = HO4u (*pMS2FSDH_TIMECORRECT (record), msr->swapflag);
-  if (ival != 0)
+  dval = (double) HO4u (*pMS2FSDH_TIMECORRECT (record), msr->swapflag);
+  if (dval != 0.0)
   {
-    dval = ival / 10000.0;
-    mseh_set_double (msr, &dval, "FDSN", "Time", "Correction");
+    dval = dval / 10000.0;
+    mseh_set_number (msr, "FDSN.Time.Correction", &dval);
   }
 
   /* Traverse the blockettes */
@@ -465,12 +465,12 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       if (eventdetection.onsettime == NSTERROR)
         return MS_GENERROR;
 
-      memset (eventdetection.snrvalues, 0, 6);
+      memset (eventdetection.medsnr, 0, 6);
       eventdetection.medlookback = -1;
       eventdetection.medpickalgorithm = -1;
       eventdetection.next = NULL;
 
-      if (mseh_add_event_detection (msr, &eventdetection, NULL))
+      if (mseh_add_event_detection (msr, NULL, &eventdetection))
       {
         ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 200 to extra headers\n", msr->tsid);
         return MS_GENERROR;
@@ -496,12 +496,12 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       if (eventdetection.onsettime == NSTERROR)
         return MS_GENERROR;
 
-      memcpy (eventdetection.snrvalues, pMS2B201_SNRVALUES (record + blkt_offset), 6);
+      memcpy (eventdetection.medsnr, pMS2B201_MEDSNR (record + blkt_offset), 6);
       eventdetection.medlookback = *pMS2B201_LOOPBACK (record + blkt_offset);
       eventdetection.medpickalgorithm = *pMS2B201_PICKALGORITHM (record + blkt_offset);
       eventdetection.next = NULL;
 
-      if (mseh_add_event_detection (msr, &eventdetection, NULL))
+      if (mseh_add_event_detection (msr, NULL, &eventdetection))
       {
         ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 201 to extra headers\n", msr->tsid);
         return MS_GENERROR;
@@ -554,7 +554,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       calibration.noise[0] = '\0';
       calibration.next = NULL;
 
-      if (mseh_add_calibration (msr, &calibration, NULL))
+      if (mseh_add_calibration (msr, NULL, &calibration))
       {
         ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 300 to extra headers\n", msr->tsid);
         return MS_GENERROR;
@@ -609,7 +609,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       calibration.noise[0] = '\0';
       calibration.next = NULL;
 
-      if (mseh_add_calibration (msr, &calibration, NULL))
+      if (mseh_add_calibration (msr, NULL, &calibration))
       {
         ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 310 to extra headers\n", msr->tsid);
         return MS_GENERROR;
@@ -658,7 +658,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       ms_strncpcleantail (calibration.noise, pMS2B320_NOISETYPE (record + blkt_offset), 8);
       calibration.next = NULL;
 
-      if (mseh_add_calibration (msr, &calibration, NULL))
+      if (mseh_add_calibration (msr, NULL, &calibration))
       {
         ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 320 to extra headers\n", msr->tsid);
         return MS_GENERROR;
@@ -703,7 +703,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       calibration.noise[0] = '\0';
       calibration.next = NULL;
 
-      if (mseh_add_calibration (msr, &calibration, NULL))
+      if (mseh_add_calibration (msr, NULL, &calibration))
       {
         ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 390 to extra headers\n", msr->tsid);
         return MS_GENERROR;
@@ -739,7 +739,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       calibration.noise[0] = '\0';
       calibration.next = NULL;
 
-      if (mseh_add_calibration (msr, &calibration, NULL))
+      if (mseh_add_calibration (msr, NULL, &calibration))
       {
         ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 395 to extra headers\n", msr->tsid);
         return MS_GENERROR;
@@ -773,7 +773,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       ms_strncpcleantail (exception.type, pMS2B500_EXCEPTIONTYPE (record + blkt_offset), 16);
       ms_strncpcleantail (exception.clockstatus, pMS2B500_CLOCKSTATUS (record + blkt_offset), 128);
 
-      if (mseh_add_timing_exception (msr, &exception, NULL))
+      if (mseh_add_timing_exception (msr, NULL, &exception))
       {
         ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 500 to extra headers\n", msr->tsid);
         return MS_GENERROR;
@@ -781,7 +781,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
       /* Clock model maps to a single value at FDSN::Clock::Model */
       ms_strncpcleantail (sval, pMS2B500_CLOCKMODEL (record + blkt_offset), 32);
-      mseh_set_bytes (msr, sval, strlen (sval), "FDSN", "Clock", "Model");
+      mseh_set_string (msr, "FDSN.Clock.Model", sval, strlen (sval));
     }
 
     else if (blkt_type == 1000)
@@ -805,8 +805,8 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       B1001offset = blkt_offset;
 
-      ival = *pMS2B1001_TIMINGQUALITY (record + blkt_offset);
-      mseh_set_int64_t (msr, &ival, "FDSN", "Time", "Quality");
+      dval = (double) *pMS2B1001_TIMINGQUALITY (record + blkt_offset);
+      mseh_set_number (msr, "FDSN.Time.Quality", &dval);
     }
 
     else if (blkt_type == 2000)

@@ -949,7 +949,7 @@ int
 mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
             void *handlerdata, int reclen, int8_t encoding,
             int64_t *packedsamples, uint32_t flags, int8_t verbose,
-            uint8_t *extra, uint16_t extralength)
+            char *extra)
 {
   MS3Record *msr = NULL;
   MS3TraceID *id = NULL;
@@ -981,10 +981,10 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
   msr->reclen = reclen;
   msr->encoding = encoding;
 
-  if (extra && extralength > 0)
+  if (extra)
   {
     msr->extra = extra;
-    msr->extralength = extralength;
+    msr->extralength = strlen(extra);
   }
 
   /* Loop through trace list */

@@ -1,22 +1,23 @@
  /***************************************************************************
  * extraheaders.c
  *
- * Routines for dealing with libmseed extra headers stored as a CBOR Map.
+ * Routines for dealing with libmseed extra headers stored as JSON.
  *
  * Written by Chad Trabant
  * IRIS Data Management Center
  ***************************************************************************/
 
 #include "libmseed.h"
-#include "cbor.h"
+#include "parson.h"
 
 /***************************************************************************
- * mseh_fetch_path:
+ * mseh_get_path:
  *
- * Search for and return an extra header value specified as a path of
- * Map elements.  The path of Map elements is a sequence of Map keys
- * for nested structures.  This routine fetches the value of the last
- * Map key in the sequence.
+ * Search for and return an extra header value specified as a path in
+ * dot notation, e.g "objectA.objectB.value"
+ *
+ * This routine can get used to test for the existence of a value
+ * without returning the value by setting 'value' to NULL.
  *
  * If the target item is found (and 'value' parameter is set) the
  * value will be copied into the memory specified by 'value'.  The
@@ -24,9 +25,8 @@
  *
  * type  expected type for 'value'
  * ----  -------------------------
- * i     int64_t
- * d     double
- * c     unsigned char* (maximum length is: 'length' - 1)
+ * n     double
+ * s     unsigned char* (maximum length is: 'length' - 1)
  * b     int (boolean value of 0 or 1)
  *
  * Returns:
@@ -36,10 +36,14 @@
  *   otherwise a (negative) libmseed error code.
  ***************************************************************************/
 int
-mseh_fetch_path (MS3Record *msr, void *value, char type, size_t length, const char *path[])
+mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t length)
 {
-  cbor_stream_t stream;
-  cbor_item_t vitem;
+  JSON_Object *rootobject = NULL;
+  JSON_Value *rootvalue = NULL;
+  JSON_Value *extravalue = NULL;
+  JSON_Value_Type valuetype;
+  const char *stringvalue = NULL;
+  int retval = 0;
 
   if (!msr || !path)
     return MS_GENERROR;
@@ -50,128 +54,225 @@ mseh_fetch_path (MS3Record *msr, void *value, char type, size_t length, const ch
   if (!msr->extra)
     return MS_GENERROR;
 
-  cbor_init (&stream, msr->extra, msr->extralength);
+  /* Parse JSON extra headers */
+  rootvalue = json_parse_string (msr->extra);
 
-  vitem.type = -1;
-  cbor_fetch_map_value (&stream, 0, &vitem, path);
+  if (!rootvalue)
+  {
+    ms_log (2, "mseh_fetch_path(): Extra headers are not JSON\n", type);
+    return MS_GENERROR;
+  }
 
-  if (vitem.type < 0)
+  /* Get expected root object */
+  rootobject = json_value_get_object (rootvalue);
+
+  if (!rootobject)
+  {
+    ms_log (2, "mseh_fetch_path(): Extra headers are not a JSON object\n", type);
+    json_value_free(rootvalue);
+    return MS_GENERROR;
+  }
+
+  /* Get target value */
+  extravalue = json_object_dotget_value (rootobject, path);
+
+  if (!extravalue)
+  {
+    json_value_free(rootvalue);
     return 1;
+  }
 
-  if (type == 'i' && (vitem.type == CBOR_UINT || vitem.type == CBOR_NEGINT))
+  valuetype = json_value_get_type (extravalue);
+
+  if (type == 'n' && valuetype == JSONNumber)
   {
     if (value)
-      *((int64_t*)value) = vitem.value.int64;
+      *((double*)value) = json_value_get_number (extravalue);
   }
-  else if (type == 'd' && (vitem.type == CBOR_FLOAT16 || vitem.type == CBOR_FLOAT32 || vitem.type == CBOR_FLOAT64))
-  {
-    if (value)
-      *((double*)value) = vitem.value.float64;
-  }
-  else if (type == 'c' && (vitem.type == CBOR_BYTES || vitem.type == CBOR_TEXT))
+  else if (type == 's' && valuetype == JSONString)
   {
     if (value)
     {
-      /* Copy buffer and terminate */
-      if (length > vitem.length)
-      {
-        memcpy (value, vitem.value.ucharp, vitem.length);
-        ((uint8_t *)value)[vitem.length] = '\0';
-      }
-      else
-      {
-        memcpy (value, vitem.value.ucharp, length - 1);
-        ((uint8_t *)value)[length - 1] = '\0';
-      }
+      stringvalue = json_value_get_string (extravalue);
+      strncpy ((char *)value, stringvalue, length);
     }
   }
-  else if (type == 'b' && (vitem.type == CBOR_TRUE || vitem.type == CBOR_FALSE))
+  else if (type == 'b' && valuetype == JSONBoolean)
   {
     if (value)
-    {
-      if (vitem.type == CBOR_TRUE)
-        *((int*)value) = 1;
-      else
-        *((int*)value) = 0;
-    }
+      *((int*)value) = json_value_get_boolean (extravalue);
   }
-  /* Only return "wrong type" result when type is set */
-  else if (type)
-    return 2;
+  /* Return wrong type indicator if a value was requested */
+  else if (value)
+  {
+    retval = 2;
+  }
 
-  return 0;
+  json_value_free(rootvalue);
+
+  return retval;
 } /* End of mseh_fetch_path() */
 
 /***************************************************************************
  * mseh_set_path:
  *
- * Set the value of a single extra header value specified as a path of
- * Map elements.  The path of Map elements is a sequence of Map keys
- * for nested structures.  This routine sets the value of the last
- * Map key in the sequence.
+ * Set the value of a single extra header value specified as a path in
+ * dot notation, e.g "objectA.objectB.value".
  *
- * If the path or final header values do not exist they will be created.
+ * If the path or final header values do not exist they will be
+ * created.  If the header value exists it will be replaced.
  *
  * The 'type' value specifies the data type expected for the value in
  * 'value':
  *
  * type  expected type for 'value'
  * ----  -------------------------
- * i     int64_t
- * d     double
- * c     unsigned char* (maximum length is: 'length' - 1)
+ * n     double
+ * s     unsigned char* (of 'length' bytes)
  * b     int (boolean value of 0 or 1)
+ * A     Array element as JSON_Value*
  *
  * Returns:
  *   0 on success,
  *   otherwise a (negative) libmseed error code.
  ***************************************************************************/
 int
-mseh_set_path (MS3Record *msr, void *value, char type, size_t length, const char *path[])
+mseh_set_path (MS3Record *msr, const char *path, void *value, char type, size_t length)
 {
-  cbor_stream_t stream;
-  cbor_item_t vitem;
+  JSON_Object *rootobject = NULL;
+  JSON_Value *rootvalue = NULL;
+  JSON_Array *array = NULL;
+  size_t serializationsize = 0;
+  char *serialized = NULL;
 
-  if (!msr || !path || !value)
+#define EVALSET(KEY, SET)                                 \
+  if (SET != JSONSuccess)                                 \
+  {                                                       \
+    ms_log (2, "mseh_set_path(): Cannot set: %s\n", KEY); \
+    if (rootvalue)                                        \
+      json_value_free (rootvalue);                        \
+    return MS_GENERROR;                                   \
+  }
+
+  if (!msr || !value || !path)
     return MS_GENERROR;
+
+  /* Parse existing extra headers */
+  if (msr->extra && msr->extralength > 0)
+  {
+    rootvalue = json_parse_string (msr->extra);
+
+    if (!rootvalue)
+    {
+      ms_log (2, "mseh_fetch_path(): Extra headers are not JSON\n", type);
+      return MS_GENERROR;
+    }
+
+    /* Get expected root object */
+    rootobject = json_value_get_object (rootvalue);
+
+    if (!rootobject)
+    {
+      ms_log (2, "mseh_fetch_path(): Extra headers are not a JSON object\n", type);
+      json_value_free (rootvalue);
+      return MS_GENERROR;
+    }
+  }
+  /* If no existig headers, initialize a new base object */
+  else
+  {
+    rootvalue = json_value_init_object ();
+    rootobject = json_value_get_object (rootvalue);
+
+    if (!rootobject)
+    {
+      ms_log (2, "mseh_fetch_path(): Cannot initialize new JSON object\n", type);
+      if (rootvalue)
+        json_value_free (rootvalue);
+      return MS_GENERROR;
+    }
+  }
 
   switch (type)
   {
-  case 'i':
-    vitem.type = CBOR_NEGINT;
-    vitem.valuetype = INT64T;
-    vitem.value.int64 = *((int64_t *)value);
+  case 'n':
+    EVALSET (path, json_object_dotset_number (rootobject, path, *((double *)value)));
     break;
-  case 'd':
-    vitem.type = CBOR_FLOAT64;
-    vitem.valuetype = FLOAT64T;
-    vitem.value.float64 = *((double *)value);
-    break;
-  case 'c':
-    vitem.type = CBOR_TEXT;
-    vitem.valuetype = UCHARP;
-    vitem.value.ucharp = (unsigned char *)value;
-    vitem.length = length;
+  case 's':
+    EVALSET (path, json_object_dotset_string (rootobject, path, (const char *)value));
     break;
   case 'b':
-    vitem.type = (*((int *)value)) ? CBOR_TRUE : CBOR_FALSE;
-    vitem.valuetype = NONE;
-    vitem.value.int64 = (vitem.type == CBOR_TRUE) ? 1 : 0;
+    EVALSET (path, json_object_dotset_boolean (rootobject, path, *((int *)value)));
+    break;
+  case 'A':
+    array = json_object_dotget_array (rootobject, path);
+
+    /* Create array if it was not found */
+    if (!array)
+    {
+      EVALSET (path, json_object_dotset_value (rootobject, path, json_value_init_array ()));
+
+      array = json_object_dotget_array (rootobject, path);
+
+      if (!array)
+      {
+        ms_log (2, "mseh_set_path(): Cannot get array\n");
+        if (value)
+          json_value_free (rootvalue);
+        return MS_GENERROR;
+      }
+    }
+
+    EVALSET ("Array JSON_Value", json_array_append_value (array, (JSON_Value *)value));
     break;
   default:
     ms_log (2, "mseh_set_path(): Unrecognized type '%d'\n", type);
+    json_value_free (rootvalue);
     return MS_GENERROR;
   }
 
-  cbor_init (&stream, msr->extra, msr->extralength);
+  /* Serialize new JSON */
+  serializationsize = json_serialization_size (rootvalue);
 
-  if (!cbor_set_map_value (&stream, &vitem, path))
+  if (!serializationsize)
+  {
+    ms_log (2, "mseh_set_path(): Cannot determine new serialization size\n", type);
+    json_value_free (rootvalue);
     return MS_GENERROR;
+  }
 
-  msr->extra = stream.data;
-  msr->extralength = stream.size;
+  if (serializationsize > 65535)
+  {
+    ms_log (2, "mseh_set_path(): New serialization size exceeds limit of 65,535 bytes: %" PRIu64 "\n",
+            (uint64_t)serializationsize);
+    json_value_free (rootvalue);
+    return MS_GENERROR;
+  }
+
+  serialized = (char *)malloc (serializationsize);
+
+  if (!serialized)
+  {
+    ms_log (2, "mseh_set_path(): Cannot determine new serialization size\n", type);
+    json_value_free (rootvalue);
+    return MS_GENERROR;
+  }
+
+  if (json_serialize_to_buffer (rootvalue, serialized, serializationsize) != JSONSuccess)
+  {
+    ms_log (2, "mseh_set_path(): Error serializing JSON for extra headers\n");
+    json_value_free (rootvalue);
+    return MS_GENERROR;
+  }
+
+  /* Set new extra headers, replacing existing headers */
+  if (msr->extra)
+    free (msr->extra);
+  msr->extra = serialized;
+  msr->extralength = (uint16_t)serializationsize - 1;
 
   return 0;
+#undef EVALSET
 } /* End of mseh_set_path() */
 
 /***************************************************************************
@@ -179,169 +280,131 @@ mseh_set_path (MS3Record *msr, void *value, char type, size_t length, const char
  *
  * Add specified event detection to the extra headers of the given record.
  *
+ * If 'path' is NULL, the default is "FDSN.Event.Detection".
+ *
  * Returns:
  *   0 on success,
  *   otherwise a (negative) libmseed error code.
  ***************************************************************************/
 int
-mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
-                          const char *path[])
+mseh_add_event_detection (MS3Record *msr, const char *path,
+                          MSEHEventDetection *eventdetection)
 {
-#define MAXITEMS 11
-  cbor_stream_t stream;
-  cbor_stream_t array;
-  cbor_item_t item[MAXITEMS];
-  cbor_item_t *itemp[MAXITEMS];
-  const char *keyp[MAXITEMS];
-  char onsetstr[31];
-  unsigned char arraydata[12];
-  char *cp;
-  int idx = 0;
+  JSON_Value *value = NULL;
+  JSON_Object *object = NULL;
+  JSON_Array *array = NULL;
+  char timestring[31];
+  char *cp = NULL;
 
-  if (!msr)
+#define EVALSET(KEY, SET)                                            \
+  if (SET != JSONSuccess)                                            \
+  {                                                                  \
+    ms_log (2, "mseh_add_event_detection(): Cannot set: %s\n", KEY); \
+    if (value)                                                       \
+      json_value_free (value);                                       \
+    return MS_GENERROR;                                              \
+  }
+
+  if (!msr || !eventdetection)
     return MS_GENERROR;
 
+  /* Initialize a new object */
+  value = json_value_init_object();
+  object = json_value_get_object(value);
+
+  if (!object)
+  {
+    ms_log (2, "mseh_add_event_detection(): Cannot initialize new JSON object\n");
+    if (value)
+      json_value_free(value);
+    return MS_GENERROR;
+  }
+
+  /* Add elements to new object */
   if (eventdetection->type[0])
   {
-    keyp[idx] = "Type";
-    item[idx].type = CBOR_TEXT;
-    item[idx].valuetype = UCHARP;
-    item[idx].value.ucharp = (unsigned char *)eventdetection->type;
-    item[idx].length = strlen(eventdetection->type);
-    idx++;
+    EVALSET ("Type", json_object_set_string (object, "Type", eventdetection->type));
   }
   if (eventdetection->signalamplitude != 0.0)
   {
-    keyp[idx] = "SignalAmplitude";
-    item[idx].type = CBOR_FLOAT64;
-    item[idx].valuetype = FLOAT64T;
-    item[idx].value.float64 = eventdetection->signalamplitude;
-    item[idx].length = 0;
-    idx++;
+    EVALSET ("SignalAmplitude", json_object_set_number (object, "SignalAmplitude", eventdetection->signalamplitude));
   }
   if (eventdetection->signalperiod != 0.0)
   {
-    keyp[idx] = "SignalPeriod";
-    item[idx].type = CBOR_FLOAT64;
-    item[idx].valuetype = FLOAT64T;
-    item[idx].value.float64 = eventdetection->signalperiod;
-    item[idx].length = 0;
-    idx++;
+    EVALSET ("SignalPeriod", json_object_set_number (object, "SignalPeriod", eventdetection->signalperiod));
   }
   if (eventdetection->backgroundestimate != 0.0)
   {
-    keyp[idx] = "BackgroundEstimate";
-    item[idx].type = CBOR_FLOAT64;
-    item[idx].valuetype = FLOAT64T;
-    item[idx].value.float64 = eventdetection->backgroundestimate;
-    item[idx].length = 0;
-    idx++;
+    EVALSET ("BackgroundEstimate", json_object_set_number (object, "BackgroundEstimate", eventdetection->backgroundestimate));
   }
   if (eventdetection->detectionwave[0])
   {
-    keyp[idx] = "DetectionWave";
-    item[idx].type = CBOR_TEXT;
-    item[idx].valuetype = UCHARP;
-    item[idx].value.ucharp = (unsigned char *)eventdetection->detectionwave;
-    item[idx].length = strlen(eventdetection->detectionwave);
-    idx++;
+    EVALSET ("DetectionWave", json_object_set_string (object, "DetectionWave", eventdetection->detectionwave));
   }
   if (eventdetection->units[0])
   {
-    keyp[idx] = "Units";
-    item[idx].type = CBOR_TEXT;
-    item[idx].valuetype = UCHARP;
-    item[idx].value.ucharp = (unsigned char *)eventdetection->units;
-    item[idx].length = strlen(eventdetection->units);
-    idx++;
+    EVALSET ("Units", json_object_set_string (object, "Units", eventdetection->units));
   }
   if (eventdetection->onsettime != NSTERROR)
   {
-    cp = ms_nstime2isotimestr (eventdetection->onsettime, onsetstr, -1);
+    /* Create ISO-formatted time string with (UTC) Z suffix */
+    cp = ms_nstime2isotimestr (eventdetection->onsettime, timestring, -1);
     while (*cp)
       cp++;
     *cp++ = 'Z';
     *cp = '\0';
 
-    keyp[idx] = "OnsetTime";
-    item[idx].type = CBOR_TEXT;
-    item[idx].valuetype = UCHARP;
-    item[idx].value.ucharp = (unsigned char *)onsetstr;
-    item[idx].length = strlen (onsetstr);
-    idx++;
+    EVALSET ("OnsetTime", json_object_set_string (object, "OnsetTime", timestring));
   }
-  if (memcmp (eventdetection->snrvalues, (uint8_t []){0,0,0,0,0,0}, 6))
+  if (memcmp (eventdetection->medsnr, (uint8_t []){0,0,0,0,0,0}, 6))
   {
-    /* Encode a small CBOR array containing the 6 SNR values */
-    cbor_init (&array, arraydata, sizeof(arraydata));
+    EVALSET ("MEDSNR", json_object_set_value(object, "MEDSNR", json_value_init_array()));
 
-    if (!cbor_serialize_array (&array, 6) ||
-        !cbor_serialize_int (&array, (int)eventdetection->snrvalues[0]) ||
-        !cbor_serialize_int (&array, (int)eventdetection->snrvalues[1]) ||
-        !cbor_serialize_int (&array, (int)eventdetection->snrvalues[2]) ||
-        !cbor_serialize_int (&array, (int)eventdetection->snrvalues[3]) ||
-        !cbor_serialize_int (&array, (int)eventdetection->snrvalues[4]) ||
-        !cbor_serialize_int (&array, (int)eventdetection->snrvalues[5]))
+    array = json_object_get_array(object, "MEDSNR");
+
+    if (!array)
     {
+      ms_log (2, "mseh_add_event_detection(): Cannot get MEDSNR array\n");
+      if (value)
+        json_value_free (value);
       return MS_GENERROR;
     }
 
-    keyp[idx] = "MEDSNR";
-    item[idx].type = 0;
-    item[idx].valuetype = CBOR;
-    item[idx].value.ucharp = array.data;
-    item[idx].length = array.pos;
-    idx++;
+    /* Array containing the 6 SNR values */
+    EVALSET ("MEDSNR-0", json_array_append_number(array, (double)eventdetection->medsnr[0]));
+    EVALSET ("MEDSNR-1", json_array_append_number(array, (double)eventdetection->medsnr[1]));
+    EVALSET ("MEDSNR-2", json_array_append_number(array, (double)eventdetection->medsnr[2]));
+    EVALSET ("MEDSNR-3", json_array_append_number(array, (double)eventdetection->medsnr[3]));
+    EVALSET ("MEDSNR-4", json_array_append_number(array, (double)eventdetection->medsnr[4]));
+    EVALSET ("MEDSNR-5", json_array_append_number(array, (double)eventdetection->medsnr[5]));
   }
   if (eventdetection->medlookback >= 0)
   {
-    keyp[idx] = "MEDLookback";
-    item[idx].type = CBOR_UINT;
-    item[idx].valuetype = INT64T;
-    item[idx].value.int64 = eventdetection->medlookback;
-    item[idx].length = 0;
-    idx++;
+    EVALSET ("MEDLookback", json_object_set_number (object, "MEDLookback", (double)eventdetection->medlookback));
   }
   if (eventdetection->medpickalgorithm >= 0)
   {
-    keyp[idx] = "MEDPickAlgorithm";
-    item[idx].type = CBOR_UINT;
-    item[idx].valuetype = INT64T;
-    item[idx].value.int64 = eventdetection->medpickalgorithm;
-    item[idx].length = 0;
-    idx++;
+    EVALSET ("MEDPickAlgorithm", json_object_set_number (object, "MEDPickAlgorithm", (double)eventdetection->medpickalgorithm));
   }
   if (eventdetection->detector[0])
   {
-    keyp[idx] = "Detector";
-    item[idx].type = CBOR_TEXT;
-    item[idx].valuetype = UCHARP;
-    item[idx].value.ucharp = (unsigned char *)eventdetection->detector;
-    item[idx].length = strlen(eventdetection->detector);
-    idx++;
+    EVALSET ("Detector", json_object_set_string (object, "Detector", eventdetection->detector));
   }
 
-  keyp[idx] = NULL;
-  itemp[idx] = NULL;
-
-  while (idx > 0)
+  /* Add new object to array */
+  if (mseh_set_path (msr, (path) ? path : "FDSN.Event.Detection", value, 'A', 0))
   {
-    idx--;
-    itemp[idx] = &item[idx];
+    ms_log (2, "mseh_add_event_detection(): Cannot add new array entry\n");
+    if (value)
+      json_value_free (value);
+    return MS_GENERROR;
   }
 
-  cbor_init (&stream, msr->extra, msr->extralength);
-
-  /* Append Map entry to Array at specified or default path */
-  if (!cbor_append_map_array (&stream, keyp, itemp,
-                              (path) ? path : (const char *[]){"FDSN", "Event", "Detection", NULL}))
-    return MS_GENERROR;
-
-  msr->extra = stream.data;
-  msr->extralength = stream.size;
+  if (value)
+    json_value_free (value);
 
   return 0;
-#undef MAXITEMS
+#undef EVALSET
 } /* End of mseh_add_event_detection() */
 
 /***************************************************************************
@@ -349,232 +412,152 @@ mseh_add_event_detection (MS3Record *msr, MSEHEventDetection *eventdetection,
  *
  * Add specified calibration to the extra headers of the given record.
  *
+ * If 'path' is NULL, the default is "FDSN.Calibration.Sequence".
+ *
  * Returns:
  *   0 on success,
  *   otherwise a (negative) libmseed error code.
  ***************************************************************************/
 int
-mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
-                      const char *path[])
+mseh_add_calibration (MS3Record *msr, const char *path,
+                      MSEHCalibration *calibration)
 {
-#define MAXITEMS 20
-  cbor_stream_t stream;
-  cbor_item_t item[MAXITEMS];
-  cbor_item_t *itemp[MAXITEMS];
-  const char *keyp[MAXITEMS];
-  char beginstr[31];
-  char endstr[31];
-  char *cp;
-  int idx = 0;
+  JSON_Value *value = NULL;
+  JSON_Object *object = NULL;
+  char beginstring[31];
+  char endstring[31];
+  char *cp = NULL;
 
-  if (!msr)
+#define EVALSET(KEY, SET)                                        \
+  if (SET != JSONSuccess)                                        \
+  {                                                              \
+    ms_log (2, "mseh_add_calibration(): Cannot set: %s\n", KEY); \
+    if (value)                                                   \
+      json_value_free (value);                                   \
+    return MS_GENERROR;                                          \
+  }
+
+  if (!msr || !calibration)
     return MS_GENERROR;
 
+  /* Initialize a new object */
+  value = json_value_init_object();
+  object = json_value_get_object(value);
+
+  if (!object)
+  {
+    ms_log (2, "mseh_add_calibration(): Cannot initialize new JSON object\n");
+    if (value)
+      json_value_free(value);
+    return MS_GENERROR;
+  }
+
+  /* Add elements to new object */
   if (calibration->type[0])
   {
-    keyp[idx] = "Type";
-    item[idx].type = CBOR_TEXT;
-    item[idx].valuetype = UCHARP;
-    item[idx].value.ucharp = (unsigned char *)calibration->type;
-    item[idx].length = strlen(calibration->type);
-    idx++;
+    EVALSET ("Type", json_object_set_string (object, "Type", calibration->type));
   }
   if (calibration->begintime != NSTERROR)
   {
-    cp = ms_nstime2isotimestr (calibration->begintime, beginstr, -1);
+    /* Create ISO-formatted time string with (UTC) Z suffix */
+    cp = ms_nstime2isotimestr (calibration->begintime, beginstring, -1);
     while (*cp)
       cp++;
     *cp++ = 'Z';
     *cp = '\0';
 
-    keyp[idx] = "BeginTime";
-    item[idx].type = CBOR_TEXT;
-    item[idx].valuetype = UCHARP;
-    item[idx].value.ucharp = (unsigned char *)beginstr;
-    item[idx].length = strlen(beginstr);
-    idx++;
+    EVALSET ("BeginTime", json_object_set_string (object, "BeginTime", beginstring));
   }
   if (calibration->endtime != NSTERROR)
   {
-    cp = ms_nstime2isotimestr (calibration->endtime, endstr, -1);
+    /* Create ISO-formatted time string with (UTC) Z suffix */
+    cp = ms_nstime2isotimestr (calibration->endtime, endstring, -1);
     while (*cp)
       cp++;
     *cp++ = 'Z';
     *cp = '\0';
 
-    keyp[idx] = "EndTime";
-    item[idx].type = CBOR_TEXT;
-    item[idx].valuetype = UCHARP;
-    item[idx].value.ucharp = (unsigned char *)endstr;
-    item[idx].length = strlen(endstr);
-    idx++;
+    EVALSET ("EndTime", json_object_set_string (object, "EndTime", endstring));
   }
   if (calibration->steps >= 0)
   {
-    keyp[idx] = "Steps";
-    item[idx].type = CBOR_UINT;
-    item[idx].valuetype = INT64T;
-    item[idx].value.int64 = calibration->steps;
-    item[idx].length = 0;
-    idx++;
+    EVALSET ("Steps", json_object_set_number (object, "Steps", (double)calibration->steps));
   }
   if (calibration->firstpulsepositive >= 0)
   {
-    keyp[idx] = "FirstPulsePositive";
-    item[idx].type = (calibration->firstpulsepositive) ? CBOR_TRUE : CBOR_FALSE;
-    item[idx].valuetype = INT64T;
-    item[idx].value.int64 = (calibration->firstpulsepositive) ? 1 : 0;
-    item[idx].length = 0;
-    idx++;
+    EVALSET ("FirstPulsePositive", json_object_set_boolean (object, "FirstPulsePositive", calibration->firstpulsepositive));
   }
   if (calibration->alternatesign >= 0)
   {
-    keyp[idx] = "AlternateSign";
-    item[idx].type = (calibration->alternatesign) ? CBOR_TRUE : CBOR_FALSE;
-    item[idx].valuetype = INT64T;
-    item[idx].value.int64 = (calibration->alternatesign) ? 1 : 0;
-    item[idx].length = 0;
-    idx++;
+    EVALSET ("AlternateSign", json_object_set_boolean (object, "AlternateSign", calibration->alternatesign));
   }
   if (calibration->trigger[0])
   {
-    keyp[idx] = "Trigger";
-    item[idx].type = CBOR_TEXT;
-    item[idx].valuetype = UCHARP;
-    item[idx].value.ucharp = (unsigned char *)calibration->trigger;
-    item[idx].length = strlen(calibration->trigger);
-    idx++;
+    EVALSET ("Trigger", json_object_set_string (object, "Trigger", calibration->trigger));
   }
   if (calibration->continued >= 0)
   {
-    keyp[idx] = "Continued";
-    item[idx].type = (calibration->continued) ? CBOR_TRUE : CBOR_FALSE;
-    item[idx].valuetype = INT64T;
-    item[idx].value.int64 = (calibration->continued) ? 1 : 0;
-    item[idx].length = 0;
-    idx++;
+    EVALSET ("Continued", json_object_set_boolean (object, "Continued", calibration->continued));
   }
   if (calibration->amplitude != 0.0)
   {
-    keyp[idx] = "Amplitude";
-    item[idx].type = CBOR_FLOAT64;
-    item[idx].valuetype = FLOAT64T;
-    item[idx].value.float64 = calibration->amplitude;
-    item[idx].length = 0;
-    idx++;
+    EVALSET ("Amplitude", json_object_set_number (object, "Amplitude", calibration->amplitude));
   }
   if (calibration->inputunits[0])
   {
-    keyp[idx] = "InputUnits";
-    item[idx].type = CBOR_TEXT;
-    item[idx].valuetype = UCHARP;
-    item[idx].value.ucharp = (unsigned char *)calibration->inputunits;
-    item[idx].length = strlen(calibration->inputunits);
-    idx++;
+    EVALSET ("InputUnits", json_object_set_string (object, "InputUnits", calibration->inputunits));
   }
   if (calibration->amplituderange[0])
   {
-    keyp[idx] = "AmplitudeRange";
-    item[idx].type = CBOR_TEXT;
-    item[idx].valuetype = UCHARP;
-    item[idx].value.ucharp = (unsigned char *)calibration->amplituderange;
-    item[idx].length = strlen(calibration->amplituderange);
-    idx++;
+    EVALSET ("AmplitudeRange", json_object_set_string (object, "AmplitudeRange", calibration->amplituderange));
   }
   if (calibration->duration != 0.0)
   {
-    keyp[idx] = "Duration";
-    item[idx].type = CBOR_FLOAT64;
-    item[idx].valuetype = FLOAT64T;
-    item[idx].value.float64 = calibration->duration;
-    item[idx].length = 0;
-    idx++;
+    EVALSET ("Duration", json_object_set_number (object, "Duration", calibration->duration));
   }
   if (calibration->sineperiod != 0.0)
   {
-    keyp[idx] = "SinePeriod";
-    item[idx].type = CBOR_FLOAT64;
-    item[idx].valuetype = FLOAT64T;
-    item[idx].value.float64 = calibration->sineperiod;
-    item[idx].length = 0;
-    idx++;
+    EVALSET ("SinePeriod", json_object_set_number (object, "SinePeriod", calibration->sineperiod));
   }
   if (calibration->stepbetween != 0.0)
   {
-    keyp[idx] = "StepBetween";
-    item[idx].type = CBOR_FLOAT64;
-    item[idx].valuetype = FLOAT64T;
-    item[idx].value.float64 = calibration->stepbetween;
-    item[idx].length = 0;
-    idx++;
+    EVALSET ("StepBetween", json_object_set_number (object, "StepBetween", calibration->stepbetween));
   }
   if (calibration->inputchannel[0])
   {
-    keyp[idx] = "InputChannel";
-    item[idx].type = CBOR_TEXT;
-    item[idx].valuetype = UCHARP;
-    item[idx].value.ucharp = (unsigned char *)calibration->inputchannel;
-    item[idx].length = strlen(calibration->inputchannel);
-    idx++;
+    EVALSET ("InputChannel", json_object_set_string (object, "InputChannel", calibration->inputchannel));
   }
   if (calibration->refamplitude != 0.0)
   {
-    keyp[idx] = "ReferenceAmplitude";
-    item[idx].type = CBOR_FLOAT64;
-    item[idx].valuetype = FLOAT64T;
-    item[idx].value.float64 = calibration->refamplitude;
-    item[idx].length = 0;
-    idx++;
+    EVALSET ("ReferenceAmplitude", json_object_set_number (object, "ReferenceAmplitude", calibration->refamplitude));
   }
   if (calibration->coupling[0])
   {
-    keyp[idx] = "Coupling";
-    item[idx].type = CBOR_TEXT;
-    item[idx].valuetype = UCHARP;
-    item[idx].value.ucharp = (unsigned char *)calibration->coupling;
-    item[idx].length = strlen(calibration->coupling);
-    idx++;
+    EVALSET ("Coupling", json_object_set_string (object, "Coupling", calibration->coupling));
   }
   if (calibration->rolloff[0])
   {
-    keyp[idx] = "Rolloff";
-    item[idx].type = CBOR_TEXT;
-    item[idx].valuetype = UCHARP;
-    item[idx].value.ucharp = (unsigned char *)calibration->rolloff;
-    item[idx].length = strlen(calibration->rolloff);
-    idx++;
+    EVALSET ("Rolloff", json_object_set_string (object, "Rolloff", calibration->rolloff));
   }
   if (calibration->noise[0])
   {
-    keyp[idx] = "Noise";
-    item[idx].type = CBOR_TEXT;
-    item[idx].valuetype = UCHARP;
-    item[idx].value.ucharp = (unsigned char *)calibration->noise;
-    item[idx].length = strlen(calibration->noise);
-    idx++;
+    EVALSET ("Noise", json_object_set_string (object, "Noise", calibration->noise));
   }
 
-  keyp[idx] = NULL;
-  itemp[idx] = NULL;
-
-  while (idx > 0)
+  /* Add new object to array */
+  if (mseh_set_path (msr, (path) ? path : "FDSN.Calibration.Sequence", value, 'A', 0))
   {
-    idx--;
-    itemp[idx] = &item[idx];
+    ms_log (2, "mseh_add_calibration(): Cannot add new array entry\n");
+    if (value)
+      json_value_free (value);
+    return MS_GENERROR;
   }
 
-  cbor_init (&stream, msr->extra, msr->extralength);
-
-  /* Append Map entry to Array at specified or default path */
-  if (!cbor_append_map_array (&stream, keyp, itemp,
-                              (path) ? path : (const char *[]){"FDSN", "Calibration", NULL}))
-    return MS_GENERROR;
-
-  msr->extra = stream.data;
-  msr->extralength = stream.size;
+  if (value)
+    json_value_free (value);
 
   return 0;
-#undef MAXITEMS
+#undef EVALSET
 } /* End of mseh_add_calibration() */
 
 /***************************************************************************
@@ -582,108 +565,91 @@ mseh_add_calibration (MS3Record *msr, MSEHCalibration *calibration,
  *
  * Add specified timing exception to the extra headers of the given record.
  *
+ * If 'path' is NULL, the default is "FDSN.Time.Exception".
+ *
  * Returns:
  *   0 on success,
  *   otherwise a (negative) libmseed error code.
  ***************************************************************************/
 int
-mseh_add_timing_exception (MS3Record *msr, MSEHTimingException *exception,
-                           const char *path[])
+mseh_add_timing_exception (MS3Record *msr, const char *path,
+                           MSEHTimingException *exception)
 {
-#define MAXITEMS 7
-  cbor_stream_t stream;
-  cbor_item_t item[MAXITEMS];
-  cbor_item_t *itemp[MAXITEMS];
-  const char *keyp[MAXITEMS];
-  char timestr[31];
-  char *cp;
-  int idx = 0;
+  JSON_Value *value = NULL;
+  JSON_Object *object = NULL;
+  char timestring[31];
+  char *cp = NULL;
 
-  if (!msr)
+#define EVALSET(KEY, SET)                                             \
+  if (SET != JSONSuccess)                                             \
+  {                                                                   \
+    ms_log (2, "mseh_add_timing_exception(): Cannot set: %s\n", KEY); \
+    if (value)                                                        \
+      json_value_free (value);                                        \
+    return MS_GENERROR;                                               \
+  }
+
+  if (!msr || !exception)
     return MS_GENERROR;
 
+  /* Initialize a new object */
+  value = json_value_init_object();
+  object = json_value_get_object(value);
+
+  if (!object)
+  {
+    ms_log (2, "mseh_add_timing_exception(): Cannot initialize new JSON object\n");
+    if (value)
+      json_value_free(value);
+    return MS_GENERROR;
+  }
+
+  /* Add elements to new object */
   if (exception->vcocorrection >= 0.0)
   {
-    keyp[idx] = "VCOCorrection";
-    item[idx].type = CBOR_FLOAT64;
-    item[idx].valuetype = FLOAT64T;
-    item[idx].value.float64 = exception->vcocorrection;
-    item[idx].length = 0;
-    idx++;
+    EVALSET ("VCOCorrection", json_object_set_number (object, "VCOCorrection", (double)exception->vcocorrection));
   }
   if (exception->time != NSTERROR)
   {
-    cp = ms_nstime2isotimestr (exception->time, timestr, -1);
+    /* Create ISO-formatted time string with (UTC) Z suffix */
+    cp = ms_nstime2isotimestr (exception->time, timestring, -1);
     while (*cp)
       cp++;
     *cp++ = 'Z';
     *cp = '\0';
 
-    keyp[idx] = "Time";
-    item[idx].type = CBOR_TEXT;
-    item[idx].valuetype = UCHARP;
-    item[idx].value.ucharp = (unsigned char *)timestr;
-    item[idx].length = strlen(timestr);
-    idx++;
+    EVALSET ("Time", json_object_set_string (object, "Time", timestring));
   }
   if (exception->receptionquality >= 0)
   {
-    keyp[idx] = "ReceptionQuality";
-    item[idx].type = CBOR_UINT;
-    item[idx].valuetype = INT64T;
-    item[idx].value.int64 = exception->receptionquality;
-    item[idx].length = 0;
-    idx++;
+    EVALSET ("ReceptionQuality", json_object_set_number (object, "ReceptionQuality", (double)exception->receptionquality));
   }
   if (exception->count > 0)
   {
-    keyp[idx] = "Count";
-    item[idx].type = CBOR_UINT;
-    item[idx].valuetype = INT64T;
-    item[idx].value.int64 = exception->count;
-    item[idx].length = 0;
-    idx++;
+    EVALSET ("Count", json_object_set_number (object, "Count", (double)exception->count));
   }
   if (exception->type[0])
   {
-    keyp[idx] = "Type";
-    item[idx].type = CBOR_TEXT;
-    item[idx].valuetype = UCHARP;
-    item[idx].value.ucharp = (unsigned char *)exception->type;
-    item[idx].length = strlen(exception->type);
-    idx++;
+    EVALSET ("Type", json_object_set_string (object, "Type", exception->type));
   }
   if (exception->clockstatus[0])
   {
-    keyp[idx] = "ClockStatus";
-    item[idx].type = CBOR_TEXT;
-    item[idx].valuetype = UCHARP;
-    item[idx].value.ucharp = (unsigned char *)exception->clockstatus;
-    item[idx].length = strlen(exception->clockstatus);
-    idx++;
+    EVALSET ("ClockStatus", json_object_set_string (object, "ClockStatus", exception->clockstatus));
   }
 
-  keyp[idx] = NULL;
-  itemp[idx] = NULL;
-
-  while (idx > 0)
+  if (mseh_set_path (msr, (path) ? path : "FDSN.Time.Exception", value, 'A', 0))
   {
-    idx--;
-    itemp[idx] = &item[idx];
+    ms_log (2, "mseh_add_timing_exception(): Cannot add new array entry\n");
+    if (value)
+      json_value_free (value);
+    return MS_GENERROR;
   }
 
-  cbor_init (&stream, msr->extra, msr->extralength);
-
-  /* Append Map entry to Array at specified or default path */
-  if (!cbor_append_map_array (&stream, keyp, itemp,
-                              (path) ? path : (const char *[]){"FDSN", "Time", "Exception", NULL}))
-    return MS_GENERROR;
-
-  msr->extra = stream.data;
-  msr->extralength = stream.size;
+  if (value)
+    json_value_free (value);
 
   return 0;
-#undef MAXITEMS
+#undef EVALSET
 } /* End of mseh_add_timing_exception() */
 
 /***************************************************************************
@@ -700,164 +666,73 @@ mseh_add_timing_exception (MS3Record *msr, MSEHTimingException *exception,
 int
 mseh_print (MS3Record *msr, int indent)
 {
-  char output[65535];
-  int length;
+  char *extra;
   int idx;
   int instring = 0;
 
   if (!msr)
     return MS_GENERROR;
 
-  if (!msr->extralength)
+  if (!msr->extra || !msr->extralength)
     return MS_NOERROR;
 
-  length = mseh_to_json (msr, output, sizeof(output));
+  extra = msr->extra;
 
-  if (!length)
+  if ( extra[0] != '{' || extra[msr->extralength-1] != '}')
   {
-    ms_log (1, "Warning, something is wrong, JSON-like output from mseh_to_json() is empty\n");
-    return MS_GENERROR;
+    ms_log (1, "Warning, something is wrong, extra headers are not a clean {object}\n");
   }
 
-  if ( output[0] != '{' || output[length-1] != '}')
-  {
-    ms_log (1, "Warning, something is wrong, JSON-like output from mseh_to_json() is not an {object}\n");
-  }
-
-  /* Print "diganostic"/JSON-like output character-by-character, inserting
+  /* Print JSON character-by-character, inserting
    * indentation, spaces and newlines for readability. */
   ms_log (0, "%*s", indent, "");
-  for (idx = 1; idx < (length - 1); idx++)
+  for (idx = 1; idx < (msr->extralength - 1); idx++)
   {
     /* Toggle "in string" flag for double quotes */
-    if (output[idx] == '"')
+    if (extra[idx] == '"')
       instring = (instring) ? 0 : 1;
 
     if (!instring)
     {
-      if ( output[idx] == ':')
+      if ( extra[idx] == ':')
       {
         ms_log (0, ": ");
       }
-      else if ( output[idx] == ',')
+      else if ( extra[idx] == ',')
       {
         ms_log (0, ",\n%*s", indent, "");
       }
-      else if ( output[idx] == '{' )
+      else if ( extra[idx] == '{' )
       {
         indent += 2;
         ms_log (0, "{\n%*s", indent, "");
       }
-      else if ( output[idx] == '[' )
+      else if ( extra[idx] == '[' )
       {
         indent += 2;
         ms_log (0, "[\n%*s", indent, "");
       }
-      else if ( output[idx] == '}' )
+      else if ( extra[idx] == '}' )
       {
         indent -= 2;
         ms_log (0, "\n%*s}", indent, "");
       }
-      else if ( output[idx] == ']' )
+      else if ( extra[idx] == ']' )
       {
         indent -= 2;
         ms_log (0, "\n%*s]", indent, "");
       }
       else
       {
-        ms_log (0, "%c", output[idx]);
+        ms_log (0, "%c", extra[idx]);
       }
     }
     else
     {
-      ms_log (0, "%c", output[idx]);
+      ms_log (0, "%c", extra[idx]);
     }
   }
   ms_log (0, "\n");
 
   return MS_NOERROR;
 } /* End of mseh_print() */
-
-/***************************************************************************
- * mseh_to_json:
- *
- * Generate CBOR diagnostic/JSON-like output of the extra header
- * (CBOR Map) structure for the specified MS3Record.
- *
- * The output buffer is guaranteed to be terminated.
- *
- * Returns number of bytes written to output on success, otherwise a
- * negative libmseed error code.
- ***************************************************************************/
-int
-mseh_to_json (MS3Record *msr, char *output, int outputlength)
-{
-  cbor_stream_t stream;
-  size_t readsize;
-  size_t offset = 0;
-  size_t outputoffset = 0;
-
-  if (!msr || !output)
-    return MS_GENERROR;
-
-  cbor_init (&stream, msr->extra, msr->extralength);
-  output[outputoffset] = '\0';
-
-  /* Traverse CBOR items and build diagnostic/JSON-like output */
-  while (offset < stream.size)
-  {
-    offset += readsize = cbor_map_to_diag (&stream, offset, 60, output, &outputoffset, outputlength);
-
-    if (readsize == 0)
-    {
-      ms_log (2, "mseh_to_json(): Cannot decode CBOR, game over\n");
-      return MS_GENERROR;
-    }
-  }
-
-  output[outputoffset] = '\0';
-
-  return (int)outputoffset;
-} /* End of mseh_to_json() */
-
-/***************************************************************************
- * mseh_print_raw:
- *
- * Print the extra header (CBOR Map) structure in the specified buffer.
- *
- * Returns number of bytes printed on success, otherwise a negative
- * libmseed error code.
- ***************************************************************************/
-int
-mseh_print_raw (unsigned char *cbor, size_t length)
-{
-  cbor_stream_t stream;
-  char output[65535];
-  size_t readsize;
-  size_t offset = 0;
-  size_t outputoffset = 0;
-
-  if (!cbor)
-    return MS_GENERROR;
-
-  cbor_init (&stream, cbor, length);
-  output[outputoffset] = '\0';
-
-  /* Traverse CBOR items and build diagnostic/JSON-like output */
-  while (offset < stream.size)
-  {
-    offset += readsize = cbor_map_to_diag (&stream, offset, 60, output, &outputoffset, sizeof(output));
-
-    if (readsize == 0)
-    {
-      ms_log (2, "mseh_to_json(): Cannot decode CBOR, game over\n");
-      return MS_GENERROR;
-    }
-  }
-
-  output[outputoffset] = '\0';
-
-  printf ("%s\n", output);
-
-  return (int)outputoffset;
-} /* End of mseh_print_raw() */

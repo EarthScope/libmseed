@@ -21,7 +21,7 @@ DOCDIR ?= $(DATAROOTDIR)/doc/libmseed
 MANDIR ?= $(DATAROOTDIR)/man
 MAN3DIR ?= $(MANDIR)/man3
 
-LIB_SRCS = fileutils.c genutils.c gswap.c lmplatform.c lookup.c cbor.c \
+LIB_SRCS = fileutils.c genutils.c gswap.c lmplatform.c lookup.c parson.c \
            msrutils.c extraheaders.c pack.c packdata.c tracelist.c gmtime64.c \
            crc32c.c parseutils.c unpack.c unpackdata.c selection.c logging.c
 

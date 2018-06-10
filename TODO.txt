@@ -4,10 +4,15 @@
 * miniSEED 2.4 packing?
 
 * MSBuild project for building, MS Visual Studio 2017 dropped support for NMake
+  - Use CMake to build project files?
 
 * Handle splitversion in mstl3_addmsr().
 
-* Optional, validation of CRC on read, use "bit flags" like open(2)?
+* Functionality for XFDSN:Net_Sta_Loc_Band_Instrument_Position
+
+* Functionality for Recenter headers
+
+* Optional
 #define MSF_SEQUENCE    0x0008  /* Maintain a record-level sequence number */
 
 * Add msr3_parsebuffer() to parse all records from a buffer.

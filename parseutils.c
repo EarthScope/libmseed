@@ -416,7 +416,7 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
     ms_log (0, "          extra headers:\n");
     if ((MS3FSDH_LENGTH + tsidlength + msr.extralength) <= maxreclen)
     {
-      msr.extra = (uint8_t *)record + MS3FSDH_LENGTH + tsidlength;
+      msr.extra = record + MS3FSDH_LENGTH + tsidlength;
       mseh_print (&msr, 10);
     }
     else
@@ -863,7 +863,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
           ms_log (0, "                  SNR values: ");
 
           for (idx = 0; idx < 6; idx++)
-            ms_log (0, "%u  ", pMS2B201_SNRVALUES (record + blkt_offset)[idx]);
+            ms_log (0, "%u  ", pMS2B201_MEDSNR (record + blkt_offset)[idx]);
           ms_log (0, "\n");
           ms_log (0, "              loopback value: %u\n", *pMS2B201_LOOPBACK (record + blkt_offset));
           ms_log (0, "              pick algorithm: %u\n", *pMS2B201_PICKALGORITHM (record + blkt_offset));
