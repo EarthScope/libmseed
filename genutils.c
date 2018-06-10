@@ -28,8 +28,13 @@ LeapSecond *leapsecondlist = NULL;
 /***************************************************************************
  * ms_tsid2nslc:
  *
- * Parse a time series identifier into separate components, expecting:
- *  "FDSN:NET_STA_LOC_CHAN".
+ * Parse a time series source identifier into separate components, expecting:
+ *  "XFDSN:NET_STA_LOC_CHAN", where CHAN="BAND_SOURCE_POSITION"
+ * or
+ *  "FDSN:NET_STA_LOC_CHAN" for a simple combination of SEED 2.4 idenitifers.
+ *
+ * Identifiers may contain additional namespace identifiers, e.g.:
+ *  "XFDSN:AGENCY:NET_STA_LOC_CHAN"
  *
  * Memory for each component must already be allocated.  If a specific
  * component is not desired set the appropriate argument to NULL.
@@ -46,27 +51,30 @@ ms_tsid2nslc (char *tsid, char *net, char *sta, char *loc, char *chan)
   if (!tsid)
     return -1;
 
-  /* Handle the FDSN: identifiers */
-  if (!strncmp (tsid, "FDSN:", 5))
+  /* Handle the XFDSN: and FDSN: namespace identifiers */
+  if (!strncmp (tsid, "XFDSN:", 6) ||
+      !strncmp (tsid, "FDSN:", 5))
   {
-    /* Advance tsid pointer to skip FDSN: namespace identifier */
-    tsid = tsid + 5;
+    /* Advance tsid pointer to last ':', skipping all namespace identifiers */
+    tsid = strrchr (tsid, ':') + 1;
 
-    /* Verify 3 delimiters */
+    /* Verify 3 or 5 delimiters */
     id = tsid;
     while ((id = strchr (id, '_')))
     {
       id++;
       sepcnt++;
     }
-    if (sepcnt != 3)
+    if (sepcnt != 3 && sepcnt != 5)
     {
+      ms_log (2, "ms_tsid2nslc(): Incorrect number of identifier delimiters (%d): %s\n",
+              sepcnt, tsid);
       return -1;
     }
 
     if (!(id = strdup (tsid)))
     {
-      ms_log (2, "ms_tsid2nslc(): Error duplicating identifier");
+      ms_log (2, "ms_tsid2nslc(): Error duplicating identifier\n");
       return -1;
     }
 
@@ -116,7 +124,7 @@ ms_tsid2nslc (char *tsid, char *net, char *sta, char *loc, char *chan)
   }
   else
   {
-    ms_log (2, "ms_tsid2nslc(): Unrecognized identifier: %s", tsid);
+    ms_log (2, "ms_tsid2nslc(): Unrecognized identifier: %s\n", tsid);
     return -1;
   }
 

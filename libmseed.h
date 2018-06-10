@@ -202,7 +202,7 @@ typedef struct MS3Record_s {
   uint8_t         swapflag;          /* Byte swap indicator */
 
   /* Common header fields in accessible form */
-  char            tsid[64];          /* Time series identifier as URN */
+  char            tsid[64];          /* Time series source identifier as URN */
   uint8_t         formatversion;     /* Original source format major version */
   uint8_t         flags;             /* Record-level bit flags */
   nstime_t        starttime;         /* Record start time (first sample) */
