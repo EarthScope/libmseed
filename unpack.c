@@ -32,8 +32,6 @@
  * msr3_unpack_mseed3:
  *
  * Unpack a miniSEED 3.x data record and populate a MS3Record struct.
- * All approriate fields are byteswapped, if needed, and pointers to
- * structured data are set.
  *
  * If MSF_UNPACKDATA is set in flags, the data samples are
  * unpacked/decompressed and the MS3Record->datasamples pointer is set
@@ -210,8 +208,6 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
  * msr3_unpack_mseed2:
  *
  * Unpack a miniSEED 2.x data record and populate a MS3Record struct.
- * All approriate fields are byteswapped, if needed, and pointers to
- * structured data are set.
  *
  * If MSF_UNPACKDATA is set in flags the data samples are
  * unpacked/decompressed and the MS3Record->datasamples pointer is set
@@ -779,7 +775,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
         return MS_GENERROR;
       }
 
-      /* Clock model maps to a single value at FDSN::Clock::Model */
+      /* Clock model maps to a single value at FDSN.Clock.Model */
       ms_strncpcleantail (sval, pMS2B500_CLOCKMODEL (record + blkt_offset), 32);
       mseh_set_string (msr, "FDSN.Clock.Model", sval, strlen (sval));
     }
@@ -1319,8 +1315,8 @@ ms_nomsamprate (int factor, int multiplier)
 /***************************************************************************
  * ms2_recordtsid:
  *
- * Generate a time series identifier string for a specified raw
- * miniSEED 2.x data record.
+ * Generate an XFDSN: time series source identifier string for a
+ * specified raw miniSEED 2.x data record.
  *
  * Returns a pointer to the resulting string or NULL on error.
  ***************************************************************************/
@@ -1330,7 +1326,7 @@ ms2_recordtsid (char *record, char *tsid, int tsidlen)
   char net[3] = {0};
   char sta[6] = {0};
   char loc[3] = {0};
-  char chan[4] = {0};
+  char chan[6] = {0};
 
   if (!record || !tsid)
     return NULL;
@@ -1338,7 +1334,13 @@ ms2_recordtsid (char *record, char *tsid, int tsidlen)
   ms_strncpclean (net, pMS2FSDH_NETWORK (record), 2);
   ms_strncpclean (sta, pMS2FSDH_STATION (record), 5);
   ms_strncpclean (loc, pMS2FSDH_LOCATION (record), 2);
-  ms_strncpclean (chan, pMS2FSDH_CHANNEL (record), 3);
+
+  /* Map 3 channel codes to BAND_SOURCE_POSITION */
+  chan[0] = *pMS2FSDH_CHANNEL (record);
+  chan[1] = '_';
+  chan[2] = *(pMS2FSDH_CHANNEL (record) + 1);
+  chan[3] = '_';
+  chan[4] = *(pMS2FSDH_CHANNEL (record) + 2);
 
   if (ms_nslc2tsid (tsid, tsidlen, 0, net, sta, loc, chan) < 0)
     return NULL;

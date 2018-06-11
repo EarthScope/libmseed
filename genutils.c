@@ -134,10 +134,11 @@ ms_tsid2nslc (char *tsid, char *net, char *sta, char *loc, char *chan)
 /***************************************************************************
  * ms_nslc2tsid:
  *
- * Create a time series identifier of the form "FDSN:NET_STA_LOC_CHAN"
- * from individual network, station, location and channel identifiers.
+ * Create a time series surce identifier from individual network,
+ * station, location and channel codes with the form:
+ *  "XFDSN:NET_STA_LOC_CHAN", where CHAN="BAND_SOURCE_POSITION"
  *
- * Memory for the time series identifier must already be allocated.
+ * Memory for the time series source identifier must already be allocated.
  * If a specific component is NULL it will be empty in the resulting
  * identifier.
  *
@@ -154,7 +155,7 @@ ms_nslc2tsid (char *tsid, int tsidlen, uint16_t flags,
   if (!tsid)
     return -1;
 
-  printed = snprintf (tsid, tsidlen, "FDSN:%s_%s_%s_%s",
+  printed = snprintf (tsid, tsidlen, "XFDSN:%s_%s_%s_%s",
                       (net) ? net : "",
                       (sta) ? sta : "",
                       (loc) ? loc : "",
