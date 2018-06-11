@@ -6,9 +6,8 @@
  * Opens a user specified file, parses the Mini-SEED records and prints
  * details for each record.
  *
- * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
- *
- * modified 2017.312
+ * Written by Chad Trabant
+ *  IRIS Data Managment Center
  ***************************************************************************/
 
 #include <errno.h>
@@ -41,6 +40,7 @@ int
 main (int argc, char **argv)
 {
   MS3Record *msr = 0;
+  uint32_t flags = 0;
 
   int64_t totalrecs = 0;
   int64_t totalsamps = 0;
@@ -67,9 +67,16 @@ main (int argc, char **argv)
   if (parameter_proc (argc, argv) < 0)
     return -1;
 
+  /* Set flag to validate CRCs when reading */
+  flags |= MSF_VALIDATECRC;
+
+  /* Set flag to unpack data */
+  if (printdata)
+    flags |= MSF_UNPACKDATA;
+
   /* Loop over the input file */
-  while ((retcode = ms3_readmsr (&msr, inputfile, NULL, NULL, 1,
-                                 printdata, verbose)) == MS_NOERROR)
+  while ((retcode = ms3_readmsr (&msr, inputfile, NULL, NULL,
+                                 flags, verbose)) == MS_NOERROR)
   {
     totalrecs++;
     totalsamps += msr->samplecnt;
@@ -120,7 +127,7 @@ main (int argc, char **argv)
     ms_log (2, "Cannot read %s: %s\n", inputfile, ms_errorstr (retcode));
 
   /* Make sure everything is cleaned up */
-  ms3_readmsr (&msr, NULL, NULL, NULL, 0, 0, 0);
+  ms3_readmsr (&msr, NULL, NULL, NULL, 0, 0);
 
   if (basicsum)
     ms_log (1, "Records: %" PRId64 ", Samples: %" PRId64 "\n",
