@@ -14,7 +14,7 @@ OBJS=	fileutils.obj	\
 	gswap.obj	\
 	lmplatform.obj	\
 	lookup.obj	\
-	cbor.obj	\
+	parson.obj	\
 	msrutils.obj	\
 	extraheaders.obj\
 	pack.obj	\
