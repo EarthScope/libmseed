@@ -231,7 +231,6 @@ usage (void)
            " -d             Print first 6 sample values\n"
            " -D             Print all sample values\n"
            " -s             Print a basic summary after processing a file\n"
-           " -r bytes       Specify record length in bytes, required if no Blockette 1000\n"
            "\n"
            " file           File of Mini-SEED records\n"
            "\n");
@@ -240,7 +239,7 @@ usage (void)
 #ifndef WIN32
 /***************************************************************************
  * term_handler:
- * Signal handler routine. 
+ * Signal handler routine.
  ***************************************************************************/
 static void
 term_handler (int sig)
