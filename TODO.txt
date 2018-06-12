@@ -8,8 +8,6 @@
 
 * Handle splitversion in mstl3_addmsr().
 
-* Functionality for XFDSN:Net_Sta_Loc_Band_Instrument_Position
-
 * Functionality for Recenter headers
 
 * Optional functionality with a bit flag:
