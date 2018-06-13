@@ -478,9 +478,9 @@ extern int ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
 extern int ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
                                         MS3Selections *selections, int8_t pubversion, uint32_t flags, int8_t verbose);
 extern int msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
-                            int maxreclen, int8_t encoding, int8_t verbose);
+                            uint32_t flags, int8_t verbose);
 extern int mstl3_writemseed (MS3TraceList *mst, const char *msfile, int8_t overwrite,
-                             int maxreclen, int8_t encoding, int8_t verbose);
+                             int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose);
 
 /* General use functions */
 extern int      ms_tsid2nslc (char *tsid, char *net, char *sta, char *loc, char *chan);

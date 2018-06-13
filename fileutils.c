@@ -625,7 +625,7 @@ ms_record_handler_int (char *record, int reclen, void *ofp)
 } /* End of ms_record_handler_int() */
 
 /***************************************************************************
- * msr_writemseed:
+ * msr3_writemseed:
  *
  * Pack MS3Record data into miniSEED record(s) by calling msr3_pack() and
  * write to a specified file.
@@ -634,7 +634,7 @@ ms_record_handler_int (char *record, int reclen, void *ofp)
  ***************************************************************************/
 int
 msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
-                 int maxreclen, int8_t encoding, int8_t verbose)
+                 uint32_t flags, int8_t verbose)
 {
   FILE *ofp;
   char *perms = (overwrite) ? "wb" : "ab";
@@ -658,10 +658,7 @@ msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
   /* Pack the MS3Record */
   if (msr->numsamples > 0)
   {
-    msr->encoding = encoding;
-    msr->reclen = maxreclen;
-
-    packedrecords = msr3_pack (msr, &ms_record_handler_int, ofp, NULL, 1, verbose - 1);
+    packedrecords = msr3_pack (msr, &ms_record_handler_int, ofp, NULL, flags, verbose - 1);
 
     if (packedrecords < 0)
     {
@@ -685,7 +682,7 @@ msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
  ***************************************************************************/
 int
 mstl3_writemseed (MS3TraceList *mstl, const char *msfile, int8_t overwrite,
-                  int maxreclen, int8_t encoding, int8_t verbose)
+                  int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose)
 {
   MS3TraceID *tid;
   MS3TraceSeg *seg;
@@ -729,7 +726,7 @@ mstl3_writemseed (MS3TraceList *mstl, const char *msfile, int8_t overwrite,
       //msr->reclen = reclen;
       //msr->byteorder = byteorder;
       //
-      //segpackedrecords = msr_pack (msr, &ms_record_handler_int, ofp, NULL, 1, verbose - 1);
+      //segpackedrecords = msr_pack (msr, &ms_record_handler_int, ofp, NULL, flags, verbose - 1);
 
       if (segpackedrecords < 0)
       {
