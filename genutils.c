@@ -864,10 +864,10 @@ ms_timestr2nstime (char *timestr)
   fields = sscanf (timestr, "%d%*[-,/:.]%d%*[-,/:.]%d%*[-,/:.Tt ]%d%*[-,/:.]%d%*[-,/:.]%d%lf",
                    &year, &mon, &mday, &hour, &min, &sec, &fsec);
 
-  /* Convert fractional seconds to microseconds */
+  /* Convert fractional seconds to nanoseconds */
   if (fsec != 0.0)
   {
-    nsec = (int)(fsec * 1000000.0 + 0.5);
+    nsec = (int)(fsec * 1000000000.0 + 0.5);
   }
 
   if (fields < 1)
