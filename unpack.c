@@ -1056,6 +1056,15 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
     return MS_GENERROR;
   }
 
+  /* Fallback encoding for when no blockette 1000 is present */
+  if (msr->encoding < 0)
+  {
+    if (verbose > 2)
+      ms_log (1, "%s: No data encoding (no blockette 1000?), assuming Steim-1\n", msr->tsid);
+
+    msr->encoding = DE_STEIM1;
+  }
+
   switch (msr->encoding)
   {
   case DE_ASCII:
@@ -1085,7 +1094,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   encoded = msr->record + dataoffset;
 
   /* Copy encoded data to aligned/malloc'd buffer if not aligned for sample size */
-  if (!is_aligned (encoded, samplesize))
+  if (samplesize && !is_aligned (encoded, samplesize))
   {
     if ((encoded_allocated = malloc (datasize)) == NULL)
     {
