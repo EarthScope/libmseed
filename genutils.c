@@ -501,37 +501,53 @@ ms_nstime2isotimestr (nstime_t nstime, char *isotimestr, int8_t subseconds)
 {
   struct tm tms;
   int64_t isec;
-  int ifract;
+  int nanosec;
+  int microsec;
+  int submicro;
   int ret;
 
   if (isotimestr == NULL)
     return NULL;
 
-  /* Reduce to Unix/POSIX epoch time and fractional seconds */
+  /* Reduce to Unix/POSIX epoch time and fractional nanoseconds */
   isec = MS_NSTIME2EPOCH (nstime);
-  ifract = (int)(nstime - (isec * NSTMODULUS));
+  nanosec = (int)(nstime - (isec * NSTMODULUS));
 
   /* Adjust for negative epoch times */
-  if (nstime < 0 && ifract != 0)
+  if (nstime < 0 && nanosec != 0)
   {
     isec -= 1;
-    ifract = NSTMODULUS - (-ifract);
+    nanosec = NSTMODULUS - (-nanosec);
   }
+
+  /* Determine microsecond and sub-microsecond values */
+  microsec = nanosec / 1000;
+  submicro = nanosec - (microsec * 1000);
 
   if (!(ms_gmtime64_r (&isec, &tms)))
     return NULL;
 
-  if (subseconds == 1 || (subseconds == -1 && ifract))
-    /* Assuming ifract has at least nanosecond precision */
-    ret = snprintf (isotimestr, 30, "%4d-%02d-%02dT%02d:%02d:%02d.%09d",
-                    tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
-                    tms.tm_hour, tms.tm_min, tms.tm_sec, ifract);
+  if (subseconds == 1 || (subseconds == -1 && nanosec))
+  {
+    /* Print nanoseconds if sub-microseconds are non-zero */
+    if (submicro)
+      ret = snprintf (isotimestr, 30, "%4d-%02d-%02dT%02d:%02d:%02d.%09d",
+                      tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
+                      tms.tm_hour, tms.tm_min, tms.tm_sec, nanosec);
+    /* Otherwise, print microseconds */
+    else
+      ret = snprintf (isotimestr, 30, "%4d-%02d-%02dT%02d:%02d:%02d.%06d",
+                      tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
+                      tms.tm_hour, tms.tm_min, tms.tm_sec, microsec);
+  }
   else
+  {
     ret = snprintf (isotimestr, 20, "%4d-%02d-%02dT%02d:%02d:%02d",
                     tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
                     tms.tm_hour, tms.tm_min, tms.tm_sec);
+  }
 
-  if (ret != 29 && ret != 19)
+  if (ret != 29 && ret != 26 && ret != 19)
     return NULL;
   else
     return isotimestr;
@@ -548,9 +564,9 @@ ms_nstime2isotimestr (nstime_t nstime, char *isotimestr, int8_t subseconds)
  *
  * The 'subseconds' flag controls whenther the sub second portion of the
  * time is included or not:
- *  1 = include subseconds
+ *  1 = include microseconds always and nanoseconds if non-zero
  *  0 = do not include subseconds
- * -1 = include subseconds if non-zero
+ * -1 = include subseconds if non-zero and nanoseconds if non-zero
  *
  * Returns a pointer to the resulting string or NULL on error.
  ***************************************************************************/
@@ -559,37 +575,53 @@ ms_nstime2mdtimestr (nstime_t nstime, char *mdtimestr, flag subseconds)
 {
   struct tm tms;
   int64_t isec;
-  int ifract;
+  int nanosec;
+  int microsec;
+  int submicro;
   int ret;
 
   if (mdtimestr == NULL)
     return NULL;
 
-  /* Reduce to Unix/POSIX epoch time and fractional seconds */
+  /* Reduce to Unix/POSIX epoch time and fractional nanoseconds */
   isec = MS_NSTIME2EPOCH (nstime);
-  ifract = (int)(nstime - (isec * NSTMODULUS));
+  nanosec = (int)(nstime - (isec * NSTMODULUS));
 
   /* Adjust for negative epoch times */
-  if (nstime < 0 && ifract != 0)
+  if (nstime < 0 && nanosec != 0)
   {
     isec -= 1;
-    ifract = NSTMODULUS - (-ifract);
+    nanosec = NSTMODULUS - (-nanosec);
   }
+
+  /* Determine microsecond and sub-microsecond values */
+  microsec = nanosec / 1000;
+  submicro = nanosec - (microsec * 1000);
 
   if (!(ms_gmtime64_r (&isec, &tms)))
     return NULL;
 
-  if (subseconds == 1 || (subseconds == -1 && ifract))
-    /* Assuming ifract has at least nanosecond precision */
-    ret = snprintf (mdtimestr, 30, "%4d-%02d-%02d %02d:%02d:%02d.%09d",
-                    tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
-                    tms.tm_hour, tms.tm_min, tms.tm_sec, ifract);
+  if (subseconds == 1 || (subseconds == -1 && nanosec))
+  {
+    /* Print nanoseconds if sub-microseconds are non-zero */
+    if (submicro)
+      ret = snprintf (mdtimestr, 30, "%4d-%02d-%02d %02d:%02d:%02d.%09d",
+                      tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
+                      tms.tm_hour, tms.tm_min, tms.tm_sec, nanosec);
+    /* Otherwise, print microseconds */
+    else
+      ret = snprintf (mdtimestr, 30, "%4d-%02d-%02d %02d:%02d:%02d.%06d",
+                      tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
+                      tms.tm_hour, tms.tm_min, tms.tm_sec, microsec);
+  }
   else
+  {
     ret = snprintf (mdtimestr, 20, "%4d-%02d-%02d %02d:%02d:%02d",
                     tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
                     tms.tm_hour, tms.tm_min, tms.tm_sec);
+  }
 
-  if (ret != 29 && ret != 19)
+  if (ret != 29 && ret != 26 && ret != 19)
     return NULL;
   else
     return mdtimestr;
@@ -616,37 +648,53 @@ ms_nstime2seedtimestr (nstime_t nstime, char *seedtimestr, flag subseconds)
 {
   struct tm tms;
   int64_t isec;
-  int ifract;
+  int nanosec;
+  int microsec;
+  int submicro;
   int ret;
 
   if (seedtimestr == NULL)
     return NULL;
 
-  /* Reduce to Unix/POSIX epoch time and fractional seconds */
+  /* Reduce to Unix/POSIX epoch time and fractional nanoseconds */
   isec = MS_NSTIME2EPOCH (nstime);
-  ifract = (int)(nstime - (isec * NSTMODULUS));
+  nanosec = (int)(nstime - (isec * NSTMODULUS));
 
   /* Adjust for negative epoch times */
-  if (nstime < 0 && ifract != 0)
+  if (nstime < 0 && nanosec != 0)
   {
     isec -= 1;
-    ifract = NSTMODULUS - (-ifract);
+    nanosec = NSTMODULUS - (-nanosec);
   }
+
+  /* Determine microsecond and sub-microsecond values */
+  microsec = nanosec / 1000;
+  submicro = nanosec - (microsec * 1000);
 
   if (!(ms_gmtime64_r (&isec, &tms)))
     return NULL;
 
-  if (subseconds == 1 || (subseconds == -1 && ifract))
-    /* Assuming ifract has at least microsecond precision */
-    ret = snprintf (seedtimestr, 28, "%4d,%03d,%02d:%02d:%02d.%09d",
-                    tms.tm_year + 1900, tms.tm_yday + 1,
-                    tms.tm_hour, tms.tm_min, tms.tm_sec, ifract);
+  if (subseconds == 1 || (subseconds == -1 && nanosec))
+  {
+    /* Print nanoseconds if sub-microseconds are non-zero */
+    if (submicro)
+      ret = snprintf (seedtimestr, 28, "%4d,%03d,%02d:%02d:%02d.%09d",
+                      tms.tm_year + 1900, tms.tm_yday + 1,
+                      tms.tm_hour, tms.tm_min, tms.tm_sec, nanosec);
+    /* Otherwise, print microseconds */
+    else
+      ret = snprintf (seedtimestr, 28, "%4d,%03d,%02d:%02d:%02d.%06d",
+                      tms.tm_year + 1900, tms.tm_yday + 1,
+                      tms.tm_hour, tms.tm_min, tms.tm_sec, microsec);
+  }
   else
+  {
     ret = snprintf (seedtimestr, 18, "%4d,%03d,%02d:%02d:%02d",
                     tms.tm_year + 1900, tms.tm_yday + 1,
                     tms.tm_hour, tms.tm_min, tms.tm_sec);
+  }
 
-  if (ret != 27 && ret != 17)
+  if (ret != 27 && ret != 24 && ret != 17)
     return NULL;
   else
     return seedtimestr;
