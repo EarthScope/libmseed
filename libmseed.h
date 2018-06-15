@@ -280,6 +280,7 @@ typedef struct MS3Selections_s {
 #define MSF_VALIDATECRC 0x0004  /* Validate CRC (if version 3) when parsing */
 #define MSF_SEQUENCE    0x0008  /* Maintain a record-level sequence number */
 #define MSF_FLUSHDATA   0x0010  /* Pack all available data */
+#define MSF_ATENDOFFILE 0x0011  /* Reading routine is at the end of the file */
 
 /* miniSEED record related functions */
 extern int msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,

@@ -353,6 +353,10 @@ ms3_readmsr_main (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
     /* Attempt to parse record from buffer */
     if (MSFPBUFLEN (msfp) >= MINRECLEN)
     {
+      /* Set end of file flag if at EOF */
+      if (feof (msfp->fp))
+        flags |= MSF_ATENDOFFILE;
+
       parseval = msr3_parse (MSFPREADPTR (msfp), MSFPBUFLEN (msfp), ppmsr, flags, verbose);
 
       /* Record detected and parsed */

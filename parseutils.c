@@ -42,13 +42,25 @@ msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
 {
   int reclen  = 0;
   int retcode = MS_NOERROR;
-  uint8_t formatversion;
+  uint8_t formatversion = 0;
 
   if (!ppmsr || !record)
     return MS_GENERROR;
 
   /* Detect record, determine length and format version */
   reclen = ms3_detect (record, recbuflen, &formatversion);
+
+  /* If version 2 is detected but length could not be determined and the
+     buffer is at the end of the file and the buffer length is a power of
+     2, use the implied buffer length as the record length.
+     Power of two if (X & (X - 1)) == 0 */
+  if (formatversion == 2 &&
+      reclen < 0 &&
+      flags & MSF_ATENDOFFILE &&
+      (recbuflen & (recbuflen - 1)) == 0)
+  {
+    reclen = recbuflen;
+  }
 
   /* No data record detected */
   if (reclen < 0)
