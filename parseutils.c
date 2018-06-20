@@ -50,9 +50,12 @@ msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
   /* Detect record, determine length and format version */
   reclen = ms3_detect (record, recbuflen, &formatversion);
 
-  /* If version 2 is detected but length could not be determined and the
-     buffer is at the end of the file and the buffer length is a power of
-     2, use the implied buffer length as the record length.
+  /* Return record length implied by buffer length if:
+     - version 2
+     - length could not be determined
+     - buffer is at the end of the file
+     - buffer length is a power of 2
+
      Power of two if (X & (X - 1)) == 0 */
   if (formatversion == 2 &&
       reclen < 0 &&
