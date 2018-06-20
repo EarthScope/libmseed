@@ -4,8 +4,6 @@
  * A program for libmseed parsing tests.
  *
  * Written by Chad Trabant, IRIS Data Management Center
- *
- * modified 2016.275
  ***************************************************************************/
 
 #include <errno.h>
@@ -43,10 +41,11 @@ static void usage (void);
 int
 main (int argc, char **argv)
 {
-  MSTraceList *mstl = 0;
-  MSRecord *msr     = 0;
+  MS3TraceList *mstl = 0;
+  MS3Record *msr = 0;
+  uint32_t flags = 0;
 
-  int64_t totalrecs  = 0;
+  int64_t totalrecs = 0;
   int64_t totalsamps = 0;
   int retcode;
 
@@ -57,26 +56,39 @@ main (int argc, char **argv)
   if (parameter_proc (argc, argv) < 0)
     return -1;
 
+  /* Validate CRC and unpack data samples */
+  flags |= MSF_VALIDATECRC;
+
+  if (printdata)
+    flags |= MSF_UNPACKDATA;
+
   if (tracegap)
-    mstl = mstl_init (NULL);
+    mstl = mstl3_init (NULL);
 
   /* Loop over the input file */
-  while ((retcode = ms_readmsr (&msr, inputfile, reclen, NULL, NULL, 1,
-                                printdata, verbose)) == MS_NOERROR)
+  while ((retcode = ms3_readmsr (&msr, inputfile, NULL, NULL, flags,
+                                 verbose)) == MS_NOERROR)
   {
     totalrecs++;
     totalsamps += msr->samplecnt;
 
     if (tracegap)
     {
-      mstl_addmsr (mstl, msr, 0, 1, timetol, sampratetol);
+      mstl3_addmsr (mstl, msr, 0, 1, timetol, sampratetol);
     }
     else
     {
       if ( printraw )
-        ms_parse_raw (msr->record, msr->reclen, ppackets, -1);
+      {
+        if (msr->formatversion == 3)
+          ms_parse_raw3 (msr->record, msr->reclen, ppackets);
+        else
+          ms_parse_raw2 (msr->record, msr->reclen, ppackets, -1);
+      }
       else
-        msr_print (msr, ppackets);
+      {
+        msr3_print (msr, ppackets);
+      }
 
       if (printdata && msr->numsamples > 0)
       {
@@ -148,13 +160,13 @@ main (int argc, char **argv)
     ms_log (2, "Cannot read %s: %s\n", inputfile, ms_errorstr (retcode));
 
   if (tracegap)
-    mstl_printtracelist (mstl, 0, 1, 1);
+    mstl3_printtracelist (mstl, 0, 1, 1);
 
   /* Make sure everything is cleaned up */
-  ms_readmsr (&msr, NULL, 0, NULL, NULL, 0, 0, 0);
+  ms3_readmsr (&msr, NULL, NULL, NULL, flags, 0);
 
   if (mstl)
-    mstl_free (&mstl, 0);
+    mstl3_free (&mstl, 0);
 
   if (basicsum)
     ms_log (1, "Records: %" PRId64 ", Samples: %" PRId64 "\n",

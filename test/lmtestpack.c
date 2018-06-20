@@ -4,8 +4,6 @@
  * A program for libmseed packing tests.
  *
  * Written by Chad Trabant, IRIS Data Management Center
- *
- * modified 2016.275
  ***************************************************************************/
 
 #include <errno.h>
@@ -95,9 +93,10 @@ static char *textdata =
 int
 main (int argc, char **argv)
 {
-  MSRecord *msr = NULL;
+  MS3Record *msr = NULL;
   float *fdata  = NULL;
   double *ddata = NULL;
+  uint32_t flags = 0;
   int idx;
   int rv;
 
@@ -108,21 +107,19 @@ main (int argc, char **argv)
   if (parameter_proc (argc, argv) < 0)
     return -1;
 
-  if (!(msr = msr_init (msr)))
+  if (!(msr = msr3_init (msr)))
   {
-    fprintf (stderr, "Could not allocate MSRecord, out of memory?\n");
+    fprintf (stderr, "Could not allocate MS3Record, out of memory?\n");
     return 1;
   }
 
   /* Set up record parameters */
-  strcpy (msr->network, "XX");
-  strcpy (msr->station, "TEST");
-  strcpy (msr->channel, "LHZ");
-  msr->dataquality = 'R';
-  msr->starttime   = ms_timestr2hptime ("2012-01-01T00:00:00");
-  msr->samprate    = 1.0;
-  msr->encoding    = encoding;
-  msr->byteorder   = byteorder;
+  strcpy (msr->tsid, "XFDSN:XX_TEST__L_H_Z");
+  msr->reclen = reclen;
+  msr->pubversion = 1;
+  msr->starttime = ms_timestr2nstime ("2012-01-01T00:00:00");
+  msr->samprate = 1.0;
+  msr->encoding = encoding;
 
   if (encoding == DE_ASCII)
   {
@@ -177,7 +174,10 @@ main (int argc, char **argv)
 
   msr->samplecnt = msr->numsamples;
 
-  rv = msr_writemseed (msr, outfile, 1, reclen, encoding, byteorder, verbose);
+  /* Set data flush flag */
+  flags |= MSF_FLUSHDATA;
+
+  rv = msr3_writemseed (msr, outfile, 1, flags, verbose);
 
   if (rv < 0)
     ms_log (2, "Error (%d) writing miniSEED to %s\n", rv, outfile);
@@ -185,7 +185,7 @@ main (int argc, char **argv)
   /* Make sure everything is cleaned up */
   if (msr->datasamples == sindata || msr->datasamples == textdata)
     msr->datasamples = NULL;
-  msr_free (&msr);
+  msr3_free (&msr);
 
   return 0;
 } /* End of main() */
@@ -281,7 +281,7 @@ usage (void)
            " -V             Report program version\n"
            " -h             Show this usage message\n"
            " -v             Be more verbose, multiple flags can be used\n"
-           " -r bytes       Specify record length in bytes\n"
+           " -r bytes       Specify maximum record length in bytes, default 4096\n"
            " -e encoding    Specify encoding format\n"
            " -b byteorder   Specify byte order for packing, MSBF: 1, LSBF: 0\n"
            "\n"
