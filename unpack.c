@@ -1189,8 +1189,12 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
     if (verbose > 1)
       ms_log (1, "%s: Unpacking Steim1 data frames\n", msr->tsid);
 
-    /* Always big endian Steim1 */
-    localswapflag = (ms_bigendianhost ()) ? 0 : 1;
+    /* Version 3: always big endian
+       Version 2: endianness can depend on flag */
+    if (msr->formatversion == 3)
+      localswapflag = (ms_bigendianhost ()) ? 0 : 1;
+    else
+      localswapflag = msr->swapflag;
 
     nsamples = msr_decode_steim1 ((int32_t *)encoded, datasize, msr->samplecnt,
                                   msr->datasamples, unpacksize, msr->tsid, localswapflag);
@@ -1208,8 +1212,12 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
     if (verbose > 1)
       ms_log (1, "%s: Unpacking Steim2 data frames\n", msr->tsid);
 
-    /* Always big endian Steim2 */
-    localswapflag = (ms_bigendianhost ()) ? 0 : 1;
+    /* Version 3: always big endian
+       Version 2: endianness can depend on flag */
+    if (msr->formatversion == 3)
+      localswapflag = (ms_bigendianhost ()) ? 0 : 1;
+    else
+      localswapflag = msr->swapflag;
 
     nsamples = msr_decode_steim2 ((int32_t *)encoded, datasize, msr->samplecnt,
                                   msr->datasamples, unpacksize, msr->tsid, localswapflag);
