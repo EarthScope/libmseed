@@ -435,6 +435,8 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     /* Blockette 200, generic event detection */
     else if (blkt_type == 200)
     {
+      memset (&eventdetection, 0, sizeof(eventdetection));
+
       strncpy (eventdetection.type, "GENERIC", sizeof (eventdetection.type));
       ms_strncpcleantail (eventdetection.detector, pMS2B200_DETECTOR (record + blkt_offset), 24);
       eventdetection.signalamplitude = HO4f (*pMS2B200_AMPLITUDE (record + blkt_offset), msr->swapflag);
@@ -476,6 +478,8 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     /* Blockette 201, Murdock event detection */
     else if (blkt_type == 201)
     {
+      memset (&eventdetection, 0, sizeof(eventdetection));
+
       strncpy (eventdetection.type, "MURDOCK", sizeof (eventdetection.type));
       ms_strncpcleantail (eventdetection.detector, pMS2B201_DETECTOR (record + blkt_offset), 24);
       eventdetection.signalamplitude = HO4f (*pMS2B201_AMPLITUDE (record + blkt_offset), msr->swapflag);
@@ -507,6 +511,8 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     /* Blockette 300, step calibration */
     else if (blkt_type == 300)
     {
+      memset (&calibration, 0, sizeof(calibration));
+
       strncpy (calibration.type, "STEP", sizeof (calibration.type));
 
       calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B300_YEAR (record + blkt_offset), msr->swapflag);
@@ -560,6 +566,8 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     /* Blockette 310, sine calibration */
     else if (blkt_type == 310)
     {
+      memset (&calibration, 0, sizeof(calibration));
+
       strncpy (calibration.type, "SINE", sizeof (calibration.type));
 
       calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B310_YEAR (record + blkt_offset), msr->swapflag);
@@ -615,6 +623,8 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     /* Blockette 320, pseudo-random calibration */
     else if (blkt_type == 320)
     {
+      memset (&calibration, 0, sizeof(calibration));
+
       strncpy (calibration.type, "PSEUDORANDOM", sizeof (calibration.type));
 
       calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B320_YEAR (record + blkt_offset), msr->swapflag);
@@ -664,6 +674,8 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     /* Blockette 390, generic calibration */
     else if (blkt_type == 390)
     {
+      memset (&calibration, 0, sizeof(calibration));
+
       strncpy (calibration.type, "GENERIC", sizeof (calibration.type));
 
       calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B390_YEAR (record + blkt_offset), msr->swapflag);
@@ -709,6 +721,8 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     /* Blockette 395, calibration abort */
     else if (blkt_type == 395)
     {
+      memset (&calibration, 0, sizeof(calibration));
+
       strncpy (calibration.type, "ABORT", sizeof (calibration.type));
 
       calibration.begintime = NSTERROR;
@@ -757,6 +771,8 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     /* Blockette 500, timing blockette */
     else if (blkt_type == 500)
     {
+      memset (&exception, 0, sizeof(exception));
+
       exception.vcocorrection = HO4f (*pMS2B500_VCOCORRECTION (record + blkt_offset), msr->swapflag);
 
       exception.time = ms_btime2nstime ((uint8_t*)pMS2B500_YEAR (record + blkt_offset), msr->swapflag);
