@@ -59,7 +59,7 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
 
   if (!rootvalue)
   {
-    ms_log (2, "mseh_fetch_path(): Extra headers are not JSON\n", type);
+    ms_log (2, "mseh_fetch_path(): Extra headers are not JSON\n");
     return MS_GENERROR;
   }
 
@@ -68,7 +68,7 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
 
   if (!rootobject)
   {
-    ms_log (2, "mseh_fetch_path(): Extra headers are not a JSON object\n", type);
+    ms_log (2, "mseh_fetch_path(): Extra headers are not a JSON object\n");
     json_value_free(rootvalue);
     return MS_GENERROR;
   }
@@ -164,7 +164,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type, size_t 
 
     if (!rootvalue)
     {
-      ms_log (2, "mseh_fetch_path(): Extra headers are not JSON\n", type);
+      ms_log (2, "mseh_fetch_path(): Extra headers are not JSON\n");
       return MS_GENERROR;
     }
 
@@ -173,7 +173,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type, size_t 
 
     if (!rootobject)
     {
-      ms_log (2, "mseh_fetch_path(): Extra headers are not a JSON object\n", type);
+      ms_log (2, "mseh_fetch_path(): Extra headers are not a JSON object\n");
       json_value_free (rootvalue);
       return MS_GENERROR;
     }
@@ -186,7 +186,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type, size_t 
 
     if (!rootobject)
     {
-      ms_log (2, "mseh_fetch_path(): Cannot initialize new JSON object\n", type);
+      ms_log (2, "mseh_fetch_path(): Cannot initialize new JSON object\n");
       if (rootvalue)
         json_value_free (rootvalue);
       return MS_GENERROR;
@@ -236,7 +236,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type, size_t 
 
   if (!serializationsize)
   {
-    ms_log (2, "mseh_set_path(): Cannot determine new serialization size\n", type);
+    ms_log (2, "mseh_set_path(): Cannot determine new serialization size\n");
     json_value_free (rootvalue);
     return MS_GENERROR;
   }
@@ -253,7 +253,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type, size_t 
 
   if (!serialized)
   {
-    ms_log (2, "mseh_set_path(): Cannot determine new serialization size\n", type);
+    ms_log (2, "mseh_set_path(): Cannot determine new serialization size\n");
     json_value_free (rootvalue);
     return MS_GENERROR;
   }
