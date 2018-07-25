@@ -265,6 +265,9 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type, size_t 
     return MS_GENERROR;
   }
 
+  if (rootvalue)
+    json_value_free (rootvalue);
+
   /* Set new extra headers, replacing existing headers */
   if (msr->extra)
     free (msr->extra);
