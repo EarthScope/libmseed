@@ -1223,7 +1223,7 @@ mstl3_printsynclist (MS3TraceList *mstl, char *dccid, int8_t subsecond)
   MS3TraceSeg *seg = 0;
   char starttime[30];
   char endtime[30];
-  char yearday[10];
+  char yearday[32];
   char net[11] = {0};
   char sta[11] = {0};
   char loc[11] = {0};
