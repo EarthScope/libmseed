@@ -394,7 +394,7 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
     EVALSET ("Detector", json_object_set_string (object, "Detector", eventdetection->detector));
   }
 
-  /* Add new object to array */
+  /* Add new object to array, created 'value' will be free'd on successful return */
   if (mseh_set_path (msr, (path) ? path : "FDSN.Event.Detection", value, 'A', 0))
   {
     ms_log (2, "mseh_add_event_detection(): Cannot add new array entry\n");
@@ -402,9 +402,6 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
       json_value_free (value);
     return MS_GENERROR;
   }
-
-  if (value)
-    json_value_free (value);
 
   return 0;
 #undef EVALSET
@@ -547,7 +544,7 @@ mseh_add_calibration (MS3Record *msr, const char *path,
     EVALSET ("Noise", json_object_set_string (object, "Noise", calibration->noise));
   }
 
-  /* Add new object to array */
+  /* Add new object to array, created 'value' will be free'd on successful return */
   if (mseh_set_path (msr, (path) ? path : "FDSN.Calibration.Sequence", value, 'A', 0))
   {
     ms_log (2, "mseh_add_calibration(): Cannot add new array entry\n");
@@ -555,9 +552,6 @@ mseh_add_calibration (MS3Record *msr, const char *path,
       json_value_free (value);
     return MS_GENERROR;
   }
-
-  if (value)
-    json_value_free (value);
 
   return 0;
 #undef EVALSET
@@ -640,6 +634,7 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
     EVALSET ("ClockStatus", json_object_set_string (object, "ClockStatus", exception->clockstatus));
   }
 
+  /* Add new object to array, created 'value' will be free'd on successful return */
   if (mseh_set_path (msr, (path) ? path : "FDSN.Time.Exception", value, 'A', 0))
   {
     ms_log (2, "mseh_add_timing_exception(): Cannot add new array entry\n");
@@ -647,9 +642,6 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
       json_value_free (value);
     return MS_GENERROR;
   }
-
-  if (value)
-    json_value_free (value);
 
   return 0;
 #undef EVALSET
