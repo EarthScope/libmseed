@@ -939,7 +939,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   /* Unpack the data samples if requested */
   if ((flags & MSF_UNPACKDATA) && msr->samplecnt > 0)
   {
-    if (verbose > 2 && msr->swapflag)
+    if (verbose > 2 && msr->swapflag & MSSWAP_PAYLOAD)
       ms_log (1, "%s: Byte swapping needed for unpacking of data samples\n", msr->tsid);
     else if (verbose > 2)
       ms_log (1, "%s: Byte swapping NOT needed for unpacking of data samples\n", msr->tsid);
@@ -992,7 +992,7 @@ msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint16_t *datasize)
   }
   else if (msr->formatversion == 2)
   {
-    *dataoffset = HO2u (*pMS2FSDH_DATAOFFSET (msr->record), msr->swapflag);
+    *dataoffset = HO2u (*pMS2FSDH_DATAOFFSET (msr->record), msr->swapflag & MSSWAP_HEADER);
     *datasize = msr->reclen - *dataoffset;
   }
   else
