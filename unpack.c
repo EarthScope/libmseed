@@ -66,6 +66,7 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
   uint32_t header_crc;
   uint8_t tsidlength = 0;
   int8_t swapflag;
+  int bigendianhost = ms_bigendianhost ();
   int retval;
 
   if (!record)
@@ -95,7 +96,7 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
   }
 
   /* miniSEED 3 is little endian */
-  swapflag = (ms_bigendianhost ()) ? 1 : 0;
+  swapflag = (bigendianhost) ? 1 : 0;
 
   if (verbose > 2)
   {
@@ -143,7 +144,7 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
   msr->reclen = reclen;
 
   /* Populate the header fields */
-  msr->swapflag = swapflag;
+  msr->swapflag = (swapflag) ? MSSWAP_HEADER : 0;
   msr->formatversion = *pMS3FSDH_FORMATVERSION (record);
   msr->flags = *pMS3FSDH_FLAGS (record);
 
@@ -181,6 +182,19 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
   }
 
   msr->datalength = HO2u (*pMS3FSDH_DATALENGTH (record), msr->swapflag);
+
+  /* Determine data payload byte swapping.
+     Steim encodings are big endian.
+     All other encodings are little endian, matching the header. */
+  if (msr->encoding == DE_STEIM1 || msr->encoding == DE_STEIM2)
+  {
+    if (! bigendianhost)
+      msr->swapflag |= MSSWAP_PAYLOAD;
+  }
+  else if (msr->swapflag & MSSWAP_HEADER)
+  {
+    msr->swapflag |= MSSWAP_PAYLOAD;
+  }
 
   /* Unpack the data samples if requested */
   if ((flags & MSF_UNPACKDATA) && msr->samplecnt > 0)
@@ -235,6 +249,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 {
   int B1000offset = 0;
   int B1001offset = 0;
+  int bigendianhost = ms_bigendianhost ();
   int retval;
 
   MS3Record *msr = NULL;
@@ -301,7 +316,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
   /* Check to see if byte swapping is needed by testing the year and day */
   if (!MS_ISVALIDYEARDAY (*pMS2FSDH_YEAR (record), *pMS2FSDH_DAY (record)))
-    msr->swapflag = 1;
+    msr->swapflag = MSSWAP_HEADER;
 
   /* Report byte swapping status */
   if (verbose > 2)
@@ -905,35 +920,31 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
   msr->datalength = msr->reclen - HO2u (*pMS2FSDH_DATAOFFSET (record), msr->swapflag);
 
+  /* Determine byte order of the data and set the swapflag as needed;
+     if no Blkt1000, assume the order is the same as the header */
+  if (B1000offset)
+  {
+    /* If BE host and LE data need swapping */
+    if (bigendianhost && *pMS2B1000_BYTEORDER (record + B1000offset) == 0)
+      msr->swapflag |= MSSWAP_PAYLOAD;
+    /* If LE host and BE data (or bad byte order value) need swapping */
+    else if (!bigendianhost && *pMS2B1000_BYTEORDER (record + B1000offset) > 0)
+      msr->swapflag |= MSSWAP_PAYLOAD;
+  }
+  else if (msr->swapflag & MSSWAP_HEADER)
+  {
+    msr->swapflag |= MSSWAP_PAYLOAD;
+  }
+
   /* Unpack the data samples if requested */
   if ((flags & MSF_UNPACKDATA) && msr->samplecnt > 0)
   {
-    uint8_t saveswapflag = msr->swapflag;
-    int8_t bigendianhost = ms_bigendianhost ();
-
-    /* Determine byte order of the data and set the dswapflag as
-     * needed; if no Blkt1000 or UNPACK_DATA_BYTEORDER environment
-     * variable setting assume the order is the same as the header */
-    if (B1000offset)
-    {
-      msr->swapflag = 0;
-
-      /* If BE host and LE data need swapping */
-      if (bigendianhost && *pMS2B1000_BYTEORDER (record + B1000offset) == 0)
-        msr->swapflag = 1;
-      /* If LE host and BE data (or bad byte order value) need swapping */
-      else if (!bigendianhost && *pMS2B1000_BYTEORDER (record + B1000offset) > 0)
-        msr->swapflag = 1;
-    }
-
     if (verbose > 2 && msr->swapflag)
       ms_log (1, "%s: Byte swapping needed for unpacking of data samples\n", msr->tsid);
     else if (verbose > 2)
       ms_log (1, "%s: Byte swapping NOT needed for unpacking of data samples\n", msr->tsid);
 
     retval = msr3_unpack_data (msr, verbose);
-
-    msr->swapflag = saveswapflag;
 
     if (retval < 0)
       return retval;
@@ -1032,7 +1043,6 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   uint32_t dataoffset = 0;
   const char *encoded = NULL;
   char *encoded_allocated = NULL;
-  uint8_t localswapflag;
 
   if (!msr)
     return MS_GENERROR;
@@ -1166,7 +1176,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
       ms_log (1, "%s: Unpacking INT16 data samples\n", msr->tsid);
 
     nsamples = msr_decode_int16 ((int16_t *)encoded, msr->samplecnt,
-                                 msr->datasamples, unpacksize, msr->swapflag);
+                                 msr->datasamples, unpacksize, msr->swapflag & MSSWAP_PAYLOAD);
 
     msr->sampletype = 'i';
     break;
@@ -1176,7 +1186,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
       ms_log (1, "%s: Unpacking INT32 data samples\n", msr->tsid);
 
     nsamples = msr_decode_int32 ((int32_t *)encoded, msr->samplecnt,
-                                 msr->datasamples, unpacksize, msr->swapflag);
+                                 msr->datasamples, unpacksize, msr->swapflag & MSSWAP_PAYLOAD);
 
     msr->sampletype = 'i';
     break;
@@ -1186,7 +1196,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
       ms_log (1, "%s: Unpacking FLOAT32 data samples\n", msr->tsid);
 
     nsamples = msr_decode_float32 ((float *)encoded, msr->samplecnt,
-                                   msr->datasamples, unpacksize, msr->swapflag);
+                                   msr->datasamples, unpacksize, msr->swapflag & MSSWAP_PAYLOAD);
 
     msr->sampletype = 'f';
     break;
@@ -1196,7 +1206,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
       ms_log (1, "%s: Unpacking FLOAT64 data samples\n", msr->tsid);
 
     nsamples = msr_decode_float64 ((double *)encoded, msr->samplecnt,
-                                   msr->datasamples, unpacksize, msr->swapflag);
+                                   msr->datasamples, unpacksize, msr->swapflag & MSSWAP_PAYLOAD);
 
     msr->sampletype = 'd';
     break;
@@ -1205,15 +1215,8 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
     if (verbose > 1)
       ms_log (1, "%s: Unpacking Steim1 data frames\n", msr->tsid);
 
-    /* Version 3: always big endian
-       Version 2: endianness can depend on flag */
-    if (msr->formatversion == 3)
-      localswapflag = (ms_bigendianhost ()) ? 0 : 1;
-    else
-      localswapflag = msr->swapflag;
-
     nsamples = msr_decode_steim1 ((int32_t *)encoded, datasize, msr->samplecnt,
-                                  msr->datasamples, unpacksize, msr->tsid, localswapflag);
+                                  msr->datasamples, unpacksize, msr->tsid, msr->swapflag & MSSWAP_PAYLOAD);
 
     if (nsamples < 0)
     {
@@ -1228,15 +1231,8 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
     if (verbose > 1)
       ms_log (1, "%s: Unpacking Steim2 data frames\n", msr->tsid);
 
-    /* Version 3: always big endian
-       Version 2: endianness can depend on flag */
-    if (msr->formatversion == 3)
-      localswapflag = (ms_bigendianhost ()) ? 0 : 1;
-    else
-      localswapflag = msr->swapflag;
-
     nsamples = msr_decode_steim2 ((int32_t *)encoded, datasize, msr->samplecnt,
-                                  msr->datasamples, unpacksize, msr->tsid, localswapflag);
+                                  msr->datasamples, unpacksize, msr->tsid, msr->swapflag & MSSWAP_PAYLOAD);
 
     if (nsamples < 0)
     {
@@ -1261,7 +1257,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
     }
 
     nsamples = msr_decode_geoscope ((char *)encoded, msr->samplecnt, msr->datasamples,
-                                    unpacksize, msr->encoding, msr->tsid, msr->swapflag);
+                                    unpacksize, msr->encoding, msr->tsid, msr->swapflag & MSSWAP_PAYLOAD);
 
     msr->sampletype = 'f';
     break;
@@ -1271,7 +1267,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
       ms_log (1, "%s: Unpacking CDSN encoded data samples\n", msr->tsid);
 
     nsamples = msr_decode_cdsn ((int16_t *)encoded, msr->samplecnt, msr->datasamples,
-                                unpacksize, msr->swapflag);
+                                unpacksize, msr->swapflag & MSSWAP_PAYLOAD);
 
     msr->sampletype = 'i';
     break;
@@ -1281,7 +1277,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
       ms_log (1, "%s: Unpacking SRO encoded data samples\n", msr->tsid);
 
     nsamples = msr_decode_sro ((int16_t *)encoded, msr->samplecnt, msr->datasamples,
-                               unpacksize, msr->tsid, msr->swapflag);
+                               unpacksize, msr->tsid, msr->swapflag & MSSWAP_PAYLOAD);
 
     msr->sampletype = 'i';
     break;
@@ -1291,7 +1287,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
       ms_log (1, "%s: Unpacking DWWSSN encoded data samples\n", msr->tsid);
 
     nsamples = msr_decode_dwwssn ((int16_t *)encoded, msr->samplecnt, msr->datasamples,
-                                  unpacksize, msr->swapflag);
+                                  unpacksize, msr->swapflag & MSSWAP_PAYLOAD);
 
     msr->sampletype = 'i';
     break;

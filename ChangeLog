@@ -1,4 +1,4 @@
-2017.209:
+V3 changes:
 	- Selection file format allows two variants, quality code is ignored in old format.
 	- Remove StreamState tracking, effectively dropping the compression history capability, not worth it.
 	- Library is no longer able to read miniSEED 2 without a blockette 1000 to specify the length.
@@ -22,6 +22,7 @@
 	- Remove MS_ISVALIDBLANK macro, was only used for notification of archaic structure.
 	- Add CBOR handling (cbor.c and extraheaders.c) for extra headers.
 	- Add crc32c.c for CRC-32C calculation, new ms_crc32c().
+	- Set msr->swapflag bit flags to indicate if header and payload need swapping.
 
 2017.283: 2.19.5
 	- msr_endtime(): calculate correct end time during a leap second.

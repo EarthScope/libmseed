@@ -282,6 +282,10 @@ typedef struct MS3Selections_s {
 #define MSF_FLUSHDATA   0x0010  /* Pack all available data */
 #define MSF_ATENDOFFILE 0x0020  /* Reading routine is at the end of the file */
 
+/* miniSEED byte swap flags */
+#define MSSWAP_HEADER   0x01    /* Header needed byte swapping */
+#define MSSWAP_PAYLOAD  0x02    /* Data payload needed byte swapping */
+
 /* miniSEED record related functions */
 extern int msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
                        uint32_t flags, int8_t verbose);
@@ -517,9 +521,9 @@ ms_bigendianhost (void)
 }
 
 /***************************************************************************
- * msr_sampratehz: Return sample rate in Hz, converting if necessary.
+ * msr_sampratehz:
  *
- * Returns 0 if the host is little endian, otherwise 1.
+ * Returns sample rate in Hz, aka samples per second.
  ***************************************************************************/
 static inline double
 msr_sampratehz (MS3Record *msr)
