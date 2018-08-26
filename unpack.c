@@ -1149,7 +1149,6 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
     break;
   default:
     samplesize = 0;
-    break;
   }
 
   encoded = msr->record + dataoffset;
@@ -1425,30 +1424,43 @@ ms2_blktdesc (uint16_t blkttype)
   {
   case 100:
     return "Sample Rate";
+    break;
   case 200:
     return "Generic Event Detection";
+    break;
   case 201:
     return "Murdock Event Detection";
+    break;
   case 300:
     return "Step Calibration";
+    break;
   case 310:
     return "Sine Calibration";
+    break;
   case 320:
     return "Pseudo-random Calibration";
+    break;
   case 390:
     return "Generic Calibration";
+    break;
   case 395:
     return "Calibration Abort";
+    break;
   case 400:
     return "Beam";
+    break;
   case 500:
     return "Timing";
+    break;
   case 1000:
     return "Data Only SEED";
+    break;
   case 1001:
     return "Data Extension";
+    break;
   case 2000:
     return "Opaque Data";
+    break;
   } /* end switch */
 
   return NULL;
