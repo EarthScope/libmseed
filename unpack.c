@@ -964,22 +964,28 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 } /* End of msr3_unpack_mseed2() */
 
 /************************************************************************
- *  msr3_data_bounds:
+ * msr3_data_bounds:
  *
- *  Determine the data payload bounds, starting offset in record and
- *  size, for a specified MS3Record.  For miniSEED 2.x the raw record
- *  is expected to be located at the MS3Record->record pointer.
+ * Determine the data payload bounds, starting offset in record and
+ * size, for a specified MS3Record.  For miniSEED 2.x the raw record
+ * is expected to be located at the MS3Record->record pointer.
  *
- *  When the encoding is Steim1 or Steim2, search for 64-byte padding
- *  frames (all zeros) at the end of the payload and remove from the
- *  reported size.
+ * When the encoding is a fixed length per sample (ascii, integers or
+ * floats), calculate the data size based on the sample count and use
+ * if less than size determined otherwise.
  *
- *  Return 0 on success or negative libmseed error code.
+ * When the encoding is Steim1 or Steim2, search for 64-byte padding
+ * frames (all zeros) at the end of the payload and remove from the
+ * reported size.
+ *
+ * Return 0 on success or negative libmseed error code.
  ************************************************************************/
 int
 msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint16_t *datasize)
 {
   uint8_t nullframe[64] = {0};
+  uint8_t samplebytes = 0;
+  uint16_t rawsize;
 
   if (!msr || !dataoffset || !datasize)
     return MS_GENERROR;
@@ -1002,6 +1008,35 @@ msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint16_t *datasize)
     return MS_GENERROR;
   }
 
+  /* If a fixed sample length encoding, calculate size and use if less
+   * than otherwise determined. */
+  if (msr->encoding == DE_ASCII ||
+      msr->encoding == DE_INT16 || msr->encoding == DE_INT32 ||
+      msr->encoding == DE_FLOAT32 || msr->encoding == DE_FLOAT64)
+  {
+    switch (msr->encoding)
+    {
+    case DE_ASCII:
+      samplebytes = 1;
+      break;
+    case DE_INT16:
+      samplebytes = 2;
+      break;
+    case DE_INT32:
+    case DE_FLOAT32:
+      samplebytes = 4;
+      break;
+    case DE_FLOAT64:
+      samplebytes = 8;
+      break;
+    }
+
+    rawsize = msr->samplecnt * samplebytes;
+
+    if (rawsize < *datasize)
+      *datasize = rawsize;
+  }
+
   /* If datasize is a multiple of 64-bytes and a Steim encoding, test for
    * trailing, zeroed (empty) frames and subtract them from the size. */
   if (*datasize % 64 == 0 &&
@@ -1018,20 +1053,20 @@ msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint16_t *datasize)
 } /* End of msr3_data_bounds() */
 
 /************************************************************************
- *  msr3_unpack_data:
+ * msr3_unpack_data:
  *
- *  Unpack miniSEED data samples for a given MS3Record.  The
- *  packed/encoded data is accessed in the record indicated by
- *  MS3Record->record and the unpacked samples are placed in
- *  MS3Record->datasamples.  The resulting data samples are either
- *  text characters, 32-bit integers, 32-bit floats or 64-bit floats
- *  in host byte order.
+ * Unpack miniSEED data samples for a given MS3Record.  The
+ * packed/encoded data is accessed in the record indicated by
+ * MS3Record->record and the unpacked samples are placed in
+ * MS3Record->datasamples.  The resulting data samples are either text
+ * characters, 32-bit integers, 32-bit floats or 64-bit floats in host
+ * byte order.
  *
- *  An internal buffer is allocated if the encoded data is not aligned
- *  for the sample size, which is a decent indicator of the alignment
- *  needed for decoding efficiently.
+ * An internal buffer is allocated if the encoded data is not aligned
+ * for the sample size, which is a decent indicator of the alignment
+ * needed for decoding efficiently.
  *
- *  Return number of samples unpacked or negative libmseed error code.
+ * Return number of samples unpacked or negative libmseed error code.
  ************************************************************************/
 int
 msr3_unpack_data (MS3Record *msr, int8_t verbose)
