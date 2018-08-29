@@ -116,7 +116,7 @@ msr3_duplicate (MS3Record *msr, int8_t datadup)
     if ((dupmsr->extra = (void *)malloc (msr->extralength)) == NULL)
     {
       ms_log (2, "msr3_duplicate(): Error allocating memory\n");
-      msr3_free (dupmsr);
+      msr3_free (&dupmsr);
       return NULL;
     }
 
@@ -133,7 +133,7 @@ msr3_duplicate (MS3Record *msr, int8_t datadup)
     {
       ms_log (2, "msr3_duplicate(): unrecognized sample type: '%c'\n",
               msr->sampletype);
-      msr3_free (dupmsr);
+      msr3_free (&dupmsr);
       return NULL;
     }
 
@@ -141,7 +141,7 @@ msr3_duplicate (MS3Record *msr, int8_t datadup)
     if ((dupmsr->datasamples = (void *)malloc ((size_t) (msr->numsamples * samplesize))) == NULL)
     {
       ms_log (2, "msr3_duplicate(): Error allocating memory\n");
-      msr3_free (dupmsr);
+      msr3_free (&dupmsr);
       return NULL;
     }
 
