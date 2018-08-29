@@ -1201,7 +1201,14 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
       ms_log (1, "%s: Found ASCII data\n", msr->tsid);
 
     nsamples = msr->samplecnt;
-    memcpy (msr->datasamples, encoded, nsamples);
+    if (nsamples > 0)
+    {
+      memcpy (msr->datasamples, encoded, nsamples);
+    }
+    else
+    {
+      nsamples = 0;
+    }
     msr->sampletype = 'a';
     break;
 
