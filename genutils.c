@@ -1102,6 +1102,7 @@ ms_readleapsecondfile (char *filename)
       ls->leapsecond = MS_EPOCH2NSTIME ((leapsecond - NTPPOSIXEPOCHDELTA));
       ls->TAIdelta = TAIdelta;
       ls->next = NULL;
+      count++;
 
       /* Add leap second to global list */
       if (!leapsecondlist)
