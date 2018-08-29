@@ -1047,6 +1047,14 @@ ms_readleapsecondfile (char *filename)
     return -1;
   }
 
+  /* Free existing leapsecondlist */
+  while (leapsecondlist != NULL)
+  {
+    LeapSecond *next = leapsecondlist->next;
+    free(leapsecondlist);
+    leapsecondlist = next;
+  }
+
   while (fgets (readline, sizeof (readline) - 1, fp))
   {
     /* Guarantee termination */
