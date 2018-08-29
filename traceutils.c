@@ -171,7 +171,7 @@ mst_findmatch (MSTrace *startmst, char dataquality,
 {
   int idx;
 
-  if (!startmst)
+  if (!startmst || !network || !station || !location || !channel)
     return 0;
 
   while (startmst)
@@ -279,7 +279,7 @@ mst_findadjacent (MSTraceGroup *mstg, flag *whence, char dataquality,
   hptime_t nhptimetol = 0;
   int idx;
 
-  if (!mstg)
+  if (!mstg || !whence || !network || !station || !location || !channel)
     return 0;
 
   *whence = 0;
