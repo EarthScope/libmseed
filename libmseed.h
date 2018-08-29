@@ -28,8 +28,8 @@
 extern "C" {
 #endif
 
-#define LIBMSEED_VERSION "2.19.5"
-#define LIBMSEED_RELEASE "2017.283"
+#define LIBMSEED_VERSION "2.19.6"
+#define LIBMSEED_RELEASE "2018.240"
 
 /* C99 standard headers */
 #include <stdlib.h>
