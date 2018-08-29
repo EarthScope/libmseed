@@ -68,10 +68,7 @@ extern "C" {
 #endif
 
 /* Set platform specific features */
-#if defined(LMP_LINUX) || defined(LMP_BSD) || defined(LMP_SOLARIS)
-  #include <unistd.h>
-  #include <inttypes.h>
-#elif defined(LMP_WIN)
+#if defined(LMP_WIN)
   #include <windows.h>
   #include <sys/types.h>
 
@@ -115,6 +112,7 @@ extern "C" {
     #define stat _stat
   #endif
 #else
+  #include <unistd.h>
   #include <inttypes.h>
 #endif
 
