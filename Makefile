@@ -28,12 +28,24 @@ LIB_SRCS = fileutils.c genutils.c gswap.c lmplatform.c lookup.c \
 LIB_OBJS = $(LIB_SRCS:.c=.o)
 LIB_DOBJS = $(LIB_SRCS:.c=.lo)
 
-LIB_A = libmseed.a
-LIB_SO_BASE = libmseed.so
-LIB_SO_NAME = $(LIB_SO_BASE).$(MAJOR_VER)
-LIB_SO = $(LIB_SO_BASE).$(FULL_VER)
-LIB_DYN_NAME = libmseed.dylib
-LIB_DYN = libmseed.$(FULL_VER).dylib
+LIB_PREFIX = libmseed
+LIB_A = ${LIB_NAME}.a
+
+OS := $(shell uname -s)
+
+ifeq ($(OS), Darwin)
+  LIB_EXTN = dylib
+  LIB_SO_BASE = $(LIB_PREFIX).$(LIB_EXTN)
+	LIB_SO_NAME = $(LIB_SO_BASE)
+	LIB_SO = $(LIB_PREFIX).$(FULL_VER).dylib
+  LIB_DYN = $(LIB_SO)
+else
+	LIB_EXTN = so
+	LIB_SO_BASE = $(LIB_PREFIX).$(LIB_EXTN)
+	LIB_SO_NAME = $(LIB_SO_BASE).$(MAJOR_VER)
+	LIB_SO = $(LIB_PREFIX).$(LIB_EXTN).$(FULL_VER)
+endif
+
 LIB_FILES = Blarg
 
 all: static
@@ -42,7 +54,7 @@ static: $(LIB_A)
 
 # Build dynamic (.dylib) on macOS/Darwin, otherwise shared (.so)
 shared dynamic:
-ifeq ($(shell uname -s),Darwin)
+ifeq ($(OS),Darwin)
 	$(MAKE) $(LIB_DYN)
 else
 	$(MAKE) $(LIB_SO)
@@ -64,38 +76,37 @@ $(LIB_SO): $(LIB_DOBJS)
 
 # Build dynamic library (usually for macOS)
 $(LIB_DYN): $(LIB_DOBJS)
-	@echo "Building dynamic library $(LIB_DYN)"
-	$(RM) -f $(LIB_DYN) $(LIB_DYN_NAME)
-	$(CC) $(CFLAGS) -dynamiclib -compatibility_version $(COMPAT_VER) -current_version $(FULL_VER) -install_name $(LIB_DYN_NAME) -o $(LIB_DYN) $(LIB_DOBJS)
-	ln -sf $(LIB_DYN) $(LIB_DYN_NAME)
+	@echo "Building dynamic library $(LIB_SO)"
+	$(RM) -f $(LIB_SO) $(LIB_SO_NAME)
+	$(CC) $(CFLAGS) -dynamiclib -compatibility_version $(COMPAT_VER) -current_version $(FULL_VER) -install_name $(LIB_SO_NAME) -o $(LIB_SO) $(LIB_DOBJS)
+	ln -sf $(LIB_SO) $(LIB_SO_NAME)
 
 test check: static FORCE
 	@$(MAKE) -C test test
 
 clean:
-	@$(RM) -f $(LIB_OBJS) $(LIB_DOBJS) $(LIB_A) $(LIB_SO) $(LIB_SO_NAME) $(LIB_SO_BASE) $(LIB_DYN) $(LIB_DYN_NAME)
+	@$(RM) -f $(LIB_OBJS) $(LIB_DOBJS) $(LIB_A) $(LIB_SO) $(LIB_SO_NAME) $(LIB_SO_BASE) 
 	@$(MAKE) -C test clean
 	@echo "All clean."
 
 install: shared
 	@echo "Installing into $(PREFIX)"
+	@echo mkdir -p $(DESTDIR)$(PREFIX)/include
 	@mkdir -p $(DESTDIR)$(PREFIX)/include
+	@echo cp libmseed.h $(DESTDIR)$(PREFIX)/include
 	@cp libmseed.h $(DESTDIR)$(PREFIX)/include
+	@echo mkdir -p $(DESTDIR)$(LIBDIR)/pkgconfig
 	@mkdir -p $(DESTDIR)$(LIBDIR)/pkgconfig
-ifneq ("$(wildcard $(LIB_SO))","")
+	@echo cp -a $(LIB_SO_BASE) $(LIB_SO_NAME) $(LIB_SO) $(DESTDIR)$(LIBDIR)
 	@cp -a $(LIB_SO_BASE) $(LIB_SO_NAME) $(LIB_SO) $(DESTDIR)$(LIBDIR)
-endif
-ifneq ("$(wildcard $(LIB_DYN))","")
-	@cp -a $(LIB_DYN_NAME) $(LIB_DYN) $(DESTDIR)$(LIBDIR)
-endif
 	@sed -e 's|@prefix@|$(PREFIX)|g' \
-	     -e 's|@exec_prefix@|$(EXEC_PREFIX)|g' \
-	     -e 's|@libdir@|$(LIBDIR)|g' \
-	     -e 's|@includedir@|$(PREFIX)/include|g' \
-	     -e 's|@PACKAGE_NAME@|libmseed|g' \
-	     -e 's|@PACKAGE_URL@|http://ds.iris.edu/ds/nodes/dmc/software/downloads/libmseed/|g' \
-	     -e 's|@VERSION@|$(FULL_VER)|g' \
-	     mseed.pc.in > $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
+			-e 's|@exec_prefix@|$(EXEC_PREFIX)|g' \
+			-e 's|@libdir@|$(LIBDIR)|g' \
+			-e 's|@includedir@|$(PREFIX)/include|g' \
+			-e 's|@PACKAGE_NAME@|libmseed|g' \
+			-e 's|@PACKAGE_URL@|http://ds.iris.edu/ds/nodes/dmc/software/downloads/libmseed/|g' \
+			-e 's|@VERSION@|$(FULL_VER)|g' \
+			mseed.pc.in > $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
 	@mkdir -p $(DESTDIR)$(DOCDIR)/example
 	@cp -r example $(DESTDIR)$(DOCDIR)/
 	@cp doc/libmseed-UsersGuide $(DESTDIR)$(DOCDIR)/
