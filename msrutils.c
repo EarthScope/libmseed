@@ -233,7 +233,7 @@ msr3_print (MS3Record *msr, int8_t details)
   /* Report information in the fixed header */
   if (details > 0)
   {
-    ms_log (0, "%s, %d, %d (format: %d)\n",
+    ms_log (0, "%s, %d bytes, %d (format: %d)\n",
             msr->sid, msr->pubversion, msr->reclen, msr->formatversion);
     ms_log (0, "             start time: %s\n", time);
     ms_log (0, "      number of samples: %d\n", msr->samplecnt);
