@@ -335,7 +335,7 @@ extern void mstl3_printgaplist (MS3TraceList *mstl, int8_t timeformat,
 /* miniSEED 3 extra headers */
 
 /**
- * @brief A container for an event detection parameters for use in extra headers
+ * @brief A container for event detection parameters for use in extra headers
  *
  * Actual values are optional, with special values indicating an unset
  * state.
@@ -359,7 +359,7 @@ typedef struct MSEHEventDetection_s
 } MSEHEventDetection;
 
 /**
- * @brief A container for an calibration parameters for use in extra headers
+ * @brief A container for calibration parameters for use in extra headers
  *
  * Actual values are optional, with special values indicating an unset
  * state.
@@ -391,7 +391,7 @@ typedef struct MSEHCalibration_s
 } MSEHCalibration;
 
 /**
- * @brief A container for an timing exception parameters for use in extra headers
+ * @brief A container for timing exception parameters for use in extra headers
  *
  * Actual values are optional, with special values indicating an unset
  * state.
@@ -408,6 +408,22 @@ typedef struct MSEHTimingException_s
   char type[16]; /**< E.g. "MISSING" or "UNEXPECTED", zero length = not included */
   char clockstatus[128]; /**< Description of clock-specific parameters, zero length = not included */
 } MSEHTimingException;
+
+  /**
+ * @brief A container for recenter parameters for use in extra headers
+ *
+ * Actual values are optional, with special values indicating an unset
+ * state.
+ *
+ * @see mseh_add_recenter
+ */
+typedef struct MSEHRecenter_s
+{
+  char type[30]; /**< Recenter type  (e.g. "MASS", "GIMBAL"), zero length = not included */
+  nstime_t begintime; /**< Begin time, NSTERROR = not included */
+  nstime_t endtime; /**< Estimated end time, NSTERROR = not included */
+  char trigger[30]; /**< Trigger, e.g. AUTOMATIC or MANUAL, zero length = not included */
+} MSEHRecenter;
 
 #define mseh_get(msr, path, valueptr, type, length) \
   mseh_get_path (msr, path, valueptr, type, length)
@@ -450,6 +466,9 @@ extern int mseh_add_calibration (MS3Record *msr, const char *path,
 
 extern int mseh_add_timing_exception (MS3Record *msr, const char *path,
                                       MSEHTimingException *exception);
+
+extern int mseh_add_recenter (MS3Record *msr, const char *path,
+                              MSEHRecenter *recenter);
 
 extern int mseh_print (MS3Record *msr, int indent);
 

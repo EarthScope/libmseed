@@ -648,6 +648,95 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
 } /* End of mseh_add_timing_exception() */
 
 /***************************************************************************
+ * mseh_add_recenter:
+ *
+ * Add specified recenter event to the extra headers of the given record.
+ *
+ * If 'path' is NULL, the default is "FDSN.Recenter.Sequence".
+ *
+ * Returns:
+ *   0 on success,
+ *   otherwise a (negative) libmseed error code.
+ ***************************************************************************/
+int
+mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
+{
+  JSON_Value *value = NULL;
+  JSON_Object *object = NULL;
+  char beginstring[31];
+  char endstring[31];
+  char *cp = NULL;
+
+#define EVALSET(KEY, SET)                                             \
+  if (SET != JSONSuccess)                                             \
+  {                                                                   \
+    ms_log (2, "mseh_add_recenter(): Cannot set: %s\n", KEY); \
+    if (value)                                                        \
+      json_value_free (value);                                        \
+    return MS_GENERROR;                                               \
+  }
+
+  if (!msr || !recenter)
+    return MS_GENERROR;
+
+  /* Initialize a new object */
+  value = json_value_init_object();
+  object = json_value_get_object(value);
+
+  if (!object)
+  {
+    ms_log (2, "mseh_add_recenter(): Cannot initialize new JSON object\n");
+    if (value)
+      json_value_free(value);
+    return MS_GENERROR;
+  }
+
+  /* Add elements to new object */
+  if (recenter->type[0])
+  {
+    EVALSET ("Type", json_object_set_string (object, "Type", recenter->type));
+  }
+  if (recenter->begintime != NSTERROR)
+  {
+    /* Create ISO-formatted time string with (UTC) Z suffix */
+    cp = ms_nstime2isotimestr (recenter->begintime, beginstring, -1);
+    while (*cp)
+      cp++;
+    *cp++ = 'Z';
+    *cp = '\0';
+
+    EVALSET ("BeginTime", json_object_set_string (object, "BeginTime", beginstring));
+  }
+  if (recenter->endtime != NSTERROR)
+  {
+    /* Create ISO-formatted time string with (UTC) Z suffix */
+    cp = ms_nstime2isotimestr (recenter->endtime, endstring, -1);
+    while (*cp)
+      cp++;
+    *cp++ = 'Z';
+    *cp = '\0';
+
+    EVALSET ("EndTime", json_object_set_string (object, "EndTime", endstring));
+  }
+  if (recenter->trigger[0])
+  {
+    EVALSET ("Trigger", json_object_set_string (object, "Trigger", recenter->trigger));
+  }
+
+  /* Add new object to array, created 'value' will be free'd on successful return */
+  if (mseh_set_path (msr, (path) ? path : "FDSN.Recenter.Sequence", value, 'A', 0))
+  {
+    ms_log (2, "mseh_add_recenter(): Cannot add new array entry\n");
+    if (value)
+      json_value_free (value);
+    return MS_GENERROR;
+  }
+
+  return 0;
+#undef EVALSET
+} /* End of mseh_add_recenter() */
+
+/***************************************************************************
  * mseh_print:
  *
  * Print the extra header (CBOR Map) structure for the specified
