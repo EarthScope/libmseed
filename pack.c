@@ -24,7 +24,7 @@ static int msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int
 
 static int msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
                           char sampletype, int8_t encoding, int8_t swapflag,
-                          uint16_t *byteswritten, char *tsid, int8_t verbose);
+                          uint16_t *byteswritten, char *sid, int8_t verbose);
 
 /***************************************************************************
  * msr3_pack:
@@ -76,7 +76,7 @@ msr3_pack (MS3Record *msr, void (*record_handler) (char *, int, void *),
   if (msr->reclen < MINRECLEN || msr->reclen > MAXRECLEN)
   {
     ms_log (2, "msr3_pack(%s): Record length is out of range: %d\n",
-            msr->tsid, msr->reclen);
+            msr->sid, msr->reclen);
     return -1;
   }
 
@@ -138,13 +138,13 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   if (msr->reclen < (MS3FSDH_LENGTH + msr->extralength))
   {
     ms_log (2, "msr3_pack_mseed3(%s): Record length (%d) is not large enough for header (%d) and extra (%d)\n",
-            msr->tsid, msr->reclen, MS3FSDH_LENGTH, msr->extralength);
+            msr->sid, msr->reclen, MS3FSDH_LENGTH, msr->extralength);
     return -1;
   }
 
   if (msr->numsamples <= 0)
   {
-    ms_log (2, "msr3_pack_mseed3(%s): No samples to pack\n", msr->tsid);
+    ms_log (2, "msr3_pack_mseed3(%s): No samples to pack\n", msr->sid);
     return -1;
   }
 
@@ -153,7 +153,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   if (!samplesize)
   {
     ms_log (2, "msr3_pack_mseed3(%s): Unknown sample type '%c'\n",
-            msr->tsid, msr->sampletype);
+            msr->sid, msr->sampletype);
     return -1;
   }
 
@@ -165,7 +165,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
   if (rawrec == NULL)
   {
-    ms_log (2, "msr3_pack_mseed3(%s): Cannot allocate memory\n", msr->tsid);
+    ms_log (2, "msr3_pack_mseed3(%s): Cannot allocate memory\n", msr->sid);
     return -1;
   }
 
@@ -175,7 +175,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   if (dataoffset < 0)
   {
     ms_log (2, "msr3_pack_mseed3(%s): Cannot pack miniSEED version 3 header\n",
-            msr->tsid);
+            msr->sid);
     return -1;
   }
 
@@ -202,7 +202,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
     if (encoded == NULL)
     {
-      ms_log (2, "msr3_pack_mseed3(%s): Cannot allocate memory\n", msr->tsid);
+      ms_log (2, "msr3_pack_mseed3(%s): Cannot allocate memory\n", msr->sid);
       free (rawrec);
       return -1;
     }
@@ -220,11 +220,11 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
                                  (char *)msr->datasamples + packoffset,
                                  (int)(msr->numsamples - totalpackedsamples), maxdatabytes,
                                  msr->sampletype, msr->encoding, swapflag,
-                                 &datalength, msr->tsid, verbose);
+                                 &datalength, msr->sid, verbose);
 
     if (packsamples < 0)
     {
-      ms_log (2, "msr3_pack_mseed3(%s): Error packing data samples\n", msr->tsid);
+      ms_log (2, "msr3_pack_mseed3(%s): Error packing data samples\n", msr->sid);
       free (encoded);
       free (rawrec);
       return -1;
@@ -246,7 +246,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     *pMS3FSDH_CRC(rawrec) = HO4u (crc, swapflag);
 
     if (verbose >= 1)
-      ms_log (1, "%s: Packed %d samples into %d byte record\n", msr->tsid, packsamples, reclen);
+      ms_log (1, "%s: Packed %d samples into %d byte record\n", msr->sid, packsamples, reclen);
 
     /* Send record to handler */
     record_handler (rawrec, reclen, handlerdata);
@@ -262,7 +262,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   }
 
   if (verbose >= 2)
-    ms_log (1, "%s: Packed %d total samples\n", msr->tsid, totalpackedsamples);
+    ms_log (1, "%s: Packed %d total samples\n", msr->sid, totalpackedsamples);
 
   if (encoded)
     free (encoded);
@@ -307,14 +307,14 @@ msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t reclen,
   if (reclen < (MS3FSDH_LENGTH + msr->extralength))
   {
     ms_log (2, "msr3_repack_mseed3(%s): Record length (%d) is not large enough for header (%d) and extra (%d)\n",
-            msr->tsid, reclen, MS3FSDH_LENGTH, msr->extralength);
+            msr->sid, reclen, MS3FSDH_LENGTH, msr->extralength);
     return -1;
   }
 
   if (msr->samplecnt > UINT32_MAX)
   {
     ms_log (2, "msr3_repack_mseed3(%s): Too many samples in input record (%" PRId64 " for a single record)\n",
-            msr->tsid, msr->samplecnt);
+            msr->sid, msr->samplecnt);
     return -1;
   }
 
@@ -324,7 +324,7 @@ msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t reclen,
   if (dataoffset < 0)
   {
     ms_log (2, "msr3_repack_mseed3(%s): Cannot pack miniSEED version 3 header\n",
-            msr->tsid);
+            msr->sid);
     return -1;
   }
 
@@ -332,14 +332,14 @@ msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t reclen,
   if (msr3_data_bounds (msr, &origdataoffset, &origdatasize))
   {
     ms_log (2, "msr3_repack_mseed3(%s): Cannot determine original data bounds\n",
-            msr->tsid);
+            msr->sid);
     return -1;
   }
 
   if (reclen < (MS3FSDH_LENGTH + msr->extralength + origdatasize))
   {
     ms_log (2, "msr3_repack_mseed3(%s): Record length (%d) is not large enough for record (%d)\n",
-            msr->tsid, reclen, (MS3FSDH_LENGTH + msr->extralength + origdatasize));
+            msr->sid, reclen, (MS3FSDH_LENGTH + msr->extralength + origdatasize));
     return -1;
   }
 
@@ -362,7 +362,7 @@ msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t reclen,
 
   if (verbose >= 1)
     ms_log (1, "%s: Re-packed %d samples into a %d byte record\n",
-            msr->tsid, msr->samplecnt, reclen);
+            msr->sid, msr->samplecnt, reclen);
 
   return reclen;
 } /* End of msr3_repack_mseed3() */
@@ -382,7 +382,7 @@ int
 msr3_pack_header3 (MS3Record *msr, char *record, uint32_t reclen, int8_t verbose)
 {
   int extraoffset = 0;
-  uint8_t tsidlength;
+  uint8_t sidlength;
   int8_t swapflag;
 
   uint16_t year;
@@ -404,14 +404,14 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t reclen, int8_t verbose
   if (msr->reclen < MINRECLEN || msr->reclen > MAXRECLEN)
   {
     ms_log (2, "msr3_pack_header3(%s): Record length is out of range: %d\n",
-            msr->tsid, msr->reclen);
+            msr->sid, msr->reclen);
     return -1;
   }
 
   if (reclen < (MS3FSDH_LENGTH + msr->extralength))
   {
     ms_log (2, "msr3_pack_header3(%s): Buffer length (%d) is not large enough for fixed header (%d) and extra (%d)\n",
-            msr->tsid, msr->reclen, MS3FSDH_LENGTH, msr->extralength);
+            msr->sid, msr->reclen, MS3FSDH_LENGTH, msr->extralength);
     return -1;
   }
 
@@ -419,18 +419,18 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t reclen, int8_t verbose
   swapflag = (ms_bigendianhost ()) ? 1 : 0;
 
   if (verbose > 2 && swapflag)
-    ms_log (1, "%s: Byte swapping needed for packing of header\n", msr->tsid);
+    ms_log (1, "%s: Byte swapping needed for packing of header\n", msr->sid);
 
   /* Break down start time into individual components */
   if (ms_nstime2time (msr->starttime, &year, &day, &hour, &min, &sec, &nsec))
   {
     ms_log (2, "msr3_pack_header3(%s): Cannot convert starttime: %" PRId64 "\n",
-            msr->tsid, msr->starttime);
+            msr->sid, msr->starttime);
     return -1;
   }
 
-  tsidlength = strlen (msr->tsid);
-  extraoffset = MS3FSDH_LENGTH + tsidlength;
+  sidlength = strlen (msr->sid);
+  extraoffset = MS3FSDH_LENGTH + sidlength;
 
   /* Build fixed header */
   record[0] = 'M';
@@ -452,14 +452,14 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t reclen, int8_t verbose
     *pMS3FSDH_SAMPLERATE(record) = HO8f(msr->samprate, swapflag);
 
   *pMS3FSDH_PUBVERSION(record) = msr->pubversion;
-  *pMS3FSDH_TSIDLENGTH(record) = tsidlength;
+  *pMS3FSDH_SIDLENGTH(record) = sidlength;
   *pMS3FSDH_EXTRALENGTH(record) = HO2u(msr->extralength, swapflag);
-  memcpy (pMS3FSDH_TSID(record), msr->tsid, tsidlength);
+  memcpy (pMS3FSDH_SID(record), msr->sid, sidlength);
 
   if (msr->extralength > 0)
     memcpy (record + extraoffset, msr->extra, msr->extralength);
 
-  return (MS3FSDH_LENGTH + tsidlength + msr->extralength);
+  return (MS3FSDH_LENGTH + sidlength + msr->extralength);
 } /* End of msr3_pack_header3() */
 
 /************************************************************************
@@ -480,7 +480,7 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t reclen, int8_t verbose
 static int
 msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
                char sampletype, int8_t encoding, int8_t swapflag,
-               uint16_t *byteswritten, char *tsid, int8_t verbose)
+               uint16_t *byteswritten, char *sid, int8_t verbose)
 {
   int nsamples;
 
@@ -498,12 +498,12 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     if (sampletype != 'a')
     {
       ms_log (2, "%s: Sample type must be ascii (a) for ASCII text encoding not '%c'\n",
-              tsid, sampletype);
+              sid, sampletype);
       return -1;
     }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing ASCII data\n", tsid);
+      ms_log (1, "%s: Packing ASCII data\n", sid);
 
     nsamples = msr_encode_text (src, maxsamples, dest, maxdatabytes);
 
@@ -516,12 +516,12 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     if (sampletype != 'i')
     {
       ms_log (2, "%s: Sample type must be integer (i) for INT16 encoding not '%c'\n",
-              tsid, sampletype);
+              sid, sampletype);
       return -1;
     }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing INT16 data samples\n", tsid);
+      ms_log (1, "%s: Packing INT16 data samples\n", sid);
 
     nsamples = msr_encode_int16 (src, maxsamples, dest, maxdatabytes, swapflag);
 
@@ -534,12 +534,12 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     if (sampletype != 'i')
     {
       ms_log (2, "%s: Sample type must be integer (i) for INT32 encoding not '%c'\n",
-              tsid, sampletype);
+              sid, sampletype);
       return -1;
     }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing INT32 data samples\n", tsid);
+      ms_log (1, "%s: Packing INT32 data samples\n", sid);
 
     nsamples = msr_encode_int32 (src, maxsamples, dest, maxdatabytes, swapflag);
 
@@ -552,12 +552,12 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     if (sampletype != 'f')
     {
       ms_log (2, "%s: Sample type must be float (f) for FLOAT32 encoding not '%c'\n",
-              tsid, sampletype);
+              sid, sampletype);
       return -1;
     }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing FLOAT32 data samples\n", tsid);
+      ms_log (1, "%s: Packing FLOAT32 data samples\n", sid);
 
     nsamples = msr_encode_float32 (src, maxsamples, dest, maxdatabytes, swapflag);
 
@@ -570,12 +570,12 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     if (sampletype != 'd')
     {
       ms_log (2, "%s: Sample type must be double (d) for FLOAT64 encoding not '%c'\n",
-              tsid, sampletype);
+              sid, sampletype);
       return -1;
     }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing FLOAT64 data samples\n", tsid);
+      ms_log (1, "%s: Packing FLOAT64 data samples\n", sid);
 
     nsamples = msr_encode_float64 (src, maxsamples, dest, maxdatabytes, swapflag);
 
@@ -588,12 +588,12 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     if (sampletype != 'i')
     {
       ms_log (2, "%s: Sample type must be integer (i) for Steim1 compression not '%c'\n",
-              tsid, sampletype);
+              sid, sampletype);
       return -1;
     }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing Steim1 data frames\n", tsid);
+      ms_log (1, "%s: Packing Steim1 data frames\n", sid);
 
     /* Always big endian Steim1 */
     swapflag = (ms_bigendianhost()) ? 0 : 1;
@@ -606,22 +606,22 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     if (sampletype != 'i')
     {
       ms_log (2, "%s: Sample type must be integer (i) for Steim2 compression not '%c'\n",
-              tsid, sampletype);
+              sid, sampletype);
       return -1;
     }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing Steim2 data frames\n", tsid);
+      ms_log (1, "%s: Packing Steim2 data frames\n", sid);
 
     /* Always big endian Steim2 */
     swapflag = (ms_bigendianhost()) ? 0 : 1;
 
-    nsamples = msr_encode_steim2 (src, maxsamples, dest, maxdatabytes, 0, byteswritten, tsid, swapflag);
+    nsamples = msr_encode_steim2 (src, maxsamples, dest, maxdatabytes, 0, byteswritten, sid, swapflag);
 
     break;
 
   default:
-    ms_log (2, "%s: Unable to pack format %d\n", tsid, encoding);
+    ms_log (2, "%s: Unable to pack format %d\n", sid, encoding);
 
     return -1;
   }

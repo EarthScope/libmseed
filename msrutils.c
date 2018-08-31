@@ -234,7 +234,7 @@ msr3_print (MS3Record *msr, int8_t details)
   if (details > 0)
   {
     ms_log (0, "%s, %d, %d (format: %d)\n",
-            msr->tsid, msr->pubversion, msr->reclen, msr->formatversion);
+            msr->sid, msr->pubversion, msr->reclen, msr->formatversion);
     ms_log (0, "             start time: %s\n", time);
     ms_log (0, "      number of samples: %d\n", msr->samplecnt);
     ms_log (0, "       sample rate (Hz): %.10g\n", msr_sampratehz(msr));
@@ -278,7 +278,7 @@ msr3_print (MS3Record *msr, int8_t details)
   else
   {
     ms_log (0, "%s, %d, %d, %" PRId64 " samples, %-.10g Hz, %s\n",
-            msr->tsid, msr->pubversion, msr->reclen,
+            msr->sid, msr->pubversion, msr->reclen,
             msr->samplecnt, msr->samprate, time);
   }
 } /* End of msr3_print() */

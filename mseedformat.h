@@ -35,7 +35,7 @@
  * 10 length of identifer     uint8_t      33
  * 11 length of extra headers uint16_t     34
  * 12 length of data payload  uint32_t     36
- * 13 time series identifier  char         40
+ * 13 source identifier       char         40
  * 14 extra headers           char         40 + field 10
  * 15 data payload            encoded      40 + field 10 + field 11
  *
@@ -55,10 +55,10 @@
 #define pMS3FSDH_NUMSAMPLES(record)      ((uint32_t*)((uint8_t*)record+24))
 #define pMS3FSDH_CRC(record)             ((uint32_t*)((uint8_t*)record+28))
 #define pMS3FSDH_PUBVERSION(record)      ((uint8_t*)((uint8_t*)record+32))
-#define pMS3FSDH_TSIDLENGTH(record)      ((uint8_t*)((uint8_t*)record+33))
+#define pMS3FSDH_SIDLENGTH(record)       ((uint8_t*)((uint8_t*)record+33))
 #define pMS3FSDH_EXTRALENGTH(record)     ((uint16_t*)((uint8_t*)record+34))
 #define pMS3FSDH_DATALENGTH(record)      ((uint32_t*)((uint8_t*)record+36))
-#define pMS3FSDH_TSID(record)            ((char*)((uint8_t*)record+40))
+#define pMS3FSDH_SID(record)             ((char*)((uint8_t*)record+40))
 
 /***************************************************************************
  * miniSEED 2.4 Fixed Section of Data Header

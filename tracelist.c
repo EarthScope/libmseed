@@ -181,8 +181,8 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
      then looping through the trace ID list. */
   if (mstl->last)
   {
-    s1 = mstl->last->tsid;
-    s2 = msr->tsid;
+    s1 = mstl->last->sid;
+    s2 = msr->sid;
     while (*s1 == *s2++)
     {
       if (*s1++ == '\0')
@@ -205,8 +205,8 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
       while (searchid)
       {
         /* Compare source names */
-        s1 = searchid->tsid;
-        s2 = msr->tsid;
+        s1 = searchid->sid;
+        s2 = msr->sid;
         mag = 0;
         while (*s1 == *s2++)
         {
@@ -257,7 +257,7 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
     }
 
     /* Populate MS3TraceID */
-    strcpy (id->tsid, msr->tsid);
+    strcpy (id->sid, msr->sid);
     id->pubversion = msr->pubversion;
 
     id->earliest = msr->starttime;
@@ -991,7 +991,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
   id = mstl->traces;
   while (id)
   {
-    strncpy (msr->tsid, id->tsid, sizeof(msr->tsid));
+    strncpy (msr->sid, id->sid, sizeof(msr->sid));
     msr->pubversion = id->pubversion;
 
     /* Loop through segment list */
@@ -1009,7 +1009,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
 
       if (verbose > 1)
       {
-        ms_log (1, "Packed %d records for %s segment\n", segpackedrecords, msr->tsid);
+        ms_log (1, "Packed %d records for %s segment\n", segpackedrecords, msr->sid);
       }
 
       /* Adjust segment start time, data array and sample count */
@@ -1068,10 +1068,10 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
  *
  * Print trace list summary information for the specified MS3TraceList.
  *
- * By default only print the time series ID, starttime and endtime for each
+ * By default only print the source ID, starttime and endtime for each
  * trace.  If details is greater than 0 include the sample rate,
  * number of samples and a total trace count.  If gaps is greater than
- * 0 and the previous trace matches (TSID & samprate) include the
+ * 0 and the previous trace matches (SID & samprate) include the
  * gap between the endtime of the last trace and the starttime of the
  * current trace.
  *
@@ -1102,13 +1102,13 @@ mstl3_printtracelist (MS3TraceList *mstl, int8_t timeformat,
 
   /* Print out the appropriate header */
   if (details > 0 && gaps > 0)
-    ms_log (0, "   TimeSeriesID          Start sample             End sample        Gap  Hz  Samples\n");
+    ms_log (0, "   SourceID              Start sample             End sample        Gap  Hz  Samples\n");
   else if (details <= 0 && gaps > 0)
-    ms_log (0, "   TimeSeriesID          Start sample             End sample        Gap\n");
+    ms_log (0, "   SourceID              Start sample             End sample        Gap\n");
   else if (details > 0 && gaps <= 0)
-    ms_log (0, "   TimeSeriesID          Start sample             End sample        Hz  Samples\n");
+    ms_log (0, "   SourceID              Start sample             End sample        Hz  Samples\n");
   else
-    ms_log (0, "   TimeSeriesID          Start sample             End sample\n");
+    ms_log (0, "   SourceID              Start sample             End sample\n");
 
   /* Loop through trace list */
   id = mstl->traces;
@@ -1127,18 +1127,18 @@ mstl3_printtracelist (MS3TraceList *mstl, int8_t timeformat,
       else if (timeformat == 1)
       {
         if (ms_nstime2isotimestr (seg->starttime, stime, 1) == NULL)
-          ms_log (2, "Cannot convert trace start time for %s\n", id->tsid);
+          ms_log (2, "Cannot convert trace start time for %s\n", id->sid);
 
         if (ms_nstime2isotimestr (seg->endtime, etime, 1) == NULL)
-          ms_log (2, "Cannot convert trace end time for %s\n", id->tsid);
+          ms_log (2, "Cannot convert trace end time for %s\n", id->sid);
       }
       else
       {
         if (ms_nstime2seedtimestr (seg->starttime, stime, 1) == NULL)
-          ms_log (2, "Cannot convert trace start time for %s\n", id->tsid);
+          ms_log (2, "Cannot convert trace start time for %s\n", id->sid);
 
         if (ms_nstime2seedtimestr (seg->endtime, etime, 1) == NULL)
-          ms_log (2, "Cannot convert trace end time for %s\n", id->tsid);
+          ms_log (2, "Cannot convert trace end time for %s\n", id->sid);
       }
 
       /* Print segment info at varying levels */
@@ -1175,16 +1175,16 @@ mstl3_printtracelist (MS3TraceList *mstl, int8_t timeformat,
 
         if (details <= 0)
           ms_log (0, "%-17s %-24s %-24s %-4s\n",
-                  id->tsid, stime, etime, gapstr);
+                  id->sid, stime, etime, gapstr);
         else
           ms_log (0, "%-17s %-24s %-24s %-s %-3.3g %-" PRId64 "\n",
-                  id->tsid, stime, etime, gapstr, seg->samprate, seg->samplecnt);
+                  id->sid, stime, etime, gapstr, seg->samprate, seg->samplecnt);
       }
       else if (details > 0 && gaps <= 0)
         ms_log (0, "%-17s %-24s %-24s %-3.3g %-" PRId64 "\n",
-                id->tsid, stime, etime, seg->samprate, seg->samplecnt);
+                id->sid, stime, etime, seg->samprate, seg->samplecnt);
       else
-        ms_log (0, "%-17s %-24s %-24s\n", id->tsid, stime, etime);
+        ms_log (0, "%-17s %-24s %-24s\n", id->sid, stime, etime);
 
       segcnt++;
       seg = seg->next;
@@ -1250,7 +1250,7 @@ mstl3_printsynclist (MS3TraceList *mstl, char *dccid, int8_t subsecond)
   id = mstl->traces;
   while (id)
   {
-    ms_tsid2nslc (id->tsid, net, sta, loc, chan);
+    ms_sid2nslc (id->sid, net, sta, loc, chan);
 
     /* Loop through segment list */
     seg = id->first;
@@ -1310,7 +1310,7 @@ mstl3_printgaplist (MS3TraceList *mstl, int8_t timeformat,
   if (!mstl->traces)
     return;
 
-  ms_log (0, "   TimeSeriesID          Last Sample              Next Sample       Gap  Samples\n");
+  ms_log (0, "   SourceID              Last Sample              Next Sample       Gap  Samples\n");
 
   id = mstl->traces;
   while (id)
@@ -1375,22 +1375,22 @@ mstl3_printgaplist (MS3TraceList *mstl, int8_t timeformat,
         else if (timeformat == 1)
         {
           if (ms_nstime2isotimestr (seg->endtime, time1, 1) == NULL)
-            ms_log (2, "Cannot convert trace end time for %s\n", id->tsid);
+            ms_log (2, "Cannot convert trace end time for %s\n", id->sid);
 
           if (ms_nstime2isotimestr (seg->next->starttime, time2, 1) == NULL)
-            ms_log (2, "Cannot convert next trace start time for %s\n", id->tsid);
+            ms_log (2, "Cannot convert next trace start time for %s\n", id->sid);
         }
         else
         {
           if (ms_nstime2seedtimestr (seg->endtime, time1, 1) == NULL)
-            ms_log (2, "Cannot convert trace end time for %s\n", id->tsid);
+            ms_log (2, "Cannot convert trace end time for %s\n", id->sid);
 
           if (ms_nstime2seedtimestr (seg->next->starttime, time2, 1) == NULL)
-            ms_log (2, "Cannot convert next trace start time for %s\n", id->tsid);
+            ms_log (2, "Cannot convert next trace start time for %s\n", id->sid);
         }
 
         ms_log (0, "%-17s %-24s %-24s %-4s %-.8g\n",
-                id->tsid, time1, time2, gapstr, nsamples);
+                id->sid, time1, time2, gapstr, nsamples);
 
         gapcnt++;
       }

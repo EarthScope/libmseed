@@ -507,8 +507,8 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
   MS3Selections selection;
   MS3SelectTime selecttime;
 
-  selection.tsidpattern[0] = '*';
-  selection.tsidpattern[1] = '\0';
+  selection.sidpattern[0] = '*';
+  selection.sidpattern[1] = '\0';
   selection.timewindows = &selecttime;
   selection.next = NULL;
 
@@ -566,7 +566,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
     {
       nstime_t endtime = msr3_endtime (msr);
 
-      if (ms3_matchselect (selections, msr->tsid, msr->starttime,
+      if (ms3_matchselect (selections, msr->sid, msr->starttime,
                            endtime, msr->pubversion, NULL) == NULL)
       {
         continue;
@@ -666,7 +666,7 @@ msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
 
     if (packedrecords < 0)
     {
-      ms_log (1, "Cannot write miniSEED for %s\n", msr->tsid);
+      ms_log (1, "Cannot write miniSEED for %s\n", msr->sid);
     }
   }
 
@@ -723,7 +723,9 @@ mstl3_writemseed (MS3TraceList *mstl, const char *msfile, int8_t overwrite,
         continue;
       }
 
-      fprintf (stderr, "id.seg packing for %s not implemented\n", tid->tsid);
+      fprintf (stderr, "id.seg packing for %s not implemented\n", tid->sid);
+
+      // TODO
       // Map to a MS3Record container for the Segment and pack it
       //
       //msr->encoding = encoding;
@@ -734,7 +736,7 @@ mstl3_writemseed (MS3TraceList *mstl, const char *msfile, int8_t overwrite,
 
       if (segpackedrecords < 0)
       {
-        ms_log (1, "Cannot write miniSEED for %s\n", tid->tsid);
+        ms_log (1, "Cannot write miniSEED for %s\n", tid->sid);
       }
       else
       {

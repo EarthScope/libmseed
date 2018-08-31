@@ -26,9 +26,9 @@ static nstime_t ms_time2nstime_int (int year, int day, int hour,
 LeapSecond *leapsecondlist = NULL;
 
 /***************************************************************************
- * ms_tsid2nslc:
+ * ms_sid2nslc:
  *
- * Parse a time series source identifier into separate components, expecting:
+ * Parse a source identifier into separate components, expecting:
  *  "XFDSN:NET_STA_LOC_CHAN", where CHAN="BAND_SOURCE_POSITION"
  * or
  *  "FDSN:NET_STA_LOC_CHAN" for a simple combination of SEED 2.4 idenitifers.
@@ -42,24 +42,24 @@ LeapSecond *leapsecondlist = NULL;
  * Returns 0 on success and -1 on error.
  ***************************************************************************/
 int
-ms_tsid2nslc (char *tsid, char *net, char *sta, char *loc, char *chan)
+ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan)
 {
   char *id;
   char *ptr, *top, *next;
   int sepcnt = 0;
 
-  if (!tsid)
+  if (!sid)
     return -1;
 
   /* Handle the XFDSN: and FDSN: namespace identifiers */
-  if (!strncmp (tsid, "XFDSN:", 6) ||
-      !strncmp (tsid, "FDSN:", 5))
+  if (!strncmp (sid, "XFDSN:", 6) ||
+      !strncmp (sid, "FDSN:", 5))
   {
-    /* Advance tsid pointer to last ':', skipping all namespace identifiers */
-    tsid = strrchr (tsid, ':') + 1;
+    /* Advance sid pointer to last ':', skipping all namespace identifiers */
+    sid = strrchr (sid, ':') + 1;
 
     /* Verify 3 or 5 delimiters */
-    id = tsid;
+    id = sid;
     while ((id = strchr (id, '_')))
     {
       id++;
@@ -67,14 +67,14 @@ ms_tsid2nslc (char *tsid, char *net, char *sta, char *loc, char *chan)
     }
     if (sepcnt != 3 && sepcnt != 5)
     {
-      ms_log (2, "ms_tsid2nslc(): Incorrect number of identifier delimiters (%d): %s\n",
-              sepcnt, tsid);
+      ms_log (2, "ms_sid2nslc(): Incorrect number of identifier delimiters (%d): %s\n",
+              sepcnt, sid);
       return -1;
     }
 
-    if (!(id = strdup (tsid)))
+    if (!(id = strdup (sid)))
     {
-      ms_log (2, "ms_tsid2nslc(): Error duplicating identifier\n");
+      ms_log (2, "ms_sid2nslc(): Error duplicating identifier\n");
       return -1;
     }
 
@@ -124,22 +124,22 @@ ms_tsid2nslc (char *tsid, char *net, char *sta, char *loc, char *chan)
   }
   else
   {
-    ms_log (2, "ms_tsid2nslc(): Unrecognized identifier: %s\n", tsid);
+    ms_log (2, "ms_sid2nslc(): Unrecognized identifier: %s\n", sid);
     return -1;
   }
 
   return 0;
-} /* End of ms_tsid2nslc() */
+} /* End of ms_sid2nslc() */
 
 /***************************************************************************
- * ms_nslc2tsid:
+ * ms_nslc2sid:
  *
- * Create a time series surce identifier from individual network,
+ * Create a source identifier from individual network,
  * station, location and channel codes with the form:
  *  "XFDSN:NET_STA_LOC_CHAN", where CHAN="BAND_SOURCE_POSITION"
  *
- * Memory for the time series source identifier must already be allocated.
- * If a specific component is NULL it will be empty in the resulting
+ * Memory for the source identifier must already be allocated.  If a
+ * specific component is NULL it will be empty in the resulting
  * identifier.
  *
  * The flags argument is not yet used and should be set to 0.
@@ -147,25 +147,25 @@ ms_tsid2nslc (char *tsid, char *net, char *sta, char *loc, char *chan)
  * Returns length of identifier on success and -1 on error.
  ***************************************************************************/
 int
-ms_nslc2tsid (char *tsid, int tsidlen, uint16_t flags,
+ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
               char *net, char *sta, char *loc, char *chan)
 {
   int printed;
 
-  if (!tsid)
+  if (!sid)
     return -1;
 
-  printed = snprintf (tsid, tsidlen, "XFDSN:%s_%s_%s_%s",
+  printed = snprintf (sid, sidlen, "XFDSN:%s_%s_%s_%s",
                       (net) ? net : "",
                       (sta) ? sta : "",
                       (loc) ? loc : "",
                       (chan) ? chan : "");
 
-  if (printed >= tsidlen)
+  if (printed >= sidlen)
     return -1;
 
   return printed;
-} /* End of ms_nslc2tsid() */
+} /* End of ms_nslc2sid() */
 
 
 /***************************************************************************

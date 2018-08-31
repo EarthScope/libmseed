@@ -13,7 +13,6 @@
 
 * Add msr3_parsebuffer() to parse all records from a buffer.
 
-* Use SID 'sid' instead of TSID 'tsid', refer to source identifier?
 
 Extra handling:
 - Fetch/extraction for event detection, calibration and timing structures

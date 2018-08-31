@@ -202,7 +202,7 @@ typedef struct MS3Record_s {
   uint8_t         swapflag;          /* Byte swap indicator */
 
   /* Common header fields in accessible form */
-  char            tsid[64];          /* Time series source identifier as URN */
+  char            sid[64];           /* Source identifier as URN */
   uint8_t         formatversion;     /* Original source format major version */
   uint8_t         flags;             /* Record-level bit flags */
   nstime_t        starttime;         /* Record start time (first sample) */
@@ -239,7 +239,7 @@ MS3TraceSeg;
 
 /* Container for a trace ID, linkable */
 typedef struct MS3TraceID_s {
-  char            tsid[64];          /* Time series identifier as URN */
+  char            sid[64];           /* Source identifier as URN */
   uint8_t         pubversion;        /* Publication version */
   nstime_t        earliest;          /* Time of earliest sample */
   nstime_t        latest;            /* Time of latest sample */
@@ -268,7 +268,7 @@ typedef struct MS3SelectTime_s {
 
 /* Data selection structure definition containers */
 typedef struct MS3Selections_s {
-  char tsidpattern[100];    /* Matching (globbing) pattern for time series ID */
+  char sidpattern[100];  /* Matching (globbing) pattern for source ID */
   struct MS3SelectTime_s *timewindows;
   struct MS3Selections_s *next;
   uint8_t pubversion;
@@ -507,8 +507,8 @@ extern int mstl3_writemseed (MS3TraceList *mst, const char *msfile, int8_t overw
                              int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose);
 
 /* General use functions */
-extern int      ms_tsid2nslc (char *tsid, char *net, char *sta, char *loc, char *chan);
-extern int      ms_nslc2tsid (char *tsid, int tsidlen, uint16_t flags,
+extern int      ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan);
+extern int      ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
                               char *net, char *sta, char *loc, char *chan);
 extern int      ms_strncpclean (char *dest, const char *source, int length);
 extern int      ms_strncpcleantail (char *dest, const char *source, int length);
@@ -579,12 +579,12 @@ extern MSLogParam *ms_loginit_l (MSLogParam *logp,
                                  void (*diag_print)(char*), const char *errprefix);
 
 /* Selection functions */
-extern MS3Selections *ms3_matchselect (MS3Selections *selections, char *tsid,
+extern MS3Selections *ms3_matchselect (MS3Selections *selections, char *sid,
                                        nstime_t starttime, nstime_t endtime,
                                        int pubversion, MS3SelectTime **ppselecttime);
 extern MS3Selections *msr3_matchselect (MS3Selections *selections, MS3Record *msr,
                                         MS3SelectTime **ppselecttime);
-extern int ms3_addselect (MS3Selections **ppselections, char *tsidpattern,
+extern int ms3_addselect (MS3Selections **ppselections, char *sidpattern,
                           nstime_t starttime, nstime_t endtime, uint8_t pubversion);
 extern int ms3_addselect_comp (MS3Selections **ppselections,
                                char *net, char* sta, char *loc, char *chan,

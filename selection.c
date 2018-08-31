@@ -22,11 +22,11 @@ static int ms_globmatch (char *string, char *pattern);
  * ms3_matchselect:
  *
  * Test the specified parameters for a matching selection entry.  The
- * tsidpattern parameter may contain globbing characters.  The NULL value
+ * sidpattern parameter may contain globbing characters.  The NULL value
  * (matching any times) for the start and end times is NSTERROR.
  *
  * Matching includes:
- *  glob match of tsid against tsidpattern in selection
+ *  glob match of sid against sidpattern in selection
  *  time window intersection with range in selection
  *  equal pubversion if selection pubversion > 0
  *
@@ -34,7 +34,7 @@ static int ms_globmatch (char *string, char *pattern);
  * NULL for no match or error.
  ***************************************************************************/
 MS3Selections *
-ms3_matchselect (MS3Selections *selections, char *tsid, nstime_t starttime,
+ms3_matchselect (MS3Selections *selections, char *sid, nstime_t starttime,
                  nstime_t endtime, int pubversion, MS3SelectTime **ppselecttime)
 {
   MS3Selections *findsl = NULL;
@@ -46,7 +46,7 @@ ms3_matchselect (MS3Selections *selections, char *tsid, nstime_t starttime,
     findsl = selections;
     while (findsl)
     {
-      if (ms_globmatch (tsid, findsl->tsidpattern))
+      if (ms_globmatch (sid, findsl->sidpattern))
       {
         if (findsl->pubversion > 0 && findsl->pubversion == pubversion)
         {
@@ -107,27 +107,27 @@ msr3_matchselect (MS3Selections *selections, MS3Record *msr, MS3SelectTime **pps
 
   endtime = msr3_endtime (msr);
 
-  return ms3_matchselect (selections, msr->tsid, msr->starttime, endtime,
+  return ms3_matchselect (selections, msr->sid, msr->starttime, endtime,
                           msr->pubversion, ppselecttime);
 } /* End of msr3_matchselect() */
 
 /***************************************************************************
  * ms3_addselect:
  *
- * Add select parameters to a specified selection list.  The tsidpattern
+ * Add select parameters to a specified selection list.  The sidpattern
  * argument may contain globbing parameters.  The NULL value (matching
  * any value) for the start and end times is NSTERROR.
  *
  * Return 0 on success and -1 on error.
  ***************************************************************************/
 int
-ms3_addselect (MS3Selections **ppselections, char *tsidpattern,
+ms3_addselect (MS3Selections **ppselections, char *sidpattern,
                nstime_t starttime, nstime_t endtime, uint8_t pubversion)
 {
   MS3Selections *newsl = NULL;
   MS3SelectTime *newst = NULL;
 
-  if (!ppselections || !tsidpattern)
+  if (!ppselections || !sidpattern)
     return -1;
 
   /* Allocate new SelectTime and populate */
@@ -150,8 +150,8 @@ ms3_addselect (MS3Selections **ppselections, char *tsidpattern,
       return -1;
     }
 
-    strncpy (newsl->tsidpattern, tsidpattern, sizeof (newsl->tsidpattern));
-    newsl->tsidpattern[sizeof (newsl->tsidpattern) - 1] = '\0';
+    strncpy (newsl->sidpattern, sidpattern, sizeof (newsl->sidpattern));
+    newsl->sidpattern[sizeof (newsl->sidpattern) - 1] = '\0';
     newsl->pubversion = pubversion;
 
     /* Add new MS3SelectTime struct as first in list */
@@ -166,7 +166,7 @@ ms3_addselect (MS3Selections **ppselections, char *tsidpattern,
     /* Search for matching MS3Selections entry */
     while (findsl)
     {
-      if (!strcmp (findsl->tsidpattern, tsidpattern) && findsl->pubversion == pubversion)
+      if (!strcmp (findsl->sidpattern, sidpattern) && findsl->pubversion == pubversion)
       {
         matchsl = findsl;
         break;
@@ -190,8 +190,8 @@ ms3_addselect (MS3Selections **ppselections, char *tsidpattern,
         return -1;
       }
 
-      strncpy (newsl->tsidpattern, tsidpattern, sizeof (newsl->tsidpattern));
-      newsl->tsidpattern[sizeof (newsl->tsidpattern) - 1] = '\0';
+      strncpy (newsl->sidpattern, sidpattern, sizeof (newsl->sidpattern));
+      newsl->sidpattern[sizeof (newsl->sidpattern) - 1] = '\0';
       newsl->pubversion = pubversion;
 
       /* Add new MS3Selections to beginning of list */
@@ -224,7 +224,7 @@ int
 ms3_addselect_comp (MS3Selections **ppselections, char *net, char *sta, char *loc,
                     char *chan, nstime_t starttime, nstime_t endtime, uint8_t pubversion)
 {
-  char tsidpattern[100];
+  char sidpattern[100];
   char selnet[20];
   char selsta[20];
   char selloc[20];
@@ -281,13 +281,13 @@ ms3_addselect_comp (MS3Selections **ppselections, char *net, char *sta, char *lo
     strcpy (selchan, "*");
   }
 
-  /* Create the time series identifier globbing match for this entry */
-  if (ms_nslc2tsid (tsidpattern, sizeof (tsidpattern), 0,
+  /* Create the source identifier globbing match for this entry */
+  if (ms_nslc2sid (sidpattern, sizeof (sidpattern), 0,
                     selnet, selsta, selloc, selchan))
     return -1;
 
   /* Add selection to list */
-  if (ms3_addselect (ppselections, tsidpattern, starttime, endtime, pubversion))
+  if (ms3_addselect (ppselections, sidpattern, starttime, endtime, pubversion))
     return -1;
 
   return 0;
@@ -307,7 +307,7 @@ ms3_addselect_comp (MS3Selections **ppselections, char *net, char *sta, char *lo
  * read from stdin.
  *
  * The selection file may contain two line formats:
- *   "TimeseriesID  [Starttime  [Endtime  [Pubversion]]]"
+ *   "SourceID  [Starttime  [Endtime  [Pubversion]]]"
  *  or
  *   "Network  Station  Location  Channel  [Quality  [Starttime  [Endtime]]]"
  *
@@ -466,7 +466,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
       }
     }
 
-    /* Test for "TimeseriesID  [Starttime  [Endtime  [Pubversion]]]" */
+    /* Test for "SourceID  [Starttime  [Endtime  [Pubversion]]]" */
     if (fieldidx == 1 ||
         (fieldidx == 2 && isstart2) ||
         (fieldidx == 3 && isstart2 && isend3) ||
@@ -603,7 +603,7 @@ ms3_printselections (MS3Selections *selections)
   while (select)
   {
     ms_log (0, "Selection: %s  pubversion: %d\n",
-            select->tsidpattern, select->pubversion);
+            select->sidpattern, select->pubversion);
 
     selecttime = select->timewindows;
     while (selecttime)

@@ -2,7 +2,6 @@
  * Routines for packing text/ASCII, INT_16, INT_32, FLOAT_32, FLOAT_64,
  * STEIM1 and STEIM2 data records.
  *
- * modified: 2017.053
  ************************************************************************/
 
 #include <memory.h>
@@ -424,7 +423,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
 int
 msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
                    int outputlength, int32_t diff0, uint16_t *byteswritten,
-                   char *tsid, int swapflag)
+                   char *sid, int swapflag)
 {
   uint32_t *frameptr;  /* Frame pointer in output */
   int32_t *Xnp = NULL; /* Reverse integration constant, aka last sample */
@@ -681,7 +680,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
       else
       {
         ms_log (2, "msr_encode_steim2(%s): Unable to represent difference in <= 30 bits\n",
-                tsid);
+                sid);
         return -1;
       }
 

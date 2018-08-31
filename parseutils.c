@@ -169,7 +169,7 @@ ms3_detect (const char *record, int recbuflen, uint8_t *formatversion)
     *formatversion = 3;
 
     reclen = MS3FSDH_LENGTH /* Length of fixed portion of header */
-             + *pMS3FSDH_TSIDLENGTH (record) /* Length of time series identifier */
+             + *pMS3FSDH_SIDLENGTH (record) /* Length of source identifier */
              + *pMS3FSDH_EXTRALENGTH (record) /* Length of extra headers */
              + *pMS3FSDH_DATALENGTH (record); /* Length of data payload */
 
@@ -281,8 +281,8 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
 
   int retval = 0;
   int8_t swapflag;
-  uint8_t tsidlength;
-  char *tsid = "";
+  uint8_t sidlength;
+  char *sid = "";
 
   if (!record)
     return 1;
@@ -300,23 +300,23 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
       ms_log (0, "Not swapping multi-byte quantities in header\n");
   }
 
-  tsidlength = *pMS3FSDH_TSIDLENGTH(record);
+  sidlength = *pMS3FSDH_SIDLENGTH(record);
 
-  /* Check if time series identifier length is unreasonably small */
-  if (tsidlength < 4)
+  /* Check if source identifier length is unreasonably small */
+  if (sidlength < 4)
   {
-    ms_log (2, "Unlikely time series identifier length: '%d'\n", tsidlength);
+    ms_log (2, "Unlikely source identifier length: '%d'\n", sidlength);
     return 1;
   }
 
   /* Make sure buffer contains the identifier */
-  if ((MS3FSDH_LENGTH + tsidlength) > maxreclen)
+  if ((MS3FSDH_LENGTH + sidlength) > maxreclen)
   {
     ms_log (2, "Not enough buffer contain the identifer: '%d'\n", maxreclen);
     return 1;
   }
 
-  tsid = pMS3FSDH_TSID(record);
+  sid = pMS3FSDH_SID(record);
 
   /* Validate fixed section header fields */
   X = record; /* Pointer of convenience */
@@ -325,7 +325,7 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
   if (*(X) != 'M' || *(X + 1) != 'S')
   {
     ms_log (2, "%.*s: Invalid miniSEED 3 record indicator: '%c%c'\n",
-            tsidlength, tsid, X, X + 1);
+            sidlength, sid, X, X + 1);
     retval++;
   }
 
@@ -333,7 +333,7 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
   if (((uint8_t)*(X + 2)) != 3)
   {
     ms_log (2, "%.*s: Invalid miniSEED format version: '%d'\n",
-            tsidlength, tsid, (uint8_t)*(X + 2));
+            sidlength, sid, (uint8_t)*(X + 2));
     retval++;
   }
 
@@ -341,37 +341,37 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
   if (HO2u(*pMS3FSDH_YEAR (record), swapflag) < 1900 || HO2u(*pMS3FSDH_YEAR (record), swapflag) > 2100)
   {
     ms_log (2, "%.*s: Unlikely start year (1900-2100): '%d'\n",
-            tsidlength, tsid, HO2u(*pMS3FSDH_YEAR (record), swapflag));
+            sidlength, sid, HO2u(*pMS3FSDH_YEAR (record), swapflag));
     retval++;
   }
   if (HO2u(*pMS3FSDH_DAY (record), swapflag) < 1 || HO2u(*pMS3FSDH_DAY (record), swapflag) > 366)
   {
     ms_log (2, "%.*s: Invalid start day (1-366): '%d'\n",
-            tsidlength, tsid, HO2u(*pMS3FSDH_DAY (record), swapflag));
+            sidlength, sid, HO2u(*pMS3FSDH_DAY (record), swapflag));
     retval++;
   }
   if (*pMS3FSDH_HOUR (record) > 23)
   {
     ms_log (2, "%.*s: Invalid start hour (0-23): '%d'\n",
-            tsidlength, tsid, *pMS3FSDH_HOUR (record));
+            sidlength, sid, *pMS3FSDH_HOUR (record));
     retval++;
   }
   if (*pMS3FSDH_MIN (record) > 59)
   {
     ms_log (2, "%.*s: Invalid start minute (0-59): '%d'\n",
-            tsidlength, tsid, *pMS3FSDH_MIN (record));
+            sidlength, sid, *pMS3FSDH_MIN (record));
     retval++;
   }
   if (*pMS3FSDH_SEC (record) > 60)
   {
     ms_log (2, "%.*s: Invalid start second (0-60): '%d'\n",
-            tsidlength, tsid, *pMS3FSDH_SEC (record));
+            sidlength, sid, *pMS3FSDH_SEC (record));
     retval++;
   }
   if (HO4u(*pMS3FSDH_NSEC (record), swapflag) > 999999999)
   {
     ms_log (2, "%.*s: Invalid start nanoseconds (0-999999999): '%d'\n",
-            tsidlength, tsid, HO2u(*pMS3FSDH_NSEC (record), swapflag));
+            sidlength, sid, HO2u(*pMS3FSDH_NSEC (record), swapflag));
     retval++;
   }
 
@@ -379,7 +379,7 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
   if (details >= 1)
   {
     /* Print header values */
-    ms_log (0, "RECORD -- %.*s\n", tsidlength, tsid);
+    ms_log (0, "RECORD -- %.*s\n", sidlength, sid);
     ms_log (0, "       record indicator: '%c%c'\n",
             pMS3FSDH_INDICATOR (record)[0], pMS3FSDH_INDICATOR (record)[1]);
     /* Flags */
@@ -418,7 +418,7 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
     ms_log (0, "    publication version: %u\n", *pMS3FSDH_PUBVERSION (record));
     ms_log (0, "      number of samples: %u\n", HO4u(*pMS3FSDH_NUMSAMPLES (record), swapflag));
     ms_log (0, "                    CRC: 0x%X\n", HO4u(*pMS3FSDH_CRC (record), swapflag));
-    ms_log (0, "   length of identifier: %u\n", *pMS3FSDH_TSIDLENGTH (record));
+    ms_log (0, "   length of identifier: %u\n", *pMS3FSDH_SIDLENGTH (record));
     ms_log (0, "length of extra headers: %u\n", HO2u(*pMS3FSDH_EXTRALENGTH (record), swapflag));
     ms_log (0, " length of data payload: %u\n", HO2u(*pMS3FSDH_DATALENGTH (record), swapflag));
   } /* Done printing raw header details */
@@ -429,9 +429,9 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
   if (details > 1 && msr.extralength > 0)
   {
     ms_log (0, "          extra headers:\n");
-    if ((MS3FSDH_LENGTH + tsidlength + msr.extralength) <= maxreclen)
+    if ((MS3FSDH_LENGTH + sidlength + msr.extralength) <= maxreclen)
     {
-      msr.extra = record + MS3FSDH_LENGTH + tsidlength;
+      msr.extra = record + MS3FSDH_LENGTH + sidlength;
       mseh_print (&msr, 10);
     }
     else
@@ -476,7 +476,7 @@ int
 ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
 {
   double nomsamprate;
-  char tsid[21] = {0};
+  char sid[21] = {0};
   char *X;
   char b;
   int retval = 0;
@@ -491,8 +491,8 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
   if (maxreclen < 48)
     return 1;
 
-  /* Build time series identifier for this record */
-  ms2_recordtsid (record, tsid, sizeof (tsid));
+  /* Build source identifier for this record */
+  ms2_recordsid (record, sid, sizeof (sid));
 
   /* Check to see if byte swapping is needed by testing the year and day */
   if (swapflag == -1 && !MS_ISVALIDYEARDAY (*pMS2FSDH_YEAR (record), *pMS2FSDH_DAY (record)))
@@ -516,21 +516,21 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
       !isdigit ((int)*(X + 2)) || !isdigit ((int)*(X + 3)) ||
       !isdigit ((int)*(X + 4)) || !isdigit ((int)*(X + 5)))
   {
-    ms_log (2, "%s: Invalid sequence number: '%c%c%c%c%c%c'\n", tsid, X, X + 1, X + 2, X + 3, X + 4, X + 5);
+    ms_log (2, "%s: Invalid sequence number: '%c%c%c%c%c%c'\n", sid, X, X + 1, X + 2, X + 3, X + 4, X + 5);
     retval++;
   }
 
   /* Check header data/quality indicator */
   if (!MS2_ISDATAINDICATOR (*(X + 6)))
   {
-    ms_log (2, "%s: Invalid header indicator (DRQM): '%c'\n", tsid, X + 6);
+    ms_log (2, "%s: Invalid header indicator (DRQM): '%c'\n", sid, X + 6);
     retval++;
   }
 
   /* Check reserved byte, space or NULL */
   if (!(*(X + 7) == ' ' || *(X + 7) == '\0'))
   {
-    ms_log (2, "%s: Invalid fixed section reserved byte (Space): '%c'\n", tsid, X + 7);
+    ms_log (2, "%s: Invalid fixed section reserved byte (Space): '%c'\n", sid, X + 7);
     retval++;
   }
 
@@ -541,7 +541,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
       !(isalnum ((unsigned char)*(X + 11)) || *(X + 11) == ' ') ||
       !(isalnum ((unsigned char)*(X + 12)) || *(X + 12) == ' '))
   {
-    ms_log (2, "%s: Invalid station code: '%c%c%c%c%c'\n", tsid, X + 8, X + 9, X + 10, X + 11, X + 12);
+    ms_log (2, "%s: Invalid station code: '%c%c%c%c%c'\n", sid, X + 8, X + 9, X + 10, X + 11, X + 12);
     retval++;
   }
 
@@ -549,7 +549,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
   if (!(isalnum ((unsigned char)*(X + 13)) || *(X + 13) == ' ') ||
       !(isalnum ((unsigned char)*(X + 14)) || *(X + 14) == ' '))
   {
-    ms_log (2, "%s: Invalid location ID: '%c%c'\n", tsid, X + 13, X + 14);
+    ms_log (2, "%s: Invalid location ID: '%c%c'\n", sid, X + 13, X + 14);
     retval++;
   }
 
@@ -558,7 +558,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
       !(isalnum ((unsigned char)*(X + 16)) || *(X + 16) == ' ') ||
       !(isalnum ((unsigned char)*(X + 17)) || *(X + 17) == ' '))
   {
-    ms_log (2, "%s: Invalid channel codes: '%c%c%c'\n", tsid, X + 15, X + 16, X + 17);
+    ms_log (2, "%s: Invalid channel codes: '%c%c%c'\n", sid, X + 15, X + 16, X + 17);
     retval++;
   }
 
@@ -566,39 +566,39 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
   if (!(isalnum ((unsigned char)*(X + 18)) || *(X + 18) == ' ') ||
       !(isalnum ((unsigned char)*(X + 19)) || *(X + 19) == ' '))
   {
-    ms_log (2, "%s: Invalid network code: '%c%c'\n", tsid, X + 18, X + 19);
+    ms_log (2, "%s: Invalid network code: '%c%c'\n", sid, X + 18, X + 19);
     retval++;
   }
 
   /* Check start time fields */
   if (HO2u(*pMS2FSDH_YEAR (record), swapflag) < 1900 || HO2u(*pMS2FSDH_YEAR (record), swapflag) > 2100)
   {
-    ms_log (2, "%s: Unlikely start year (1900-2100): '%d'\n", tsid, HO2u(*pMS2FSDH_YEAR (record), swapflag));
+    ms_log (2, "%s: Unlikely start year (1900-2100): '%d'\n", sid, HO2u(*pMS2FSDH_YEAR (record), swapflag));
     retval++;
   }
   if (HO2u(*pMS2FSDH_DAY (record), swapflag) < 1 || HO2u(*pMS2FSDH_DAY (record), swapflag) > 366)
   {
-    ms_log (2, "%s: Invalid start day (1-366): '%d'\n", tsid, HO2u(*pMS2FSDH_DAY (record), swapflag));
+    ms_log (2, "%s: Invalid start day (1-366): '%d'\n", sid, HO2u(*pMS2FSDH_DAY (record), swapflag));
     retval++;
   }
   if (*pMS2FSDH_HOUR (record) > 23)
   {
-    ms_log (2, "%s: Invalid start hour (0-23): '%d'\n", tsid, *pMS2FSDH_HOUR (record));
+    ms_log (2, "%s: Invalid start hour (0-23): '%d'\n", sid, *pMS2FSDH_HOUR (record));
     retval++;
   }
   if (*pMS2FSDH_MIN (record) > 59)
   {
-    ms_log (2, "%s: Invalid start minute (0-59): '%d'\n", tsid, *pMS2FSDH_MIN (record));
+    ms_log (2, "%s: Invalid start minute (0-59): '%d'\n", sid, *pMS2FSDH_MIN (record));
     retval++;
   }
   if (*pMS2FSDH_SEC (record) > 60)
   {
-    ms_log (2, "%s: Invalid start second (0-60): '%d'\n", tsid, *pMS2FSDH_SEC (record));
+    ms_log (2, "%s: Invalid start second (0-60): '%d'\n", sid, *pMS2FSDH_SEC (record));
     retval++;
   }
   if (HO2u(*pMS2FSDH_FSEC (record), swapflag) > 9999)
   {
-    ms_log (2, "%s: Invalid start fractional seconds (0-9999): '%d'\n", tsid, HO2u(*pMS2FSDH_FSEC (record), swapflag));
+    ms_log (2, "%s: Invalid start fractional seconds (0-9999): '%d'\n", sid, HO2u(*pMS2FSDH_FSEC (record), swapflag));
     retval++;
   }
 
@@ -606,7 +606,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
   if (HO2u(*pMS2FSDH_NUMSAMPLES(record), swapflag) > 20000)
   {
     ms_log (2, "%s: Unlikely number of samples (>20000): '%d'\n",
-            tsid, HO2u(*pMS2FSDH_NUMSAMPLES(record), swapflag));
+            sid, HO2u(*pMS2FSDH_NUMSAMPLES(record), swapflag));
     retval++;
   }
 
@@ -615,7 +615,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
       *pMS2FSDH_NUMBLOCKETTES(record) > 0 &&
       HO2u(*pMS2FSDH_DATAOFFSET(record), swapflag) <= HO2u(*pMS2FSDH_BLOCKETTEOFFSET(record), swapflag))
   {
-    ms_log (2, "%s: No space for %d blockettes, data offset: %d, blockette offset: %d\n", tsid,
+    ms_log (2, "%s: No space for %d blockettes, data offset: %d, blockette offset: %d\n", sid,
             *pMS2FSDH_NUMBLOCKETTES(record),
             HO2u(*pMS2FSDH_DATAOFFSET(record), swapflag),
             HO2u(*pMS2FSDH_BLOCKETTEOFFSET(record), swapflag));
@@ -630,7 +630,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
                                   HO2d(*pMS2FSDH_SAMPLERATEMULT (record), swapflag));
 
     /* Print header values */
-    ms_log (0, "RECORD -- %s\n", tsid);
+    ms_log (0, "RECORD -- %s\n", sid);
     ms_log (0, "        sequence number: '%c%c%c%c%c%c'\n",
             pMS2FSDH_SEQNUM (record)[0], pMS2FSDH_SEQNUM (record)[1],
             pMS2FSDH_SEQNUM (record)[2], pMS2FSDH_SEQNUM (record)[3],
@@ -771,7 +771,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
       blkt_length = ms2_blktlen (blkt_type, record + blkt_offset, swapflag);
       if (blkt_length == 0)
       {
-        ms_log (2, "%s: Unknown blockette length for type %d\n", tsid, blkt_type);
+        ms_log (2, "%s: Unknown blockette length for type %d\n", sid, blkt_type);
         retval++;
       }
 
@@ -782,7 +782,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
       if (endofblockettes > maxreclen)
       {
         ms_log (2, "%s: Blockette type %d at offset %d with length %d does not fit in record (%d)\n",
-                tsid, blkt_type, blkt_offset, blkt_length, maxreclen);
+                sid, blkt_type, blkt_offset, blkt_length, maxreclen);
         retval++;
         break;
       }
@@ -1133,7 +1133,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
             !(b1000encoding >= 10 && b1000encoding <= 19) &&
             !(b1000encoding >= 30 && b1000encoding <= 33))
         {
-          ms_log (2, "%s: Blockette 1000 encoding format invalid (0-5,10-19,30-33): %d\n", tsid, b1000encoding);
+          ms_log (2, "%s: Blockette 1000 encoding format invalid (0-5,10-19,30-33): %d\n", sid, b1000encoding);
           retval++;
         }
 
@@ -1141,7 +1141,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
         if (*pMS2B1000_BYTEORDER (record + blkt_offset) != 0 &&
             *pMS2B1000_BYTEORDER (record + blkt_offset) != 1)
         {
-          ms_log (2, "%s: Blockette 1000 byte order flag invalid (0 or 1): %d\n", tsid,
+          ms_log (2, "%s: Blockette 1000 byte order flag invalid (0 or 1): %d\n", sid,
                   *pMS2B1000_BYTEORDER (record + blkt_offset));
           retval++;
         }
@@ -1225,7 +1225,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
 
       else
       {
-        ms_log (2, "%s: Unrecognized blockette type: %d\n", tsid, blkt_type);
+        ms_log (2, "%s: Unrecognized blockette type: %d\n", sid, blkt_type);
         retval++;
       }
 
@@ -1233,7 +1233,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
       if (next_blkt && next_blkt <= endofblockettes)
       {
         ms_log (2, "%s: Next blockette offset (%d) is within current blockette ending at byte %d\n",
-                tsid, next_blkt, endofblockettes);
+                sid, next_blkt, endofblockettes);
         blkt_offset = 0;
       }
       else
@@ -1248,7 +1248,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
     if (blkt_offset > maxreclen)
     {
       ms_log (2, "%s: Blockette offset (%d) beyond maximum record length (%d)\n",
-              tsid, blkt_offset, maxreclen);
+              sid, blkt_offset, maxreclen);
       retval++;
     }
 
@@ -1256,13 +1256,13 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
     if (b1000reclen && HO2u(*pMS2FSDH_DATAOFFSET (record), swapflag) > b1000reclen)
     {
       ms_log (2, "%s: Data offset (%d) beyond record length (%d)\n",
-              tsid, HO2u(*pMS2FSDH_DATAOFFSET (record), swapflag), b1000reclen);
+              sid, HO2u(*pMS2FSDH_DATAOFFSET (record), swapflag), b1000reclen);
       retval++;
     }
     if (b1000reclen && HO2u(*pMS2FSDH_BLOCKETTEOFFSET (record), swapflag) > b1000reclen)
     {
       ms_log (2, "%s: Blockette offset (%d) beyond record length (%d)\n",
-              tsid, HO2u(*pMS2FSDH_BLOCKETTEOFFSET (record), swapflag), b1000reclen);
+              sid, HO2u(*pMS2FSDH_BLOCKETTEOFFSET (record), swapflag), b1000reclen);
       retval++;
     }
 
@@ -1271,7 +1271,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
         HO2u(*pMS2FSDH_DATAOFFSET (record), swapflag) <= endofblockettes)
     {
       ms_log (2, "%s: Data offset (%d) is within blockette chain (end of blockettes: %d)\n",
-              tsid, HO2u(*pMS2FSDH_DATAOFFSET (record), swapflag), endofblockettes);
+              sid, HO2u(*pMS2FSDH_DATAOFFSET (record), swapflag), endofblockettes);
       retval++;
     }
 
@@ -1279,7 +1279,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
     if (*pMS2FSDH_NUMBLOCKETTES (record) != blkt_count)
     {
       ms_log (2, "%s: Specified number of blockettes (%d) not equal to those parsed (%d)\n",
-              tsid, *pMS2FSDH_NUMBLOCKETTES (record), blkt_count);
+              sid, *pMS2FSDH_NUMBLOCKETTES (record), blkt_count);
       retval++;
     }
   }
