@@ -116,13 +116,12 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
  * list for the appropriate MS3TraceID and MS3TraceSeg and either adding
  * data to it or creating a new MS3TraceID and/or MS3TraceSeg if needed.
  *
- * TODO:
  * If the splitversion flag is true the publication versions will be
  * kept separate, i.e. they must be the same to be merged. Otherwise
  * different versions of otherwise matching traces are merged.  If
- * more than one version contributes to a given segment, its
- * publication version will be the set to the largest contributing
- * version.
+ * more than one version contributes to a given source identifer's
+ * segments, its publication version will be the set to the largest
+ * contributing version.
  *
  * If the autoheal flag is true extra processing is invoked to conjoin
  * trace segments that fit together after the MS3Record coverage is
@@ -190,6 +189,11 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
     }
     cmp = (*s1 - *--s2);
 
+    if (splitversion && mstl->last->pubversion != msr->pubversion)
+    {
+      cmp = 1;
+    }
+
     if (!cmp)
     {
       id = mstl->last;
@@ -215,6 +219,11 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
             break;
         }
         cmp = (*s1 - *--s2);
+
+        if (splitversion && mstl->last->pubversion != msr->pubversion)
+        {
+          cmp = 1;
+        }
 
         /* If source names did not match track closest "less than" value
            and continue searching. */
@@ -523,14 +532,18 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
 
         id->numsegments++;
       }
-
-      /* Track earliest and latest times */
-      if (msr->starttime < id->earliest)
-        id->earliest = msr->starttime;
-
-      if (endtime > id->latest)
-        id->latest = endtime;
     } /* End of searching segment list */
+
+    /* Track largest publication version */
+    if (msr->pubversion > id->pubversion)
+      id->pubversion = msr->pubversion;
+
+    /* Track earliest and latest times */
+    if (msr->starttime < id->earliest)
+      id->earliest = msr->starttime;
+
+    if (endtime > id->latest)
+      id->latest = endtime;
   } /* End of adding coverage to matching ID */
 
   /* Sort modified segment into place, logic above should limit these to few shifts if any */

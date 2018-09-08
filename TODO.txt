@@ -6,8 +6,6 @@
 * MSBuild project for building, MS Visual Studio 2017 dropped support for NMake
   - Use CMake to build project files?
 
-* Handle splitversion in mstl3_addmsr().
-
 * Marked as UNSUPPORTED. Consider optional functionality with a bit flag:
 #define MSF_SEQUENCE    0x0008  /* Maintain a record-level sequence number */
 
