@@ -92,7 +92,7 @@ extern "C" {
   #include <inttypes.h>
 #endif
 
-#define MINRECLEN 38       /* Minimum miniSEED record length */
+#define MINRECLEN 40       /* Minimum miniSEED record length */
 #define MAXRECLEN 131172   /* Maximum miniSEED record length */
 
 /* SEED data encoding types */

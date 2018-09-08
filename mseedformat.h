@@ -15,7 +15,7 @@
 
 /***************************************************************************
  * miniSEED 3.0 Fixed Section of Data Header
- * 36 bytes, plus length of identifier, plus length of extra headers
+ * 40 bytes, plus length of identifier, plus length of extra headers
  *
  * #  FIELD                   TYPE       OFFSET
  * 1  record indicator        char[2]       0
