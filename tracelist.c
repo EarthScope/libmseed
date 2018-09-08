@@ -534,8 +534,9 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
   } /* End of adding coverage to matching ID */
 
   /* Sort modified segment into place, logic above should limit these to few shifts if any */
-  while (seg->next && (seg->starttime > seg->next->starttime ||
-                       (seg->starttime == seg->next->starttime && seg->endtime < seg->next->endtime)))
+  while (seg->next &&
+         (seg->starttime > seg->next->starttime ||
+          (seg->starttime == seg->next->starttime && seg->endtime < seg->next->endtime)))
   {
     /* Move segment down list, swap seg and seg->next */
     segafter = seg->next;
@@ -1102,13 +1103,13 @@ mstl3_printtracelist (MS3TraceList *mstl, int8_t timeformat,
 
   /* Print out the appropriate header */
   if (details > 0 && gaps > 0)
-    ms_log (0, "   SourceID              Start sample             End sample        Gap  Hz  Samples\n");
+    ms_log (0, "       SourceID                Start sample             End sample         Gap  Hz  Samples\n");
   else if (details <= 0 && gaps > 0)
-    ms_log (0, "   SourceID              Start sample             End sample        Gap\n");
+    ms_log (0, "       SourceID                Start sample             End sample         Gap\n");
   else if (details > 0 && gaps <= 0)
-    ms_log (0, "   SourceID              Start sample             End sample        Hz  Samples\n");
+    ms_log (0, "       SourceID                Start sample             End sample         Hz  Samples\n");
   else
-    ms_log (0, "   SourceID              Start sample             End sample\n");
+    ms_log (0, "       SourceID                Start sample             End sample\n");
 
   /* Loop through trace list */
   id = mstl->traces;
@@ -1174,17 +1175,17 @@ mstl3_printtracelist (MS3TraceList *mstl, int8_t timeformat,
           snprintf (gapstr, sizeof (gapstr), "%-4.4g", gap);
 
         if (details <= 0)
-          ms_log (0, "%-17s %-24s %-24s %-4s\n",
+          ms_log (0, "%-24s %-24s %-24s %-4s\n",
                   id->sid, stime, etime, gapstr);
         else
-          ms_log (0, "%-17s %-24s %-24s %-s %-3.3g %-" PRId64 "\n",
+          ms_log (0, "%-24s %-24s %-24s %-s %-3.3g %-" PRId64 "\n",
                   id->sid, stime, etime, gapstr, seg->samprate, seg->samplecnt);
       }
       else if (details > 0 && gaps <= 0)
-        ms_log (0, "%-17s %-24s %-24s %-3.3g %-" PRId64 "\n",
+        ms_log (0, "%-24s %-24s %-24s %-3.3g %-" PRId64 "\n",
                 id->sid, stime, etime, seg->samprate, seg->samplecnt);
       else
-        ms_log (0, "%-17s %-24s %-24s\n", id->sid, stime, etime);
+        ms_log (0, "%-24s %-24s %-24s\n", id->sid, stime, etime);
 
       segcnt++;
       seg = seg->next;
