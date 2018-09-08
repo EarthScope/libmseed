@@ -6,10 +6,14 @@
 * MSBuild project for building, MS Visual Studio 2017 dropped support for NMake
   - Use CMake to build project files?
 
+* Add msr3_parsebuffer() to parse all records from a buffer.
+
+* Document build system, ideally from in-source docs, resulting in man pages and HTML, doxygen?
+
+* Add some xSEED/mseed3 parsing tests, reference data.
+
 * Marked as UNSUPPORTED. Consider optional functionality with a bit flag:
 #define MSF_SEQUENCE    0x0008  /* Maintain a record-level sequence number */
-
-* Add msr3_parsebuffer() to parse all records from a buffer.
 
 
 Extra handling:
