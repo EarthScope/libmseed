@@ -275,12 +275,12 @@ typedef struct MS3Selections_s {
 } MS3Selections;
 
 /* miniSEED parsing and packing control flags */
-#define MSF_UNPACKDATA  0x0001  /* Unpack data when parsing */
-#define MSF_SKIPNOTDATA 0x0002  /* Skip what cannot be identified as miniSEED */
-#define MSF_VALIDATECRC 0x0004  /* Validate CRC (if version 3) when parsing */
-#define MSF_SEQUENCE    0x0008  /* Maintain a record-level sequence number */
-#define MSF_FLUSHDATA   0x0010  /* Pack all available data */
-#define MSF_ATENDOFFILE 0x0020  /* Reading routine is at the end of the file */
+#define MSF_UNPACKDATA  0x0001  /* Parsing: unpack data samples */
+#define MSF_SKIPNOTDATA 0x0002  /* Parsing: skip what cannot be identified as miniSEED */
+#define MSF_VALIDATECRC 0x0004  /* Parsing: validate CRC (if version 3) */
+#define MSF_SEQUENCE    0x0008  /* Packing: UNSUPPORTED: Maintain a record-level sequence number */
+#define MSF_FLUSHDATA   0x0010  /* Packing: pack all available data even */
+#define MSF_ATENDOFFILE 0x0020  /* Parsing: reading routine is at the end of the file */
 
 /* miniSEED byte swap flags */
 #define MSSWAP_HEADER   0x01    /* Header needed byte swapping */

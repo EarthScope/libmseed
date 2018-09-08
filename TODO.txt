@@ -8,7 +8,7 @@
 
 * Handle splitversion in mstl3_addmsr().
 
-* Optional functionality with a bit flag:
+* Marked as UNSUPPORTED. Consider optional functionality with a bit flag:
 #define MSF_SEQUENCE    0x0008  /* Maintain a record-level sequence number */
 
 * Add msr3_parsebuffer() to parse all records from a buffer.
