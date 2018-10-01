@@ -108,10 +108,11 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
 
   sidlength = *pMS3FSDH_SIDLENGTH (record);
 
-  if (sidlength > sizeof (msr->sid))
+  /* Record SID length must be at most one less than maximum size to leave a byte for termination */
+  if (sidlength >= sizeof (msr->sid))
   {
     ms_log (2, "msr3_unpack_mseed3(%.*s): Source identifier is longer (%d) than supported (%d)\n",
-            sidlength, pMS3FSDH_SID (record), sidlength, (int)sizeof (msr->sid));
+            sidlength, pMS3FSDH_SID (record), sidlength, (int)sizeof (msr->sid) - 1);
     return MS_GENERROR;
   }
 
@@ -148,8 +149,7 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
   msr->formatversion = *pMS3FSDH_FORMATVERSION (record);
   msr->flags = *pMS3FSDH_FLAGS (record);
 
-  strncpy (msr->sid, pMS3FSDH_SID (record), sidlength);
-
+  memcpy (msr->sid, pMS3FSDH_SID (record), sidlength);
   msr->starttime = ms_time2nstime (HO2u (*pMS3FSDH_YEAR (record), msr->swapflag),
                                    HO2u (*pMS3FSDH_DAY (record), msr->swapflag),
                                    *pMS3FSDH_HOUR (record),

@@ -95,6 +95,8 @@ extern "C" {
 #define MINRECLEN 40       /* Minimum miniSEED record length */
 #define MAXRECLEN 131172   /* Maximum miniSEED record length */
 
+#define LM_SIDLEN 64       /* Length of source ID string */
+
 /* SEED data encoding types */
 #define DE_ASCII       0
 #define DE_INT16       1
@@ -202,7 +204,7 @@ typedef struct MS3Record_s {
   uint8_t         swapflag;          /* Byte swap indicator */
 
   /* Common header fields in accessible form */
-  char            sid[64];           /* Source identifier as URN */
+  char            sid[LM_SIDLEN];    /* Source identifier as URN */
   uint8_t         formatversion;     /* Original source format major version */
   uint8_t         flags;             /* Record-level bit flags */
   nstime_t        starttime;         /* Record start time (first sample) */
@@ -239,7 +241,7 @@ MS3TraceSeg;
 
 /* Container for a trace ID, linkable */
 typedef struct MS3TraceID_s {
-  char            sid[64];           /* Source identifier as URN */
+  char            sid[LM_SIDLEN];    /* Source identifier as URN */
   uint8_t         pubversion;        /* Publication version */
   nstime_t        earliest;          /* Time of earliest sample */
   nstime_t        latest;            /* Time of latest sample */

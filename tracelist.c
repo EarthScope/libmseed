@@ -109,6 +109,7 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
   return;
 } /* End of mstl3_free() */
 
+
 /***************************************************************************
  * mstl3_addmsr:
  *
@@ -266,7 +267,7 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
     }
 
     /* Populate MS3TraceID */
-    strcpy (id->sid, msr->sid);
+    memcpy (id->sid, msr->sid, sizeof(id->sid));
     id->pubversion = msr->pubversion;
 
     id->earliest = msr->starttime;
@@ -1005,7 +1006,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
   id = mstl->traces;
   while (id)
   {
-    strncpy (msr->sid, id->sid, sizeof(msr->sid));
+    memcpy (msr->sid, id->sid, sizeof(msr->sid));
     msr->pubversion = id->pubversion;
 
     /* Loop through segment list */
