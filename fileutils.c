@@ -481,12 +481,12 @@ ms3_readmsr_main (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
  *********************************************************************/
 int
 ms3_readtracelist (MS3TraceList **ppmstl, const char *msfile,
-                   double timetol, double sampratetol, int8_t pubversion,
-                   uint32_t flags, int8_t verbose)
+                   double timetol, double sampratetol,
+                   int8_t splitversion, uint32_t flags, int8_t verbose)
 {
   return ms3_readtracelist_selection (ppmstl, msfile, timetol,
                                       sampratetol, NULL,
-                                      pubversion, flags, verbose);
+                                      splitversion, flags, verbose);
 } /* End of ms3_readtracelist() */
 
 /*********************************************************************
@@ -501,8 +501,8 @@ ms3_readtracelist (MS3TraceList **ppmstl, const char *msfile,
 int
 ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
                            double timetol, double sampratetol,
-                           nstime_t starttime, nstime_t endtime, int8_t pubversion,
-                           uint32_t flags, int8_t verbose)
+                           nstime_t starttime, nstime_t endtime,
+                           int8_t splitversion, uint32_t flags, int8_t verbose)
 {
   MS3Selections selection;
   MS3SelectTime selecttime;
@@ -518,7 +518,7 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
 
   return ms3_readtracelist_selection (ppmstl, msfile, timetol,
                                       sampratetol, &selection,
-                                      pubversion, flags,
+                                      splitversion, flags,
                                       verbose);
 } /* End of ms3_readtracelist_timewin() */
 
@@ -538,7 +538,7 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
 int
 ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
                              double timetol, double sampratetol,
-                             MS3Selections *selections, int8_t pubversion,
+                             MS3Selections *selections, int8_t splitversion,
                              uint32_t flags, int8_t verbose)
 {
   MS3Record *msr = 0;
@@ -574,7 +574,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
     }
 
     /* Add to trace list */
-    mstl3_addmsr (*ppmstl, msr, pubversion, 1, timetol, sampratetol);
+    mstl3_addmsr (*ppmstl, msr, splitversion, 1, timetol, sampratetol);
   }
 
   /* Reset return code to MS_NOERROR on successful read by ms_readmsr() */

@@ -321,6 +321,7 @@ extern MS3TraceList* mstl3_init (MS3TraceList *mstl);
 extern void          mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr);
 extern MS3TraceSeg*  mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
                                    int8_t autoheal, double timetol, double sampratetol);
+
 extern int mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate);
 
 extern int mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
@@ -497,12 +498,12 @@ extern int ms3_readmsr_main (MS3FileParam **ppmsfp, MS3Record **ppmsr, const cha
                              MS3Selections *selections, int8_t verbose);
 
 extern int ms3_readtracelist (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
-                              int8_t pubversion, uint32_t flags, int8_t verbose);
+                              int8_t splitversion, uint32_t flags, int8_t verbose);
 extern int ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
-                                      nstime_t starttime, nstime_t endtime, int8_t pubversion, uint32_t flags,
+                                      nstime_t starttime, nstime_t endtime, int8_t splitversion, uint32_t flags,
                                       int8_t verbose);
 extern int ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
-                                        MS3Selections *selections, int8_t pubversion, uint32_t flags, int8_t verbose);
+                                        MS3Selections *selections, int8_t splitversion, uint32_t flags, int8_t verbose);
 extern int msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
                             uint32_t flags, int8_t verbose);
 extern int mstl3_writemseed (MS3TraceList *mst, const char *msfile, int8_t overwrite,
