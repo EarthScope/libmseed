@@ -322,6 +322,10 @@ extern void          mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr);
 extern MS3TraceSeg*  mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
                                    int8_t autoheal, double timetol, double sampratetol);
 
+extern int64_t       mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
+                                       double timetol, double sampratetol, int8_t splitversion,
+                                       uint32_t flags, int8_t verbose);
+
 extern int mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate);
 
 extern int mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),

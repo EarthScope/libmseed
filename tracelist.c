@@ -604,6 +604,62 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
   return seg;
 } /* End of mstl3_addmsr() */
 
+
+/*********************************************************************
+ * mstl3_parsebuffer:
+ *
+ * Parse miniSEED from a buffer and populate a MS3TraceList.
+ *
+ * If the MSF_UNPACKDATA flag is set in flags, the data samples will
+ * be unpacked and as well.  In most cases the caller probably wants
+ * this flag set, without it the trace list will merely be a list of
+ * channels.
+ *
+ * Return the number of records parsed on success, otherwise a
+ * negative libmseed error code.
+ *********************************************************************/
+int64_t
+mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
+                  double timetol, double sampratetol, int8_t splitversion,
+                  uint32_t flags, int8_t verbose)
+{
+  MS3Record *msr = 0;
+  uint64_t offset = 0;
+  int parsevalue;
+  int64_t reccount = 0;
+
+  if (!ppmstl)
+    return MS_GENERROR;
+
+  /* Initialize MS3TraceList if needed */
+  if (!*ppmstl)
+  {
+    *ppmstl = mstl3_init (*ppmstl);
+
+    if (!*ppmstl)
+      return MS_GENERROR;
+  }
+
+  while ((bufferlength - offset) > MINRECLEN)
+  {
+    parsevalue = msr3_parse (buffer + offset, bufferlength - offset, &msr, flags, verbose);
+
+    if (parsevalue < 0)
+      return parsevalue;
+
+    if (parsevalue > 0)
+      break;
+
+    if (mstl3_addmsr (*ppmstl, msr, splitversion, 1, timetol, sampratetol) == 0)
+      return MS_GENERROR;
+
+    reccount += 1;
+    offset += msr->reclen;
+  }
+
+  return reccount;
+} /* End of mstl3_readbuffer() */
+
 /***************************************************************************
  * mstl3_msr2seg:
  *
