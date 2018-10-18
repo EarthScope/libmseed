@@ -178,7 +178,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type, size_t 
       return MS_GENERROR;
     }
   }
-  /* If no existig headers, initialize a new base object */
+  /* If no existing headers, initialize a new base object */
   else
   {
     rootvalue = json_value_init_object ();

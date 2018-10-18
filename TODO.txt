@@ -15,7 +15,7 @@
 
 
 Extra handling:
-- Fetch/extraction for event detection, calibration and timing structures
+- Fetch/extraction for event detection, calibration, timing, recenter structures
 - Delete methods?
 
 Loss from miniSEED 2.x:
