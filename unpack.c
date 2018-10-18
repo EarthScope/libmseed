@@ -808,7 +808,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
       /* Clock model maps to a single value at FDSN.Clock.Model */
       ms_strncpcleantail (sval, pMS2B500_CLOCKMODEL (record + blkt_offset), 32);
-      mseh_set_string (msr, "FDSN.Clock.Model", sval, strlen (sval));
+      mseh_set_string (msr, "FDSN.Clock.Model", sval);
     }
 
     else if (blkt_type == 1000)

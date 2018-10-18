@@ -432,14 +432,14 @@ typedef struct MSEHRecenter_s
   char trigger[30]; /**< Trigger, e.g. AUTOMATIC or MANUAL, zero length = not included */
 } MSEHRecenter;
 
-#define mseh_get(msr, path, valueptr, type, length) \
-  mseh_get_path (msr, path, valueptr, type, length)
+#define mseh_get(msr, path, valueptr, type, maxlength) \
+  mseh_get_path (msr, path, valueptr, type, maxlength)
 
 #define mseh_get_number(msr, path, valueptr) \
   mseh_get_path (msr, path, valueptr, 'n', 0)
 
-#define mseh_get_string(msr, path, buffer, length) \
-  mseh_get_path (msr, path, buffer, 's', length)
+#define mseh_get_string(msr, path, buffer, maxlength) \
+  mseh_get_path (msr, path, buffer, 's', maxlength)
 
 #define mseh_get_boolean(msr, path, valueptr) \
   mseh_get_path (msr, path, valueptr, 'b', 0)
@@ -448,22 +448,22 @@ typedef struct MSEHRecenter_s
   !mseh_get_path (msr, path, NULL, 0, 0)
 
 extern int mseh_get_path (MS3Record *msr, const char *path,
-                          void *value, char type, size_t length);
+                          void *value, char type, size_t maxlength);
 
-#define mseh_set(msr, path, valueptr, type, length) \
-  mseh_set_path (msr, path, valueptr, type, length)
+#define mseh_set(msr, path, valueptr, type) \
+  mseh_set_path (msr, path, valueptr, type)
 
 #define mseh_set_number(msr, path, valueptr) \
-  mseh_set_path (msr, path, valueptr, 'n', 0)
+  mseh_set_path (msr, path, valueptr, 'n')
 
-#define mseh_set_string(msr, path, valueptr, length) \
-  mseh_set_path (msr, path, valueptr, 's', length)
+#define mseh_set_string(msr, path, valueptr) \
+  mseh_set_path (msr, path, valueptr, 's')
 
 #define mseh_set_boolean(msr, path, valueptr) \
-  mseh_set_path (msr, path, valueptr, 'b', 0)
+  mseh_set_path (msr, path, valueptr, 'b')
 
 extern int mseh_set_path (MS3Record *msr, const char *path,
-                          void *value, char type, size_t length);
+                          void *value, char type);
 
 extern int mseh_add_event_detection (MS3Record *msr, const char *path,
                                      MSEHEventDetection *eventdetection);

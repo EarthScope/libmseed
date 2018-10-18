@@ -26,7 +26,7 @@
  * type  expected type for 'value'
  * ----  -------------------------
  * n     double
- * s     unsigned char* (maximum length is: 'length' - 1)
+ * s     char* (maximum length is: 'length' - 1)
  * b     int (boolean value of 0 or 1)
  *
  * Returns:
@@ -36,7 +36,7 @@
  *   otherwise a (negative) libmseed error code.
  ***************************************************************************/
 int
-mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t length)
+mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t maxlength)
 {
   JSON_Object *rootobject = NULL;
   JSON_Value *rootvalue = NULL;
@@ -94,7 +94,8 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
     if (value)
     {
       stringvalue = json_value_get_string (extravalue);
-      strncpy ((char *)value, stringvalue, length);
+      strncpy ((char *)value, stringvalue, maxlength - 1);
+      ((char *)value)[maxlength - 1] = '\0';
     }
   }
   else if (type == 'b' && valuetype == JSONBoolean)
@@ -111,7 +112,7 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
   json_value_free(rootvalue);
 
   return retval;
-} /* End of mseh_fetch_path() */
+} /* End of mseh_get_path() */
 
 /***************************************************************************
  * mseh_set_path:
@@ -128,7 +129,7 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
  * type  expected type for 'value'
  * ----  -------------------------
  * n     double
- * s     unsigned char* (of 'length' bytes)
+ * s     char*
  * b     int (boolean value of 0 or 1)
  * A     Array element as JSON_Value*
  *
@@ -137,7 +138,7 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
  *   otherwise a (negative) libmseed error code.
  ***************************************************************************/
 int
-mseh_set_path (MS3Record *msr, const char *path, void *value, char type, size_t length)
+mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
 {
   JSON_Object *rootobject = NULL;
   JSON_Value *rootvalue = NULL;
@@ -395,7 +396,7 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
   }
 
   /* Add new object to array, created 'value' will be free'd on successful return */
-  if (mseh_set_path (msr, (path) ? path : "FDSN.Event.Detection", value, 'A', 0))
+  if (mseh_set_path (msr, (path) ? path : "FDSN.Event.Detection", value, 'A'))
   {
     ms_log (2, "mseh_add_event_detection(): Cannot add new array entry\n");
     if (value)
@@ -545,7 +546,7 @@ mseh_add_calibration (MS3Record *msr, const char *path,
   }
 
   /* Add new object to array, created 'value' will be free'd on successful return */
-  if (mseh_set_path (msr, (path) ? path : "FDSN.Calibration.Sequence", value, 'A', 0))
+  if (mseh_set_path (msr, (path) ? path : "FDSN.Calibration.Sequence", value, 'A'))
   {
     ms_log (2, "mseh_add_calibration(): Cannot add new array entry\n");
     if (value)
@@ -635,7 +636,7 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
   }
 
   /* Add new object to array, created 'value' will be free'd on successful return */
-  if (mseh_set_path (msr, (path) ? path : "FDSN.Time.Exception", value, 'A', 0))
+  if (mseh_set_path (msr, (path) ? path : "FDSN.Time.Exception", value, 'A'))
   {
     ms_log (2, "mseh_add_timing_exception(): Cannot add new array entry\n");
     if (value)
@@ -724,7 +725,7 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
   }
 
   /* Add new object to array, created 'value' will be free'd on successful return */
-  if (mseh_set_path (msr, (path) ? path : "FDSN.Recenter.Sequence", value, 'A', 0))
+  if (mseh_set_path (msr, (path) ? path : "FDSN.Recenter.Sequence", value, 'A'))
   {
     ms_log (2, "mseh_add_recenter(): Cannot add new array entry\n");
     if (value)
