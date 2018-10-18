@@ -1,4 +1,4 @@
- /***************************************************************************
+/***************************************************************************
  * extraheaders.c
  *
  * Routines for dealing with libmseed extra headers stored as JSON.
@@ -39,11 +39,11 @@ int
 mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t maxlength)
 {
   JSON_Object *rootobject = NULL;
-  JSON_Value *rootvalue = NULL;
-  JSON_Value *extravalue = NULL;
+  JSON_Value *rootvalue   = NULL;
+  JSON_Value *extravalue  = NULL;
   JSON_Value_Type valuetype;
   const char *stringvalue = NULL;
-  int retval = 0;
+  int retval              = 0;
 
   if (!msr || !path)
     return MS_GENERROR;
@@ -69,7 +69,7 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
   if (!rootobject)
   {
     ms_log (2, "mseh_fetch_path(): Extra headers are not a JSON object\n");
-    json_value_free(rootvalue);
+    json_value_free (rootvalue);
     return MS_GENERROR;
   }
 
@@ -78,7 +78,7 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
 
   if (!extravalue)
   {
-    json_value_free(rootvalue);
+    json_value_free (rootvalue);
     return 1;
   }
 
@@ -87,7 +87,7 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
   if (type == 'n' && valuetype == JSONNumber)
   {
     if (value)
-      *((double*)value) = json_value_get_number (extravalue);
+      *((double *)value) = json_value_get_number (extravalue);
   }
   else if (type == 's' && valuetype == JSONString)
   {
@@ -101,7 +101,7 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
   else if (type == 'b' && valuetype == JSONBoolean)
   {
     if (value)
-      *((int*)value) = json_value_get_boolean (extravalue);
+      *((int *)value) = json_value_get_boolean (extravalue);
   }
   /* Return wrong type indicator if a value was requested */
   else if (value)
@@ -109,7 +109,7 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
     retval = 2;
   }
 
-  json_value_free(rootvalue);
+  json_value_free (rootvalue);
 
   return retval;
 } /* End of mseh_get_path() */
@@ -140,11 +140,11 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
 int
 mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
 {
-  JSON_Object *rootobject = NULL;
-  JSON_Value *rootvalue = NULL;
-  JSON_Array *array = NULL;
+  JSON_Object *rootobject  = NULL;
+  JSON_Value *rootvalue    = NULL;
+  JSON_Array *array        = NULL;
   size_t serializationsize = 0;
-  char *serialized = NULL;
+  char *serialized         = NULL;
 
 #define EVALSET(KEY, SET)                                 \
   if (SET != JSONSuccess)                                 \
@@ -182,7 +182,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
   /* If no existing headers, initialize a new base object */
   else
   {
-    rootvalue = json_value_init_object ();
+    rootvalue  = json_value_init_object ();
     rootobject = json_value_get_object (rootvalue);
 
     if (!rootobject)
@@ -272,7 +272,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
   /* Set new extra headers, replacing existing headers */
   if (msr->extra)
     free (msr->extra);
-  msr->extra = serialized;
+  msr->extra       = serialized;
   msr->extralength = (uint16_t)serializationsize - 1;
 
   return 0;
@@ -294,9 +294,9 @@ int
 mseh_add_event_detection (MS3Record *msr, const char *path,
                           MSEHEventDetection *eventdetection)
 {
-  JSON_Value *value = NULL;
+  JSON_Value *value   = NULL;
   JSON_Object *object = NULL;
-  JSON_Array *array = NULL;
+  JSON_Array *array   = NULL;
   char timestring[31];
   char *cp = NULL;
 
@@ -313,14 +313,14 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
     return MS_GENERROR;
 
   /* Initialize a new object */
-  value = json_value_init_object();
-  object = json_value_get_object(value);
+  value  = json_value_init_object ();
+  object = json_value_get_object (value);
 
   if (!object)
   {
     ms_log (2, "mseh_add_event_detection(): Cannot initialize new JSON object\n");
     if (value)
-      json_value_free(value);
+      json_value_free (value);
     return MS_GENERROR;
   }
 
@@ -356,15 +356,15 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
     while (*cp)
       cp++;
     *cp++ = 'Z';
-    *cp = '\0';
+    *cp   = '\0';
 
     EVALSET ("OnsetTime", json_object_set_string (object, "OnsetTime", timestring));
   }
-  if (memcmp (eventdetection->medsnr, (uint8_t []){0,0,0,0,0,0}, 6))
+  if (memcmp (eventdetection->medsnr, (uint8_t[]){0, 0, 0, 0, 0, 0}, 6))
   {
-    EVALSET ("MEDSNR", json_object_set_value(object, "MEDSNR", json_value_init_array()));
+    EVALSET ("MEDSNR", json_object_set_value (object, "MEDSNR", json_value_init_array ()));
 
-    array = json_object_get_array(object, "MEDSNR");
+    array = json_object_get_array (object, "MEDSNR");
 
     if (!array)
     {
@@ -375,12 +375,12 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
     }
 
     /* Array containing the 6 SNR values */
-    EVALSET ("MEDSNR-0", json_array_append_number(array, (double)eventdetection->medsnr[0]));
-    EVALSET ("MEDSNR-1", json_array_append_number(array, (double)eventdetection->medsnr[1]));
-    EVALSET ("MEDSNR-2", json_array_append_number(array, (double)eventdetection->medsnr[2]));
-    EVALSET ("MEDSNR-3", json_array_append_number(array, (double)eventdetection->medsnr[3]));
-    EVALSET ("MEDSNR-4", json_array_append_number(array, (double)eventdetection->medsnr[4]));
-    EVALSET ("MEDSNR-5", json_array_append_number(array, (double)eventdetection->medsnr[5]));
+    EVALSET ("MEDSNR-0", json_array_append_number (array, (double)eventdetection->medsnr[0]));
+    EVALSET ("MEDSNR-1", json_array_append_number (array, (double)eventdetection->medsnr[1]));
+    EVALSET ("MEDSNR-2", json_array_append_number (array, (double)eventdetection->medsnr[2]));
+    EVALSET ("MEDSNR-3", json_array_append_number (array, (double)eventdetection->medsnr[3]));
+    EVALSET ("MEDSNR-4", json_array_append_number (array, (double)eventdetection->medsnr[4]));
+    EVALSET ("MEDSNR-5", json_array_append_number (array, (double)eventdetection->medsnr[5]));
   }
   if (eventdetection->medlookback >= 0)
   {
@@ -423,7 +423,7 @@ int
 mseh_add_calibration (MS3Record *msr, const char *path,
                       MSEHCalibration *calibration)
 {
-  JSON_Value *value = NULL;
+  JSON_Value *value   = NULL;
   JSON_Object *object = NULL;
   char beginstring[31];
   char endstring[31];
@@ -442,14 +442,14 @@ mseh_add_calibration (MS3Record *msr, const char *path,
     return MS_GENERROR;
 
   /* Initialize a new object */
-  value = json_value_init_object();
-  object = json_value_get_object(value);
+  value  = json_value_init_object ();
+  object = json_value_get_object (value);
 
   if (!object)
   {
     ms_log (2, "mseh_add_calibration(): Cannot initialize new JSON object\n");
     if (value)
-      json_value_free(value);
+      json_value_free (value);
     return MS_GENERROR;
   }
 
@@ -465,7 +465,7 @@ mseh_add_calibration (MS3Record *msr, const char *path,
     while (*cp)
       cp++;
     *cp++ = 'Z';
-    *cp = '\0';
+    *cp   = '\0';
 
     EVALSET ("BeginTime", json_object_set_string (object, "BeginTime", beginstring));
   }
@@ -476,7 +476,7 @@ mseh_add_calibration (MS3Record *msr, const char *path,
     while (*cp)
       cp++;
     *cp++ = 'Z';
-    *cp = '\0';
+    *cp   = '\0';
 
     EVALSET ("EndTime", json_object_set_string (object, "EndTime", endstring));
   }
@@ -573,7 +573,7 @@ int
 mseh_add_timing_exception (MS3Record *msr, const char *path,
                            MSEHTimingException *exception)
 {
-  JSON_Value *value = NULL;
+  JSON_Value *value   = NULL;
   JSON_Object *object = NULL;
   char timestring[31];
   char *cp = NULL;
@@ -591,14 +591,14 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
     return MS_GENERROR;
 
   /* Initialize a new object */
-  value = json_value_init_object();
-  object = json_value_get_object(value);
+  value  = json_value_init_object ();
+  object = json_value_get_object (value);
 
   if (!object)
   {
     ms_log (2, "mseh_add_timing_exception(): Cannot initialize new JSON object\n");
     if (value)
-      json_value_free(value);
+      json_value_free (value);
     return MS_GENERROR;
   }
 
@@ -614,7 +614,7 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
     while (*cp)
       cp++;
     *cp++ = 'Z';
-    *cp = '\0';
+    *cp   = '\0';
 
     EVALSET ("Time", json_object_set_string (object, "Time", timestring));
   }
@@ -662,33 +662,33 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
 int
 mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
 {
-  JSON_Value *value = NULL;
+  JSON_Value *value   = NULL;
   JSON_Object *object = NULL;
   char beginstring[31];
   char endstring[31];
   char *cp = NULL;
 
-#define EVALSET(KEY, SET)                                             \
-  if (SET != JSONSuccess)                                             \
-  {                                                                   \
+#define EVALSET(KEY, SET)                                     \
+  if (SET != JSONSuccess)                                     \
+  {                                                           \
     ms_log (2, "mseh_add_recenter(): Cannot set: %s\n", KEY); \
-    if (value)                                                        \
-      json_value_free (value);                                        \
-    return MS_GENERROR;                                               \
+    if (value)                                                \
+      json_value_free (value);                                \
+    return MS_GENERROR;                                       \
   }
 
   if (!msr || !recenter)
     return MS_GENERROR;
 
   /* Initialize a new object */
-  value = json_value_init_object();
-  object = json_value_get_object(value);
+  value  = json_value_init_object ();
+  object = json_value_get_object (value);
 
   if (!object)
   {
     ms_log (2, "mseh_add_recenter(): Cannot initialize new JSON object\n");
     if (value)
-      json_value_free(value);
+      json_value_free (value);
     return MS_GENERROR;
   }
 
@@ -704,7 +704,7 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
     while (*cp)
       cp++;
     *cp++ = 'Z';
-    *cp = '\0';
+    *cp   = '\0';
 
     EVALSET ("BeginTime", json_object_set_string (object, "BeginTime", beginstring));
   }
@@ -715,7 +715,7 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
     while (*cp)
       cp++;
     *cp++ = 'Z';
-    *cp = '\0';
+    *cp   = '\0';
 
     EVALSET ("EndTime", json_object_set_string (object, "EndTime", endstring));
   }
@@ -740,8 +740,7 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
 /***************************************************************************
  * mseh_print:
  *
- * Print the extra header (CBOR Map) structure for the specified
- * MS3Record.
+ * Print the extra header structure for the specified MS3Record.
  *
  * Output is printed in a pretty, formatted form for readability and
  * the root object is not printed.
@@ -763,7 +762,7 @@ mseh_print (MS3Record *msr, int indent)
 
   extra = msr->extra;
 
-  if ( extra[0] != '{' || extra[msr->extralength-1] != '}')
+  if (extra[0] != '{' || extra[msr->extralength - 1] != '}')
   {
     ms_log (1, "Warning, something is wrong, extra headers are not a clean {object}\n");
   }
@@ -779,30 +778,30 @@ mseh_print (MS3Record *msr, int indent)
 
     if (!instring)
     {
-      if ( extra[idx] == ':')
+      if (extra[idx] == ':')
       {
         ms_log (0, ": ");
       }
-      else if ( extra[idx] == ',')
+      else if (extra[idx] == ',')
       {
         ms_log (0, ",\n%*s", indent, "");
       }
-      else if ( extra[idx] == '{' )
+      else if (extra[idx] == '{')
       {
         indent += 2;
         ms_log (0, "{\n%*s", indent, "");
       }
-      else if ( extra[idx] == '[' )
+      else if (extra[idx] == '[')
       {
         indent += 2;
         ms_log (0, "[\n%*s", indent, "");
       }
-      else if ( extra[idx] == '}' )
+      else if (extra[idx] == '}')
       {
         indent -= 2;
         ms_log (0, "\n%*s}", indent, "");
       }
-      else if ( extra[idx] == ']' )
+      else if (extra[idx] == ']')
       {
         indent -= 2;
         ms_log (0, "\n%*s]", indent, "");
