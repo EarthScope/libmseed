@@ -517,7 +517,7 @@ mst_addmsr (MSTrace *mst, MSRecord *msr, flag whence)
       mst->dataquality = 0;
 
     /* Update MSTrace sample count */
-    mst->samplecnt += msr->samplecnt;
+    mst->samplecnt += msr->numsamples;
   }
 
   return 0;
