@@ -438,7 +438,7 @@ mst_addmsr (MSTrace *mst, MSRecord *msr, flag whence)
 {
   int samplesize = 0;
 
-  if (!mst || !msr)
+  if (!mst || !msr || (whence != 1 && whence != 2))
     return -1;
 
   /* Reallocate data sample buffer if samples are present */
@@ -549,7 +549,7 @@ mst_addspan (MSTrace *mst, hptime_t starttime, hptime_t endtime,
 {
   int samplesize = 0;
 
-  if (!mst)
+  if (!mst || (whence != 1 && whence != 2))
     return -1;
 
   if (datasamples && numsamples > 0)
