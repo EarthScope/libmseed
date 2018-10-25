@@ -255,6 +255,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   MS3Record *msr = NULL;
   char errorsid[64];
 
+  int length;
   int ione = 1;
   double dval;
   char sval[64];
@@ -832,8 +833,19 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     {
       B1001offset = blkt_offset;
 
-      dval = (double) *pMS2B1001_TIMINGQUALITY (record + blkt_offset);
-      mseh_set_number (msr, "FDSN.Time.Quality", &dval);
+      /* Optimization: if no other extra headers yet, directly print this common value */
+      if (msr->extralength == 0)
+      {
+        length = snprintf (sval, sizeof(sval), "{\"FDSN\":{\"Time\":{\"Quality\":%d}}}",
+                           *pMS2B1001_TIMINGQUALITY (record + blkt_offset));
+        msr->extra = strdup(sval);
+        msr->extralength = length;
+      }
+      else
+      {
+        dval = (double) *pMS2B1001_TIMINGQUALITY (record + blkt_offset);
+        mseh_set_number (msr, "FDSN.Time.Quality", &dval);
+      }
     }
 
     else if (blkt_type == 2000)

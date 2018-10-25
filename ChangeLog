@@ -20,9 +20,10 @@ V3 changes:
 	- Remove record length specifier from many parsing routines, always autodetermined.
 	- Remove capability to read the deprecated "pack" file format used at IRIS DMC.
 	- Remove MS_ISVALIDBLANK macro, was only used for notification of archaic structure.
-	- Add CBOR handling (cbor.c and extraheaders.c) for extra headers.
+	- Add JSON handling for extra headers.
 	- Add crc32c.c for CRC-32C calculation, new ms_crc32c().
 	- Set msr->swapflag bit flags to indicate if header and payload need swapping.
+	- Added mstl3_readbuffer()
 
 2017.283: 2.19.5
 	- msr_endtime(): calculate correct end time during a leap second.
