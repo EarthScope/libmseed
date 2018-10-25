@@ -16,7 +16,6 @@
 
 Extra handling:
 - Fetch/extraction for event detection, calibration, timing, recenter structures
-- Delete methods?
 
 Loss from miniSEED 2.x:
 - Beam 400 & 405

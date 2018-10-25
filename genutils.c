@@ -150,21 +150,92 @@ int
 ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
               char *net, char *sta, char *loc, char *chan)
 {
-  int printed;
+  char *sptr = sid;
+  int needed = 0;
 
   if (!sid)
     return -1;
 
-  printed = snprintf (sid, sidlen, "XFDSN:%s_%s_%s_%s",
-                      (net) ? net : "",
-                      (sta) ? sta : "",
-                      (loc) ? loc : "",
-                      (chan) ? chan : "");
-
-  if (printed >= sidlen)
+  if (sidlen < 13)
     return -1;
 
-  return printed;
+  *sptr++ = 'X';
+  *sptr++ = 'F';
+  *sptr++ = 'D';
+  *sptr++ = 'S';
+  *sptr++ = 'N';
+  *sptr++ = ':';
+  needed = 6;
+
+  if (net)
+  {
+    while (*net)
+    {
+      if ((sptr - sid) < sidlen)
+        *sptr++ = *net;
+
+      net++;
+      needed++;
+    }
+  }
+
+  if ((sptr - sid) < sidlen)
+    *sptr++ = '_';
+  needed++;
+
+  if (sta)
+  {
+    while (*sta)
+    {
+      if ((sptr - sid) < sidlen)
+        *sptr++ = *sta;
+
+      sta++;
+      needed++;
+    }
+  }
+
+  if ((sptr - sid) < sidlen)
+    *sptr++ = '_';
+  needed++;
+
+  if (loc)
+  {
+    while (*loc)
+    {
+      if ((sptr - sid) < sidlen)
+        *sptr++ = *loc;
+
+      loc++;
+      needed++;
+    }
+  }
+
+  if ((sptr - sid) < sidlen)
+    *sptr++ = '_';
+  needed++;
+
+  if (chan)
+  {
+    while (*chan)
+    {
+      if ((sptr - sid) < sidlen)
+        *sptr++ = *chan;
+
+      chan++;
+      needed++;
+    }
+  }
+
+  if ((sptr - sid) < sidlen)
+    *sptr = '\0';
+  else
+    *--sptr = '\0';
+
+  if (needed >= sidlen)
+    return -1;
+
+  return (sptr - sid);
 } /* End of ms_nslc2sid() */
 
 
