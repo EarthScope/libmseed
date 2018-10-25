@@ -16,7 +16,7 @@ extern "C" {
 #define STEIM2_FRAME_MAX_SAMPLES 105
 
 /* Control for printing debugging information, declared in packdata.c */
-extern int encodedebug;
+extern int libmseed_encodedebug;
 
 extern int msr_encode_text (char *input, int samplecount, char *output,
                             int outputlength);
