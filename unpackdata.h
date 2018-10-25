@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 /* Control for printing debugging information, declared in unpackdata.c */
-extern int decodedebug;
+extern int libmseed_decodedebug;
 
 extern int msr_decode_int16 (int16_t *input, int64_t samplecount, int32_t *output,
                              int64_t outputlength, int swapflag);

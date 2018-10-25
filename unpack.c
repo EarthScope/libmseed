@@ -1101,8 +1101,13 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   }
 
   /* Check for decode debugging environment variable */
-  if (getenv ("DECODE_DEBUG"))
-    decodedebug = 1;
+  if (libmseed_decodedebug < 0)
+  {
+    if (getenv ("DECODE_DEBUG"))
+      libmseed_decodedebug = 1;
+    else
+      libmseed_decodedebug = 0;
+  }
 
   /* Sanity check record length */
   if (msr->reclen == -1)
