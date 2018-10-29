@@ -510,7 +510,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     if (verbose > 1)
       ms_log (1, "%s: Packing ASCII data\n", sid);
 
-    nsamples = msr_encode_text (src, maxsamples, dest, maxdatabytes);
+    nsamples = msr_encode_text ((char *)src, maxsamples, (char *)dest, maxdatabytes);
 
     if (byteswritten && nsamples > 0)
       *byteswritten = nsamples;
@@ -528,7 +528,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     if (verbose > 1)
       ms_log (1, "%s: Packing INT16 data samples\n", sid);
 
-    nsamples = msr_encode_int16 (src, maxsamples, dest, maxdatabytes, swapflag);
+    nsamples = msr_encode_int16 ((int32_t *)src, maxsamples, (int16_t *)dest, maxdatabytes, swapflag);
 
     if (byteswritten && nsamples > 0)
       *byteswritten = nsamples * 2;
@@ -546,7 +546,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     if (verbose > 1)
       ms_log (1, "%s: Packing INT32 data samples\n", sid);
 
-    nsamples = msr_encode_int32 (src, maxsamples, dest, maxdatabytes, swapflag);
+    nsamples = msr_encode_int32 ((int32_t *)src, maxsamples, (int32_t *)dest, maxdatabytes, swapflag);
 
     if (byteswritten && nsamples > 0)
       *byteswritten = nsamples * 4;
@@ -564,7 +564,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     if (verbose > 1)
       ms_log (1, "%s: Packing FLOAT32 data samples\n", sid);
 
-    nsamples = msr_encode_float32 (src, maxsamples, dest, maxdatabytes, swapflag);
+    nsamples = msr_encode_float32 ((float *)src, maxsamples, (float *)dest, maxdatabytes, swapflag);
 
     if (byteswritten && nsamples > 0)
       *byteswritten = nsamples * 4;
@@ -582,7 +582,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     if (verbose > 1)
       ms_log (1, "%s: Packing FLOAT64 data samples\n", sid);
 
-    nsamples = msr_encode_float64 (src, maxsamples, dest, maxdatabytes, swapflag);
+    nsamples = msr_encode_float64 ((double *)src, maxsamples, (double *)dest, maxdatabytes, swapflag);
 
     if (byteswritten && nsamples > 0)
       *byteswritten = nsamples * 8;
@@ -603,7 +603,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     /* Always big endian Steim1 */
     swapflag = (ms_bigendianhost()) ? 0 : 1;
 
-    nsamples = msr_encode_steim1 (src, maxsamples, dest, maxdatabytes, 0, byteswritten, swapflag);
+    nsamples = msr_encode_steim1 ((int32_t *)src, maxsamples, (int32_t *)dest, maxdatabytes, 0, byteswritten, swapflag);
 
     break;
 
@@ -621,7 +621,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     /* Always big endian Steim2 */
     swapflag = (ms_bigendianhost()) ? 0 : 1;
 
-    nsamples = msr_encode_steim2 (src, maxsamples, dest, maxdatabytes, 0, byteswritten, sid, swapflag);
+    nsamples = msr_encode_steim2 ((int32_t *)src, maxsamples, (int32_t *)dest, maxdatabytes, 0, byteswritten, sid, swapflag);
 
     break;
 

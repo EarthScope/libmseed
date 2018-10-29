@@ -641,7 +641,7 @@ msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
                  uint32_t flags, int8_t verbose)
 {
   FILE *ofp;
-  char *perms = (overwrite) ? "wb" : "ab";
+  const char *perms = (overwrite) ? "wb" : "ab";
   int64_t packedrecords = 0;
 
   if (!msr || !msfile)
@@ -691,7 +691,7 @@ mstl3_writemseed (MS3TraceList *mstl, const char *msfile, int8_t overwrite,
   MS3TraceID *tid;
   MS3TraceSeg *seg;
   FILE *ofp;
-  char *perms = (overwrite) ? "wb" : "ab";
+  const char *perms = (overwrite) ? "wb" : "ab";
   int64_t segpackedrecords = 0;
   int64_t packedrecords = 0;
 

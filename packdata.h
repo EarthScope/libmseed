@@ -12,6 +12,8 @@
 extern "C" {
 #endif
 
+#include "libmseed.h"
+
 #define STEIM1_FRAME_MAX_SAMPLES 60
 #define STEIM2_FRAME_MAX_SAMPLES 105
 

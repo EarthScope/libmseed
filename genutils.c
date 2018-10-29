@@ -1073,7 +1073,7 @@ ms_dabs (double val)
  * error, and -2 when the environment variable is not set.
  ***************************************************************************/
 int
-ms_readleapseconds (char *envvarname)
+ms_readleapseconds (const char *envvarname)
 {
   char *filename;
 
@@ -1096,7 +1096,7 @@ ms_readleapseconds (char *envvarname)
  * Returns positive number of leap seconds read on success and -1 on error.
  ***************************************************************************/
 int
-ms_readleapsecondfile (char *filename)
+ms_readleapsecondfile (const char *filename)
 {
   FILE *fp = NULL;
   LeapSecond *ls = NULL;

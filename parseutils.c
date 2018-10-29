@@ -282,7 +282,7 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
   int retval = 0;
   int8_t swapflag;
   uint8_t sidlength;
-  char *sid = "";
+  char *sid = NULL;
 
   if (!record)
     return 1;
@@ -745,7 +745,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
     int blkt_length;
     uint16_t blkt_type;
     uint16_t next_blkt;
-    char *blkt_desc;
+    const char *blkt_desc;
 
     /* Traverse blockette chain */
     while (blkt_offset != 0 && blkt_offset < maxreclen)

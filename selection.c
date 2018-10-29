@@ -15,8 +15,8 @@
 
 #include "libmseed.h"
 
-static int ms_isinteger (char *string);
-static int ms_globmatch (char *string, char *pattern);
+static int ms_isinteger (const char *string);
+static int ms_globmatch (const char *string, const char *pattern);
 
 /***************************************************************************
  * ms3_matchselect:
@@ -635,7 +635,7 @@ ms3_printselections (MS3Selections *selections)
  * Returns 1 if is integer and 0 otherwise.
  ***************************************************************************/
 static int
-ms_isinteger (char *string)
+ms_isinteger (const char *string)
 {
   while (*string)
   {
@@ -699,7 +699,7 @@ ms_isinteger (char *string)
  * Return 0 if string does not match pattern and non-zero otherwise.
  **********************************************************************/
 static int
-ms_globmatch (char *string, char *pattern)
+ms_globmatch (const char *string, const char *pattern)
 {
   int negate;
   int match;

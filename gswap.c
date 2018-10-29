@@ -107,7 +107,7 @@ ms_gswap8 (void *data8)
 void
 ms_gswap2a (void *data2)
 {
-  uint16_t *data = data2;
+  uint16_t *data = (uint16_t *) data2;
 
   *data = (((*data >> 8) & 0xff) | ((*data & 0xff) << 8));
 }
@@ -115,7 +115,7 @@ ms_gswap2a (void *data2)
 void
 ms_gswap4a (void *data4)
 {
-  uint32_t *data = data4;
+  uint32_t *data = (uint32_t *) data4;
 
   *data = (((*data >> 24) & 0xff) | ((*data & 0xff) << 24) |
            ((*data >> 8) & 0xff00) | ((*data & 0xff00) << 8));
@@ -124,7 +124,7 @@ ms_gswap4a (void *data4)
 void
 ms_gswap8a (void *data8)
 {
-  uint32_t *data4 = data8;
+  uint32_t *data4 = (uint32_t *) data8;
   uint32_t h0, h1;
 
   h0 = data4[0];

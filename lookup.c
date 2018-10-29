@@ -41,7 +41,7 @@ ms_samplesize (const char sampletype)
  *
  * Returns a string describing a data encoding format.
  ***************************************************************************/
-char *
+const char *
 ms_encodingstr (const char encoding)
 {
   switch (encoding)
@@ -118,7 +118,7 @@ ms_encodingstr (const char encoding)
  * Return a string describing a given libmseed error code or NULL if the
  * code is unknown.
  ***************************************************************************/
-char *
+const char *
 ms_errorstr (int errorcode)
 {
   switch (errorcode)

@@ -562,8 +562,8 @@ msr_sampratehz (MS3Record *msr)
 
 /* Lookup functions */
 extern uint8_t  ms_samplesize (const char sampletype);
-extern char*    ms_encodingstr (const char encoding);
-extern char *   ms_errorstr (int errorcode);
+extern const char* ms_encodingstr (const char encoding);
+extern const char* ms_errorstr (int errorcode);
 
 /* Logging facility */
 #define MAX_LOG_MSG_LENGTH  200      /* Maximum length of log messages */
@@ -609,8 +609,8 @@ typedef struct LeapSecond_s
 } LeapSecond;
 
 extern LeapSecond *leapsecondlist;
-extern int ms_readleapseconds (char *envvarname);
-extern int ms_readleapsecondfile (char *filename);
+extern int ms_readleapseconds (const char *envvarname);
+extern int ms_readleapsecondfile (const char *filename);
 
 /* Generic byte swapping routines */
 extern void ms_gswap2 ( void *data2 );

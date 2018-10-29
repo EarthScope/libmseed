@@ -12,6 +12,8 @@
 extern "C" {
 #endif
 
+#include "libmseed.h"
+
 /* Control for printing debugging information, declared in unpackdata.c */
 extern int libmseed_decodedebug;
 

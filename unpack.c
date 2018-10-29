@@ -1234,7 +1234,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
       ms_log (1, "%s: Unpacking INT16 data samples\n", msr->sid);
 
     nsamples = msr_decode_int16 ((int16_t *)encoded, msr->samplecnt,
-                                 msr->datasamples, unpacksize, msr->swapflag & MSSWAP_PAYLOAD);
+                                 (int32_t *)msr->datasamples, unpacksize, msr->swapflag & MSSWAP_PAYLOAD);
 
     msr->sampletype = 'i';
     break;
@@ -1244,7 +1244,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
       ms_log (1, "%s: Unpacking INT32 data samples\n", msr->sid);
 
     nsamples = msr_decode_int32 ((int32_t *)encoded, msr->samplecnt,
-                                 msr->datasamples, unpacksize, msr->swapflag & MSSWAP_PAYLOAD);
+                                 (int32_t *)msr->datasamples, unpacksize, msr->swapflag & MSSWAP_PAYLOAD);
 
     msr->sampletype = 'i';
     break;
@@ -1254,7 +1254,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
       ms_log (1, "%s: Unpacking FLOAT32 data samples\n", msr->sid);
 
     nsamples = msr_decode_float32 ((float *)encoded, msr->samplecnt,
-                                   msr->datasamples, unpacksize, msr->swapflag & MSSWAP_PAYLOAD);
+                                   (float *)msr->datasamples, unpacksize, msr->swapflag & MSSWAP_PAYLOAD);
 
     msr->sampletype = 'f';
     break;
@@ -1264,7 +1264,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
       ms_log (1, "%s: Unpacking FLOAT64 data samples\n", msr->sid);
 
     nsamples = msr_decode_float64 ((double *)encoded, msr->samplecnt,
-                                   msr->datasamples, unpacksize, msr->swapflag & MSSWAP_PAYLOAD);
+                                   (double *)msr->datasamples, unpacksize, msr->swapflag & MSSWAP_PAYLOAD);
 
     msr->sampletype = 'd';
     break;
@@ -1274,7 +1274,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
       ms_log (1, "%s: Unpacking Steim1 data frames\n", msr->sid);
 
     nsamples = msr_decode_steim1 ((int32_t *)encoded, datasize, msr->samplecnt,
-                                  msr->datasamples, unpacksize, msr->sid, msr->swapflag & MSSWAP_PAYLOAD);
+                                  (int32_t *)msr->datasamples, unpacksize, msr->sid, msr->swapflag & MSSWAP_PAYLOAD);
 
     if (nsamples < 0)
     {
@@ -1290,7 +1290,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
       ms_log (1, "%s: Unpacking Steim2 data frames\n", msr->sid);
 
     nsamples = msr_decode_steim2 ((int32_t *)encoded, datasize, msr->samplecnt,
-                                  msr->datasamples, unpacksize, msr->sid, msr->swapflag & MSSWAP_PAYLOAD);
+                                  (int32_t *)msr->datasamples, unpacksize, msr->sid, msr->swapflag & MSSWAP_PAYLOAD);
 
     if (nsamples < 0)
     {
@@ -1314,7 +1314,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
         ms_log (1, "%s: Unpacking GEOSCOPE 16bit gain ranged/4bit exponent data samples\n", msr->sid);
     }
 
-    nsamples = msr_decode_geoscope ((char *)encoded, msr->samplecnt, msr->datasamples,
+    nsamples = msr_decode_geoscope ((char *)encoded, msr->samplecnt, (float *)msr->datasamples,
                                     unpacksize, msr->encoding, msr->sid, msr->swapflag & MSSWAP_PAYLOAD);
 
     msr->sampletype = 'f';
@@ -1324,7 +1324,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
     if (verbose > 1)
       ms_log (1, "%s: Unpacking CDSN encoded data samples\n", msr->sid);
 
-    nsamples = msr_decode_cdsn ((int16_t *)encoded, msr->samplecnt, msr->datasamples,
+    nsamples = msr_decode_cdsn ((int16_t *)encoded, msr->samplecnt, (int32_t *)msr->datasamples,
                                 unpacksize, msr->swapflag & MSSWAP_PAYLOAD);
 
     msr->sampletype = 'i';
@@ -1334,7 +1334,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
     if (verbose > 1)
       ms_log (1, "%s: Unpacking SRO encoded data samples\n", msr->sid);
 
-    nsamples = msr_decode_sro ((int16_t *)encoded, msr->samplecnt, msr->datasamples,
+    nsamples = msr_decode_sro ((int16_t *)encoded, msr->samplecnt, (int32_t *)msr->datasamples,
                                unpacksize, msr->sid, msr->swapflag & MSSWAP_PAYLOAD);
 
     msr->sampletype = 'i';
@@ -1344,7 +1344,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
     if (verbose > 1)
       ms_log (1, "%s: Unpacking DWWSSN encoded data samples\n", msr->sid);
 
-    nsamples = msr_decode_dwwssn ((int16_t *)encoded, msr->samplecnt, msr->datasamples,
+    nsamples = msr_decode_dwwssn ((int16_t *)encoded, msr->samplecnt, (int32_t *)msr->datasamples,
                                   unpacksize, msr->swapflag & MSSWAP_PAYLOAD);
 
     msr->sampletype = 'i';
@@ -1441,7 +1441,7 @@ ms2_recordsid (char *record, char *sid, int sidlen)
  * Return a string describing a given blockette type or NULL if the
  * type is unknown.
  ***************************************************************************/
-char *
+const char *
 ms2_blktdesc (uint16_t blkttype)
 {
   switch (blkttype)
