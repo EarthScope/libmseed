@@ -13,6 +13,8 @@
 extern "C" {
 #endif
 
+#include "libmseed.h"
+
 extern struct tm * ms_gmtime64_r (const int64_t *in_time, struct tm *p);
 
 #ifdef __cplusplus
