@@ -113,7 +113,7 @@ msr3_duplicate (MS3Record *msr, int8_t datadup)
   if (msr->extralength > 0 && msr->extra)
   {
     /* Allocate memory for new FSDH structure */
-    if ((dupmsr->extra = (void *)malloc (msr->extralength)) == NULL)
+    if ((dupmsr->extra = (char *)malloc (msr->extralength)) == NULL)
     {
       ms_log (2, "msr3_duplicate(): Error allocating memory\n");
       msr3_free (&dupmsr);

@@ -1171,7 +1171,7 @@ ms_readleapsecondfile (char *filename)
 
     if (fields == 2)
     {
-      if ((ls = malloc (sizeof (LeapSecond))) == NULL)
+      if ((ls = (LeapSecond *) malloc (sizeof (LeapSecond))) == NULL)
       {
         ms_log (2, "Cannot allocate LeapSecond, out of memory?\n");
         return -1;

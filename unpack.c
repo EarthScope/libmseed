@@ -172,7 +172,7 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
   msr->extralength = HO2u (*pMS3FSDH_EXTRALENGTH (record), msr->swapflag);
   if (msr->extralength)
   {
-    if ((msr->extra = malloc (msr->extralength)) == NULL)
+    if ((msr->extra = (char *)malloc (msr->extralength)) == NULL)
     {
       ms_log (2, "msr3_unpack_mseed2(%s): Cannot allocate memory for extra headers\n", msr->sid);
       return MS_GENERROR;
@@ -1173,7 +1173,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   /* Copy encoded data to aligned/malloc'd buffer if not aligned for sample size */
   if (samplesize && !is_aligned (encoded, samplesize))
   {
-    if ((encoded_allocated = malloc (datasize)) == NULL)
+    if ((encoded_allocated = (char *) malloc (datasize)) == NULL)
     {
       ms_log (2, "msr3_unpack_data(): Cannot allocate memory for encoded data\n");
       return MS_GENERROR;
