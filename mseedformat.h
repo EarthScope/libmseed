@@ -7,6 +7,10 @@
 #ifndef MSEEDFORMAT_H
 #define MSEEDFORMAT_H 1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include "libmseed.h"
 
