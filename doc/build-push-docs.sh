@@ -4,7 +4,7 @@
 DOCDIR=gh-pages
 
 # Documentation build command
-DOCBUILD="naturaldocs -p ndocs --exclude-source ndocs -o HTML $DOCDIR -w working --documented-only"
+DOCBUILD="naturaldocs -p ndocs --exclude-source ndocs -o HTML $DOCDIR -w working --documented-only --rebuild"
 
 while getopts ":Y" o; do
     case "${o}" in
