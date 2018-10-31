@@ -4,7 +4,7 @@
 DOCDIR=gh-pages
 
 # Documentation build command
-DOCBUILD="naturaldocs -p ndocs --exclude-source ndocs -o HTML $DOCDIR -w working"
+DOCBUILD="naturaldocs -p ndocs --exclude-source ndocs -o HTML $DOCDIR -w working --documented-only"
 
 while getopts ":Y" o; do
     case "${o}" in
@@ -45,6 +45,7 @@ cd $DOCDIR || { echo "Cannot change-directory to $DOCDIR, exiting"; exit 1; }
 
 # Init repo, add & commit files, add remote origin
 git init
+touch .nojekyll
 git add .
 git commit -m 'committing documentation'
 
