@@ -1,41 +1,6 @@
+Title: Users Guide
 
-                        An introduction to libmseed
-
-
- -- Introduction --
-
-The Mini-SEED library provides a framework for manipulation of SEED
-data records including the unpacking and packing of data records.
-Functionality is also included for managing waveform data as
-continuous traces.  All structures of SEED 2.4 data records are
-supported with the following exceptions: Blockette 2000 opaque data
-which has an unknown data structure by definition and Blockette 405
-which depends on full SEED (SEED including full ASCII headers) for a
-full data description.
-
-The primary purpose of the library is to hide the details of Mini-SEED
-in order to allow rapid development of Mini-SEED reading/writing
-software.  The framework allows everything from manipulation of
-Mini-SEED on a record-by-record basis to reading of Mini-SEED into
-continuous trace segments to packing of large continuous traces using
-a record template.
-
-Certain common tasks have, through library design, been streamlined,
-for example: reading Mini-SEED records from a file, adding data from
-unpacked records to a group of traces or packing a group of continuous
-traces into Mini-SEED records.
-
-The following data encoding formats are supported for both unpacking
-and packing: ASCII, INT16, INT32, FLOAT32, FLOAT64, STEIM1 and STEIM2.
-The INT and FLOAT encodings each have two versions for quantities with
-a different number of bits of representation.  The STEIM decompression
-produces 32-bit integers; likewise the compression routines require
-32-bit integers as input.  The following data encoding formats are
-supported for unpacking only: GEOSCOPE (24-bit, 16/3 and 16/4 gain
-ranged), CDSN, SRO and DWWSSN.
-
-
- -- Data Records --
+Data Records:
 
 A Mini-SEED record is represented in the library using the data
 structure given below.  This structure is used for both unpacking and
