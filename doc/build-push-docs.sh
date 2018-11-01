@@ -6,13 +6,17 @@ DOCDIR=gh-pages
 # Documentation build command
 DOCBUILD="naturaldocs -p ndocs --exclude-source ndocs -o HTML $DOCDIR -w working --documented-only --rebuild"
 
-while getopts ":Y" o; do
+# Check for command line options
+while getopts ":YN" o; do
     case "${o}" in
         Y)
             PUSHYES=Y
             ;;
+        N)
+            PUSHYES=N
+            ;;
         *)
-            echo "Usage: $0 [-Y]" 1>&2;
+            echo "Usage: $0 [-Y] [-N]" 1>&2;
             exit 1;
             ;;
     esac
@@ -31,6 +35,12 @@ mkdir $DOCDIR || { echo "Cannot create directory '$DOCDIR', exiting"; exit 1; }
 $DOCBUILD || { echo "Error running '$DOCBUILD', exiting"; exit 1; }
 
 GITREMOTE=$(git config --get remote.origin.url)
+
+# Exit if already instructed to not push
+if [[ "$PUSHYES" == "N" ]]; then
+    echo "Exiting without pushing to remote"
+    exit 0
+fi
 
 # Unless pushing already acknowledged ask if docs should be pushed
 if [[ "$PUSHYES" != "Y" ]]; then
