@@ -1,0 +1,119 @@
+/**
+@page tutorial Tutorial
+
+@section common-usage Common usage
+
+Example programs using libmseed are provided in the 'examples'
+directory of the source code distribution.
+
+One of the most common tasks is to read a file of Mini-SEED records
+and either perform some action based on the header values or apply
+some process to the data samples.  This task is greatly simplified by
+using the library functions ms_readmsr(3) and ms_readtraces(3).  The
+ms_readmsr(3) routine will open a specified file and return MSRecord
+structures for each Mini-SEED record it reads from the file.  The
+ms_readtraces(3) routine will do the same except add all the data read
+to a MSTraceGroup, this is ideal for quickly reading data for
+processing.  Both of these routines are able to automatically detect
+record length.
+
+If your application is not designed to read Mini-SEED from files the
+library also provides functions to detect and parse Mini-SEED records
+in memory buffers.  For more information see ms_detect(3) and
+msr_parse(3).
+
+
+Skeleton code for reading a file with ms_readmsr(3):
+
+main() {
+  MSRecord *msr = NULL;
+  int retcode;
+
+  while ( (retcode = msr_readmsr (&msr, filename, 0, NULL, NULL, 1, 0, verbose)) == MS_NOERROR )
+    {
+       /* Do something with the record here, e.g. print */
+       msr_print (msr, verbose);
+    }
+
+  if ( retcode != MS_ENDOFFILE )
+    ms_log (2, "Cannot read %s: %s\n", filename, ms_errorstr(retcode));
+
+  /* Cleanup memory and close file */
+  ms_readmsr (&msr, NULL, 0, NULL, NULL, 0, 0);
+}
+
+For reading two files with ms_readtraces(3):
+
+main() {
+  MSTraceGroup *mstg = NULL;
+  int retcode;
+
+  retcode = ms_readtraces (&mstg, filename, 0, -1.0, -1.0, 0, 1, 0, verbose);
+
+  if ( retcode != MS_ENDOFFILE )
+    ms_log (2, "Cannot read %s: %s\n", filename, ms_errorstr(retcode));
+
+  retcode = ms_readtraces (&mstg, filename2, 0, -1.0, -1.0, 0, 1, 0, verbose);
+
+  if ( retcode != MS_ENDOFFILE )
+    ms_log (2, "Cannot read %s: %s\n", filename2, ms_errorstr(retcode));
+
+  if ( ! mstg )
+    {
+      fprintf (stderr, "Error reading file\\n");
+      return -1;
+    }
+
+  /* Do something with the traces here, e.g. print */
+  mst_printtracelist (mstg, 0, verbose, 0);
+
+  mst_freegroup (&mstg);
+}
+
+Another common task is to create (pack) Mini-SEED records. The library
+supports packing of Mini-SEED either from MSRecord structures, MSTrace
+structures or MSTraceGroup collections using, respectively, msr_pack(3),
+mst_pack(3) or mst_packgroup(3).  In each case the appropriate data
+structure and parameters are provided to the routine along with a
+function pointer to a routine that will be called each time a record
+is complete and should be disposed of.
+
+When packing Mini-SEED records the concept of a record header template
+is used, the template is always in the form of a MSRecord structure.
+This allows the calling program to dictate the contents, with a few
+exceptions, of the header in the final data records.
+
+Skeleton code for creating (packing) and writing Mini-SEED records to
+a file with mst_writemseed(3):
+
+main() {
+  int precords;
+  int verbose = 0;
+  char msfile = "output.mseed";
+  MSTrace *mst;
+
+  mst = mst_init (NULL);
+
+  /* Populate MSTrace values */
+  strcpy (mst->network, "XX");
+  strcpy (mst->station, "TEST");
+  strcpy (mst->channel, "BHE");
+  mst->starttime = ms_seedtimestr2hptime ("2004,350,00:00:00.000000");
+  mst->samprate = 40.0;
+
+  mst->datasamples = dataptr; /* pointer to 32-bit integer data samples */
+  mst->numsamples = 1234;
+  mst->sampletype = 'i';      /* declare type to be 32-bit integers */
+
+  /* Write 4096 byte, big-endian records, using Steim-2 compression */
+  precords = mst_writemseed (mst, msfile, 1, 4096, DE_STEIM2, 1, verbose);
+
+  ms_log (0, "Wrote %d records to %s\n", precords, msfile);
+
+  /* Disconnect datasamples pointer, otherwise mst_free() will free it */
+  mst->datasamples = NULL;
+
+  mst_free (&mst);
+}
+
+*/
