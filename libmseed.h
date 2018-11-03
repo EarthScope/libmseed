@@ -192,7 +192,7 @@ extern "C" {
 /* A simple bitwise AND test to return 0 or 1 */
 #define bit(x,y) (x&y)?1:0
 
-/* Define libmseed time type */
+/** Define libmseed time type */
 typedef int64_t nstime_t;
 
 /* A single byte flag type */
@@ -513,15 +513,18 @@ extern int msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite
 extern int mstl3_writemseed (MS3TraceList *mst, const char *msfile, int8_t overwrite,
                              int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose);
 
-/* General use functions */
+/** @defgroup string-functions String functions
+    @{ */
 extern int      ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan);
 extern int      ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
                               char *net, char *sta, char *loc, char *chan);
 extern int      ms_strncpclean (char *dest, const char *source, int length);
 extern int      ms_strncpcleantail (char *dest, const char *source, int length);
 extern int      ms_strncpopen (char *dest, const char *source, int length);
-extern int      ms_doy2md (int year, int jday, int *month, int *mday);
-extern int      ms_md2doy (int year, int month, int mday, int *jday);
+/** @} */
+
+/** @defgroup time-functions Time functions
+    @{ */
 extern int      ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *day,
                                 uint8_t *hour, uint8_t *min, uint8_t *sec, uint32_t *nsec);
 extern char*    ms_nstime2isotimestr (nstime_t nstime, char *isotimestr, int8_t subsecond);
@@ -530,6 +533,10 @@ extern char*    ms_nstime2seedtimestr (nstime_t nstime, char *seedtimestr, int8_
 extern nstime_t ms_time2nstime (int year, int day, int hour, int min, int sec, uint32_t nsec);
 extern nstime_t ms_seedtimestr2nstime (char *seedtimestr);
 extern nstime_t ms_timestr2nstime (char *timestr);
+extern int      ms_doy2md (int year, int jday, int *month, int *mday);
+extern int      ms_md2doy (int year, int month, int mday, int *jday);
+/** @} */
+
 extern double   ms_dabs (double val);
 extern uint32_t ms_crc32c (const uint8_t* input, int length, uint32_t previousCRC32C);
 

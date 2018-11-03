@@ -1,9 +1,9 @@
-/***************************************************************************
+/***********************************************************************/ /**
+ * @file parseutils.c
  *
  * Routines to parse miniSEED.
  *
- * Written by Chad Trabant
- *   IRIS Data Management Center
+ * @author Chad Trabant, IRIS Data Management Center
  ***************************************************************************/
 
 #include <errno.h>
@@ -16,8 +16,9 @@
 #include "unpack.h"
 #include "mseedformat.h"
 
-/**********************************************************************
+/***********************************************************************/ /**
  * msr3_parse:
+ * @brief Parse miniSEED from a buffer
  *
  * This routine will attempt to parse (detect and unpack) a miniSEED
  * record from a specified memory buffer and populate a supplied
@@ -27,15 +28,20 @@
  * The record length is always automatically detected.  For miniSEED
  * 2.x this means the record must contain a 1000 blockette.
  *
- * If the MSF_UNPACKDATA flag is set in flags, msr_unpack_mseed#()
- * will called to unpack the data samples.x
+ * @param record buffer containing record to parse
+ * @param recbuflength buffer length in bytes
+ * @param ppmsr pointer-to-point to a MS3Record that will be populated
+ * @param flags flags controlling features:
+ *   If the MSF_UNPACKDATA flag is set in flags, msr_unpack_mseed#()
+ *   will called to unpack the data samples.x
+ * @param verbose control verbosity of diagnostic output
  *
- * Return values:
- *   0 : Success, populates the supplied MS3Record.
- *  >0 : Data record detected but not enough data is present, the
+ * @return Parsing status
+ * @retval 0 Success, populates the supplied MS3Record.
+ * @retval >0 Data record detected but not enough data is present, the
  *       return value is a hint of how many more bytes are needed.
- *  <0 : libmseed error code (listed in libmseed.h) is returned.
- *********************************************************************/
+ * @retval <0 libmseed error code (listed in libmseed.h) is returned.
+ ***************************************************************************/
 int
 msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
             uint32_t flags, int8_t verbose)

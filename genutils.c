@@ -1,10 +1,9 @@
-/***************************************************************************
- * genutils.c
+/**********************************************************************/ /**
+ * @file genutils.c
  *
  * Generic utility routines
  *
- * Written by Chad Trabant
- * IRIS Data Management Center
+ * @author Chad Trabant, IRIS Data Management Center
  ***************************************************************************/
 
 #include <errno.h>
@@ -131,20 +130,28 @@ ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan)
   return 0;
 } /* End of ms_sid2nslc() */
 
-/***************************************************************************
+/**********************************************************************/ /**
  * ms_nslc2sid:
+ * @brief Convert network, station, location and channel to a source ID URI
  *
  * Create a source identifier from individual network,
  * station, location and channel codes with the form:
- *  "XFDSN:NET_STA_LOC_CHAN", where CHAN="BAND_SOURCE_POSITION"
+ *  \c XFDSN:NET_STA_LOC_CHAN, where CHAN="BAND_SOURCE_POSITION"
  *
  * Memory for the source identifier must already be allocated.  If a
  * specific component is NULL it will be empty in the resulting
  * identifier.
  *
- * The flags argument is not yet used and should be set to 0.
+ * @param[out] sid Destination string for source identifier
+ * @param sidlen Maximum length of \c sid
+ * @param flags Currently unused, set to 0
+ * @param[in] net Network code
+ * @param[in] sta Station code
+ * @param[in] loc Location code
+ * @param[in] chan Channel code
  *
- * Returns length of identifier on success and -1 on error.
+ * @returns length of source identifier
+ * @retval -1 on error
  ***************************************************************************/
 int
 ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
@@ -239,17 +246,24 @@ ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
 } /* End of ms_nslc2sid() */
 
 
-/***************************************************************************
+/**********************************************************************/ /**
  * ms_strncpclean:
+ * @brief Copy string, removing spaces, always terminated
  *
  * Copy up to 'length' characters from 'source' to 'dest' while
  * removing all spaces.  The result is left justified and always null
- * terminated.  The destination string must have enough room needed
- * for the non-space characters within 'length' and the null
- * terminator, a maximum of 'length + 1'.
+ * terminated.
  *
- * Returns the number of characters (not including the null terminator) in
- * the destination string.
+ * The destination string must have enough room needed for the
+ * non-space characters within 'length' and the null terminator, a
+ * maximum of 'length + 1'.
+ *
+ * @param[out] dest Destination for terminated string
+ * @param[in] source Source string
+ * @param[in] length Length of characters for destination string in bytes
+ *
+ * @returns the number of characters (not including the null terminator) in
+ * the destination string
  ***************************************************************************/
 int
 ms_strncpclean (char *dest, const char *source, int length)
@@ -284,17 +298,24 @@ ms_strncpclean (char *dest, const char *source, int length)
   return didx;
 } /* End of ms_strncpclean() */
 
-/***************************************************************************
+/**********************************************************************/ /**
  * ms_strncpcleantail:
+ * @brief Copy string, removing trailing spaces, always terminated
  *
  * Copy up to 'length' characters from 'source' to 'dest' without any
  * trailing spaces.  The result is left justified and always null
- * terminated.  The destination string must have enough room needed
- * for the characters within 'length' and the null terminator, a
- * maximum of 'length + 1'.
+ * terminated.
  *
- * Returns the number of characters (not including the null terminator) in
- * the destination string.
+ * The destination string must have enough room needed for the
+ * characters within 'length' and the null terminator, a maximum of
+ * 'length + 1'.
+ *
+ * @param[out] dest Destination for terminated string
+ * @param[in] source Source string
+ * @param[in] length Length of characters for destination string in bytes
+ *
+ * @returns The number of characters (not including the null terminator) in
+ * the destination string
  ***************************************************************************/
 int
 ms_strncpcleantail (char *dest, const char *source, int length)
@@ -329,15 +350,21 @@ ms_strncpcleantail (char *dest, const char *source, int length)
   return pretail;
 } /* End of ms_strncpcleantail() */
 
-/***************************************************************************
+/**********************************************************************/ /**
  * ms_strncpopen:
+ * @brief Copy fixed number of characters into unterminated string
  *
  * Copy 'length' characters from 'source' to 'dest', padding the right
- * side with spaces and leave open-ended.  The result is left
- * justified and *never* null terminated (the open-ended part).  The
- * destination string must have enough room for 'length' characters.
+ * side with spaces and leave open-ended, aka un-terminated.  The
+ * result is left justified and *never* null terminated.
  *
- * Returns the number of characters copied from the source string.
+ * The destination string must have enough room for 'length' characters.
+ *
+ * @param[out] dest Destination for unterminated string
+ * @param[in] source Source string
+ * @param[in] length Length of characters for destination string in bytes
+ *
+ * @returns the number of characters copied from the source string
  ***************************************************************************/
 int
 ms_strncpopen (char *dest, const char *source, int length)
@@ -379,16 +406,17 @@ ms_strncpopen (char *dest, const char *source, int length)
   return dcnt;
 } /* End of ms_strncpopen() */
 
-/***************************************************************************
+/**********************************************************************/ /**
  * ms_doy2md:
+ * @brief Compute the month and day-of-month from a year and day-of-year
  *
- * Compute the month and day-of-month from a year and day-of-year.
+ * @param[in] year Year in range 1800-5000
+ * @param[in] jday Day of year in range 1-366
+ * @param[out] month Month in range 1-12
+ * @param[out] mday Day of month in range 1-31
  *
- * Year is expected to be in the range 1800-5000, jday is expected to
- * be in the range 1-366, month will be in the range 1-12 and mday
- * will be in the range 1-31.
- *
- * Returns 0 on success and -1 on error.
+ * @retval 0 on success
+ * @retval -1 on error
  ***************************************************************************/
 int
 ms_doy2md (int year, int jday, int *month, int *mday)
@@ -432,16 +460,17 @@ ms_doy2md (int year, int jday, int *month, int *mday)
   return 0;
 } /* End of ms_doy2md() */
 
-/***************************************************************************
+/**********************************************************************/ /**
  * ms_md2doy:
+ * @brief Compute the day-of-year from a year, month and day-of-month
  *
- * Compute the day-of-year from a year, month and day-of-month.
+ * @param[in] year Year in range 1800-5000
+ * @param[in] month Month in range 1-12
+ * @param[in] mday Day of month in range 1-31
+ * @param[out] jday Day of year in range 1-366
  *
- * Year is expected to be in the range 1800-5000, month is expected to
- * be in the range 1-12, mday is expected to be in the range 1-31 and
- * jday will be in the range 1-366.
- *
- * Returns 0 on success and -1 on error.
+ * @retval 0 on success
+ * @retval -1 on error
  ***************************************************************************/
 int
 ms_md2doy (int year, int month, int mday, int *jday)
@@ -499,12 +528,20 @@ ms_md2doy (int year, int month, int mday, int *jday)
   return 0;
 } /* End of ms_md2doy() */
 
-/***************************************************************************
+/**********************************************************************/ /**
  * ms_nstime2time:
+ * @brief Convert an nstime_t to individual time components
  *
- * Convert an nstime_t to individual time components.
+ * @param[in] nstime Time value to convert
+ * @param[out] year Year with century, like 2018
+ * @param[out] day Day of year, 1 - 366
+ * @param[out] hour Hour, 0 - 23
+ * @param[out] min Minute, 0 - 59
+ * @param[out] sec Second, 0 - 60, where 60 is a leap second
+ * @param[out] nsec Nanoseconds, 0 - 999999
  *
- * Returns 0 on success and -1 on error.
+ * @retval 0 on success
+ * @retval -1 on error.
  ***************************************************************************/
 int
 ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *day,
