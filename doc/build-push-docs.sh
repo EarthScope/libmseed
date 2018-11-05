@@ -3,8 +3,11 @@
 # Documentation build directory, relative to script directory
 DOCDIR=gh-pages
 
-# Documentation build command
-DOCBUILD="naturaldocs -p ndocs --exclude-source ndocs -o HTML $DOCDIR -w working --documented-only --rebuild"
+# Extract version from header
+PROJECT_VERSION=$(perl -nle 'print $1 if m/LIBMSEED_VERSION\s+\"(.*)"\s*$/' ../libmseed.h)
+
+# Documentation build command, injecting current project version
+DOCBUILD="(cat Doxyfile; echo 'PROJECT_NUMBER=${PROJECT_VERSION}') | doxygen -"
 
 # Check for command line options
 while getopts ":YN" o; do
@@ -32,7 +35,7 @@ rm -rf $DOCDIR
 mkdir $DOCDIR || { echo "Cannot create directory '$DOCDIR', exiting"; exit 1; }
 
 # Build docs
-$DOCBUILD || { echo "Error running '$DOCBUILD', exiting"; exit 1; }
+eval $DOCBUILD || { echo "Error running '$DOCBUILD', exiting"; exit 1; }
 
 GITREMOTE=$(git config --get remote.origin.url)
 
