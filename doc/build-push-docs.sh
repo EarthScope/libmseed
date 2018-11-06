@@ -4,7 +4,11 @@
 DOCDIR=gh-pages
 
 # Extract version from header
-PROJECT_VERSION=$(perl -nle 'print $1 if m/LIBMSEED_VERSION\s+\"(.*)"\s*$/' ../libmseed.h)
+if [[ $(grep LIBMSEED_VERSION ../libmseed.h) =~ LIBMSEED_VERSION[[:space:]]+\"(.*)\"[[:space:]]* ]]; then
+    PROJECT_VERSION=${BASH_REMATCH[1]}
+else
+    echo "WARNING: Cannot extract version"
+fi
 
 # Documentation build command, injecting current project version
 DOCBUILD="(cat Doxyfile; echo 'PROJECT_NUMBER=${PROJECT_VERSION}') | doxygen -"
