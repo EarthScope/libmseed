@@ -1,5 +1,5 @@
-/***************************************************************************
- * libmseed.h:
+/**********************************************************************/ /**
+ * @file libmseed.h:
  *
  * Interface declarations for the miniSEED library (libmseed).
  *
@@ -28,8 +28,8 @@
 extern "C" {
 #endif
 
-#define LIBMSEED_VERSION "3.0.0"
-#define LIBMSEED_RELEASE "2018.XXXdev"
+#define LIBMSEED_VERSION "3.0.0"        //!< Library version
+#define LIBMSEED_RELEASE "2018.XXXdev"  //!< Library release date
 
 /* C99 standard headers */
 #include <stdlib.h>
@@ -92,10 +92,10 @@ extern "C" {
   #include <inttypes.h>
 #endif
 
-#define MINRECLEN 40       /* Minimum miniSEED record length */
-#define MAXRECLEN 131172   /* Maximum miniSEED record length */
+#define MINRECLEN 40       //!< Minimum miniSEED record length
+#define MAXRECLEN 131172   //!< Maximum miniSEED record length
 
-#define LM_SIDLEN 64       /* Length of source ID string */
+#define LM_SIDLEN 64       //!< Length of source ID string
 
 /* SEED data encoding types */
 #define DE_ASCII       0
@@ -192,101 +192,110 @@ extern "C" {
 /* A simple bitwise AND test to return 0 or 1 */
 #define bit(x,y) (x&y)?1:0
 
-/** Define libmseed time type */
+/** libmseed time type, integer nanoseconds since the Unix/POSIX epoch */
 typedef int64_t nstime_t;
 
-/* A single byte flag type */
+/** A single byte flag type */
 typedef int8_t flag;
 
+/** @defgroup fundamental-structures Library structures
+    @{ */
+
+/** miniSEED record structure */
 typedef struct MS3Record_s {
-  char           *record;            /* Raw miniSEED record, if available */
-  int32_t         reclen;            /* Length of miniSEED record in bytes */
-  uint8_t         swapflag;          /* Byte swap indicator */
+  char           *record;            //!< Raw miniSEED record, if available
+  int32_t         reclen;            //!< Length of miniSEED record in bytes
+  uint8_t         swapflag;          //!< Byte swap indicator, see @ref byte-swap-flags
 
   /* Common header fields in accessible form */
-  char            sid[LM_SIDLEN];    /* Source identifier as URN */
-  uint8_t         formatversion;     /* Original source format major version */
-  uint8_t         flags;             /* Record-level bit flags */
-  nstime_t        starttime;         /* Record start time (first sample) */
-  double          samprate;          /* Nominal sample rate (Hz) */
-  int8_t          encoding;          /* Data encoding format */
-  uint8_t         pubversion;        /* Publication version */
-  int64_t         samplecnt;         /* Number of samples in record */
-  uint32_t        crc;               /* CRC of entire record */
-  uint16_t        extralength;       /* Length of extra headers in bytes */
-  uint16_t        datalength;        /* Length of data payload in bytes */
-  char           *extra;             /* Pointer to extra headers */
+  char            sid[LM_SIDLEN];    //!< Source identifier as URN, max length @ref LM_SIDLEN
+  uint8_t         formatversion;     //!< Original source format major version
+  uint8_t         flags;             //!< Record-level bit flags
+  nstime_t        starttime;         //!< Record start time (first sample)
+  double          samprate;          //!< Nominal sample rate (Hz)
+  int8_t          encoding;          //!< Data encoding format
+  uint8_t         pubversion;        //!< Publication version
+  int64_t         samplecnt;         //!< Number of samples in record
+  uint32_t        crc;               //!< CRC of entire record
+  uint16_t        extralength;       //!< Length of extra headers in bytes
+  uint16_t        datalength;        //!< Length of data payload in bytes
+  char           *extra;             //!< Pointer to extra headers
 
   /* Data sample fields */
-  void           *datasamples;       /* Data samples, 'numsamples' of type 'sampletype'*/
-  int64_t         numsamples;        /* Number of data samples in datasamples */
-  char            sampletype;        /* Sample type code: a, i, f, d */
+  void           *datasamples;       //!< Data samples, 'numsamples' of type 'sampletype'
+  int64_t         numsamples;        //!< Number of data samples in datasamples
+  char            sampletype;        //!< Sample type code: a, i, f, d
 }
 MS3Record;
 
-/* Container for a continuous trace segment, linkable */
+/** Container for a continuous trace segment, linkable */
 typedef struct MS3TraceSeg_s {
-  nstime_t        starttime;         /* Time of first sample */
-  nstime_t        endtime;           /* Time of last sample */
-  double          samprate;          /* Nominal sample rate (Hz) */
-  int64_t         samplecnt;         /* Number of samples in trace coverage */
-  void           *datasamples;       /* Data samples, 'numsamples' of type 'sampletype'*/
-  int64_t         numsamples;        /* Number of data samples in datasamples */
-  char            sampletype;        /* Sample type code: a, i, f, d */
-  void           *prvtptr;           /* Private pointer for general use, unused by libmseed */
-  struct MS3TraceSeg_s *prev;        /* Pointer to previous segment */
-  struct MS3TraceSeg_s *next;        /* Pointer to next segment */
+  nstime_t        starttime;         //!< Time of first sample
+  nstime_t        endtime;           //!< Time of last sample
+  double          samprate;          //!< Nominal sample rate (Hz)
+  int64_t         samplecnt;         //!< Number of samples in trace coverage
+  void           *datasamples;       //!< Data samples, 'numsamples' of type 'sampletype'
+  int64_t         numsamples;        //!< Number of data samples in datasamples
+  char            sampletype;        //!< Sample type code: a, i, f, d
+  void           *prvtptr;           //!< Private pointer for general use, unused by library
+  struct MS3TraceSeg_s *prev;        //!< Pointer to previous segment
+  struct MS3TraceSeg_s *next;        //!< Pointer to next segment, NULL if the last
 }
 MS3TraceSeg;
 
-/* Container for a trace ID, linkable */
+/** Container for a trace ID, linkable */
 typedef struct MS3TraceID_s {
-  char            sid[LM_SIDLEN];    /* Source identifier as URN */
-  uint8_t         pubversion;        /* Publication version */
-  nstime_t        earliest;          /* Time of earliest sample */
-  nstime_t        latest;            /* Time of latest sample */
-  void           *prvtptr;           /* Private pointer for general use, unused by libmseed */
-  uint32_t        numsegments;       /* Number of segments for this ID */
-  struct MS3TraceSeg_s *first;       /* Pointer to first of list of segments */
-  struct MS3TraceSeg_s *last;        /* Pointer to last of list of segments */
-  struct MS3TraceID_s *next;         /* Pointer to next trace */
+  char            sid[LM_SIDLEN];    //!< Source identifier as URN, max length @ref LM_SIDLEN
+  uint8_t         pubversion;        //!< Publication version
+  nstime_t        earliest;          //!< Time of earliest sample
+  nstime_t        latest;            //!< Time of latest sample
+  void           *prvtptr;           //!< Private pointer for general use, unused by library
+  uint32_t        numsegments;       //!< Number of segments for this ID
+  struct MS3TraceSeg_s *first;       //!< Pointer to first of list of segments
+  struct MS3TraceSeg_s *last;        //!< Pointer to last of list of segments
+  struct MS3TraceID_s *next;         //!< Pointer to next trace ID, NULL if the last
 }
 MS3TraceID;
 
-/* Container for a continuous trace segment, linkable */
+/** Container for a continuous trace segment, linkable */
 typedef struct MS3TraceList_s {
-  uint32_t             numtraces;    /* Number of traces in list */
-  struct MS3TraceID_s *traces;       /* Pointer to list of traces */
-  struct MS3TraceID_s *last;         /* Pointer to last used trace in list */
+  uint32_t             numtraces;    //!< Number of traces in list
+  struct MS3TraceID_s *traces;       //!< Pointer to list of traces
+  struct MS3TraceID_s *last;         //!< Pointer to last used trace in list
 }
 MS3TraceList;
 
-/* Data selection structure time window definition containers */
+/** Data selection structure time window definition containers */
 typedef struct MS3SelectTime_s {
-  nstime_t starttime;    /* Earliest data for matching channels */
-  nstime_t endtime;      /* Latest data for matching channels */
-  struct MS3SelectTime_s *next;
+  nstime_t starttime;                //!< Earliest data for matching channels
+  nstime_t endtime;                  //!< Latest data for matching channels
+  struct MS3SelectTime_s *next;      //!< Pointer to next selection time, NULL if the last
 } MS3SelectTime;
 
-/* Data selection structure definition containers */
+/** Data selection structure definition containers */
 typedef struct MS3Selections_s {
-  char sidpattern[100];  /* Matching (globbing) pattern for source ID */
-  struct MS3SelectTime_s *timewindows;
-  struct MS3Selections_s *next;
-  uint8_t pubversion;
+  char sidpattern[100];              //!< Matching (globbing) pattern for source ID
+  struct MS3SelectTime_s *timewindows; //!< Pointer to time window list for this source ID
+  struct MS3Selections_s *next;      //!< Pointer to next selection, NULL if the last
+  uint8_t pubversion;                //!< Selected publication version, use 0 for any
 } MS3Selections;
+/** @} */
 
-/* miniSEED parsing and packing control flags */
-#define MSF_UNPACKDATA  0x0001  /* Parsing: unpack data samples */
-#define MSF_SKIPNOTDATA 0x0002  /* Parsing: skip what cannot be identified as miniSEED */
-#define MSF_VALIDATECRC 0x0004  /* Parsing: validate CRC (if version 3) */
-#define MSF_SEQUENCE    0x0008  /* Packing: UNSUPPORTED: Maintain a record-level sequence number */
-#define MSF_FLUSHDATA   0x0010  /* Packing: pack all available data even */
-#define MSF_ATENDOFFILE 0x0020  /* Parsing: reading routine is at the end of the file */
+/** @defgroup control-flags Parsing and packing control flags
+    @{ */
+#define MSF_UNPACKDATA  0x0001  //!< [Parsing] unpack data samples
+#define MSF_SKIPNOTDATA 0x0002  //!< [Parsing] skip what cannot be identified as miniSEED
+#define MSF_VALIDATECRC 0x0004  //!< [Parsing] validate CRC (if version 3)
+#define MSF_SEQUENCE    0x0008  //!< [Packing] UNSUPPORTED: Maintain a record-level sequence number
+#define MSF_FLUSHDATA   0x0010  //!< [Packing] pack all available data even if final record would not be filled
+#define MSF_ATENDOFFILE 0x0020  //!< [Parsing] reading routine is at the end of the file
+/** @} */
 
-/* miniSEED byte swap flags */
-#define MSSWAP_HEADER   0x01    /* Header needed byte swapping */
-#define MSSWAP_PAYLOAD  0x02    /* Data payload needed byte swapping */
+/** @defgroup byte-swap-flags Byte swap flags
+    @{ */
+#define MSSWAP_HEADER   0x01    //!< Header needed byte swapping
+#define MSSWAP_PAYLOAD  0x02    //!< Data payload needed byte swapping
+/** @} */
 
 /* miniSEED record related functions */
 extern int msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,

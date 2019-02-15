@@ -1,22 +1,20 @@
 /**
-@page capabilities Capabilities
+@page page-capabilities Capabilities
 
-@section capabilities Capabilities
+@section overview Overview
 
 @tableofcontents
 
-@subsection Data Sample Encodings
-
-The following data encoding formats are supported for both unpacking
-and packing: ASCII, INT16, INT32, FLOAT32, FLOAT64, STEIM1 and STEIM2.
-The INT and FLOAT encodings each have two versions for quantities with
-a different number of bits of representation.  The STEIM decompression
-produces 32-bit integers; likewise the compression routines require
-32-bit integers as input.  The following data encoding formats are
-supported for unpacking only: GEOSCOPE (24-bit, 16/3 and 16/4 gain
-ranged), CDSN, SRO and DWWSSN.
+This section describes the capabilities and fundamentals of the
+library.
 
 @subsection data-records Data Records
+
+@note miniSEED data are constructed as records, typically anywhere
+from 128 to 4096 bytes in length.  Each record is independent,
+identifying the data source, encoding type, etc. in header structures.
+Reconstructing a continuous time series from an arbitrary number of
+data records is an excersize for a format reader, e.g. this library.
 
 A miniSEED record is represented in the library using the MSR3Record
 structure.  This structure is used for both unpacking and packing of
@@ -28,6 +26,20 @@ be packed.
 Blockettes following the fixed section of the header are contained in
 the blockette chain of BlktLink structures.  Shortcut pointers to
 commonly used blockettes are maintained for types 100, 1000 and 1001.
+
+@subsection Data Sample Encodings
+
+Data samples in a record ... CHAD
+The following data encoding formats are supported for both unpacking
+and packing: ASCII, INT16, INT32, FLOAT32, FLOAT64, STEIM1 and STEIM2.
+The INT and FLOAT encodings each have two versions for quantities with
+a different number of bits of representation.  The STEIM decompression
+produces 32-bit integers; likewise the compression routines require
+32-bit integers as input.  The following data encoding formats are
+supported for unpacking only: GEOSCOPE (24-bit, 16/3 and 16/4 gain
+ranged), CDSN, SRO and DWWSSN.
+
+
 
 @subsection traces Traces
 
