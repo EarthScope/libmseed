@@ -1,6 +1,6 @@
 /***************************************************************************
  * CRC-32C calculation routines, clean and simple.  Orignal file was named
- * 'aws_crc_cw.c' and found at: https://github.com/awslabs/aws-checksums
+ * 'crc_sw.c' and found at: https://github.com/awslabs/aws-checksums
  *
  * All copyrights and license notifications have been retained.
  * Unecessary routines have been removed for use in this code base.
@@ -23,11 +23,12 @@
 
 #include "libmseed.h"
 
-// The Castagnoli, iSCSI CRC32c polynomial (reverse of 0x1EDC6F41)
+/* The Castagnoli, iSCSI CRC32c polynomial (reverse of 0x1EDC6F41) */
 #define CRC32C_POLYNOMIAL 0x82F63B78
 
 /** Castagnoli CRC32c (iSCSI) lookup table for slice-by-4/8/16 */
-const uint32_t crc32c_table[8][256] = {
+/* Table truncated to 8 top-level tables from original, slice-by-16 is not supported in this code */
+const uint32_t CRC32C_TABLE[8][256] = {
     {
         0x00000000, 0xF26B8303, 0xE13B70F7, 0x1350F3F4, 0xC79A971F, 0x35F1141C, 0x26A1E7E8, 0xD4CA64EB, // [0][0x08]
         0x8AD958CF, 0x78B2DBCC, 0x6BE22838, 0x9989AB3B, 0x4D43CFD0, 0xBF284CD3, 0xAC78BF27, 0x5E133C24, // [0][0x10]
@@ -302,32 +303,36 @@ const uint32_t crc32c_table[8][256] = {
     }
 };
 
-// private (static) function factoring out byte-by-byte CRC computation using just one slice of the lookup table
-static uint32_t crc_generic_sb1(const uint8_t* input, int length, uint32_t crc, const uint32_t *table_ptr) {
-    uint32_t(*table)[8][256] = (uint32_t(*)[8][256]) table_ptr;
+/* private (static) function factoring out byte-by-byte CRC computation using just one slice of the lookup table*/
+static uint32_t s_crc_generic_sb1(const uint8_t *input, int length, uint32_t crc, const uint32_t *table_ptr) {
+    uint32_t(*table)[16][256] = (uint32_t(*)[16][256])table_ptr;
     while (length-- > 0) {
         crc = (crc >> 8) ^ (*table)[0][(crc & 0xff) ^ *input++];
     }
     return crc;
 }
 
-// The inner loops of the CRC functions that process large blocks of data work best when input is aligned
-// This function begins processing input data one byte at a time until the input pointer is 4-byte aligned
-// Advances the input pointer and reduces the length (both passed by reference)
-static inline uint32_t crc_generic_align(const uint8_t **input, int *length, uint32_t crc, const uint32_t *table_ptr) {
+/* The inner loops of the CRC functions that process large blocks of data work best when input is aligned*/
+/* This function begins processing input data one byte at a time until the input pointer is 4-byte aligned*/
+/* Advances the input pointer and reduces the length (both passed by reference)*/
+static inline uint32_t s_crc_generic_align(
+    const uint8_t **input,
+    int *length,
+    uint32_t crc,
+    const uint32_t *table_ptr) {
 
-    // Get the 4-byte memory alignment of our input buffer by looking at the least significant 2 bits
-    size_t input_alignment = ((size_t) *input) & 0x3;
+    /* Get the 4-byte memory alignment of our input buffer by looking at the least significant 2 bits*/
+    size_t input_alignment = ((size_t)*input) & 0x3;
 
-    // Compute the number of input bytes that precede the first 4-byte aligned block (will be in range 0-3)
+    /* Compute the number of input bytes that precede the first 4-byte aligned block (will be in range 0-3)*/
     size_t leading = (4 - input_alignment) & 0x3;
 
-    // Determine what's left without the leading input bytes (might be negative)
+    /* Determine what's left without the leading input bytes (might be negative)*/
     size_t remaining = *length - leading;
 
-    // Process unaligned leading input bytes one at a time
+    /* Process unaligned leading input bytes one at a time*/
     if (leading && remaining > 0) {
-        crc = crc_generic_sb1(*input, (uint32_t)leading, crc, table_ptr);
+        crc = s_crc_generic_sb1(*input, (uint32_t)leading, crc, table_ptr);
         *input += leading;
         *length -= (int)leading;
     }
@@ -335,48 +340,50 @@ static inline uint32_t crc_generic_align(const uint8_t **input, int *length, uin
     return crc;
 }
 
-// private (static) function to compute a generic slice-by-4 CRC using the specified lookup table (4 table slices)
-static uint32_t crc_generic_sb4(const uint8_t* input, int length, uint32_t crc, const uint32_t *table_ptr) {
-    const uint32_t* current = (const uint32_t*)input;
+/* private (static) function to compute a generic slice-by-4 CRC using the specified lookup table (4 table slices)*/
+static uint32_t s_crc_generic_sb4(const uint8_t *input, int length, uint32_t crc, const uint32_t *table_ptr) {
+    const uint32_t *current = (const uint32_t *)input;
     int remaining = length;
-    uint32_t(*table)[8][256] = (uint32_t(*)[8][256]) table_ptr;
+    uint32_t(*table)[8][256] = (uint32_t(*)[8][256])table_ptr;
 
     while (remaining >= 4) {
         crc ^= *current++;
-        crc = (*table)[3][crc & 0xff] ^ (*table)[2][(crc >> 8) & 0xff] ^ (*table)[1][(crc >> 16) & 0xff] ^ (*table)[0][crc >> 24];
+        crc = (*table)[3][crc & 0xff] ^ (*table)[2][(crc >> 8) & 0xff] ^ (*table)[1][(crc >> 16) & 0xff] ^
+              (*table)[0][crc >> 24];
         remaining -= 4;
     }
 
-    return crc_generic_sb1(&input[length - remaining], remaining, crc, table_ptr);
+    return s_crc_generic_sb1(&input[length - remaining], remaining, crc, table_ptr);
 }
 
-// private (static) function to compute a generic slice-by-8 CRC using the specified lookup table (8 table slices)
-static uint32_t crc_generic_sb8(const uint8_t* input, int length, uint32_t crc, const uint32_t *table_ptr) {
-    const uint32_t* current = (const uint32_t*)input;
+/* private (static) function to compute a generic slice-by-8 CRC using the specified lookup table (8 table slices)*/
+static uint32_t s_crc_generic_sb8(const uint8_t *input, int length, uint32_t crc, const uint32_t *table_ptr) {
+    const uint32_t *current = (const uint32_t *)input;
     int remaining = length;
-    uint32_t(*table)[8][256] = (uint32_t(*)[8][256]) table_ptr;
+    uint32_t(*table)[8][256] = (uint32_t(*)[8][256])table_ptr;
 
     while (remaining >= 8) {
         uint32_t c1 = *current++ ^ crc;
         uint32_t c2 = *current++;
-        uint32_t t1 = (*table)[7][c1 & 0xff] ^ (*table)[6][(c1 >> 8) & 0xff] ^ (*table)[5][(c1 >> 16) & 0xff] ^ (*table)[4][(c1 >> 24) & 0xff];
-        uint32_t t2 = (*table)[3][c2 & 0xff] ^ (*table)[2][(c2 >> 8) & 0xff] ^ (*table)[1][(c2 >> 16) & 0xff] ^ (*table)[0][(c2 >> 24) & 0xff];
+        uint32_t t1 = (*table)[7][c1 & 0xff] ^ (*table)[6][(c1 >> 8) & 0xff] ^ (*table)[5][(c1 >> 16) & 0xff] ^
+                      (*table)[4][(c1 >> 24) & 0xff];
+        uint32_t t2 = (*table)[3][c2 & 0xff] ^ (*table)[2][(c2 >> 8) & 0xff] ^ (*table)[1][(c2 >> 16) & 0xff] ^
+                      (*table)[0][(c2 >> 24) & 0xff];
         crc = t1 ^ t2;
         remaining -= 8;
     }
-    return crc_generic_sb4(&input[length - remaining], remaining, crc, table_ptr);
+    return s_crc_generic_sb4(&input[length - remaining], remaining, crc, table_ptr);
 }
 
-/* Computes the Castagnoli CRC32c (iSCSI) using slice-by-4. */
-static uint32_t crc32c_sb1(const uint8_t* input, int length, uint32_t previousCrc32) {
-    uint32_t crc = crc_generic_align(&input, &length, ~previousCrc32, &crc32c_table[0][0]);
-    return ~crc_generic_sb1(input, length, crc, &crc32c_table[0][0]);
+/* Computes the Castagnoli CRC32c (iSCSI) using one byte at a time, i.e. no slicing. */
+static uint32_t s_crc32c_no_slice(const uint8_t *input, int length, uint32_t previousCrc32c) {
+    return ~s_crc_generic_sb1(input, length, ~previousCrc32c, &CRC32C_TABLE[0][0]);
 }
 
 /* Computes the Castagnoli CRC32c (iSCSI) using slice-by-8. */
-static uint32_t crc32c_sb8(const uint8_t* input, int length, uint32_t previousCrc32) {
-    uint32_t crc = crc_generic_align(&input, &length, ~previousCrc32, &crc32c_table[0][0]);
-    return ~crc_generic_sb8(input, length, crc, &crc32c_table[0][0]);
+static uint32_t s_crc32c_sb8(const uint8_t *input, int length, uint32_t previousCrc32) {
+    uint32_t crc = s_crc_generic_align(&input, &length, ~previousCrc32, &CRC32C_TABLE[0][0]);
+    return ~s_crc_generic_sb8(input, length, crc, &CRC32C_TABLE[0][0]);
 }
 
 
@@ -398,7 +405,7 @@ ms_crc32c (const uint8_t* input, int length, uint32_t previousCRC32C)
     return 0;
 
   if (ms_bigendianhost())
-    return crc32c_sb1(input, length, previousCRC32C);
+    return s_crc32c_no_slice(input, length, previousCRC32C);
   else
-    return crc32c_sb8(input, length, previousCRC32C);
+    return s_crc32c_sb8(input, length, previousCRC32C);
 } /* End of ms_crc32c() */
