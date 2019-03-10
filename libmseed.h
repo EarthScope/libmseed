@@ -17,8 +17,9 @@
  * License along with this software.
  * If not, see <https://www.gnu.org/licenses/>.
  *
- * Copyright (C) 2019 Chad Trabant
- * IRIS Data Management Center
+ * Copyright (C) 2019:
+ * @author Chad Trabant, IRIS Data Management Center
+ * @copyright GNU Public License
  ***************************************************************************/
 
 #ifndef LIBMSEED_H
@@ -139,39 +140,43 @@ extern "C" {
     @brief Macro to test a character for miniSEED 2.x data record/quality indicators */
 #define MS2_ISDATAINDICATOR(X) (X=='D' || X=='R' || X=='Q' || X=='M')
 
-/* Macro to test memory for a miniSEED 3.x data record signature by checking
- * record header values at known byte offsets.
+/** @def MS3_ISVALIDHEADER
+ * @hideinitializer
+ * Macro to test a buffer for a miniSEED 3.x data record signature by checking
+ * header values at known byte offsets:
+ * - 0  = "M"
+ * - 1  = "S"
+ * - 2  = 3
+ * - 12 = valid hour (0-23)
+ * - 13 = valid minute (0-59)
+ * - 14 = valid second (0-60)
  *
- * Offset = Value
- *   0  = "M"
- *   1  = "S"
- *   2  = 3
- *   12 = valid hour (0-23)
- *   13 = valid minute (0-59)
- *   14 = valid second (0-60)
- *
- * Usage:
- *   MS3_ISVALIDHEADER ((char *)X)  X buffer must contain at least 15 bytes
+ * Usage, X buffer must contain at least 15 bytes:
+ * @code
+ *   MS3_ISVALIDHEADER ((char *)X)
+ * @endcode
  */
-#define MS3_ISVALIDHEADER(X) (                                        \
-    *(X) == 'M' && *(X + 1) == 'S' && *(X + 2) == 3 &&                \
-    (uint8_t) (*(X + 12)) >= 0 && (uint8_t) (*(X + 12)) <= 23 &&      \
-    (uint8_t) (*(X + 13)) >= 0 && (uint8_t) (*(X + 13)) <= 59 &&      \
+#define MS3_ISVALIDHEADER(X) (                                   \
+    *(X) == 'M' && *(X + 1) == 'S' && *(X + 2) == 3 &&           \
+    (uint8_t) (*(X + 12)) >= 0 && (uint8_t) (*(X + 12)) <= 23 && \
+    (uint8_t) (*(X + 13)) >= 0 && (uint8_t) (*(X + 13)) <= 59 && \
     (uint8_t) (*(X + 14)) >= 0 && (uint8_t) (*(X + 14)) <= 60)
 
-/* Macro to test memory for a miniSEED 2.x data record signature by checking
- * SEED data record header values at known byte offsets.
+/** @def MS2_ISVALIDHEADER
+ * @hideinitializer
+ * Macro to test a buffer for a miniSEED 2.x data record signature by checking
+ * header values at known byte offsets:
+ * - [0-5]  = Digits, spaces or NULL, SEED sequence number
+ * - 6  = Data record quality indicator
+ * - 7  = Space or NULL [not valid SEED]
+ * - 24 = Start hour (0-23)
+ * - 25 = Start minute (0-59)
+ * - 26 = Start second (0-60)
  *
- * Offset = Value
- * [0-5]  = Digits, spaces or NULL, SEED sequence number
- *     6  = Data record quality indicator
- *     7  = Space or NULL [not valid SEED]
- *     24 = Start hour (0-23)
- *     25 = Start minute (0-59)
- *     26 = Start second (0-60)
- *
- * Usage:
- *   MS2_ISVALIDHEADER ((char *)X)  X buffer must contain at least 27 bytes
+ * Usage, X buffer must contain at least 27 bytes:
+ * @code
+ *   MS2_ISVALIDHEADER ((char *)X)
+ * @endcode
  */
 #define MS2_ISVALIDHEADER(X) (                                         \
     (isdigit ((uint8_t) * (X)) || *(X) == ' ' || !*(X)) &&             \
@@ -184,16 +189,13 @@ extern "C" {
     (*(X + 7) == ' ' || *(X + 7) == '\0') &&                           \
     (uint8_t) (*(X + 24)) >= 0 && (uint8_t) (*(X + 24)) <= 23 &&       \
     (uint8_t) (*(X + 25)) >= 0 && (uint8_t) (*(X + 25)) <= 59 &&       \
-    (uint8_t) (*(X + 26)) >= 0 && (uint8_t) (*(X + 26)) <= 60 )
+    (uint8_t) (*(X + 26)) >= 0 && (uint8_t) (*(X + 26)) <= 60)
 
-/* A simple bitwise AND test to return 0 or 1 */
+/** A simple bitwise AND test to return 0 or 1 */
 #define bit(x,y) (x&y)?1:0
 
 /** libmseed time type, integer nanoseconds since the Unix/POSIX epoch (00:00:00 Thursday, 1 January 1970) */
 typedef int64_t nstime_t;
-
-/** A single byte flag type */
-typedef int8_t flag;
 
 /** @page sample-types
     @brief Data sample types used by the library.
@@ -204,7 +206,6 @@ typedef int8_t flag;
     - \c 'f' - 32-bit float (IEEE) data samples
     - \c 'd' - 64-bit float (IEEE) data samples
 */
-enum sampletypes {a, i, f, d};
 
 /** @defgroup control-flags Control flags
     @brief Parsing and packing control flags
@@ -759,17 +760,21 @@ extern MSLogParam *ms_loginit_l (MSLogParam *logp,
                                  void (*diag_print)(char*), const char *errprefix);
 /** @} */
 
-/* Leap second declarations, implementation in gentutils.c */
+/** @defgroup leapsecond Leap second handling
+    @{ */
+/** Leap second list container */
 typedef struct LeapSecond
 {
-  nstime_t leapsecond;
-  int32_t  TAIdelta;
-  struct LeapSecond *next;
+  nstime_t leapsecond;       //!< Time of leap second as epoch since 1 January 1900
+  int32_t  TAIdelta;         //!< TAI-UTC difference in seconds
+  struct LeapSecond *next;   //!< Pointer to next entry, NULL if the last
 } LeapSecond;
 
+/** Global leap second list */
 extern LeapSecond *leapsecondlist;
 extern int ms_readleapseconds (const char *envvarname);
 extern int ms_readleapsecondfile (const char *filename);
+/** @} */
 
 /** @defgroup utility-functions General utility functions
     @brief General utilities

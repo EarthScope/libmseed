@@ -21,7 +21,7 @@ extern int msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 extern double ms_nomsamprate (int factor, int multiplier);
 extern char *ms2_recordsid (char *record, char *sid, int sidlen);
 extern const char *ms2_blktdesc (uint16_t blkttype);
-uint16_t ms2_blktlen (uint16_t blkttype, const char *blkt, flag swapflag);
+uint16_t ms2_blktlen (uint16_t blkttype, const char *blkt, int8_t swapflag);
 
 #ifdef __cplusplus
 }

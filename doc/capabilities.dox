@@ -16,7 +16,7 @@ identifying the data source, encoding type, etc. in header structures.
 Reconstructing a continuous time series from an arbitrary number of
 data records is an excersize for a format reader, e.g. this library.
 
-A miniSEED record is represented in the library using the MSR3Record
+A miniSEED record is represented in the library using the MS3Record
 structure.  This structure is used for both unpacking and packing of
 miniSEED records.  When unpacking with msr_unpack() this structure is
 populated.  When packing with msr_pack() this structure is used as a

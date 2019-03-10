@@ -1,6 +1,4 @@
 /**********************************************************************/ /**
- * @file genutils.c
- *
  * Generic utility routines
  *
  * @author Chad Trabant, IRIS Data Management Center
@@ -18,6 +16,7 @@
 static nstime_t ms_time2nstime_int (int year, int day, int hour,
                                     int min, int sec, uint32_t nsec);
 
+/** @cond UNDOCUMENTED */
 /* A constant number of seconds between the NTP and Posix/Unix time epoch */
 #define NTPPOSIXEPOCHDELTA 2208988800LL
 
@@ -28,41 +27,33 @@ LeapSecond *leapsecondlist = NULL;
 static const int monthdays[]      = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 static const int monthdays_leap[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
-/** @def LEAPYEAR
-    @brief Determine if year is a leap year **/
+/* Determine if year is a leap year */
 #define LEAPYEAR(year) (((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0))
 
-/** @def VALIDYEAR
-    @brief Check that a year is in a valid range **/
+/* Check that a year is in a valid range */
 #define VALIDYEAR(year) (year >= 1800 && year <= 5000)
 
-/** @def VALIDMONTH
-    @brief Check that a month is in a valid range **/
+/* Check that a month is in a valid range */
 #define VALIDMONTH(month) (month >= 1 && month <= 12)
 
-/** @def VALIDMONTHDAY
-    @brief Check that a day-of-month is in a valid range **/
+/* Check that a day-of-month is in a valid range */
 #define VALIDMONTHDAY(year, month, mday) (mday >= 0 && mday <= (LEAPYEAR (year) ? monthdays_leap[month - 1] : monthdays[month - 1]))
 
-/** @def VALIDYEARDAY
-    @brief Check that a day-of-year is in a valid range **/
+/* Check that a day-of-year is in a valid range */
 #define VALIDYEARDAY(year, yday) (yday >= 1 && yday <= (365 + (LEAPYEAR (year) ? 1 : 0)))
 
-/** @def VALIDHOUR
-    @brief Check that an hour is in a valid range **/
+/* Check that an hour is in a valid range */
 #define VALIDHOUR(hour) (hour >= 0 && hour <= 23)
 
-/** @def VALIDMIN
-    @brief Check that a minute is in a valid range **/
+/* Check that a minute is in a valid range */
 #define VALIDMIN(min) (min >= 0 && min <= 59)
 
-/** @def VALIDSEC
-    @brief Check that a second is in a valid range **/
+/* Check that a second is in a valid range */
 #define VALIDSEC(sec) (sec >= 0 && sec <= 60)
 
-/** @def VALIDNANOSEC
-    @brief Check that a nanosecond is in a valid range **/
+/* Check that a nanosecond is in a valid range */
 #define VALIDNANOSEC(nanosec) (nanosec >= 0 && nanosec <= 999999999)
+/** @endcond End of UNDOCUMENTED */
 
 /**********************************************************************/ /**
  * @brief Parse network, station, location and channel from a source ID URI

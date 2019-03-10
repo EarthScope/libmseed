@@ -1,5 +1,5 @@
 /***********************************************************************/ /**
- * @file parseutils.c
+ * parseutils.c:
  *
  * Routines to parse miniSEED.
  *
@@ -28,7 +28,7 @@
  * means the record must contain a 1000 blockette.
  *
  * @param record Buffer containing record to parse
- * @param recbuflength Buffer length in bytes
+ * @param recbuflen Buffer length in bytes
  * @param ppmsr Pointer-to-point to a ::MS3Record that will be populated
  * @param flags Flags controlling features:
  * @parblock

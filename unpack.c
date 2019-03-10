@@ -1067,7 +1067,7 @@ msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint16_t *datasize)
  * @brief Unpack data samples for a ::MS3Record
  *
  * This routine can be used to unpack the data samples for a
- * ::MSRecord that was earlier parsed without the data samples being
+ * ::MS3Record that was earlier parsed without the data samples being
  * decoded.
  *
  * The packed/encoded data is accessed in the record indicated by
@@ -1499,7 +1499,7 @@ ms2_blktdesc (uint16_t blkttype)
  * type unknown.
  ***************************************************************************/
 uint16_t
-ms2_blktlen (uint16_t blkttype, const char *blkt, flag swapflag)
+ms2_blktlen (uint16_t blkttype, const char *blkt, int8_t swapflag)
 {
   uint16_t blktlen = 0;
 

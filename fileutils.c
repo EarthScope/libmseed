@@ -1,4 +1,5 @@
 /****************************************************************************
+ * fileutils.c:
  *
  * Routines to manage files of miniSEED.
  *
@@ -751,7 +752,7 @@ msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
   return (packedrecords >= 0) ? packedrecords : -1;
 } /* End of msr3_writemseed() */
 
-/***************************************************************************
+/**********************************************************************/ /**
  * @brief Write miniSEED from an ::MS3TraceList container to a file
  *
  * Pack ::MS3TraceList data into miniSEED record(s) by calling
@@ -763,7 +764,7 @@ msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
  * existing file.  In either case, new files will be created if they
  * do not yet exist.
  *
- * @param[in,out] msr ::MS3Record containing data to write
+ * @param[in,out] mstl ::MS3TraceList containing data to write
  * @param[in] msfile File for output records
  * @param[in] overwrite Flag to control overwriting versus appending
  * @param[in] maxreclen The maximum record length to create
