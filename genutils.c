@@ -1,7 +1,7 @@
-/**********************************************************************/ /**
+/***************************************************************************
  * Generic utility routines
  *
- * @author Chad Trabant, IRIS Data Management Center
+ * Chad Trabant, IRIS Data Management Center
  ***************************************************************************/
 
 #include <errno.h>

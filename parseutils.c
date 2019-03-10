@@ -1,9 +1,9 @@
-/***********************************************************************/ /**
+/****************************************************************************
  * parseutils.c:
  *
  * Routines to parse miniSEED.
  *
- * @author Chad Trabant, IRIS Data Management Center
+ * Chad Trabant, IRIS Data Management Center
  ***************************************************************************/
 
 #include <errno.h>
