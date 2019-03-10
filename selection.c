@@ -18,20 +18,30 @@
 static int ms_isinteger (const char *string);
 static int ms_globmatch (const char *string, const char *pattern);
 
-/***************************************************************************
- * ms3_matchselect:
+/**********************************************************************/ /**
+ * @brief Test the specified parameters for a matching selection entry
  *
- * Test the specified parameters for a matching selection entry.  The
- * sidpattern parameter may contain globbing characters.  The NULL value
- * (matching any times) for the start and end times is NSTERROR.
+ * Search the ::MS3Selections for an entry matching the provided
+ * parameters.  The ::MS3Selections.sidpattern may contain globbing
+ * characters.  The ::MS3Selections.timewindows many contain start and
+ * end times set to ::NSTERROR to denote "open" times.
  *
- * Matching includes:
- *  glob match of sid against sidpattern in selection
- *  time window intersection with range in selection
- *  equal pubversion if selection pubversion > 0
+ * Positive matching requires:
+ * @parblock
+ *  -# glob match of sid against sidpattern in selection
+ *  -# time window intersection with range in selection
+ *  -# equal pubversion if selection pubversion > 0
+ * @endparblock
  *
- * Return MS3Selections pointer to matching entry on successful match and
- * NULL for no match or error.
+ * @param[in] selections ::MS3Selections to search
+ * @param[in] sid Source ID to match
+ * @param[in] starttime Start time to match
+ * @param[in] endtime End time to match
+ * @param[in] pubversion Publication version to match
+ * @param[out] ppselecttime Pointer-to-pointer to return the matching ::MS3SelectTime entry
+ *
+ * @returns A pointer to matching ::MS3Selections entry successful
+ * match and NULL for no match or error.
  ***************************************************************************/
 MS3Selections *
 ms3_matchselect (MS3Selections *selections, char *sid, nstime_t starttime,
@@ -88,14 +98,25 @@ ms3_matchselect (MS3Selections *selections, char *sid, nstime_t starttime,
   return (matchst) ? findsl : NULL;
 } /* End of ms3_matchselect() */
 
-/***************************************************************************
- * msr3_matchselect:
+/**********************************************************************/ /**
+ * @brief Test the ::MS3Record for a matching selection entry
  *
- * A simple wrapper for calling ms3_matchselect() using details from a
- * MSRecord struct.
+ * Search the ::MS3Selections for an entry matching the provided
+ * parameters.
  *
- * Return MS3Selections pointer to matching entry on successful match and
- * NULL for no match or error.
+ * Positive matching requires:
+ * @parblock
+ *  -# glob match of sid against sidpattern in selection
+ *  -# time window intersection with range in selection
+ *  -# equal pubversion if selection pubversion > 0
+ * @endparblock
+ *
+ * @param[in] selections ::MS3Selections to search
+ * @param[in] msr ::MS3Record to match against selections
+ * @param[out] ppselecttime Pointer-to-pointer to return the matching ::MS3SelectTime entry
+ *
+ * @returns A pointer to matching ::MS3Selections entry successful
+ * match and NULL for no match or error.
  ***************************************************************************/
 MS3Selections *
 msr3_matchselect (MS3Selections *selections, MS3Record *msr, MS3SelectTime **ppselecttime)
@@ -111,14 +132,24 @@ msr3_matchselect (MS3Selections *selections, MS3Record *msr, MS3SelectTime **pps
                           msr->pubversion, ppselecttime);
 } /* End of msr3_matchselect() */
 
-/***************************************************************************
- * ms3_addselect:
+/**********************************************************************/ /**
+ * @brief Add selection parameters to selection list.
  *
- * Add select parameters to a specified selection list.  The sidpattern
- * argument may contain globbing parameters.  The NULL value (matching
- * any value) for the start and end times is NSTERROR.
+ * The \a sidpattern may contain globbing characters.
  *
- * Return 0 on success and -1 on error.
+ * The \a starttime and \a endtime may be set to ::NSTERROR to denote
+ * "open" times.
+ *
+ * The \a pubversion may be set to 0 to match any publication
+ * version.
+ *
+ * @param[in] ppselections ::MS3Selections to add new selection to
+ * @param[in] sidpattern Source ID pattern, may contain globbing characters
+ * @param[in] starttime Start time for selection, ::NSTERROR for open
+ * @param[in] endtime End time for selection, ::NSTERROR for open
+ * @param[in] pubversion Publication version for selection, 0 for any
+ *
+ * @returns 0 on success and -1 on error.
  ***************************************************************************/
 int
 ms3_addselect (MS3Selections **ppselections, char *sidpattern,
@@ -133,7 +164,7 @@ ms3_addselect (MS3Selections **ppselections, char *sidpattern,
   /* Allocate new SelectTime and populate */
   if (!(newst = (MS3SelectTime *)calloc (1, sizeof (MS3SelectTime))))
   {
-    ms_log (2, "Cannot allocate memory\n");
+    ms_log (2, "%s(): Cannot allocate memory\n", __func__);
     return -1;
   }
 
@@ -146,7 +177,7 @@ ms3_addselect (MS3Selections **ppselections, char *sidpattern,
     /* Allocate new Selections and populate */
     if (!(newsl = (MS3Selections *)calloc (1, sizeof (MS3Selections))))
     {
-      ms_log (2, "Cannot allocate memory\n");
+      ms_log (2, "%s(): Cannot allocate memory\n", __func__);
       return -1;
     }
 
@@ -186,7 +217,7 @@ ms3_addselect (MS3Selections **ppselections, char *sidpattern,
       /* Allocate new MS3Selections and populate */
       if (!(newsl = (MS3Selections *)calloc (1, sizeof (MS3Selections))))
       {
-        ms_log (2, "Cannot allocate memory\n");
+        ms_log (2, "%s(): Cannot allocate memory\n", __func__);
         return -1;
       }
 
@@ -204,25 +235,41 @@ ms3_addselect (MS3Selections **ppselections, char *sidpattern,
   return 0;
 } /* End of ms3_addselect() */
 
-/***************************************************************************
- * ms3_addselect_comp:
+/**********************************************************************/ /**
+ * @brief Add selection parameters to a selection list based on
+ * separate source name codes
  *
- * Add select parameters to a specified selection list based on
- * separate name components.  The network, station, location, channel
- * and quality arguments may contain globbing parameters.  The NULL
- * value (matching any value) for the start and end times is NSTERROR.
+ * The \a network, \a station, \a location, and \a channel arguments may
+ * contain globbing parameters.
+
+ * The \a starttime and \a endtime may be set to ::NSTERROR to denote
+ * "open" times.
+ *
+ * The \a pubversion may be set to 0 to match any publication
+ * version.
  *
  * If any of the naming parameters are not supplied (pointer is NULL)
- * a wildcard for all matches is substituted.  As a special case, if
- * the location ID (loc) is set to "--" to match a space-space/blank
- * ID it will be translated to an empty string to match libmseed's
- * notation.
+ * a wildcard for all matches is substituted.
  *
- * Return 0 on success and -1 on error.
+ * As a special case, if the location code (loc) is set to \c "--" to
+ * match an empty location code it will be translated to an empty string
+ * to match libmseed's notation.
+ *
+ * @param[in] ppselections ::MS3Selections to add new selection to
+ * @param[in] network Network code, may contain globbing characters
+ * @param[in] station Statoin code, may contain globbing characters
+ * @param[in] location Location code, may contain globbing characters
+ * @param[in] channel channel code, may contain globbing characters
+ * @param[in] starttime Start time for selection, ::NSTERROR for open
+ * @param[in] endtime End time for selection, ::NSTERROR for open
+ * @param[in] pubversion Publication version for selection, 0 for any
+ *
+ * @return 0 on success and -1 on error.
  ***************************************************************************/
 int
-ms3_addselect_comp (MS3Selections **ppselections, char *net, char *sta, char *loc,
-                    char *chan, nstime_t starttime, nstime_t endtime, uint8_t pubversion)
+ms3_addselect_comp (MS3Selections **ppselections, char *network, char *station,
+                    char *location, char *channel, nstime_t starttime,
+                    nstime_t endtime, uint8_t pubversion)
 {
   char sidpattern[100];
   char selnet[20];
@@ -233,9 +280,9 @@ ms3_addselect_comp (MS3Selections **ppselections, char *net, char *sta, char *lo
   if (!ppselections)
     return -1;
 
-  if (net)
+  if (network)
   {
-    strncpy (selnet, net, sizeof (selnet));
+    strncpy (selnet, network, sizeof (selnet));
     selnet[sizeof (selnet) - 1] = '\0';
   }
   else
@@ -243,9 +290,9 @@ ms3_addselect_comp (MS3Selections **ppselections, char *net, char *sta, char *lo
     strcpy (selnet, "*");
   }
 
-  if (sta)
+  if (station)
   {
-    strncpy (selsta, sta, sizeof (selsta));
+    strncpy (selsta, station, sizeof (selsta));
     selsta[sizeof (selsta) - 1] = '\0';
   }
   else
@@ -253,16 +300,16 @@ ms3_addselect_comp (MS3Selections **ppselections, char *net, char *sta, char *lo
     strcpy (selsta, "*");
   }
 
-  if (loc)
+  if (location)
   {
     /* Test for special case blank location ID */
-    if (!strcmp (loc, "--"))
+    if (!strcmp (location, "--"))
     {
       selloc[0] = '\0';
     }
     else
     {
-      strncpy (selloc, loc, sizeof (selloc));
+      strncpy (selloc, location, sizeof (selloc));
       selloc[sizeof (selloc) - 1] = '\0';
     }
   }
@@ -271,9 +318,9 @@ ms3_addselect_comp (MS3Selections **ppselections, char *net, char *sta, char *lo
     strcpy (selloc, "*");
   }
 
-  if (chan)
+  if (channel)
   {
-    strncpy (selchan, chan, sizeof (selchan));
+    strncpy (selchan, channel, sizeof (selchan));
     selchan[sizeof (selchan) - 1] = '\0';
   }
   else
@@ -295,25 +342,30 @@ ms3_addselect_comp (MS3Selections **ppselections, char *net, char *sta, char *lo
 
 #define MAX_SELECTION_FIELDS 8
 
-/***************************************************************************
- * ms3_readselectionsfile:
+/**********************************************************************/ /**
+ * @brief Read data selections from a file
  *
- * Read a list of data selections from a file and add them to the
- * specified selections list.  On errors this routine will leave
- * allocated memory unreachable (leaked), it is expected that this is
- * a program failing condition.
+ * Selections from a file are added to the specified selections list.
+ * On errors this routine will leave allocated memory unreachable
+ * (leaked), it is expected that this is a program failing condition.
  *
  * As a special case if the filename is "-", selection lines will be
  * read from stdin.
  *
- * The selection file may contain two line formats:
- *   "SourceID  [Starttime  [Endtime  [Pubversion]]]"
+ * Each line of the file contains a single selection and may be one of
+ * these two line formats:
+ * @code
+ *   SourceID  [Starttime  [Endtime  [Pubversion]]]
+ * @endcode
  *  or
- *   "Network  Station  Location  Channel  [Quality  [Starttime  [Endtime]]]"
+ * @code
+ *   Network  Station  Location  Channel  [Quality  [Starttime  [Endtime]]]
+ * @endcode
  *
- * In the later version, the Quality field is ignored as of libmseed version 3.
+ * In the latter version, the Quality field is ignored as of libmseed
+ * version 3.
  *
- * Returns count of selections added on success and -1 on error.
+ * @returns Count of selections added on success and -1 on error.
  ***************************************************************************/
 int
 ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
@@ -342,7 +394,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
   {
     if (!(fp = fopen (filename, "rb")))
     {
-      ms_log (2, "Cannot open file %s: %s\n", filename, strerror (errno));
+      ms_log (2, "%s(): Cannot open file %s: %s\n", __func__, filename, strerror (errno));
       return -1;
     }
   }
@@ -444,7 +496,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
       starttime = ms_seedtimestr2nstime (cp);
       if (starttime == NSTERROR)
       {
-        ms_log (2, "Cannot convert data selection start time (line %d): %s\n", linecount, cp);
+        ms_log (2, "%s(): Cannot convert data selection start time (line %d): %s\n", __func__, linecount, cp);
         return -1;
       }
     }
@@ -461,7 +513,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
       endtime = ms_seedtimestr2nstime (cp);
       if (endtime == NSTERROR)
       {
-        ms_log (2, "Cannot convert data selection end time (line %d): %s\n", linecount, cp);
+        ms_log (2, "%s(): Cannot convert data selection end time (line %d): %s\n", __func__, linecount, cp);
         return -1;
       }
     }
@@ -482,7 +534,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
 
         if (longpver < 0 || longpver > 255 )
         {
-          ms_log (2, "Cannot convert publication version (line %d): %s\n", linecount, fields[3]);
+          ms_log (2, "%s(): Cannot convert publication version (line %d): %s\n", __func__, linecount, fields[3]);
           return -1;
         }
         else
@@ -494,7 +546,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
       /* Add selection to list */
       if (ms3_addselect (ppselections, fields[0], starttime, endtime, pubversion))
       {
-        ms_log (2, "[%s] Error adding selection on line %d\n", filename, linecount);
+        ms_log (2, "%s(%s): Error adding selection on line %d\n", __func__, filename, linecount);
         return -1;
       }
     }
@@ -513,7 +565,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
 
         if (longpver < 0 || longpver > 255 )
         {
-          ms_log (2, "Cannot convert publication version (line %d): %s\n", linecount, fields[4]);
+          ms_log (2, "%s(): Cannot convert publication version (line %d): %s\n", __func__, linecount, fields[4]);
           return -1;
         }
         else
@@ -525,13 +577,13 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
       if (ms3_addselect_comp (ppselections, fields[0], fields[1], fields[2], fields[3],
                               starttime, endtime, pubversion))
       {
-        ms_log (2, "[%s] Error adding selection on line %d\n", filename, linecount);
+        ms_log (2, "%s(%s): Error adding selection on line %d\n", __func__, filename, linecount);
         return -1;
       }
     }
     else
     {
-      ms_log (2, "[%s] Skipping unrecognized data selection on line %d\n", filename, linecount);
+      ms_log (2, "%s(%s): Skipping unrecognized data selection on line %d\n", __func__, filename, linecount);
     }
 
     selectcount++;
@@ -543,10 +595,12 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
   return selectcount;
 } /* End of ms_readselectionsfile() */
 
-/***************************************************************************
- * ms3_freeselections:
+/**********************************************************************/ /**
+ * @brief Free all memory associated with a ::MS3Selections
  *
- * Free all memory associated with a MS3Selections struct.
+ * All memory from one or more ::MS3Selections (in a linked list) are freed.
+ *
+ * @param[in] selections Start of ::MS3Selections to free
  ***************************************************************************/
 void
 ms3_freeselections (MS3Selections *selections)
@@ -583,10 +637,12 @@ ms3_freeselections (MS3Selections *selections)
 
 } /* End of ms3_freeselections() */
 
-/***************************************************************************
- * ms3_printselections:
+/**********************************************************************/ /**
+ * @brief Print the selections list using the ms_log() facility.
  *
- * Print the selections list using the ms_log() facility.
+ * All selections are printed with simple formatting.
+ *
+ * @param[in] selections Start of ::MS3Selections to print
  ***************************************************************************/
 void
 ms3_printselections (MS3Selections *selections)
@@ -609,12 +665,12 @@ ms3_printselections (MS3Selections *selections)
     while (selecttime)
     {
       if (selecttime->starttime != NSTERROR)
-        ms_nstime2seedtimestr (selecttime->starttime, starttime, 1);
+        ms_nstime2timestr (selecttime->starttime, starttime, 2, 1);
       else
         strncpy (starttime, "No start time", sizeof (starttime) - 1);
 
       if (selecttime->endtime != NSTERROR)
-        ms_nstime2seedtimestr (selecttime->endtime, endtime, 1);
+        ms_nstime2timestr (selecttime->endtime, endtime, 2, 1);
       else
         strncpy (endtime, "No end time", sizeof (endtime) - 1);
 

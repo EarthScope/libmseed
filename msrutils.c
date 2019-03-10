@@ -14,15 +14,18 @@
 
 #include "libmseed.h"
 
-/***************************************************************************
- * msr3_init:
+/**********************************************************************/ /**
+ * @brief Initialize and return an ::MS3Record
  *
- * Initialize and return an MS3Record struct, allocating memory if
- * needed.  If memory for the datasamples field has been allocated the
- * pointer will be retained for reuse.  If memory for extra headers
- * has been allocated it will be released.
+ * Memory is allocated if for a new ::MS3Record if \a msr is NULL.
  *
- * Returns a pointer to a MS3Record struct on success or NULL on error.
+ * If memory for the \c datasamples field has been allocated the pointer
+ * will be retained for reuse.  If memory for extra headers has been
+ * allocated it will be released.
+ *
+ * @param[in] msr A ::MS3Record to re-initialize
+ *
+ * @returns a pointer to a ::MS3Record struct on success or NULL on error.
  ***************************************************************************/
 MS3Record *
 msr3_init (MS3Record *msr)
@@ -43,7 +46,7 @@ msr3_init (MS3Record *msr)
 
   if (msr == NULL)
   {
-    ms_log (2, "msr3_init(): Cannot allocate memory\n");
+    ms_log (2, "%s(): Cannot allocate memory\n", __func__);
     return NULL;
   }
 
@@ -58,10 +61,13 @@ msr3_init (MS3Record *msr)
   return msr;
 } /* End of msr3_init() */
 
-/***************************************************************************
- * msr3_free:
+/**********************************************************************/ /**
+ * @brief Free all memory associated with a ::MS3Record
  *
- * Free all memory associated with a MS3Record struct.
+ * Free all memory associated with a ::MS3Record, including extra
+ * header and data samples if present.
+ *
+ * @param[in] ppmsr Pointer to point of the ::MS3Record to free
  ***************************************************************************/
 void
 msr3_free (MS3Record **ppmsr)
@@ -80,14 +86,15 @@ msr3_free (MS3Record **ppmsr)
   }
 } /* End of msr3_free() */
 
-/***************************************************************************
- * msr3_duplicate:
+/**********************************************************************/ /**
+ * @brief Duplicate a ::MS3Record
  *
- * Duplicate an M3SRecord struct including the extra headers.  If the
- * datadup flag is true and the source MS3Record has associated data
- * samples copy them as well.
+ * Extra headers are duplicated as well.
  *
- * Returns a pointer to a new MS3Record on success and NULL on error.
+ * If the \a datadup flag is true (non-zero) and the source
+ * ::MS3Record has associated data samples copy them as well.
+ *
+ * @returns Pointer to a new ::MS3Record on success and NULL on error.
  ***************************************************************************/
 MS3Record *
 msr3_duplicate (MS3Record *msr, int8_t datadup)
@@ -115,7 +122,7 @@ msr3_duplicate (MS3Record *msr, int8_t datadup)
     /* Allocate memory for new FSDH structure */
     if ((dupmsr->extra = (char *)malloc (msr->extralength)) == NULL)
     {
-      ms_log (2, "msr3_duplicate(): Error allocating memory\n");
+      ms_log (2, "%s(): Error allocating memory\n", __func__);
       msr3_free (&dupmsr);
       return NULL;
     }
@@ -131,8 +138,7 @@ msr3_duplicate (MS3Record *msr, int8_t datadup)
 
     if (samplesize == 0)
     {
-      ms_log (2, "msr3_duplicate(): unrecognized sample type: '%c'\n",
-              msr->sampletype);
+      ms_log (2, "%s(): unrecognized sample type: '%c'\n", __func__, msr->sampletype);
       msr3_free (&dupmsr);
       return NULL;
     }
@@ -140,7 +146,7 @@ msr3_duplicate (MS3Record *msr, int8_t datadup)
     /* Allocate memory for new data array */
     if ((dupmsr->datasamples = (void *)malloc ((size_t) (msr->numsamples * samplesize))) == NULL)
     {
-      ms_log (2, "msr3_duplicate(): Error allocating memory\n");
+      ms_log (2, "%s(): Error allocating memory\n", __func__);
       msr3_free (&dupmsr);
       return NULL;
     }
@@ -157,23 +163,19 @@ msr3_duplicate (MS3Record *msr, int8_t datadup)
   return dupmsr;
 } /* End of msr3_duplicate() */
 
-/***************************************************************************
- * msr_endtime:
+/**********************************************************************/ /**
+ * @brief Calculate time of the last sample in a record
  *
- * Calculate the time of the last sample in the record; this is the
- * actual last sample time and *not* the time "covered" by the last
- * sample.
+ * If leap seconds have been loaded into the internal library list:
+ * when a record completely contains a leap second, starts before and
+ * ends after, the calculated end time will be adjusted (reduced) by
+ * one second.
+ * @note On the epoch time scale the value of a leap second is the
+ * same as the second following the leap second, without external
+ * information the values are ambiguous.
+ * \sa ms_readleapsecondfile()
  *
- * On the epoch time scale the value of a leap second is the same as
- * the second following the leap second, without external information
- * the values are ambiguous.
- *
- * Leap second handling: when a record completely contains a leap
- * second, starts before and ends after, the calculated end time will
- * be adjusted (reduced) by one second.
- *
- * Returns the time of the last sample as a high precision epoch time
- * on success and NSTERROR on error.
+ * @returns Time of the last sample on success and NSTERROR on error.
  ***************************************************************************/
 nstime_t
 msr3_endtime (MS3Record *msr)
@@ -207,28 +209,28 @@ msr3_endtime (MS3Record *msr)
 } /* End of msr3_endtime() */
 
 
-/***************************************************************************
- * msr3_print:
+/**********************************************************************/ /**
+ * @brief Print header values of an MS3Record
  *
- * Prints header values in an MS3Record struct.
- *
- * The value of details functions as follows:
- *  0 = print a single summary line
- *  1 = print most details of header
- * >1 = print all details of header and extra headers if present
- *
+ * @param[in] msr ::MS3Record to print
+ * @param[in] details Flags to control the level of details:
+ * @parblock
+ *  - \c 0 - print a single summary line
+ *  - \c 1 - print most details of header
+ *  - \c >1 - print all details of header and extra headers if present
+ * @endparblock
  ***************************************************************************/
 void
 msr3_print (MS3Record *msr, int8_t details)
 {
-  char time[25];
+  char time[30];
   char b;
 
   if (!msr)
     return;
 
   /* Generate a start time string */
-  ms_nstime2seedtimestr (msr->starttime, time, 1);
+  ms_nstime2timestr (msr->starttime, time, 2, 1);
 
   /* Report information in the fixed header */
   if (details > 0)
@@ -283,18 +285,17 @@ msr3_print (MS3Record *msr, int8_t details)
   }
 } /* End of msr3_print() */
 
-/***************************************************************************
- * msr3_host_latency:
+/**********************************************************************/ /**
+ * @brief Calculate data latency based on the host time
  *
- * Calculate the latency based on the host time in UTC accounting for
- * the time covered using the number of samples and sample rate; in
+ * Calculation is based on the time of the last sample in the record; in
  * other words, the difference between the host time and the time of
- * the last sample in the specified miniSEED record.
+ * the last sample in the record.
  *
  * Double precision is returned, but the true precision is dependent
  * on the accuracy of the host system clock among other things.
  *
- * Returns seconds of latency or 0.0 on error (indistinguishable from
+ * @returns seconds of latency or 0.0 on error (indistinguishable from
  * 0.0 latency).
  ***************************************************************************/
 double

@@ -10,30 +10,34 @@
 #include "libmseed.h"
 #include "parson.h"
 
-/***************************************************************************
- * mseh_get_path:
+/**********************************************************************/ /**
+ * @brief Search for and return an extra header value.
  *
- * Search for and return an extra header value specified as a path in
- * dot notation, e.g "objectA.objectB.value"
+ * The extra header value is specified as a path in dot notation, e.g.
+ * \c 'objectA.objectB.header'
  *
  * This routine can get used to test for the existence of a value
- * without returning the value by setting 'value' to NULL.
+ * without returning the value by setting \a value to NULL.
  *
- * If the target item is found (and 'value' parameter is set) the
- * value will be copied into the memory specified by 'value'.  The
- * 'type' value specifies the data type expected:
+ * If the target item is found (and \a value parameter is set) the
+ * value will be copied into the memory specified by \c value.  The
+ * \a type value specifies the data type expected.
  *
- * type  expected type for 'value'
- * ----  -------------------------
- * n     double
- * s     char* (maximum length is: 'length' - 1)
- * b     int (boolean value of 0 or 1)
+ * @param[in] msr Parsed miniSEED record to query
+ * @param[in] path Header value desired, specified in dot notation
+ * @param[out] value Buffer for value, of type \c type
+ * @param[in] type Type of value expected, one of:
+ * @parblock
+ * - \c 'n' - \a value is type \a double
+ * - \c 's' - \a value is type \a char* (maximum length is: \c maxlength - 1)
+ * - \c 'b' - \a value of type \a int (boolean value of 0 or 1)
+ * @endparblock
+ * @param[in] maxlength Maximum length of string value
  *
- * Returns:
- *   0 on success,
- *   1 when the value was not found,
- *   2 when the value is of the wrong type,
- *   otherwise a (negative) libmseed error code.
+ * @retval 0 on success
+ * @retval 1 when the value was not found
+ * @retval 2 when the value is of a different type
+ * @returns A (negative) libmseed error code on error
  ***************************************************************************/
 int
 mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t maxlength)
@@ -59,7 +63,7 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
 
   if (!rootvalue)
   {
-    ms_log (2, "mseh_fetch_path(): Extra headers are not JSON\n");
+    ms_log (2, "%s(): Extra headers are not JSON\n", __func__);
     return MS_GENERROR;
   }
 
@@ -68,7 +72,7 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
 
   if (!rootobject)
   {
-    ms_log (2, "mseh_fetch_path(): Extra headers are not a JSON object\n");
+    ms_log (2, "%s(): Extra headers are not a JSON object\n", __func__);
     json_value_free (rootvalue);
     return MS_GENERROR;
   }
@@ -114,28 +118,29 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
   return retval;
 } /* End of mseh_get_path() */
 
-/***************************************************************************
- * mseh_set_path:
+/**********************************************************************/ /**
+ * @brief Set the value of a single extra header value
  *
- * Set the value of a single extra header value specified as a path in
- * dot notation, e.g "objectA.objectB.value".
+ * The extra header value is specified as a path in dot notation, e.g.
+ * \c 'objectA.objectB.header'.
  *
- * If the path or final header values do not exist they will be
+ * If the \a path or final header values do not exist they will be
  * created.  If the header value exists it will be replaced.
  *
- * The 'type' value specifies the data type expected for the value in
- * 'value':
+ * The \a type value specifies the data type expected for \c value.
  *
- * type  expected type for 'value'
- * ----  -------------------------
- * n     double
- * s     char*
- * b     int (boolean value of 0 or 1)
- * A     Array element as JSON_Value*
+ * @param[in] msr Parsed miniSEED record to query
+ * @param[in] path Header value desired, specified in dot notation
+ * @param[in] value Buffer for value, of type \c type
+ * @param[in] type Type of value expected, one of:
+ * @parblock
+ * - \c 'n' - \a value is type \a double
+ * - \c 's' - \a value is type \a char* (maximum length is: \c maxlength - 1)
+ * - \c 'b' - \a value is type \a int (boolean value of 0 or 1)
+ * - \c 'A' - \a value is an Array element as JSON_Value*
+ * @endparblock
  *
- * Returns:
- *   0 on success,
- *   otherwise a (negative) libmseed error code.
+ * @retval 0 on success, otherwise a (negative) libmseed error code.
  ***************************************************************************/
 int
 mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
@@ -146,13 +151,13 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
   size_t serializationsize = 0;
   char *serialized         = NULL;
 
-#define EVALSET(KEY, SET)                                 \
-  if (SET != JSONSuccess)                                 \
-  {                                                       \
-    ms_log (2, "mseh_set_path(): Cannot set: %s\n", KEY); \
-    if (rootvalue)                                        \
-      json_value_free (rootvalue);                        \
-    return MS_GENERROR;                                   \
+#define EVALSET(KEY, SET)                                \
+  if (SET != JSONSuccess)                                \
+  {                                                      \
+    ms_log (2, "%s(): Cannot set: %s\n", __func__, KEY); \
+    if (rootvalue)                                       \
+      json_value_free (rootvalue);                       \
+    return MS_GENERROR;                                  \
   }
 
   if (!msr || !value || !path)
@@ -165,7 +170,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
 
     if (!rootvalue)
     {
-      ms_log (2, "mseh_fetch_path(): Extra headers are not JSON\n");
+      ms_log (2, "%s(): Extra headers are not JSON\n", __func__);
       return MS_GENERROR;
     }
 
@@ -174,7 +179,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
 
     if (!rootobject)
     {
-      ms_log (2, "mseh_fetch_path(): Extra headers are not a JSON object\n");
+      ms_log (2, "%s(): Extra headers are not a JSON object\n", __func__);
       json_value_free (rootvalue);
       return MS_GENERROR;
     }
@@ -187,7 +192,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
 
     if (!rootobject)
     {
-      ms_log (2, "mseh_fetch_path(): Cannot initialize new JSON object\n");
+      ms_log (2, "%s(): Cannot initialize new JSON object\n", __func__);
       if (rootvalue)
         json_value_free (rootvalue);
       return MS_GENERROR;
@@ -217,7 +222,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
 
       if (!array)
       {
-        ms_log (2, "mseh_set_path(): Cannot get array\n");
+        ms_log (2, "%s(): Cannot get array\n", __func__);
         if (value)
           json_value_free (rootvalue);
         return MS_GENERROR;
@@ -227,7 +232,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
     EVALSET ("Array JSON_Value", json_array_append_value (array, (JSON_Value *)value));
     break;
   default:
-    ms_log (2, "mseh_set_path(): Unrecognized type '%d'\n", type);
+    ms_log (2, "%s(): Unrecognized type '%d'\n", __func__, type);
     json_value_free (rootvalue);
     return MS_GENERROR;
   }
@@ -237,15 +242,15 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
 
   if (!serializationsize)
   {
-    ms_log (2, "mseh_set_path(): Cannot determine new serialization size\n");
+    ms_log (2, "%s(): Cannot determine new serialization size\n", __func__);
     json_value_free (rootvalue);
     return MS_GENERROR;
   }
 
   if (serializationsize > 65535)
   {
-    ms_log (2, "mseh_set_path(): New serialization size exceeds limit of 65,535 bytes: %" PRIu64 "\n",
-            (uint64_t)serializationsize);
+    ms_log (2, "%s(): New serialization size exceeds limit of 65,535 bytes: %" PRIu64 "\n",
+            __func__, (uint64_t)serializationsize);
     json_value_free (rootvalue);
     return MS_GENERROR;
   }
@@ -254,14 +259,14 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
 
   if (!serialized)
   {
-    ms_log (2, "mseh_set_path(): Cannot determine new serialization size\n");
+    ms_log (2, "%s(): Cannot determine new serialization size\n", __func__);
     json_value_free (rootvalue);
     return MS_GENERROR;
   }
 
   if (json_serialize_to_buffer (rootvalue, serialized, serializationsize) != JSONSuccess)
   {
-    ms_log (2, "mseh_set_path(): Error serializing JSON for extra headers\n");
+    ms_log (2, "%s(): Error serializing JSON for extra headers\n", __func__);
     json_value_free (rootvalue);
     return MS_GENERROR;
   }
@@ -279,16 +284,16 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
 #undef EVALSET
 } /* End of mseh_set_path() */
 
-/***************************************************************************
- * mseh_add_event_detection:
+/**********************************************************************/ /**
+ * @brief Add event detection to the extra headers of the given record.
  *
- * Add specified event detection to the extra headers of the given record.
+ * If \a path is NULL, the default is \c 'FDSN.Event.Detection'.
  *
- * If 'path' is NULL, the default is "FDSN.Event.Detection".
+ * @param[in] msr Parsed miniSEED record to query
+ * @param[in] path Header value desired, specified in dot notation
+ * @param[in] eventdetection Structure with event detection values
  *
- * Returns:
- *   0 on success,
- *   otherwise a (negative) libmseed error code.
+ * @returns 0 on success, otherwise a (negative) libmseed error code.
  ***************************************************************************/
 int
 mseh_add_event_detection (MS3Record *msr, const char *path,
@@ -297,16 +302,16 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
   JSON_Value *value   = NULL;
   JSON_Object *object = NULL;
   JSON_Array *array   = NULL;
-  char timestring[31];
+  char timestring[30];
   char *cp = NULL;
 
-#define EVALSET(KEY, SET)                                            \
-  if (SET != JSONSuccess)                                            \
-  {                                                                  \
-    ms_log (2, "mseh_add_event_detection(): Cannot set: %s\n", KEY); \
-    if (value)                                                       \
-      json_value_free (value);                                       \
-    return MS_GENERROR;                                              \
+#define EVALSET(KEY, SET)                                \
+  if (SET != JSONSuccess)                                \
+  {                                                      \
+    ms_log (2, "%s(): Cannot set: %s\n", __func__, KEY); \
+    if (value)                                           \
+      json_value_free (value);                           \
+    return MS_GENERROR;                                  \
   }
 
   if (!msr || !eventdetection)
@@ -318,7 +323,7 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
 
   if (!object)
   {
-    ms_log (2, "mseh_add_event_detection(): Cannot initialize new JSON object\n");
+    ms_log (2, "%s(): Cannot initialize new JSON object\n", __func__);
     if (value)
       json_value_free (value);
     return MS_GENERROR;
@@ -352,7 +357,7 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
   if (eventdetection->onsettime != NSTERROR)
   {
     /* Create ISO-formatted time string with (UTC) Z suffix */
-    cp = ms_nstime2isotimestr (eventdetection->onsettime, timestring, -1);
+    cp = ms_nstime2timestr (eventdetection->onsettime, timestring, 0, -1);
     while (*cp)
       cp++;
     *cp++ = 'Z';
@@ -368,7 +373,7 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
 
     if (!array)
     {
-      ms_log (2, "mseh_add_event_detection(): Cannot get MEDSNR array\n");
+      ms_log (2, "%s(): Cannot get MEDSNR array\n", __func__);
       if (value)
         json_value_free (value);
       return MS_GENERROR;
@@ -398,7 +403,7 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
   /* Add new object to array, created 'value' will be free'd on successful return */
   if (mseh_set_path (msr, (path) ? path : "FDSN.Event.Detection", value, 'A'))
   {
-    ms_log (2, "mseh_add_event_detection(): Cannot add new array entry\n");
+    ms_log (2, "%s(): Cannot add new array entry\n", __func__);
     if (value)
       json_value_free (value);
     return MS_GENERROR;
@@ -408,16 +413,16 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
 #undef EVALSET
 } /* End of mseh_add_event_detection() */
 
-/***************************************************************************
- * mseh_add_calibration:
+/**********************************************************************/ /**
+ * @brief Add calibration to the extra headers of the given record.
  *
- * Add specified calibration to the extra headers of the given record.
+ * If \a path is NULL, the default is \c 'FDSN.Calibration.Sequence'.
  *
- * If 'path' is NULL, the default is "FDSN.Calibration.Sequence".
+ * @param[in] msr Parsed miniSEED record to query
+ * @param[in] path Header value desired, specified in dot notation
+ * @param[in] calibration Structure with calibration values
  *
- * Returns:
- *   0 on success,
- *   otherwise a (negative) libmseed error code.
+ * @returns 0 on success, otherwise a (negative) libmseed error code.
  ***************************************************************************/
 int
 mseh_add_calibration (MS3Record *msr, const char *path,
@@ -429,13 +434,13 @@ mseh_add_calibration (MS3Record *msr, const char *path,
   char endstring[31];
   char *cp = NULL;
 
-#define EVALSET(KEY, SET)                                        \
-  if (SET != JSONSuccess)                                        \
-  {                                                              \
-    ms_log (2, "mseh_add_calibration(): Cannot set: %s\n", KEY); \
-    if (value)                                                   \
-      json_value_free (value);                                   \
-    return MS_GENERROR;                                          \
+#define EVALSET(KEY, SET)                                \
+  if (SET != JSONSuccess)                                \
+  {                                                      \
+    ms_log (2, "%s(): Cannot set: %s\n", __func__, KEY); \
+    if (value)                                           \
+      json_value_free (value);                           \
+    return MS_GENERROR;                                  \
   }
 
   if (!msr || !calibration)
@@ -447,7 +452,7 @@ mseh_add_calibration (MS3Record *msr, const char *path,
 
   if (!object)
   {
-    ms_log (2, "mseh_add_calibration(): Cannot initialize new JSON object\n");
+    ms_log (2, "%s(): Cannot initialize new JSON object\n", __func__);
     if (value)
       json_value_free (value);
     return MS_GENERROR;
@@ -461,7 +466,7 @@ mseh_add_calibration (MS3Record *msr, const char *path,
   if (calibration->begintime != NSTERROR)
   {
     /* Create ISO-formatted time string with (UTC) Z suffix */
-    cp = ms_nstime2isotimestr (calibration->begintime, beginstring, -1);
+    cp = ms_nstime2timestr (calibration->begintime, beginstring, 0, -1);
     while (*cp)
       cp++;
     *cp++ = 'Z';
@@ -472,7 +477,7 @@ mseh_add_calibration (MS3Record *msr, const char *path,
   if (calibration->endtime != NSTERROR)
   {
     /* Create ISO-formatted time string with (UTC) Z suffix */
-    cp = ms_nstime2isotimestr (calibration->endtime, endstring, -1);
+    cp = ms_nstime2timestr (calibration->endtime, endstring, 0, -1);
     while (*cp)
       cp++;
     *cp++ = 'Z';
@@ -548,7 +553,7 @@ mseh_add_calibration (MS3Record *msr, const char *path,
   /* Add new object to array, created 'value' will be free'd on successful return */
   if (mseh_set_path (msr, (path) ? path : "FDSN.Calibration.Sequence", value, 'A'))
   {
-    ms_log (2, "mseh_add_calibration(): Cannot add new array entry\n");
+    ms_log (2, "%s(): Cannot add new array entry\n", __func__);
     if (value)
       json_value_free (value);
     return MS_GENERROR;
@@ -558,16 +563,16 @@ mseh_add_calibration (MS3Record *msr, const char *path,
 #undef EVALSET
 } /* End of mseh_add_calibration() */
 
-/***************************************************************************
- * mseh_add_timing_exception:
+/**********************************************************************/ /**
+ * @brief Add timing exception to the extra headers of the given record.
  *
- * Add specified timing exception to the extra headers of the given record.
+ * If \a path is NULL, the default is \c 'FDSN.Time.Exception'.
  *
- * If 'path' is NULL, the default is "FDSN.Time.Exception".
+ * @param[in] msr Parsed miniSEED record to query
+ * @param[in] path Header value desired, specified in dot notation
+ * @param[in] exception Structure with timing exception values
  *
- * Returns:
- *   0 on success,
- *   otherwise a (negative) libmseed error code.
+ * @returns 0 on success, otherwise a (negative) libmseed error code.
  ***************************************************************************/
 int
 mseh_add_timing_exception (MS3Record *msr, const char *path,
@@ -575,16 +580,16 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
 {
   JSON_Value *value   = NULL;
   JSON_Object *object = NULL;
-  char timestring[31];
+  char timestring[30];
   char *cp = NULL;
 
-#define EVALSET(KEY, SET)                                             \
-  if (SET != JSONSuccess)                                             \
-  {                                                                   \
-    ms_log (2, "mseh_add_timing_exception(): Cannot set: %s\n", KEY); \
-    if (value)                                                        \
-      json_value_free (value);                                        \
-    return MS_GENERROR;                                               \
+#define EVALSET(KEY, SET)                                \
+  if (SET != JSONSuccess)                                \
+  {                                                      \
+    ms_log (2, "%s(): Cannot set: %s\n", __func__, KEY); \
+    if (value)                                           \
+      json_value_free (value);                           \
+    return MS_GENERROR;                                  \
   }
 
   if (!msr || !exception)
@@ -596,7 +601,7 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
 
   if (!object)
   {
-    ms_log (2, "mseh_add_timing_exception(): Cannot initialize new JSON object\n");
+    ms_log (2, "%s(): Cannot initialize new JSON object\n", __func__);
     if (value)
       json_value_free (value);
     return MS_GENERROR;
@@ -610,7 +615,7 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
   if (exception->time != NSTERROR)
   {
     /* Create ISO-formatted time string with (UTC) Z suffix */
-    cp = ms_nstime2isotimestr (exception->time, timestring, -1);
+    cp = ms_nstime2timestr (exception->time, timestring, 0, -1);
     while (*cp)
       cp++;
     *cp++ = 'Z';
@@ -638,7 +643,7 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
   /* Add new object to array, created 'value' will be free'd on successful return */
   if (mseh_set_path (msr, (path) ? path : "FDSN.Time.Exception", value, 'A'))
   {
-    ms_log (2, "mseh_add_timing_exception(): Cannot add new array entry\n");
+    ms_log (2, "%s(): Cannot add new array entry\n", __func__);
     if (value)
       json_value_free (value);
     return MS_GENERROR;
@@ -648,16 +653,16 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
 #undef EVALSET
 } /* End of mseh_add_timing_exception() */
 
-/***************************************************************************
- * mseh_add_recenter:
+/**********************************************************************/ /**
+ * @brief Add recenter event to the extra headers of the given record.
  *
- * Add specified recenter event to the extra headers of the given record.
+ * If \a path is NULL, the default is \c 'FDSN.Recenter.Sequence'.
  *
- * If 'path' is NULL, the default is "FDSN.Recenter.Sequence".
+ * @param[in] msr Parsed miniSEED record to query
+ * @param[in] path Header value desired, specified in dot notation
+ * @param[in] recenter Structure with recenter values
  *
- * Returns:
- *   0 on success,
- *   otherwise a (negative) libmseed error code.
+ * @returns 0 on success, otherwise a (negative) libmseed error code.
  ***************************************************************************/
 int
 mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
@@ -668,13 +673,13 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
   char endstring[31];
   char *cp = NULL;
 
-#define EVALSET(KEY, SET)                                     \
-  if (SET != JSONSuccess)                                     \
-  {                                                           \
-    ms_log (2, "mseh_add_recenter(): Cannot set: %s\n", KEY); \
-    if (value)                                                \
-      json_value_free (value);                                \
-    return MS_GENERROR;                                       \
+#define EVALSET(KEY, SET)                                \
+  if (SET != JSONSuccess)                                \
+  {                                                      \
+    ms_log (2, "%s(): Cannot set: %s\n", __func__, KEY); \
+    if (value)                                           \
+      json_value_free (value);                           \
+    return MS_GENERROR;                                  \
   }
 
   if (!msr || !recenter)
@@ -686,7 +691,7 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
 
   if (!object)
   {
-    ms_log (2, "mseh_add_recenter(): Cannot initialize new JSON object\n");
+    ms_log (2, "%s(): Cannot initialize new JSON object\n", __func__);
     if (value)
       json_value_free (value);
     return MS_GENERROR;
@@ -700,7 +705,7 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
   if (recenter->begintime != NSTERROR)
   {
     /* Create ISO-formatted time string with (UTC) Z suffix */
-    cp = ms_nstime2isotimestr (recenter->begintime, beginstring, -1);
+    cp = ms_nstime2timestr (recenter->begintime, beginstring, 0, -1);
     while (*cp)
       cp++;
     *cp++ = 'Z';
@@ -711,7 +716,7 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
   if (recenter->endtime != NSTERROR)
   {
     /* Create ISO-formatted time string with (UTC) Z suffix */
-    cp = ms_nstime2isotimestr (recenter->endtime, endstring, -1);
+    cp = ms_nstime2timestr (recenter->endtime, endstring, 0, -1);
     while (*cp)
       cp++;
     *cp++ = 'Z';
@@ -727,7 +732,7 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
   /* Add new object to array, created 'value' will be free'd on successful return */
   if (mseh_set_path (msr, (path) ? path : "FDSN.Recenter.Sequence", value, 'A'))
   {
-    ms_log (2, "mseh_add_recenter(): Cannot add new array entry\n");
+    ms_log (2, "%s(): Cannot add new array entry\n", __func__);
     if (value)
       json_value_free (value);
     return MS_GENERROR;
@@ -737,15 +742,13 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
 #undef EVALSET
 } /* End of mseh_add_recenter() */
 
-/***************************************************************************
- * mseh_print:
- *
- * Print the extra header structure for the specified MS3Record.
+/**********************************************************************/ /**
+ * @brief Print the extra header structure for the specified MS3Record.
  *
  * Output is printed in a pretty, formatted form for readability and
- * the root object is not printed.
+ * the anonymous, root object container is not printed.
  *
- * Returns MS_NOERROR on success and a libmseed error code on error.
+ * @returns 0 on success and a (negative) libmseed error code on error.
  ***************************************************************************/
 int
 mseh_print (MS3Record *msr, int indent)

@@ -14,7 +14,7 @@
  * lmp_ftell64:
  *
  * Return the current file position for the specified descriptor using
- * the system's closest match to the POSIX ftello.
+ * the system's closest match to the POSIX ftello().
  ***************************************************************************/
 int64_t
 lmp_ftell64 (FILE *stream)
@@ -30,7 +30,7 @@ lmp_ftell64 (FILE *stream)
  * lmp_fseek64:
  *
  * Seek to a specific file position for the specified descriptor using
- * the system's closest match to the POSIX fseeko.
+ * the system's closest match to the POSIX fseeko().
  ***************************************************************************/
 int
 lmp_fseek64 (FILE *stream, int64_t offset, int whence)

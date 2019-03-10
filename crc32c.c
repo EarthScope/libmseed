@@ -388,7 +388,6 @@ static uint32_t s_crc32c_sb8(const uint8_t *input, int length, uint32_t previous
 
 
 /************************************************************************
- * ms_crc32c:
  *
  * Calculate CRC-32C (Castagnoli) for the specified input data.
  *

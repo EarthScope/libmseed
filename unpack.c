@@ -29,8 +29,6 @@
   (((uintptr_t) (const void *)(POINTER)) % (BYTE_COUNT) == 0)
 
 /***************************************************************************
- * msr3_unpack_mseed3:
- *
  * Unpack a miniSEED 3.x data record and populate a MS3Record struct.
  *
  * If MSF_UNPACKDATA is set in flags, the data samples are
@@ -71,27 +69,27 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
 
   if (!record)
   {
-    ms_log (2, "msr3_unpack_mseed3(): record argument must be specified\n");
+    ms_log (2, "%s(): record argument must be specified\n", __func__);
     return MS_GENERROR;
   }
 
   if (!ppmsr)
   {
-    ms_log (2, "msr3_unpack_mseed3(): ppmsr argument cannot be NULL\n");
+    ms_log (2, "%s(): ppmsr argument cannot be NULL\n", __func__);
     return MS_GENERROR;
   }
 
   /* Verify that passed record length is within supported range */
   if (reclen < MINRECLEN || reclen > MAXRECLEN)
   {
-    ms_log (2, "msr3_unpack_mseed2(): Record length is out of allowed range: %d\n", reclen);
+    ms_log (2, "%s(): Record length is out of allowed range: %d\n", __func__, reclen);
     return MS_OUTOFRANGE;
   }
 
   /* Verify that record includes a valid header */
   if (!MS3_ISVALIDHEADER (record))
   {
-    ms_log (2, "msr3_unpack_mseed3() Record header unrecognized, not a valid miniSEED record\n");
+    ms_log (2, "%s() Record header unrecognized, not a valid miniSEED record\n", __func__);
     return MS_NOTSEED;
   }
 
@@ -111,8 +109,8 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
   /* Record SID length must be at most one less than maximum size to leave a byte for termination */
   if (sidlength >= sizeof (msr->sid))
   {
-    ms_log (2, "msr3_unpack_mseed3(%.*s): Source identifier is longer (%d) than supported (%d)\n",
-            sidlength, pMS3FSDH_SID (record), sidlength, (int)sizeof (msr->sid) - 1);
+    ms_log (2, "%s(%.*s): Source identifier is longer (%d) than supported (%d)\n",
+            __func__, sidlength, pMS3FSDH_SID (record), sidlength, (int)sizeof (msr->sid) - 1);
     return MS_GENERROR;
   }
 
@@ -127,8 +125,8 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
 
     if (header_crc != calculated_crc)
     {
-      ms_log (2, "msr3_unpack_mseed3(%.*s) CRC is invalid, miniSEED record may be corrupt\n",
-              sidlength, pMS3FSDH_SID (record));
+      ms_log (2, "%s(%.*s) CRC is invalid, miniSEED record may be corrupt\n",
+              __func__, sidlength, pMS3FSDH_SID (record));
       return MS_INVALIDCRC;
     }
   }
@@ -158,8 +156,8 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
                                    HO4u (*pMS3FSDH_NSEC (record), msr->swapflag));
   if (msr->starttime == NSTERROR)
   {
-    ms_log (2, "msr3_unpack_mseed3(%.*s): Cannot convert start time to internal time stamp\n",
-            sidlength, pMS3FSDH_SID (record));
+    ms_log (2, "%s(%.*s): Cannot convert start time to internal time stamp\n",
+            __func__, sidlength, pMS3FSDH_SID (record));
     return MS_GENERROR;
   }
 
@@ -174,7 +172,7 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
   {
     if ((msr->extra = (char *)malloc (msr->extralength)) == NULL)
     {
-      ms_log (2, "msr3_unpack_mseed2(%s): Cannot allocate memory for extra headers\n", msr->sid);
+      ms_log (2, "%s(%s): Cannot allocate memory for extra headers\n", __func__, msr->sid);
       return MS_GENERROR;
     }
 
@@ -219,8 +217,6 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
 } /* End of msr3_unpack_mseed3() */
 
 /***************************************************************************
- * msr3_unpack_mseed2:
- *
  * Unpack a miniSEED 2.x data record and populate a MS3Record struct.
  *
  * If MSF_UNPACKDATA is set in flags the data samples are
@@ -274,13 +270,13 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
   if (!record)
   {
-    ms_log (2, "msr3_unpack_mseed2(): record argument must be specified\n");
+    ms_log (2, "%s(): record argument must be specified\n", __func__);
     return MS_GENERROR;
   }
 
   if (!ppmsr)
   {
-    ms_log (2, "msr3_unpack_mseed2(): ppmsr argument must be specified\n");
+    ms_log (2, "%s(): ppmsr argument must be specified\n", __func__);
     return MS_GENERROR;
   }
 
@@ -288,8 +284,8 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   if (reclen < 64 || reclen > MAXRECLEN)
   {
     ms2_recordsid (record, errorsid, sizeof (errorsid));
-    ms_log (2, "msr3_unpack_mseed2(%s): Record length is out of allowd range: %d\n",
-            errorsid, reclen);
+    ms_log (2, "%s(%s): Record length is out of allowd range: %d\n",
+            __func__, errorsid, reclen);
 
     return MS_OUTOFRANGE;
   }
@@ -298,8 +294,8 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   if (!MS2_ISVALIDHEADER (record))
   {
     ms2_recordsid (record, errorsid, sizeof (errorsid));
-    ms_log (2, "msr3_unpack_mseed2(%s) Record header unrecognized, not a valid miniSEED record\n",
-            errorsid);
+    ms_log (2, "%s(%s) Record header unrecognized, not a valid miniSEED record\n",
+            __func__, errorsid);
 
     return MS_NOTSEED;
   }
@@ -428,16 +424,16 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
     if (blkt_length == 0)
     {
-      ms_log (2, "msr3_unpack_mseed2(%s): Unknown blockette length for type %d\n",
-              msr->sid, blkt_type);
+      ms_log (2, "%s(%s): Unknown blockette length for type %d\n",
+              __func__, msr->sid, blkt_type);
       break;
     }
 
     /* Make sure blockette is contained within the msrecord buffer */
     if ((blkt_offset + blkt_length) > reclen)
     {
-      ms_log (2, "msr3_unpack_mseed2(%s): Blockette %d extends beyond record size, truncated?\n",
-              msr->sid, blkt_type);
+      ms_log (2, "%s(%s): Blockette %d extends beyond record size, truncated?\n",
+              __func__, msr->sid, blkt_type);
       break;
     }
 
@@ -486,7 +482,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
       if (mseh_add_event_detection (msr, NULL, &eventdetection))
       {
-        ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 200 to extra headers\n", msr->sid);
+        ms_log (2, "%s(%s): Problem mapping Blockette 200 to extra headers\n", __func__, msr->sid);
         return MS_GENERROR;
       }
     }
@@ -519,7 +515,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
       if (mseh_add_event_detection (msr, NULL, &eventdetection))
       {
-        ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 201 to extra headers\n", msr->sid);
+        ms_log (2, "%s(%s): Problem mapping Blockette 201 to extra headers\n", __func__, msr->sid);
         return MS_GENERROR;
       }
     }
@@ -574,7 +570,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
       if (mseh_add_calibration (msr, NULL, &calibration))
       {
-        ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 300 to extra headers\n", msr->sid);
+        ms_log (2, "%s(%s): Problem mapping Blockette 300 to extra headers\n", __func__, msr->sid);
         return MS_GENERROR;
       }
     }
@@ -631,7 +627,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
       if (mseh_add_calibration (msr, NULL, &calibration))
       {
-        ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 310 to extra headers\n", msr->sid);
+        ms_log (2, "%s(%s): Problem mapping Blockette 310 to extra headers\n", __func__, msr->sid);
         return MS_GENERROR;
       }
     }
@@ -682,7 +678,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
       if (mseh_add_calibration (msr, NULL, &calibration))
       {
-        ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 320 to extra headers\n", msr->sid);
+        ms_log (2, "%s(%s): Problem mapping Blockette 320 to extra headers\n", __func__, msr->sid);
         return MS_GENERROR;
       }
     }
@@ -729,7 +725,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
       if (mseh_add_calibration (msr, NULL, &calibration))
       {
-        ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 390 to extra headers\n", msr->sid);
+        ms_log (2, "%s(%s): Problem mapping Blockette 390 to extra headers\n", __func__, msr->sid);
         return MS_GENERROR;
       }
     }
@@ -767,7 +763,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
       if (mseh_add_calibration (msr, NULL, &calibration))
       {
-        ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 395 to extra headers\n", msr->sid);
+        ms_log (2, "%s(%s): Problem mapping Blockette 395 to extra headers\n", __func__, msr->sid);
         return MS_GENERROR;
       }
     }
@@ -775,13 +771,13 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     /* Blockette 400, beam blockette */
     else if (blkt_type == 400)
     {
-      ms_log (1, "msr3_unpack_mseed2(%s): WARNING Blockette 400 is present but discarded\n", msr->sid);
+      ms_log (1, "%s(%s): WARNING Blockette 400 is present but discarded\n", __func__, msr->sid);
     }
 
     /* Blockette 400, beam delay blockette */
     else if (blkt_type == 405)
     {
-      ms_log (1, "msr3_unpack_mseed2(%s): WARNING Blockette 405 is present but discarded\n", msr->sid);
+      ms_log (1, "%s(%s): WARNING Blockette 405 is present but discarded\n", __func__, msr->sid);
     }
 
     /* Blockette 500, timing blockette */
@@ -803,7 +799,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
       if (mseh_add_timing_exception (msr, NULL, &exception))
       {
-        ms_log (2, "msr3_unpack_mseed2(%s): Problem mapping Blockette 500 to extra headers\n", msr->sid);
+        ms_log (2, "%s(%s): Problem mapping Blockette 500 to extra headers\n", __func__, msr->sid);
         return MS_GENERROR;
       }
 
@@ -822,8 +818,8 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       /* Compare against the specified length */
       if (msr->reclen != reclen && verbose)
       {
-        ms_log (2, "msr3_unpack_mseed2(%s): Record length in Blockette 1000 (%d) != specified length (%d)\n",
-                msr->sid, msr->reclen, reclen);
+        ms_log (2, "%s(%s): Record length in Blockette 1000 (%d) != specified length (%d)\n",
+                __func__, msr->sid, msr->reclen, reclen);
       }
 
       msr->encoding = *pMS2B1000_ENCODING (record + blkt_offset);
@@ -850,27 +846,27 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
     else if (blkt_type == 2000)
     {
-      ms_log (1, "msr3_unpack_mseed2(%s): WARNING Blockette 2000 is present but discarded\n", msr->sid);
+      ms_log (1, "%s(%s): WARNING Blockette 2000 is present but discarded\n", __func__, msr->sid);
     }
 
     else
     { /* Unknown blockette type */
-      ms_log (1, "msr3_unpack_mseed2(%s): WARNING, unsupported blockette type %d, skipping\n", msr->sid);
+      ms_log (1, "%s(%s): WARNING, unsupported blockette type %d, skipping\n", __func__, msr->sid);
     }
 
     /* Check that the next blockette offset is beyond the current blockette */
     if (next_blkt && next_blkt < (blkt_offset + blkt_length))
     {
-      ms_log (2, "msr2_unpack_mseed2(%s): Offset to next blockette (%d) is within current blockette ending at byte %d\n",
-              msr->sid, next_blkt, (blkt_offset + blkt_length));
+      ms_log (2, "%s(%s): Offset to next blockette (%d) is within current blockette ending at byte %d\n",
+              __func__, msr->sid, next_blkt, (blkt_offset + blkt_length));
 
       blkt_offset = 0;
     }
     /* Check that the offset is within record length */
     else if (next_blkt && next_blkt > reclen)
     {
-      ms_log (2, "msr3_unpack_mseed2(%s): Offset to next blockette (%d) from type %d is beyond record length\n",
-              msr->sid, next_blkt, blkt_type);
+      ms_log (2, "%s(%s): Offset to next blockette (%d) from type %d is beyond record length\n",
+              __func__, msr->sid, next_blkt, blkt_type);
 
       blkt_offset = 0;
     }
@@ -911,8 +907,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   msr->starttime = ms_btime2nstime ((uint8_t*)pMS2FSDH_YEAR (record), msr->swapflag);
   if (msr->starttime == NSTERROR)
   {
-    ms_log (2, "msr3_unpack_mseed2(%s): Cannot convert start time to internal time stamp\n",
-            msr->sid);
+    ms_log (2, "%s(%s): Cannot convert start time to internal time stamp\n", __func__, msr->sid);
     return MS_GENERROR;
   }
 
@@ -975,22 +970,26 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   return MS_NOERROR;
 } /* End of msr3_unpack_mseed2() */
 
-/************************************************************************
- * msr3_data_bounds:
+/*******************************************************************/ /**
+ * @brief Determine the data payload bounds for a MS3Record
  *
- * Determine the data payload bounds, starting offset in record and
- * size, for a specified MS3Record.  For miniSEED 2.x the raw record
- * is expected to be located at the MS3Record->record pointer.
+ * Bounds are the starting offset in record and size.  For miniSEED
+ * 2.x the raw record is expected to be located at the
+ * ::MS3Record.record pointer.
  *
- * When the encoding is a fixed length per sample (ascii, integers or
- * floats), calculate the data size based on the sample count and use
- * if less than size determined otherwise.
+ * When the encoding is a fixed length per sample (text/ASCII,
+ * integers or floats), calculate the data size based on the sample
+ * count and use if less than size determined otherwise.
  *
  * When the encoding is Steim1 or Steim2, search for 64-byte padding
  * frames (all zeros) at the end of the payload and remove from the
  * reported size.
  *
- * Return 0 on success or negative libmseed error code.
+ * @param[in] msr The ::MS3Record to determine payload bounds for
+ * @param[out] dataoffset Offset from start of record to start of payload
+ * @param[out] datasize Payload size in bytes
+ *
+ * @return 0 on success or negative library error code.
  ************************************************************************/
 int
 msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint16_t *datasize)
@@ -1015,8 +1014,8 @@ msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint16_t *datasize)
   }
   else
   {
-    ms_log (2, "msr3_data_bounds(%s): Unrecognized format version: %d\n",
-            msr->sid, msr->formatversion);
+    ms_log (2, "%s(%s): Unrecognized format version: %d\n",
+            __func__, msr->sid, msr->formatversion);
     return MS_GENERROR;
   }
 
@@ -1064,21 +1063,27 @@ msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint16_t *datasize)
   return 0;
 } /* End of msr3_data_bounds() */
 
-/************************************************************************
- * msr3_unpack_data:
+/*******************************************************************/ /**
+ * @brief Unpack data samples for a ::MS3Record
  *
- * Unpack miniSEED data samples for a given MS3Record.  The
- * packed/encoded data is accessed in the record indicated by
- * MS3Record->record and the unpacked samples are placed in
- * MS3Record->datasamples.  The resulting data samples are either text
- * characters, 32-bit integers, 32-bit floats or 64-bit floats in host
- * byte order.
+ * This routine can be used to unpack the data samples for a
+ * ::MSRecord that was earlier parsed without the data samples being
+ * decoded.
+ *
+ * The packed/encoded data is accessed in the record indicated by
+ * ::MS3Record.record and the unpacked samples are placed in
+ * ::MS3Record.datasamples.  The resulting data samples are either
+ * text (ASCII) characters, 32-bit integers, 32-bit floats or 64-bit
+ * floats in host byte order.
  *
  * An internal buffer is allocated if the encoded data is not aligned
  * for the sample size, which is a decent indicator of the alignment
  * needed for decoding efficiently.
  *
- * Return number of samples unpacked or negative libmseed error code.
+ * @param[in] msr Target ::MS3Record to unpack data samples
+ * @param[in] verbose Flag to control verbosity, 0 means no diagnostic output
+ *
+ * @return number of samples unpacked or negative libmseed error code.
  ************************************************************************/
 int
 msr3_unpack_data (MS3Record *msr, int8_t verbose)
@@ -1096,7 +1101,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
 
   if (!msr->record)
   {
-    ms_log (2, "msr3_unpack_data(%s): Raw record pointer is unset\n", msr->sid);
+    ms_log (2, "%s(%s): Raw record pointer is unset\n", __func__, msr->sid);
     return MS_GENERROR;
   }
 
@@ -1112,13 +1117,12 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   /* Sanity check record length */
   if (msr->reclen == -1)
   {
-    ms_log (2, "msr3_unpack_data(%s): Record size unknown\n", msr->sid);
+    ms_log (2, "%s(%s): Record size unknown\n", __func__, msr->sid);
     return MS_NOTSEED;
   }
   else if (msr->reclen < MINRECLEN || msr->reclen > MAXRECLEN)
   {
-    ms_log (2, "msr3_unpack_data(%s): Unsupported record length: %d\n",
-            msr->sid, msr->reclen);
+    ms_log (2, "%s(%s): Unsupported record length: %d\n", __func__, msr->sid, msr->reclen);
     return MS_OUTOFRANGE;
   }
 
@@ -1129,8 +1133,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   /* Sanity check data offset before creating a pointer based on the value */
   if (dataoffset < MINRECLEN || dataoffset >= msr->reclen)
   {
-    ms_log (2, "msr3_unpack_data(%s): data offset value is not valid: %d\n",
-            msr->sid, dataoffset);
+    ms_log (2, "%s(%s): data offset value is not valid: %d\n", __func__, msr->sid, dataoffset);
     return MS_GENERROR;
   }
 
@@ -1175,7 +1178,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   {
     if ((encoded_allocated = (char *) malloc (datasize)) == NULL)
     {
-      ms_log (2, "msr3_unpack_data(): Cannot allocate memory for encoded data\n");
+      ms_log (2, "%s(): Cannot allocate memory for encoded data\n", __func__);
       return MS_GENERROR;
     }
 
@@ -1193,7 +1196,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
 
     if (msr->datasamples == NULL)
     {
-      ms_log (2, "msr3_unpack_data(%s): Cannot (re)allocate memory\n", msr->sid);
+      ms_log (2, "%s(%s): Cannot (re)allocate memory\n", __func__, msr->sid);
       if (encoded_allocated)
         free (encoded_allocated);
       return MS_GENERROR;
@@ -1363,8 +1366,8 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
 
   if (nsamples >= 0 && nsamples != msr->samplecnt)
   {
-    ms_log (2, "msr3_unpack_data(%s): only decoded %d samples of %d expected\n",
-            msr->sid, nsamples, msr->samplecnt);
+    ms_log (2, "%s(%s): only decoded %d samples of %d expected\n",
+            __func__, msr->sid, nsamples, msr->samplecnt);
     return MS_GENERROR;
   }
 
@@ -1375,8 +1378,6 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
 } /* End of msr3_unpack_data() */
 
 /***************************************************************************
- * ms_nomsamprate:
- *
  * Calculate a sample rate from SEED sample rate factor and multiplier
  * as stored in the fixed section header of data records.
  *

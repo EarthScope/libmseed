@@ -10,10 +10,18 @@
 
 #include "libmseed.h"
 
-/***************************************************************************
- * ms_samplesize():
+/**********************************************************************/ /**
+ * @brief Determine data sample size for each type
  *
- * Returns the sample size based on type code or 0 for unknown.
+ * @param[in] sampletype Library sample type code:
+ * @parblock
+ *   - \c 'a' - Text/ASCII data type
+ *   - \c 'i' - 32-bit integer data type
+ *   - \c 'f' - 32-bit float data type
+ *   - \c 'd' - 64-bit float (double) data type
+ * @endparblock
+ *
+ * @returns The sample size based on type code or 0 for unknown.
  ***************************************************************************/
 uint8_t
 ms_samplesize (const char sampletype)
@@ -32,17 +40,19 @@ ms_samplesize (const char sampletype)
     break;
   default:
     return 0;
-  } /* end switch */
+  }
 
 } /* End of ms_samplesize() */
 
-/***************************************************************************
- * ms_encodingstr():
+/**********************************************************************/ /**
+ * @brief Descriptive string for data encodings
  *
- * Returns a string describing a data encoding format.
+ * @param[in] encoding Data sample encoding code
+ *
+ * @returns a string describing a data encoding format
  ***************************************************************************/
 const char *
-ms_encodingstr (const char encoding)
+ms_encodingstr (const uint8_t encoding)
 {
   switch (encoding)
   {
@@ -108,14 +118,16 @@ ms_encodingstr (const char encoding)
     break;
   default:
     return "Unknown format code";
-  } /* end switch */
+  }
 
 } /* End of ms_encodingstr() */
 
-/***************************************************************************
- * ms_errorstr():
+/**********************************************************************/ /**
+ * @brief Descriptive string for library @ref return-values
  *
- * Return a string describing a given libmseed error code or NULL if the
+ * @param[in] errorcode Library error code
+ *
+ * @returns a string describing the library error code or NULL if the
  * code is unknown.
  ***************************************************************************/
 const char *
@@ -150,8 +162,7 @@ ms_errorstr (int errorcode)
   case MS_INVALIDCRC:
     return "Invalid CRC detected";
     break;
-  } /* end switch */
+  }
 
   return NULL;
-
-} /* End of ms_blktdesc() */
+} /* End of ms_errorstr() */

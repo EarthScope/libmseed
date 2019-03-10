@@ -17,30 +17,30 @@
 #include "mseedformat.h"
 
 /***********************************************************************/ /**
- * msr3_parse:
  * @brief Parse miniSEED from a buffer
  *
  * This routine will attempt to parse (detect and unpack) a miniSEED
  * record from a specified memory buffer and populate a supplied
- * MS3Record structure.  Both miniSEED 2.x and 3.x records are
- * supported by this routine.
+ * ::MS3Record structure.  Both miniSEED 2.x and 3.x records are
+ * supported.
  *
- * The record length is always automatically detected.  For miniSEED
- * 2.x this means the record must contain a 1000 blockette.
+ * The record length is automatically detected.  For miniSEED 2.x this
+ * means the record must contain a 1000 blockette.
  *
- * @param record buffer containing record to parse
- * @param recbuflength buffer length in bytes
- * @param ppmsr pointer-to-point to a MS3Record that will be populated
- * @param flags flags controlling features:
- *   If the MSF_UNPACKDATA flag is set in flags, msr_unpack_mseed#()
- *   will called to unpack the data samples.x
+ * @param record Buffer containing record to parse
+ * @param recbuflength Buffer length in bytes
+ * @param ppmsr Pointer-to-point to a ::MS3Record that will be populated
+ * @param flags Flags controlling features:
+ * @parblock
+ *   - \c ::MSF_UNPACKDATA - Unpack data samples
+ * @endparblock
  * @param verbose control verbosity of diagnostic output
  *
  * @return Parsing status
- * @retval 0 Success, populates the supplied MS3Record.
+ * @retval 0 Success, populates the supplied ::MS3Record.
  * @retval >0 Data record detected but not enough data is present, the
  *       return value is a hint of how many more bytes are needed.
- * @retval <0 libmseed error code (listed in libmseed.h) is returned.
+ * @retval <0 library error code is returned.
  ***************************************************************************/
 int
 msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
@@ -118,7 +118,7 @@ msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
   }
   else
   {
-    ms_log (2, "Unrecognized format version: %d\n", formatversion);
+    ms_log (2, "%s(): Unrecognized format version: %d\n", __func__, formatversion);
 
     return MS_GENERROR;
   }
@@ -133,10 +133,10 @@ msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
   return MS_NOERROR;
 } /* End of msr3_parse() */
 
-/********************************************************************
- * ms3_detect:
+/***************************************************************/ /**
+ * @brief Detect miniSEED record in buffer
  *
- * Determine that the buffer contains a miniSEED data record by
+ * Determine if the buffer contains a miniSEED data record by
  * verifying known signatures (fields with known limited values).
  *
  * If miniSEED 2.x is detected, search the record up to recbuflen
@@ -144,10 +144,13 @@ msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
  * at 64-byte offsets for the fixed section of the next header,
  * thereby implying the record length.
  *
- * Returns:
- * -1 : data record not detected or error
- *  0 : data record detected but could not determine length
- * >0 : size of the record in bytes
+ * @param[in] record Buffer to test for record
+ * @param[in] recbuflen Length of buffer
+ * @param[out] formatversion Major version of format detected, 0 if unknown
+ *
+ * @retval -1 Data record not detected or error
+ * @retval 0 Data record detected but could not determine length
+ * @retval >0 Size of the record in bytes
  *********************************************************************/
 int
 ms3_detect (const char *record, int recbuflen, uint8_t *formatversion)
@@ -256,26 +259,28 @@ ms3_detect (const char *record, int recbuflen, uint8_t *formatversion)
     return reclen;
 } /* End of ms3_detect() */
 
-/***************************************************************************
- * ms3_parse_raw3:
+/**********************************************************************/ /**
+ * @brief Parse and verify a miniSEED 3.x record header
  *
- * Parse and verify a miniSEED 3.x data record header at the lowest
- * level, printing error messages for invalid header values and
- * optionally print raw header values.  The memory at 'record' is
- * assumed to be a miniSEED record.  Not every possible test is
- * performed, common errors and those causing libmseed parsing to fail
- * should be detected.
+ * Parsing is done at the lowest level, printing error messages for
+ * invalid header values and optionally print raw header values.
  *
- * The 'details' argument is interpreted as follows:
- *
- * details:
- *  0 = only print error messages for invalid header fields
- *  1 = print basic fields in addition to invalid field errors
- *  2 = print all fields in addition to invalid field errors
+ * The buffer at \a record is assumed to be a miniSEED record.  Not
+ * every possible test is performed, common errors and those causing
+ * library parsing to fail should be detected.
  *
  * This routine is primarily intended to diagnose invalid miniSEED headers.
  *
- * Returns 0 when no errors were detected or a positive count of
+ * @param[in] record Buffer to parse as miniSEED
+ * @param[in] maxreclen Maximum length to search in buffer
+ * @param[in] details Controls diagnostic output as follows:
+ * @parblock
+ *  - \c 0 - only print error messages for invalid header fields
+ *  - \c 1 - print basic fields in addition to invalid field errors
+ *  - \c 2 - print all fields in addition to invalid field errors
+ * @endparblock
+ *
+ * @returns 0 when no errors were detected or a positive count of
  * errors detected.
  ***************************************************************************/
 int
@@ -449,33 +454,34 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
   return retval;
 } /* End of ms_parse_raw3() */
 
-/***************************************************************************
- * ms_parse_raw2:
+/**********************************************************************/ /**
+ * @brief Parse and verify a miniSEED 2.x record header
  *
- * Parse and verify a miniSEED 2.x data record header (fixed section and
- * blockettes) at the lowest level, printing error messages for
- * invalid header values and optionally print raw header values.  The
- * memory at 'record' is assumed to be a miniSEED record.  Not every
+ * Parsing is done at the lowest level, printing error messages for
+ * invalid header values and optionally print raw header values.
+ *
+ * The buffer \a record is assumed to be a miniSEED record.  Not every
  * possible test is performed, common errors and those causing
  * libmseed parsing to fail should be detected.
  *
- * The 'details' argument is interpreted as follows:
- *
- * details:
- *  0 = only print error messages for invalid header fields
- *  1 = print basic fields in addition to invalid field errors
- *  2 = print all fields in addition to invalid field errors
- *
- * The 'swapflag' argument is interpreted as follows:
- *
- * swapflag:
- *  1 = swap multibyte quantities
- *  0 = do no swapping
- * -1 = autodetect byte order using year test, swap if needed
- *
  * This routine is primarily intended to diagnose invalid miniSEED headers.
  *
- * Returns 0 when no errors were detected or a positive count of
+ * @param[in] record Buffer to parse as miniSEED
+ * @param[in] maxreclen Maximum length to search in buffer
+ * @param[in] details Controls diagnostic output as follows:
+ * @parblock
+ *  - \c 0 - only print error messages for invalid header fields
+ *  - \c 1 - print basic fields in addition to invalid field errors
+ *  - \c 2 - print all fields in addition to invalid field errors
+ * @endparblock
+ * @param[in] swapflag Flag controlling byte-swapping as follows:
+ * @parblock
+ *  - \c 1 - swap multibyte quantities
+ *  - \c 0 - do not swap
+ *  - \c -1 - autodetect byte order using year test, swap if needed
+ * @endparblock
+ *
+ * @returns 0 when no errors were detected or a positive count of
  * errors detected.
  ***************************************************************************/
 int

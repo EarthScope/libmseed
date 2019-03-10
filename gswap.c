@@ -4,10 +4,9 @@
  * Functions for generalized, in-place byte swapping between LSBF and
  * MSBF byte orders.
  *
- * Some standard integer types are needed, namely uint8_t and
- * uint32_t, (these are normally declared by including inttypes.h or
- * stdint.h).  Each function expects it's input to be a void pointer
- * to a quantity of the appropriate size.
+ * Some standard C99 integer types are needed, namely uint8_t and
+ * uint32_t.  Each function expects its input to be a void pointer to
+ * a quantity of the appropriate size.
  *
  * There are two versions of most routines, one that works on
  * quantities regardless of alignment (gswapX) and one that works on
@@ -37,22 +36,6 @@ ms_gswap2 (void *data2)
   dat.c[0] = dat.c[1];
   dat.c[1] = temp;
   memcpy (data2, &dat, 2);
-}
-
-void
-ms_gswap3 (void *data3)
-{
-  uint8_t temp;
-
-  union {
-    uint8_t c[3];
-  } dat;
-
-  memcpy (&dat, data3, 3);
-  temp     = dat.c[0];
-  dat.c[0] = dat.c[2];
-  dat.c[2] = temp;
-  memcpy (data3, &dat, 3);
 }
 
 void

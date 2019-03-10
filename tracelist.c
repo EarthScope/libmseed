@@ -17,14 +17,16 @@ MS3TraceSeg *mstl3_msr2seg (MS3Record *msr, nstime_t endtime);
 MS3TraceSeg *mstl3_addmsrtoseg (MS3TraceSeg *seg, MS3Record *msr, nstime_t endtime, int8_t whence);
 MS3TraceSeg *mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2);
 
-/***************************************************************************
- * mstl3_init:
+/**********************************************************************/ /**
+ * @brief Initialize a ::MS3TraceList container
  *
- * Initialize and return a MS3TraceList struct, allocating memory if
- * needed.  If the supplied MS3TraceList is not NULL any associated
- * memory it will be freed including data at prvtptr pointers.
+ * A new ::MS3TraceList is allocated if needed. If the supplied
+ * ::MS3TraceList is not NULL it will be re-initialized and any
+ * associated memory will be freed including data at \a prvtptr pointers.
  *
- * Returns a pointer to a MS3TraceList struct on success or NULL on error.
+ * @param[in] mstl ::MS3TraceList to reinitialize or NULL
+ *
+ * @returns a pointer to a MS3TraceList struct on success or NULL on error.
  ***************************************************************************/
 MS3TraceList *
 mstl3_init (MS3TraceList *mstl)
@@ -38,7 +40,7 @@ mstl3_init (MS3TraceList *mstl)
 
   if (mstl == NULL)
   {
-    ms_log (2, "mstl3_init(): Cannot allocate memory\n");
+    ms_log (2, "%s(): Cannot allocate memory\n", __func__);
     return NULL;
   }
 
@@ -47,14 +49,14 @@ mstl3_init (MS3TraceList *mstl)
   return mstl;
 } /* End of mstl3_init() */
 
-/***************************************************************************
- * mstl3_free:
+/**********************************************************************/ /**
+ * @brief Free all memory associated with a ::MS3TraceList
  *
- * Free all memory associated with a MS3TraceList struct and set the
- * pointer to 0.
+ * The pointer to the target ::MS3TraceList will be set to NULL.
  *
- * If the freeprvtptr int8_t is true any private pointer data will also
- * be freed when present.
+ * @param[in] ppmstl Pointer-to-pointer to the target ::MS3TraceList to free
+ * @param[in] freeprvtptr If true, also free any data at the \a prvtptr
+ * members of ::MS3TraceID.prvtptr and ::MS3TraceSeg.prvtptr
  ***************************************************************************/
 void
 mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
@@ -109,31 +111,48 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
   return;
 } /* End of mstl3_free() */
 
-
-/***************************************************************************
- * mstl3_addmsr:
+/**********************************************************************/ /**
+ * @brief Add data coverage from an ::MS3Record to a ::MS3TraceList
  *
- * Add data coverage from an MS3Record to a MS3TraceList by searching the
- * list for the appropriate MS3TraceID and MS3TraceSeg and either adding
- * data to it or creating a new MS3TraceID and/or MS3TraceSeg if needed.
+ * Searching the list for the appropriate ::MS3TraceID and
+ * ::MS3TraceSeg and either add data to existing entries or create new
+ * ones as needed.
  *
- * If the splitversion flag is true the publication versions will be
- * kept separate, i.e. they must be the same to be merged. Otherwise
+ * As this routine adds data to a trace list it attempts to construct
+ * continuous time series, merging segments when possible.  The \a
+ * timetol and \a sampratetol values define the tolerances used when
+ * merging time series.  If \a timetol is ‐1.0 the default time
+ * tolerance of 1/2 the sample period will be used.  If sampratetol is
+ * ‐1.0 the default tolerance of abs(1‐sr1/sr2) < 0.0001 is used.  If
+ * sampratetol or timetol is ‐2.0 the respective tolerance check will
+ * not be performed.  If time tolerance is not checked the data will
+ * be merged with a segment that fits best.
+ *
+ * If the \a splitversion flag is true the publication versions will be
+ * kept separate, i.e. they must be the same to be merged. Otherwise,
  * different versions of otherwise matching traces are merged.  If
  * more than one version contributes to a given source identifer's
  * segments, its publication version will be the set to the largest
  * contributing version.
  *
- * If the autoheal flag is true extra processing is invoked to conjoin
- * trace segments that fit together after the MS3Record coverage is
- * added.  For segments that are removed, any memory at the prvtptr
- * will be freed.
+ * If the \a autoheal flag is true extra processing is invoked to
+ * conjoin trace segments that fit together after the ::MS3Record
+ * coverage is added.  For segments that are removed, any memory at
+ * the prvtptr will be freed.
  *
- * An MS3TraceList is always maintained with the MS3TraceIDs in
- * descending alphanumeric order.  MS3TraceIDs are always maintained
- * with MS3TraceSegs in data time time order.
+ * The lists are always maintained in a sorted order.  An
+ * ::MS3TraceList is always maintained with the ::MS3TraceID entries
+ * in descending alphanumeric order. An ::MS3TraceID is always
+ * maintained with ::MS3TraceSeg entries in data time time order.
  *
- * Return a pointer to the MS3TraceSeg updated or 0 on error.
+ * @param[in] mstl Destination ::MS3TraceList to add data to
+ * @param[in] msr ::MS3Record containing the data to add to list
+ * @param[in] splitversion Flag to control splitting of version/quality
+ * @param[in] autoheal Flag to control automatic merging of segments
+ * @param[in] timetol Time tolerance in seconds for merging time series
+ * @param[in] sampratetol Sample rate tolerance in samples per second
+ *
+ * @returns a pointer to the ::MS3TraceSeg updated or NULL on error.
  ***************************************************************************/
 MS3TraceSeg *
 mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
@@ -173,7 +192,7 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
   /* Calculate end time for MS3Record */
   if ((endtime = msr3_endtime (msr)) == NSTERROR)
   {
-    ms_log (2, "mstl3_addmsr(): Error calculating record end time\n");
+    ms_log (2, "%s(): Error calculating record end time\n", __func__);
     return 0;
   }
 
@@ -262,7 +281,7 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
   {
     if (!(id = (MS3TraceID *)calloc (1, sizeof (MS3TraceID))))
     {
-      ms_log (2, "mstl3_addmsr(): Error allocating memory\n");
+      ms_log (2, "%s(): Error allocating memory\n", __func__);
       return 0;
     }
 
@@ -605,18 +624,28 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
 } /* End of mstl3_addmsr() */
 
 
-/*********************************************************************
- * mstl3_parsebuffer:
+/****************************************************************/ /**
+ * @brief Parse miniSEED from a buffer and populate a ::MS3TraceList
  *
- * Parse miniSEED from a buffer and populate a MS3TraceList.
+ * For a full description of \a timetol and \a sampratetol see
+ * mstl3_addmsr().
  *
- * If the MSF_UNPACKDATA flag is set in flags, the data samples will
- * be unpacked and as well.  In most cases the caller probably wants
- * this flag set, without it the trace list will merely be a list of
+ * If the ::MSF_UNPACKDATA flag is set in \a flags, the data samples
+ * will be unpacked.  In most cases the caller probably wants this
+ * flag set, without it the trace list will merely be a list of
  * channels.
  *
- * Return the number of records parsed on success, otherwise a
- * negative libmseed error code.
+ * @param[in] ppmstl Pointer-to-point to destination MS3TraceList
+ * @param[in] buffer Source buffer to read miniSEED records from
+ * @param[in] bufferlength Maximum length of \a buffer
+ * @param[in] timetol Time tolerance in seconds for merging time series
+ * @param[in] sampratetol Sample rate tolerance in samples per second
+ * @param[in] splitversion Flag to control splitting of version/quality
+ * @param[in] flags Flag to control pasing of miniSEED, see msr3_parse()
+ * @param[in] verbose Controls verbosity, 0 means no diagnostic output
+ *
+ * @returns The number of records parsed on success, otherwise a
+ * negative library error code.
  *********************************************************************/
 int64_t
 mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
@@ -661,8 +690,6 @@ mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
 } /* End of mstl3_readbuffer() */
 
 /***************************************************************************
- * mstl3_msr2seg:
- *
  * Create an MS3TraceSeg structure from an MS3Record structure.
  *
  * Return a pointer to a MS3TraceSeg otherwise 0 on error.
@@ -675,7 +702,7 @@ mstl3_msr2seg (MS3Record *msr, nstime_t endtime)
 
   if (!(seg = (MS3TraceSeg *)calloc (1, sizeof (MS3TraceSeg))))
   {
-    ms_log (2, "mstl3_addmsr(): Error allocating memory\n");
+    ms_log (2, "%s(): Error allocating memory\n", __func__);
     return 0;
   }
 
@@ -694,7 +721,7 @@ mstl3_msr2seg (MS3Record *msr, nstime_t endtime)
 
     if (!(seg->datasamples = malloc ((size_t) (samplesize * msr->numsamples))))
     {
-      ms_log (2, "mstl3_msr2seg(): Error allocating memory\n");
+      ms_log (2, "%s(): Error allocating memory\n", __func__);
       return 0;
     }
 
@@ -706,8 +733,6 @@ mstl3_msr2seg (MS3Record *msr, nstime_t endtime)
 } /* End of mstl3_msr2seg() */
 
 /***************************************************************************
- * mstl3_addmsrtoseg:
- *
  * Add data coverage from a MS3Record structure to a MS3TraceSeg structure.
  *
  * Data coverage is added to the beginning or end of MS3TraceSeg
@@ -731,20 +756,20 @@ mstl3_addmsrtoseg (MS3TraceSeg *seg, MS3Record *msr, nstime_t endtime, int8_t wh
   {
     if (msr->sampletype != seg->sampletype)
     {
-      ms_log (2, "mstl3_addmsrtoseg(): MS3Record sample type (%c) does not match segment sample type (%c)\n",
-              msr->sampletype, seg->sampletype);
+      ms_log (2, "%s(): MS3Record sample type (%c) does not match segment sample type (%c)\n",
+              __func__, msr->sampletype, seg->sampletype);
       return 0;
     }
 
     if (!(samplesize = ms_samplesize (msr->sampletype)))
     {
-      ms_log (2, "mstl3_addmsrtoseg(): Unknown sample size for sample type: %c\n", msr->sampletype);
+      ms_log (2, "%s(): Unknown sample size for sample type: %c\n", __func__, msr->sampletype);
       return 0;
     }
 
     if (!(newdatasamples = realloc (seg->datasamples, (size_t) ((seg->numsamples + msr->numsamples) * samplesize))))
     {
-      ms_log (2, "mstl3_addmsrtoseg(): Error allocating memory\n");
+      ms_log (2, "%s(): Error allocating memory\n", __func__);
       return 0;
     }
 
@@ -787,7 +812,7 @@ mstl3_addmsrtoseg (MS3TraceSeg *seg, MS3Record *msr, nstime_t endtime, int8_t wh
   }
   else
   {
-    ms_log (2, "mstl3_addmsrtoseg(): unrecognized whence value: %d\n", whence);
+    ms_log (2, "%s(): unrecognized whence value: %d\n", __func__, whence);
     return 0;
   }
 
@@ -795,8 +820,6 @@ mstl3_addmsrtoseg (MS3TraceSeg *seg, MS3Record *msr, nstime_t endtime, int8_t wh
 } /* End of mstl3_addmsrtoseg() */
 
 /***************************************************************************
- * mstl3_addsegtoseg:
- *
  * Add data coverage from seg2 to seg1.
  *
  * Return a pointer to a seg1 otherwise 0 on error.
@@ -815,20 +838,20 @@ mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
   {
     if (seg2->sampletype != seg1->sampletype)
     {
-      ms_log (2, "mstl3_addsegtoseg(): MS3TraceSeg sample types do not match (%c and %c)\n",
-              seg1->sampletype, seg2->sampletype);
+      ms_log (2, "%s(): MS3TraceSeg sample types do not match (%c and %c)\n",
+              __func__, seg1->sampletype, seg2->sampletype);
       return 0;
     }
 
     if (!(samplesize = ms_samplesize (seg1->sampletype)))
     {
-      ms_log (2, "mstl3_addsegtoseg(): Unknown sample size for sample type: %c\n", seg1->sampletype);
+      ms_log (2, "%s(): Unknown sample size for sample type: %c\n", __func__, seg1->sampletype);
       return 0;
     }
 
     if (!(newdatasamples = realloc (seg1->datasamples, (size_t) ((seg1->numsamples + seg2->numsamples) * samplesize))))
     {
-      ms_log (2, "mstl3_addsegtoseg(): Error allocating memory\n");
+      ms_log (2, "%s(): Error allocating memory\n", __func__);
       return 0;
     }
 
@@ -851,23 +874,36 @@ mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
   return seg1;
 } /* End of mstl3_addsegtoseg() */
 
-/***************************************************************************
- * mstl3_convertsamples:
+/**********************************************************************/ /**
+ * @brief Convert the data samples associated with an MS3TraceSeg to another
+ * data type
  *
- * Convert the data samples associated with an MS3TraceSeg to another
- * data type.  ASCII data samples cannot be converted, if supplied or
- * requested an error will be returned.
+ * ASCII data samples cannot be converted, if supplied or requested an
+ * error will be returned.
  *
  * When converting float & double sample types to integer type a
  * simple rounding is applied by adding 0.5 to the sample value before
- * converting (truncating) to integer.
+ * converting (truncating) to integer.  This compensates for common
+ * machine representations of floating point values, e.g. "40.0"
+ * represented by "39.99999999".
  *
- * If the truncate flag is true data samples will be truncated to
- * integers even if loss of sample precision is detected.  If the
- * truncate flag is false (0) and loss of precision is detected an
- * error is returned.
+ * If the truncate flag is true (non-zero) data samples will be
+ * truncated to integers even if loss of sample precision is detected.
+ * If the truncate flag is false (zero) and loss of precision is
+ * detected an error is returned.  Loss of precision is determined by
+ * testing that the difference between the floating point value and
+ * the (truncated) integer value is greater than 0.000001.
  *
- * Returns 0 on success, and -1 on failure.
+ * @param[in] seg The target ::MS3TraceSeg to convert
+ * @param[in] type The desired data sample type:
+ * @parblock
+ *   - \c 'i' - 32-bit integer data type
+ *   - \c 'f' - 32-bit float data type
+ *   - \c 'd' - 64-bit float (double) data type
+ * @endparblock
+ * @param[in] truncate Control truncation of floating point values to integers
+ *
+ * @returns 0 on success, and -1 on failure.
  ***************************************************************************/
 int
 mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
@@ -993,28 +1029,37 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
   return 0;
 } /* End of mstl3_convertsamples() */
 
-/***************************************************************************
- * mstl3_pack:
+/**********************************************************************/ /**
+ * @brief Pack ::MS3TraceList data into miniSEED records
  *
- * Pack MS3TraceList data into miniSEED records using the specified
- * record length and data encoding format.  The datasamples array and
- * numsamples field will be adjusted (reduced) based on how many
- * samples were packed.
+ * The datasamples array and numsamples field will be adjusted
+ * (reduced) as data are packed.
  *
- * As each record is filled and finished they are passed to
- * record_handler which expects 1) a char * to the record, 2) the
- * length of the record and 3) a pointer supplied by the original
- * caller containing optional private data (handlerdata).  It is the
- * responsibility of record_handler to process the record, the memory
- * will be re-used or freed when record_handler returns.
+ * As each record is filled and finished they are passed to \a
+ * record_handler() which should expect 1) a \c char* to the record,
+ * 2) the length of the record and 3) a pointer supplied by the
+ * original caller containing optional private data (\a handlerdata).
+ * It is the responsibility of \a record_handler() to process the
+ * record, the memory will be re-used or freed when \a
+ * record_handler() returns.
  *
- * The flags are passed to msr3_pack().
+ * If \a extra is not NULL it is expected to contain extraheaders, a
+ * string containing (compact) JSON, that will be added to each output
+ * record.
  *
- * If the extra argument is not NULL it is expected to indicate a
- * buffer of length extralength that contains extraheaders that will
- * be added to each output record.
+ * @param[in] mstl ::MS3TraceList containing data to pack
+ * @param[in] record_handler() Callback function called for each record
+ * @param[in] handlerdata A pointer that will be provided to the \a record_handler()
+ * @param[in] reclen Maximum record length to produce
+ * @param[in] encoding Encoding for data samples, see msr3_pack()
+ * @param[out] packedsamples The number of samples packed, returned to caller
+ * @param[in] flags Flags used to control the packing process, see msr3_pack()
+ * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
+ * @param[in] extra If not NULL, add this buffer of extra headers to all records
  *
- * Returns the number of records created on success and -1 on error.
+ * @returns the number of records created on success and -1 on error.
+ *
+ * \sa msr3_pack()
  ***************************************************************************/
 int
 mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
@@ -1045,7 +1090,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
 
   if (msr == NULL)
   {
-    ms_log (2, "mstl3_pack(): Error initializing msr, out of memory?\n");
+    ms_log (2, "%s(): Error initializing msr, out of memory?\n", __func__);
     return -1;
   }
 
@@ -1102,7 +1147,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
 
           if (seg->datasamples == NULL)
           {
-            ms_log (2, "mstl3_pack(): Cannot (re)allocate datasamples buffer\n");
+            ms_log (2, "%s(): Cannot (re)allocate datasamples buffer\n", __func__);
             return -1;
           }
         }
@@ -1134,22 +1179,25 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
   return totalpackedrecords;
 } /* End of mstl3_pack() */
 
-/***************************************************************************
- * mstl3_printtracelist:
- *
- * Print trace list summary information for the specified MS3TraceList.
+/**********************************************************************/ /**
+ * @brief Print trace list summary information for a ::MS3TraceList
  *
  * By default only print the source ID, starttime and endtime for each
- * trace.  If details is greater than 0 include the sample rate,
- * number of samples and a total trace count.  If gaps is greater than
+ * trace.  If \a details is greater than 0 include the sample rate,
+ * number of samples and a total trace count.  If \a gaps is greater than
  * 0 and the previous trace matches (SID & samprate) include the
  * gap between the endtime of the last trace and the starttime of the
  * current trace.
  *
- * The timeformat flag can either be:
- * 0 : SEED time format (year, day-of-year, hour, min, sec)
- * 1 : ISO time format (year, month, day, hour, min, sec)
- * 2 : Epoch time, seconds since the epoch
+ * @param[in] mstl ::MS3TraceList to print
+ * @param[in] timeformat Flag to identify the time format as follows:
+ * @parblock
+ *   - 0 : SEED time format (year, day-of-year, hour, min, sec)
+ *   - 1 : ISO month-day time format (year, month, day, hour, min, sec)
+ *   - 2 : Epoch time, seconds since the epoch
+ * @endparblock
+ * @param[in] details Flag to control inclusion of more details
+ * @param[in] gaps Flag to control inclusion of gap/overlap between segments
  ***************************************************************************/
 void
 mstl3_printtracelist (MS3TraceList *mstl, int8_t timeformat,
@@ -1192,23 +1240,23 @@ mstl3_printtracelist (MS3TraceList *mstl, int8_t timeformat,
       /* Create formatted time strings */
       if (timeformat == 2)
       {
-        snprintf (stime, sizeof (stime), "%.6f", (double)MS_NSTIME2EPOCH (seg->starttime));
-        snprintf (etime, sizeof (etime), "%.6f", (double)MS_NSTIME2EPOCH (seg->endtime));
+        snprintf (stime, sizeof (stime), "%.9f", (double)MS_NSTIME2EPOCH (seg->starttime));
+        snprintf (etime, sizeof (etime), "%.9f", (double)MS_NSTIME2EPOCH (seg->endtime));
       }
       else if (timeformat == 1)
       {
-        if (ms_nstime2isotimestr (seg->starttime, stime, 1) == NULL)
+        if (ms_nstime2timestr (seg->starttime, stime, 0, 1) == NULL)
           ms_log (2, "Cannot convert trace start time for %s\n", id->sid);
 
-        if (ms_nstime2isotimestr (seg->endtime, etime, 1) == NULL)
+        if (ms_nstime2timestr (seg->endtime, etime, 0, 1) == NULL)
           ms_log (2, "Cannot convert trace end time for %s\n", id->sid);
       }
       else
       {
-        if (ms_nstime2seedtimestr (seg->starttime, stime, 1) == NULL)
+        if (ms_nstime2timestr (seg->starttime, stime, 2, 1) == NULL)
           ms_log (2, "Cannot convert trace start time for %s\n", id->sid);
 
-        if (ms_nstime2seedtimestr (seg->endtime, etime, 1) == NULL)
+        if (ms_nstime2timestr (seg->endtime, etime, 2, 1) == NULL)
           ms_log (2, "Cannot convert trace end time for %s\n", id->sid);
       }
 
@@ -1266,7 +1314,7 @@ mstl3_printtracelist (MS3TraceList *mstl, int8_t timeformat,
   }
 
   if (tracecnt != mstl->numtraces)
-    ms_log (2, "mstl3_printtracelist(): number of traces in trace list is inconsistent\n");
+    ms_log (2, "%s(): number of traces in trace list is inconsistent\n", __func__);
 
   if (details > 0)
     ms_log (0, "Total: %d trace(s) with %d segment(s)\n", tracecnt, segcnt);
@@ -1274,18 +1322,19 @@ mstl3_printtracelist (MS3TraceList *mstl, int8_t timeformat,
   return;
 } /* End of mstl3_printtracelist() */
 
-/***************************************************************************
- * mstl3_printsynclist:
- *
- * Print SYNC trace list summary information for the specified MS3TraceList.
+/**********************************************************************/ /**
+ * @brief Print SYNC trace list summary information for a ::MS3TraceList
  *
  * The SYNC header line will be created using the supplied dccid, if
  * the pointer is NULL the string "DCC" will be used instead.
  *
- * If the subsecond flag is true the segment start and end times will
+ * If the \a subsecond flag is true the segment start and end times will
  * include subsecond precision, otherwise they will be truncated to
  * integer seconds.
  *
+ * @param[in] mstl ::MS3TraceList to print
+ * @param[in] dccid The DCC identifier to include in the output
+ * @param[in] subsecond Flag to control inclusion of subseconds
  ***************************************************************************/
 void
 mstl3_printsynclist (MS3TraceList *mstl, char *dccid, int8_t subsecond)
@@ -1327,8 +1376,8 @@ mstl3_printsynclist (MS3TraceList *mstl, char *dccid, int8_t subsecond)
     seg = id->first;
     while (seg)
     {
-      ms_nstime2seedtimestr (seg->starttime, starttime, subsecond);
-      ms_nstime2seedtimestr (seg->endtime, endtime, subsecond);
+      ms_nstime2timestr (seg->starttime, starttime, 2, subsecond);
+      ms_nstime2timestr (seg->endtime, endtime, 2, subsecond);
 
       /* Print SYNC line */
       ms_log (0, "%s|%s|%s|%s|%s|%s||%.10g|%" PRId64 "|||||||%s\n",
@@ -1346,19 +1395,24 @@ mstl3_printsynclist (MS3TraceList *mstl, char *dccid, int8_t subsecond)
   return;
 } /* End of mstl3_printsynclist() */
 
-/***************************************************************************
- * mstl3_printgaplist:
+/**********************************************************************/ /**
+ * @brief Print gap/overlap list summary information for a ::MS3TraceList.
  *
- * Print gap/overlap list summary information for the specified
- * MS3TraceList.  Overlaps are printed as negative gaps.
+ * Overlaps are printed as negative gaps.
  *
- * If mingap and maxgap are not NULL their values will be enforced and
- * only gaps/overlaps matching their implied criteria will be printed.
+ * If \a mingap and \a maxgap are not NULL their values will be
+ * enforced and only gaps/overlaps matching their implied criteria
+ * will be printed.
  *
- * The timeformat flag can either be:
- * 0 : SEED time format (year, day-of-year, hour, min, sec)
- * 1 : ISO time format (year, month, day, hour, min, sec)
- * 2 : Epoch time, seconds since the epoch
+ * @param[in] mstl ::MS3TraceList to print
+ * @param[in] timeformat Flag to identify the time format as follows:
+ * @parblock
+ *   - 0 : SEED time format (year, day-of-year, hour, min, sec)
+ *   - 1 : ISO month-day time format (year, month, day, hour, min, sec)
+ *   - 2 : Epoch time, seconds since the epoch
+ * @endparblock
+ * @param[in] mingap Minimum gap to print in seconds (pointer to value)
+ * @param[in] maxgap Maximum gap to print in seconds (pointer to value)
  ***************************************************************************/
 void
 mstl3_printgaplist (MS3TraceList *mstl, int8_t timeformat,
@@ -1440,23 +1494,23 @@ mstl3_printgaplist (MS3TraceList *mstl, int8_t timeformat,
         /* Create formatted time strings */
         if (timeformat == 2)
         {
-          snprintf (time1, sizeof (time1), "%.6f", (double)MS_NSTIME2EPOCH (seg->endtime));
-          snprintf (time2, sizeof (time2), "%.6f", (double)MS_NSTIME2EPOCH (seg->next->starttime));
+          snprintf (time1, sizeof (time1), "%.9f", (double)MS_NSTIME2EPOCH (seg->endtime));
+          snprintf (time2, sizeof (time2), "%.9f", (double)MS_NSTIME2EPOCH (seg->next->starttime));
         }
         else if (timeformat == 1)
         {
-          if (ms_nstime2isotimestr (seg->endtime, time1, 1) == NULL)
+          if (ms_nstime2timestr (seg->endtime, time1, 0, 1) == NULL)
             ms_log (2, "Cannot convert trace end time for %s\n", id->sid);
 
-          if (ms_nstime2isotimestr (seg->next->starttime, time2, 1) == NULL)
+          if (ms_nstime2timestr (seg->next->starttime, time2, 0, 1) == NULL)
             ms_log (2, "Cannot convert next trace start time for %s\n", id->sid);
         }
         else
         {
-          if (ms_nstime2seedtimestr (seg->endtime, time1, 1) == NULL)
+          if (ms_nstime2timestr (seg->endtime, time1, 2, 1) == NULL)
             ms_log (2, "Cannot convert trace end time for %s\n", id->sid);
 
-          if (ms_nstime2seedtimestr (seg->next->starttime, time2, 1) == NULL)
+          if (ms_nstime2timestr (seg->next->starttime, time2, 2, 1) == NULL)
             ms_log (2, "Cannot convert next trace start time for %s\n", id->sid);
         }
 
