@@ -673,15 +673,15 @@ extern int      ms_md2doy (int year, int month, int mday, int *yday);
 
 /** \def ms_nstime2isotimestr (nstime, isotimestr, subseconds)
     @brief Legacy-like wrapper for ISO T-separated time strings */
-#define ms_nstime2isotimestr (nstime_t nstime, char *isotimestr, subseconds subseconds) (ms_nstime2timestr(nstime,timestr,0,subseconds))
+#define ms_nstime2isotimestr(nstime, isotimestr, subseconds) (ms_nstime2timestr(nstime,isotimestr,0,subseconds))
 
 /** \def ms_nstime2mdtimestr (nstime, isotimestr, subseconds)
     @brief Legacy-like wrapper for ISO space-separated time strings */
-#define ms_nstime2mdtimestr (nstime_t nstime, char *isotimestr, subseconds subseconds) (ms_nstime2timestr(nstime,timestr,1,subseconds))
+#define ms_nstime2mdtimestr(nstime, mdtimestr, subseconds) (ms_nstime2timestr(nstime,mdtimestr,1,subseconds))
 
 /** \def ms_nstime2seedtimestr (nstime, isotimestr, subseconds)
     @brief Legacy-like wrapper for SEED-style time strings */
-#define ms_nstime2seedtimestr (nstime_t nstime, char *isotimestr, subseconds subseconds) (ms_nstime2timestr(nstime,timestr,2,subseconds))
+#define ms_nstime2seedtimestr(nstime, seedtimestr, subseconds) (ms_nstime2timestr(nstime,seedtimestr,2,subseconds))
 
 /** @} */
 

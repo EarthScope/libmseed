@@ -10,6 +10,9 @@ V3 changes:
 	- Remove MSTrace_s and MSTraceGroup, use MS3Trace[ID,Seg,List] instead.
 	- Change HPTMODULUS to 1000000000 to represent nanoseconds, update 
 	HPTERROR value to nanoseconds similarly.
+        - hptime_t changed to nstime_t and all time functions changed accordingly
+        - nstime2Xtimestr, combined into single nstime2timestr function with format flag, legacy macros for clarity
+        - Rename all library structs by removing the "_s" suffix so they match their typedef names
 	- Rename macros and functions specific to miniSEED 2.x by adding "2".
 	- Remove packheaderbyteorder and packdatabyteorder handling.
 	- Rename unpackheaderbyteorder => ms2_unpackheaderbyteorder and
