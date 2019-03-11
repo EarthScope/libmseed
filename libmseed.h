@@ -1,5 +1,5 @@
 /**********************************************************************/ /**
- * @file libmseed.h:
+ * @file libmseed.h
  *
  * Interface declarations for the miniSEED library (libmseed).
  *
@@ -283,7 +283,7 @@ extern int ms_parse_raw3 (char *record, int maxreclen, int8_t details);
 extern int ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag);
 /** @} */
 
-/** @defgroup tracelist Trace lists
+/** @defgroup trace-list Trace List
     @brief A container for continuous data
 
     Trace lists are a container to organize continuous segments of
@@ -548,7 +548,7 @@ extern int mseh_add_recenter (MS3Record *msr, const char *path,
 extern int mseh_print (MS3Record *msr, int indent);
 /** @} */
 
-/** @defgroup selection-functions Data selection functions
+/** @defgroup data-selections Data Selections
     @brief Data selections to be used as filters
 
     Selections are the identification of data, by source identifier
@@ -761,6 +761,31 @@ extern MSLogParam *ms_loginit_l (MSLogParam *logp,
 /** @} */
 
 /** @defgroup leapsecond Leap second handling
+    @brief Utilities for handling leap seconds
+
+    The library contains functionality to load a list of leap seconds
+    into a global list, which is then used to determine when leap
+    seconds occurred, ignoring any flags in the data itself regarding
+    leap seconds.  This is useful as past leap seconds are well known
+    and leap second indicators in data are, historically, more often
+    wrong than otherwise.
+
+    The library uses the leap second list (and any flags in the data,
+    if no list is provided) to adjust the calculated time of the last
+    sample in a record.  This allows proper merging of continuous
+    series generated through leap seconds.
+
+    Normally, calling programs do not need to do any particular
+    handling of leap seconds after loading the leap second list.
+
+    @note The library's internal, epoch-based time representation
+    cannot distinguish a leap second.  On the epoch time scale a leap
+    second appears as repeat of the second that follows it, an
+    apparent duplicated second.  Since the library does not know if
+    this value is a leap second or not, when converted to a time
+    string, the non-leap second representation is used, i.e. no second
+    values of "60" are generated.
+
     @{ */
 /** Leap second list container */
 typedef struct LeapSecond

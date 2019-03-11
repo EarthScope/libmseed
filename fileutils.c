@@ -49,10 +49,13 @@ ms3_readmsr (MS3Record **ppmsr, const char *msfile, int64_t *fpos,
 /*****************************************************************/ /**
  * @brief Read miniSEED records from a file in a thread-safe way
  *
- * This routine is a simple wrapper for ms3_readmsr_selection() that uses
- * the re-entrant capabilities.  This routine is thread safe and can
- * be used to read more than one file at a time as long as separate
- * MS3FileParam structures are used for each file.
+ * This routine is a simple wrapper for ms3_readmsr_selection() that
+ * uses the re-entrant capabilities.  This routine is thread safe and
+ * can be used to read more than one file at a time as long as
+ * separate MS3FileParam containers are used for each file.
+ *
+ * A ::MS3FileParam container will be allocated if \c *ppmsfp is \c
+ * NULL.
  *
  * See ms3_readmsr_selection() for a further description of arguments.
  *
@@ -114,12 +117,12 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  * This routine will open and read, with subsequent calls, all
  * miniSEED records in specified file.
  *
- * All static file reading parameters are stored in a ::MS3FileParam
- * struct and returned (via a pointer to a pointer) for the calling
- * routine to use in subsequent calls.  A ::MS3FileParam struct will be
- * allocated if necessary.  This routine is thread safe and can be
- * used to read multiple files in parallel as long as the file reading
- * parameters are managed appropriately.
+ * All file reading parameters are stored in a ::MS3FileParam
+ * container and returned (via a pointer to a pointer) for the calling
+ * routine to use in subsequent calls.  A ::MS3FileParam container
+ * will be allocated if \c *ppmsfp is \c NULL.  This routine is thread
+ * safe and can be used to read multiple files in parallel as long as
+ * the file reading parameters are managed appropriately.
  *
  * If \a *fpos is not NULL it will be updated to reflect the file
  * position (offset from the beginning in bytes) from where the
@@ -165,7 +168,7 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  * control-flags
  *
  * @param[in] selections Specify limits to which data should be
- * returned, see @ref selection-functions
+ * returned, see @ref data-selections
  *
  * @param[in] verbose Controls verbosity, 0 means no diagnostic output
  *
