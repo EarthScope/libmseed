@@ -537,7 +537,8 @@ main() {
      the packing routine, the datasamples array must be dynamic memory
      allocated by the malloc() family of routines. */
   mst->datasamples = dataptr; /* pointer to 32-bit integer data samples */  
-  mst->numsamples = 1234;
+  mst->numsamples = 1234; /* number of samples in array at dataptr */
+  mst->samplecnt = mst->numsamples;
   mst->sampletype = 'i';      /* declare type to be 32-bit integers */
 
   mst_srcname (mst, srcname, 0);
