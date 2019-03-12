@@ -3,19 +3,19 @@
 
 @section Overview
 
-The miniSEED library provides a framework for manipulation of SEED
-data records, a format for commonly used for seismological time series
-and related data.  The library includes the functionality to read and
+The miniSEED library provides a framework for manipulation of miniSEED
+records, a format commonly used for seismological time series and
+related data.  The library includes the functionality to read and
 write data records, in addition to reconstructing time series from
 multiple records.
 
-The library should work in Linux, BSD (and derivatives like macOS),
-Solaris and Win32 environments.
+The library should work in Unix-like, Windows and potentially more
+environments.
 
 @subsection main-tutorial Getting started
 
-The @subpage tutorial contains an overview of basic usage and examples
-to get you going.
+The @subpage page-tutorial contains an overview of basic usage and
+examples to get you going.
 
 @subsection main-capabilites Capabilies and fundamentals
 
@@ -56,6 +56,7 @@ You should have received a copy of the GNU Lesser General Public
 License along with this software.
 If not, see https://www.gnu.org/licenses/.
 
-Copyright (C) 2019 Chad Trabant, IRIS Data Management Center
+Copyright (C) @currentyear Chad Trabant, IRIS Data Management Center
 
+Documentation last generated @currentdate
 */

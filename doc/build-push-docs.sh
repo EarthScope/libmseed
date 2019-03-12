@@ -10,8 +10,17 @@ else
     echo "WARNING: Cannot extract version"
 fi
 
+# Generate year and date strings
+CURRENT_YEAR=$(date -u +%Y)
+CURRENT_DATE=$(date -u +%Y-%m-%d)
+
+# Build extra options for injection into config
+DOXYGENCONFIG+="PROJECT_NUMBER=${PROJECT_VERSION}\n"
+DOXYGENCONFIG+="ALIASES+=currentyear='${CURRENT_YEAR}'\n"
+DOXYGENCONFIG+="ALIASES+=currentdate='${CURRENT_DATE}'\n"
+
 # Documentation build command, injecting current project version
-DOCBUILD="(cat Doxyfile; echo 'PROJECT_NUMBER=${PROJECT_VERSION}') | doxygen -"
+DOCBUILD="(cat Doxyfile; echo -e '${DOXYGENCONFIG}') | doxygen -"
 
 # Check for command line options
 while getopts ":YN" o; do
