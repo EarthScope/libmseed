@@ -589,8 +589,8 @@ extern void ms3_freeselections (MS3Selections *selections);
 extern void ms3_printselections (MS3Selections *selections);
 /** @} */
 
-/** @defgroup io-functions Reading and writing functions
-    @brief miniSEED reading and writing interfaces
+/** @defgroup io-functions File I/O
+    @brief Reading and writing interfaces for miniSEED records in files
     @{ */
 
 /** @brief State container for reading miniSEED records from files.
@@ -628,7 +628,7 @@ extern int mstl3_writemseed (MS3TraceList *mst, const char *msfile, int8_t overw
                              int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose);
 /** @} */
 
-/** @defgroup string-functions SID and string functions
+/** @defgroup string-functions Source Identifier and String functions
     @brief Source identifier (SID) and string manipulation functions
     @{ */
 extern int      ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan);
@@ -709,7 +709,7 @@ msr_sampratehz (MS3Record *msr)
     return msr->samprate;
 }
 
-/** @defgroup logging-functions Logging functions
+/** @defgroup logging Central Logging
     @brief Central logging functions for the library and calling programs
 
     This central logging facility is used for all logging performed by
