@@ -164,7 +164,10 @@ extern "C" {
     @brief Definitions and functions for related to library time values
     @{ */
 
-/** @brief libmseed time type, integer nanoseconds since the Unix/POSIX epoch (00:00:00 Thursday, 1 January 1970) */
+/** @brief libmseed time type, integer nanoseconds since the Unix/POSIX epoch (00:00:00 Thursday, 1 January 1970)
+
+    This time scale can represent a range from before year 0 through mid-year 2262.
+*/
 typedef int64_t nstime_t;
 
 /** @def NSTMODULUS

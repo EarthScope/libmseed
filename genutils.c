@@ -31,7 +31,7 @@ static const int monthdays_leap[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30,
 #define LEAPYEAR(year) (((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0))
 
 /* Check that a year is in a valid range */
-#define VALIDYEAR(year) (year >= 1800 && year <= 5000)
+#define VALIDYEAR(year) (year >= 1000 && year <= 2262)
 
 /* Check that a month is in a valid range */
 #define VALIDMONTH(month) (month >= 1 && month <= 12)
@@ -442,7 +442,7 @@ ms_strncpopen (char *dest, const char *source, int length)
 /**********************************************************************/ /**
  * @brief Compute the month and day-of-month from a year and day-of-year
  *
- * @param[in] year Year in range 1800-5000
+ * @param[in] year Year in range 1000-2262
  * @param[in] yday Day of year in range 1-365 or 366 for leap year
  * @param[out] month Month in range 1-12
  * @param[out] mday Day of month in range 1-31
@@ -488,7 +488,7 @@ ms_doy2md (int year, int yday, int *month, int *mday)
 /**********************************************************************/ /**
  * @brief Compute the day-of-year from a year, month and day-of-month
  *
- * @param[in] year Year in range 1800-5000
+ * @param[in] year Year in range 1000-2262
  * @param[in] month Month in range 1-12
  * @param[in] mday Day of month in range 1-31 (or appropriate last day)
  * @param[out] yday Day of year in range 1-366 or 366 for leap year
