@@ -1190,17 +1190,12 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
  * current trace.
  *
  * @param[in] mstl ::MS3TraceList to print
- * @param[in] timeformat Flag to identify the time format as follows:
- * @parblock
- *   - 0 : SEED time format (year, day-of-year, hour, min, sec)
- *   - 1 : ISO month-day time format (year, month, day, hour, min, sec)
- *   - 2 : Epoch time, seconds since the epoch
- * @endparblock
+ * @param[in] timeformat Time string format, one of @ref ms_timeformat_t
  * @param[in] details Flag to control inclusion of more details
  * @param[in] gaps Flag to control inclusion of gap/overlap between segments
  ***************************************************************************/
 void
-mstl3_printtracelist (MS3TraceList *mstl, int8_t timeformat,
+mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
                       int8_t details, int8_t gaps)
 {
   MS3TraceID *id = 0;
@@ -1238,27 +1233,11 @@ mstl3_printtracelist (MS3TraceList *mstl, int8_t timeformat,
     while (seg)
     {
       /* Create formatted time strings */
-      if (timeformat == 2)
-      {
-        snprintf (stime, sizeof (stime), "%.9f", (double)MS_NSTIME2EPOCH (seg->starttime));
-        snprintf (etime, sizeof (etime), "%.9f", (double)MS_NSTIME2EPOCH (seg->endtime));
-      }
-      else if (timeformat == 1)
-      {
-        if (ms_nstime2timestr (seg->starttime, stime, 0, 1) == NULL)
-          ms_log (2, "Cannot convert trace start time for %s\n", id->sid);
+      if (ms_nstime2timestr (seg->starttime, stime, timeformat, NANO_IFEXIST_OTHERWISE_MICRO) == NULL)
+        ms_log (2, "Cannot convert trace start time for %s\n", id->sid);
 
-        if (ms_nstime2timestr (seg->endtime, etime, 0, 1) == NULL)
-          ms_log (2, "Cannot convert trace end time for %s\n", id->sid);
-      }
-      else
-      {
-        if (ms_nstime2timestr (seg->starttime, stime, 2, 1) == NULL)
-          ms_log (2, "Cannot convert trace start time for %s\n", id->sid);
-
-        if (ms_nstime2timestr (seg->endtime, etime, 2, 1) == NULL)
-          ms_log (2, "Cannot convert trace end time for %s\n", id->sid);
-      }
+      if (ms_nstime2timestr (seg->endtime, etime, timeformat, NANO_IFEXIST_OTHERWISE_MICRO) == NULL)
+        ms_log (2, "Cannot convert trace end time for %s\n", id->sid);
 
       /* Print segment info at varying levels */
       if (gaps > 0)
@@ -1334,10 +1313,10 @@ mstl3_printtracelist (MS3TraceList *mstl, int8_t timeformat,
  *
  * @param[in] mstl ::MS3TraceList to print
  * @param[in] dccid The DCC identifier to include in the output
- * @param[in] subsecond Flag to control inclusion of subseconds
+ * @param[in] subsecond Inclusion of subseconds, one of @ref ms_subseconds_t
  ***************************************************************************/
 void
-mstl3_printsynclist (MS3TraceList *mstl, char *dccid, int8_t subsecond)
+mstl3_printsynclist (MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds)
 {
   MS3TraceID *id = 0;
   MS3TraceSeg *seg = 0;
@@ -1376,8 +1355,8 @@ mstl3_printsynclist (MS3TraceList *mstl, char *dccid, int8_t subsecond)
     seg = id->first;
     while (seg)
     {
-      ms_nstime2timestr (seg->starttime, starttime, 2, subsecond);
-      ms_nstime2timestr (seg->endtime, endtime, 2, subsecond);
+      ms_nstime2timestr (seg->starttime, starttime, SEEDORDINAL, subseconds);
+      ms_nstime2timestr (seg->endtime, endtime, SEEDORDINAL, subseconds);
 
       /* Print SYNC line */
       ms_log (0, "%s|%s|%s|%s|%s|%s||%.10g|%" PRId64 "|||||||%s\n",
@@ -1405,17 +1384,12 @@ mstl3_printsynclist (MS3TraceList *mstl, char *dccid, int8_t subsecond)
  * will be printed.
  *
  * @param[in] mstl ::MS3TraceList to print
- * @param[in] timeformat Flag to identify the time format as follows:
- * @parblock
- *   - 0 : SEED time format (year, day-of-year, hour, min, sec)
- *   - 1 : ISO month-day time format (year, month, day, hour, min, sec)
- *   - 2 : Epoch time, seconds since the epoch
- * @endparblock
+ * @param[in] timeformat Time string format, one of @ref ms_timeformat_t
  * @param[in] mingap Minimum gap to print in seconds (pointer to value)
  * @param[in] maxgap Maximum gap to print in seconds (pointer to value)
  ***************************************************************************/
 void
-mstl3_printgaplist (MS3TraceList *mstl, int8_t timeformat,
+mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
                     double *mingap, double *maxgap)
 {
   MS3TraceID *id = 0;
@@ -1492,27 +1466,11 @@ mstl3_printgaplist (MS3TraceList *mstl, int8_t timeformat,
           snprintf (gapstr, sizeof (gapstr), "%-4.4g", gap);
 
         /* Create formatted time strings */
-        if (timeformat == 2)
-        {
-          snprintf (time1, sizeof (time1), "%.9f", (double)MS_NSTIME2EPOCH (seg->endtime));
-          snprintf (time2, sizeof (time2), "%.9f", (double)MS_NSTIME2EPOCH (seg->next->starttime));
-        }
-        else if (timeformat == 1)
-        {
-          if (ms_nstime2timestr (seg->endtime, time1, 0, 1) == NULL)
-            ms_log (2, "Cannot convert trace end time for %s\n", id->sid);
+        if (ms_nstime2timestr (seg->endtime, time1, timeformat, NANO_IFEXIST_OTHERWISE_MICRO) == NULL)
+          ms_log (2, "Cannot convert trace start time for %s\n", id->sid);
 
-          if (ms_nstime2timestr (seg->next->starttime, time2, 0, 1) == NULL)
-            ms_log (2, "Cannot convert next trace start time for %s\n", id->sid);
-        }
-        else
-        {
-          if (ms_nstime2timestr (seg->endtime, time1, 2, 1) == NULL)
-            ms_log (2, "Cannot convert trace end time for %s\n", id->sid);
-
-          if (ms_nstime2timestr (seg->next->starttime, time2, 2, 1) == NULL)
-            ms_log (2, "Cannot convert next trace start time for %s\n", id->sid);
-        }
+        if (ms_nstime2timestr (seg->next->starttime, time2, timeformat, NANO_IFEXIST_OTHERWISE_MICRO) == NULL)
+          ms_log (2, "Cannot convert trace end time for %s\n", id->sid);
 
         ms_log (0, "%-17s %-24s %-24s %-4s %-.8g\n",
                 id->sid, time1, time2, gapstr, nsamples);

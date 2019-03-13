@@ -604,32 +604,23 @@ ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *day,
  * resulting time string, a maximum of 30 characters.
  *
  * The \a subseconds flag controls whether the subsecond portion of
- * the time is included or not.  If subseconds are included,
- * nanosecond resolution is only included when submicroseconds are
- * non-zero.
+ * the time is included or not.  The value of \a subseconds is ignored
+ * when the \a format is \c NANOSECONDEPOCH.  When non-zero subseconds
+ * are "trimmed" using these flags there is no rounding, instead it is
+ * simple truncation.
  *
  * @param[in] nstime Time value to convert
  * @param[out] timestr Buffer for ISO time string
- * @param format Flag controlling the time string format:
- * @parblock
- * - \c 0 - Month-day format, T separator: \c 'YYYY-MM-DDThh:mm:ss[.ssssss[sss]]'
- * - \c 1 - Month-day format, space separator: \c 'YYYY-MM-DD hh:mm:ss[.ssssss[sss]]'
- * - \c 2 - SEED day-of-year format: \c 'YYYY,DDD,hh:mm:ss[.ssssss[sss]]'
- * @endparblock
- * @param subseconds Flag controlling inclusion of subseconds:
- * @parblock
- * - \c 2 - include subseconds to nanoseconds
- * - \c 1 - include subseconds to microseconds at least, nanoseconds if existing
- * - \c 0 - do not include subseconds
- * - \c -1 - include subseconds if non-zero, same logic as for a value of \c 1
- * @endparblock
+ * @param timeformat Time string format, one of @ref ms_timeformat_t
+ * @param subseconds Inclusion of subseconds, one of @ref ms_subseconds_t
  *
  * @returns Pointer to the resulting string or NULL on error.
  ***************************************************************************/
 char *
-ms_nstime2timestr (nstime_t nstime, char *timestr, int8_t format, int8_t subseconds)
+ms_nstime2timestr (nstime_t nstime, char *timestr,
+                   ms_timeformat_t timeformat, ms_subseconds_t subseconds)
 {
-  struct tm tms;
+  struct tm tms = {0};
   int64_t isec;
   int nanosec;
   int microsec;
@@ -655,77 +646,120 @@ ms_nstime2timestr (nstime_t nstime, char *timestr, int8_t format, int8_t subseco
   microsec = nanosec / 1000;
   submicro = nanosec - (microsec * 1000);
 
-  if (!(ms_gmtime64_r (&isec, &tms)))
-    return NULL;
-
-  if (subseconds == 1 || subseconds == 2 || (subseconds == -1 && nanosec))
+  /* Calculate date-time parts if needed by format */
+  if (timeformat == ISOMONTHDAY ||
+      timeformat == ISOMONTHDAY_SPACE ||
+      timeformat == SEEDORDINAL)
   {
-    /* Print nanoseconds if requested or sub-microseconds are non-zero */
-    if (submicro || subseconds == 2)
-    {
-      switch (format)
-      {
-      case 0:
-      case 1:
-        expected = 29;
-        printed  = snprintf (timestr, 30, "%4d-%02d-%02d%c%02d:%02d:%02d.%09d",
-                            tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
-                            (format == 0) ? 'T' : ' ',
-                            tms.tm_hour, tms.tm_min, tms.tm_sec, nanosec);
-        break;
-      case 2:
-        expected = 27;
-        printed  = snprintf (timestr, 28, "%4d,%03d,%02d:%02d:%02d.%09d",
-                            tms.tm_year + 1900, tms.tm_yday + 1,
-                            tms.tm_hour, tms.tm_min, tms.tm_sec, nanosec);
-        break;
-      }
-    }
-    /* Otherwise, print microseconds */
-    else
-    {
-      switch (format)
-      {
-      case 0:
-      case 1:
-        expected = 26;
-        printed  = snprintf (timestr, 27, "%4d-%02d-%02d%c%02d:%02d:%02d.%06d",
-                            tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
-                            (format == 0) ? 'T' : ' ',
-                            tms.tm_hour, tms.tm_min, tms.tm_sec, microsec);
-        break;
-      case 2:
-        expected = 24;
-        printed  = snprintf (timestr, 25, "%4d,%03d,%02d:%02d:%02d.%06d",
-                            tms.tm_year + 1900, tms.tm_yday + 1,
-                            tms.tm_hour, tms.tm_min, tms.tm_sec, microsec);
-        break;
-      }
-    }
+    if (!(ms_gmtime64_r (&isec, &tms)))
+      return NULL;
   }
-  /* Otherwise, print no subseconds */
-  else
+
+  /* Print no subseconds */
+  if (subseconds == NONE ||
+      (subseconds == MICRO_IFEXIST && microsec == 0) ||
+      (subseconds == NANO_IFEXIST && nanosec == 0))
   {
-    switch (format)
+    switch (timeformat)
     {
-    case 0:
-    case 1:
+    case ISOMONTHDAY:
+    case ISOMONTHDAY_SPACE:
       expected = 19;
       printed  = snprintf (timestr, 20, "%4d-%02d-%02d%c%02d:%02d:%02d",
                           tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
-                          (format == 0) ? 'T' : ' ',
+                          (timeformat == ISOMONTHDAY) ? 'T' : ' ',
                           tms.tm_hour, tms.tm_min, tms.tm_sec);
       break;
-    case 2:
+    case SEEDORDINAL:
       expected = 17;
       printed  = snprintf (timestr, 18, "%4d,%03d,%02d:%02d:%02d",
                           tms.tm_year + 1900, tms.tm_yday + 1,
                           tms.tm_hour, tms.tm_min, tms.tm_sec);
       break;
+    case UNIXEPOCH:
+      expected = -1;
+      printed  = snprintf (timestr, 22, "%lld", (long long int)isec);
+      break;
+    case NANOSECONDEPOCH:
+      expected = -1;
+      printed  = snprintf (timestr, 22, "%lld", (long long int)nstime);
+      break;
     }
   }
+  /* Print microseconds */
+  else if (subseconds == MICRO ||
+           (subseconds == MICRO_IFEXIST && microsec) ||
+           (subseconds == NANO_IFEXIST_OTHERWISE_MICRO && submicro == 0))
+  {
+    switch (timeformat)
+    {
+    case ISOMONTHDAY:
+    case ISOMONTHDAY_SPACE:
+      expected = 26;
+      printed  = snprintf (timestr, 27, "%4d-%02d-%02d%c%02d:%02d:%02d.%06d",
+                           tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
+                           (timeformat == ISOMONTHDAY) ? 'T' : ' ',
+                           tms.tm_hour, tms.tm_min, tms.tm_sec, microsec);
+      break;
+    case SEEDORDINAL:
+      expected = 24;
+      printed  = snprintf (timestr, 25, "%4d,%03d,%02d:%02d:%02d.%06d",
+                           tms.tm_year + 1900, tms.tm_yday + 1,
+                           tms.tm_hour, tms.tm_min, tms.tm_sec, microsec);
+      break;
+    case UNIXEPOCH:
+      expected = -1;
+      printed  = snprintf (timestr, 22, "%lld.%06d", (long long int)isec, microsec);
+      break;
+    case NANOSECONDEPOCH:
+      expected = -1;
+      printed  = snprintf (timestr, 22, "%lld", (long long int)nstime);
+      break;
+    }
+  }
+  /* Print nanoseconds */
+  else if (subseconds == NANO ||
+           (subseconds == NANO_IFEXIST && nanosec) ||
+           (subseconds == NANO_IFEXIST_OTHERWISE_MICRO && submicro))
+  {
+    switch (timeformat)
+    {
+    case ISOMONTHDAY:
+    case ISOMONTHDAY_SPACE:
+      expected = 29;
+      printed  = snprintf (timestr, 30, "%4d-%02d-%02d%c%02d:%02d:%02d.%09d",
+                           tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
+                           (timeformat == ISOMONTHDAY) ? 'T' : ' ',
+                           tms.tm_hour, tms.tm_min, tms.tm_sec, nanosec);
+      break;
+    case SEEDORDINAL:
+      expected = 27;
+      printed  = snprintf (timestr, 28, "%4d,%03d,%02d:%02d:%02d.%09d",
+                           tms.tm_year + 1900, tms.tm_yday + 1,
+                           tms.tm_hour, tms.tm_min, tms.tm_sec, nanosec);
+      break;
+    case UNIXEPOCH:
+      expected = -1;
+      printed  = snprintf (timestr, 22, "%lld.%09d", (long long int)isec, nanosec);
+      break;
+    case NANOSECONDEPOCH:
+      expected = -1;
+      printed  = snprintf (timestr, 22, "%lld", (long long int)nstime);
+      break;
+    }
+  }
+  /* Otherwise this is a unhandled combination of values, timeformat and subseconds */
+  else
+  {
+    ms_log (2, "%s(): Unhandled combination of timeformat and subseconds, please report!\n", __func__);
+    ms_log (2, "%s():   nstime: %lld, isec: %lld, nanosec: %d, mirosec: %d, submicro: %d\n",
+            __func__, (long long int)nstime, (long long int)isec, nanosec, microsec, submicro);
+    ms_log (2, "%s():   timeformat: %d, subseconds: %d\n", __func__, timeformat, subseconds);
+    return NULL;
+  }
 
-  if (expected == 0 || printed != expected)
+
+  if (expected == 0 || (expected > 0 && printed != expected))
     return NULL;
   else
     return timestr;
@@ -821,7 +855,7 @@ ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec)
 /**********************************************************************/ /**
  * @brief Convert a time string to a high precision epoch time.
  *
- * The time format expected is "YYYY[/MM/DD HH:MM:SS.FFFFFFFFF]", the
+ * The time format expected is "YYYY[-MM-DD HH:MM:SS.FFFFFFFFF]", the
  * delimiter can be a dash [-], comma[,], slash [/], colon [:], or
  * period [.].  Additionally a 'T' or space may be used between the
  * date and time fields.  The fractional seconds ("FFFFFFFFF") must
@@ -829,8 +863,9 @@ ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec)
  *
  * The time string can be "short" in which case the omitted values are
  * assumed to be zero (with the exception of month and day which are
- * assumed to be 1): "YYYY/MM/DD" assumes HH, MM, SS and FFFF are 0.
- * The year is required, otherwise there wouldn't be much for a date.
+ * assumed to be 1).  For example, specifying "YYYY-MM-DD" assumes HH,
+ * MM, SS and FFFF are 0.  The year is required, otherwise there
+ * wouldn't be much for a date.
  *
  * @returns epoch time on success and ::NSTERROR on error.
  ***************************************************************************/

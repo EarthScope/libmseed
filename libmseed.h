@@ -194,8 +194,82 @@ extern "C" {
 /** A simple bitwise AND test to return 0 or 1 */
 #define bit(x,y) (x&y)?1:0
 
-/** libmseed time type, integer nanoseconds since the Unix/POSIX epoch (00:00:00 Thursday, 1 January 1970) */
+/** @defgroup time-related Time definitions and functions
+    @brief Definitions and functions for related to library time values
+    @{ */
+
+/** @brief libmseed time type, integer nanoseconds since the Unix/POSIX epoch (00:00:00 Thursday, 1 January 1970) */
 typedef int64_t nstime_t;
+
+/** @def NSTMODULUS
+    @brief Define the high precision time tick interval as 1/modulus seconds
+    corresponding to **nanoseconds**. **/
+#define NSTMODULUS 1000000000
+
+/** @def NSTERROR
+    @brief Error code for routines that normally return a high precision time.
+    The time value corresponds to '1902-1-1 00:00:00.00000000'. **/
+#define NSTERROR -2145916800000000000LL
+
+/** @def MS_EPOCH2NSTIME
+    @brief macro to convert Unix/POSIX epoch time to high precision epoch time */
+#define MS_EPOCH2NSTIME(X) X * (nstime_t) NSTMODULUS
+
+/** @def MS_NSTIME2EPOCH
+    @brief Macro to convert high precision epoch time to Unix/POSIX epoch time */
+#define MS_NSTIME2EPOCH(X) X / NSTMODULUS
+
+/** @enum ms_timeformat_t
+    @brief Time format identifiers
+
+    Formats values:
+    - \b ISOMONTHDAY - \c "YYYY-MM-DDThh:mm:ss.sssssssss", ISO 8601 in month-day format
+    - \b ISOMONTHDAY_SPACE - \c "YYYY-MM-DD hh:mm:ss.sssssssss", same as ISOMONTHDAY with space separator
+    - \b SEEDORDINAL - \c "YYYY,DDD,hh:mm:ss.sssssssss", SEED day-of-year format
+    - \b UNIXEPOCH - \c "ssssssssss.sssssssss", Unix epoch value
+    - \b NANOSECONDEPOCH - \c "sssssssssssssssssss", Nanosecond epoch value
+ */
+typedef enum
+{
+  ISOMONTHDAY,
+  ISOMONTHDAY_SPACE,
+  SEEDORDINAL,
+  UNIXEPOCH,
+  NANOSECONDEPOCH
+} ms_timeformat_t;
+
+/** @enum ms_subseconds_t
+    @brief Subsecond format identifiers
+
+    Formats values:
+    - \b NONE - No subseconds
+    - \b MICRO - Microsecond resolution
+    - \b NANO - Nanosecond resolution
+    - \b MICRO_IFEXIST - Microsecond resolution if subseconds are non-zero
+    - \b NANO_IFEXIST - Nanosecond resolution if subseconds are non-zero
+    - \b NANO_IFEXIST_OTHERWISE_MICRO - Nanosecond resolution if there are sub-microseconds, otherwise microconds resolution
+ */
+typedef enum
+{
+  NONE,
+  MICRO,
+  NANO,
+  MICRO_IFEXIST,
+  NANO_IFEXIST,
+  NANO_IFEXIST_OTHERWISE_MICRO
+} ms_subseconds_t;
+
+extern int ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *yday,
+                           uint8_t *hour, uint8_t *min, uint8_t *sec, uint32_t *nsec);
+extern char *ms_nstime2timestr (nstime_t nstime, char *timestr,
+                                ms_timeformat_t timeformat, ms_subseconds_t subsecond);
+extern nstime_t ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec);
+extern nstime_t ms_timestr2nstime (char *timestr);
+extern nstime_t ms_seedtimestr2nstime (char *seedtimestr);
+extern int ms_doy2md (int year, int yday, int *month, int *mday);
+extern int ms_md2doy (int year, int month, int mday, int *yday);
+
+/** @} */
 
 /** @page sample-types
     @brief Data sample types used by the library.
@@ -355,10 +429,10 @@ extern int mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, 
                        void *handlerdata, int reclen, int8_t encoding,
                        int64_t *packedsamples, uint32_t flags, int8_t verbose,
                        char *extra);
-extern void mstl3_printtracelist (MS3TraceList *mstl, int8_t timeformat,
+extern void mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
                                   int8_t details, int8_t gaps);
-extern void mstl3_printsynclist (MS3TraceList *mstl, char *dccid, int8_t subsecond);
-extern void mstl3_printgaplist (MS3TraceList *mstl, int8_t timeformat,
+extern void mstl3_printsynclist (MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds);
+extern void mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
                                 double *mingap, double *maxgap);
 /** @} */
 
@@ -639,52 +713,6 @@ extern int      ms_strncpcleantail (char *dest, const char *source, int length);
 extern int      ms_strncpopen (char *dest, const char *source, int length);
 /** @} */
 
-/** @defgroup time-related Time definitions and functions
-
-    @brief Definitions and functions for related to library time values
-
-    @{ */
-
-/** @def NSTMODULUS
-    @brief Define the high precision time tick interval as 1/modulus seconds
-    corresponding to **nanoseconds**. **/
-#define NSTMODULUS 1000000000
-
-/** @def NSTERROR
-    @brief Error code for routines that normally return a high precision time.
-    The time value corresponds to '1902-1-1 00:00:00.00000000'. **/
-#define NSTERROR -2145916800000000000LL
-
-/** @def MS_EPOCH2NSTIME
-    @brief macro to convert Unix/POSIX epoch time to high precision epoch time */
-#define MS_EPOCH2NSTIME(X) X * (nstime_t) NSTMODULUS
-/** @def MS_NSTIME2EPOCH
-    @brief Macro to convert high precision epoch time to Unix/POSIX epoch time */
-#define MS_NSTIME2EPOCH(X) X / NSTMODULUS
-
-extern int      ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *yday,
-                                uint8_t *hour, uint8_t *min, uint8_t *sec, uint32_t *nsec);
-extern char*    ms_nstime2timestr (nstime_t nstime, char *timestr, int8_t format, int8_t subsecond);
-extern nstime_t ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec);
-extern nstime_t ms_timestr2nstime (char *timestr);
-extern nstime_t ms_seedtimestr2nstime (char *seedtimestr);
-extern int      ms_doy2md (int year, int yday, int *month, int *mday);
-extern int      ms_md2doy (int year, int month, int mday, int *yday);
-
-/** \def ms_nstime2isotimestr (nstime, isotimestr, subseconds)
-    @brief Legacy-like wrapper for ISO T-separated time strings */
-#define ms_nstime2isotimestr(nstime, isotimestr, subseconds) (ms_nstime2timestr(nstime,isotimestr,0,subseconds))
-
-/** \def ms_nstime2mdtimestr (nstime, isotimestr, subseconds)
-    @brief Legacy-like wrapper for ISO space-separated time strings */
-#define ms_nstime2mdtimestr(nstime, mdtimestr, subseconds) (ms_nstime2timestr(nstime,mdtimestr,1,subseconds))
-
-/** \def ms_nstime2seedtimestr (nstime, isotimestr, subseconds)
-    @brief Legacy-like wrapper for SEED-style time strings */
-#define ms_nstime2seedtimestr(nstime, seedtimestr, subseconds) (ms_nstime2timestr(nstime,seedtimestr,2,subseconds))
-
-/** @} */
-
 /**********************************************************************/ /**
  * @brief Runtime test for host endianess
  * @returns 0 if the host is little endian, otherwise 1.
@@ -805,6 +833,7 @@ extern int ms_readleapsecondfile (const char *filename);
     @brief General utilities
     @{ */
 
+
 extern uint8_t  ms_samplesize (const char sampletype);
 extern const char* ms_encodingstr (const uint8_t encoding);
 extern const char* ms_errorstr (int errorcode);
@@ -834,6 +863,13 @@ extern void ms_gswap4a ( void *data4 );
 /** In-place byte swapping of 8 byte, memory-aligned, quantity */
 extern void ms_gswap8a ( void *data8 );
 
+/** @} */
+
+/** @defgroup legacy Legacy style helpers
+    @brief Declarations and support for legacy or similar to legacy interfaces
+    @{ */
+/** Single byte flag type */
+typedef int8_t flag;
 /** @} */
 
 #ifdef __cplusplus
