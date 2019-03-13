@@ -1313,7 +1313,7 @@ mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
  *
  * @param[in] mstl ::MS3TraceList to print
  * @param[in] dccid The DCC identifier to include in the output
- * @param[in] subsecond Inclusion of subseconds, one of @ref ms_subseconds_t
+ * @param[in] subseconds Inclusion of subseconds, one of @ref ms_subseconds_t
  ***************************************************************************/
 void
 mstl3_printsynclist (MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds)

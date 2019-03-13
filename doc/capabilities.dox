@@ -29,7 +29,8 @@ commonly used blockettes are maintained for types 100, 1000 and 1001.
 
 @subsection Data Sample Encodings
 
-Data samples in a record ... CHAD
+Data samples in a record ...
+CHAD
 The following data encoding formats are supported for both unpacking
 and packing: ASCII, INT16, INT32, FLOAT32, FLOAT64, STEIM1 and STEIM2.
 The INT and FLOAT encodings each have two versions for quantities with

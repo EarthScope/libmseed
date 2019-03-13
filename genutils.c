@@ -514,7 +514,8 @@ ms_md2doy (int year, int month, int mday, int *yday)
   }
   if (!VALIDMONTHDAY (year, month, mday))
   {
-    ms_log (2, "%s(): day-of-month (%d) is out of range for year %d and month %d\n", __func__, mday, year, month);
+    ms_log (2, "%s(): day-of-month (%d) is out of range for year %d and month %d\n",
+            __func__, mday, year, month);
     return -1;
   }
 
@@ -542,7 +543,7 @@ ms_md2doy (int year, int month, int mday, int *yday)
  *
  * @param[in] nstime Time value to convert
  * @param[out] year Year with century, like 2018
- * @param[out] day Day of year, 1 - 366
+ * @param[out] yday Day of year, 1 - 366
  * @param[out] hour Hour, 0 - 23
  * @param[out] min Minute, 0 - 59
  * @param[out] sec Second, 0 - 60, where 60 is a leap second
@@ -552,7 +553,7 @@ ms_md2doy (int year, int month, int mday, int *yday)
  * @retval -1 on error
  ***************************************************************************/
 int
-ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *day,
+ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *yday,
                 uint8_t *hour, uint8_t *min, uint8_t *sec, uint32_t *nsec)
 {
   struct tm tms;
@@ -576,8 +577,8 @@ ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *day,
   if (year)
     *year = tms.tm_year + 1900;
 
-  if (day)
-    *day = tms.tm_yday + 1;
+  if (yday)
+    *yday = tms.tm_yday + 1;
 
   if (hour)
     *hour = tms.tm_hour;
@@ -797,16 +798,16 @@ ms_time2nstime_int (int year, int yday, int hour, int min, int sec, uint32_t nse
   return nstime;
 } /* End of ms_time2nstime_int() */
 
+
 /**********************************************************************/ /**
  * @brief Convert specified date-time values to a high precision epoch time.
  *
- * Each value must be within these expected ranges:
- * - year : 1800 - 5000
- * - yday : 1 - 366
- * - hour : 0 - 23
- * - min  : 0 - 59
- * - sec  : 0 - 60
- * - nsec : 0 - 999999999
+ * @param[in] year Year with century, like 2018
+ * @param[in] yday Day of year, 1 - 366
+ * @param[in] hour Hour, 0 - 23
+ * @param[in] min Minute, 0 - 59
+ * @param[in] sec Second, 0 - 60, where 60 is a leap second
+ * @param[in] nsec Nanoseconds, 0 - 999999999
  *
  * @returns epoch time on success and ::NSTERROR on error.
  ***************************************************************************/
@@ -866,6 +867,8 @@ ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec)
  * assumed to be 1).  For example, specifying "YYYY-MM-DD" assumes HH,
  * MM, SS and FFFF are 0.  The year is required, otherwise there
  * wouldn't be much for a date.
+ *
+ * @param[in] timestr Time string in ISO-style, month-day format
  *
  * @returns epoch time on success and ::NSTERROR on error.
  ***************************************************************************/
@@ -964,6 +967,8 @@ ms_timestr2nstime (char *timestr)
  * be 1): "YYYY,DDD,HH" assumes MM, SS and FFFFFFFF are 0.  The year
  * is required, otherwise there wouldn't be much for a date.
  *
+ * @param[in] seedtimestr Time string in SEED-style, ordinal format
+ *
  * @returns epoch time on success and ::NSTERROR on error.
  ***************************************************************************/
 nstime_t
@@ -1038,6 +1043,8 @@ ms_seedtimestr2nstime (char *seedtimestr)
  * Actually just test if the input double is positive multiplying by
  * -1.0 if not and return it.
  *
+ * @param[in] val Value for which to determine absolute value
+ *
  * @returns the positive value of input double.
  ***************************************************************************/
 double
@@ -1049,9 +1056,22 @@ ms_dabs (double val)
 } /* End of ms_dabs() */
 
 /**********************************************************************/ /**
+ * @brief Runtime test for host endianess
+ * @returns 0 if the host is little endian, otherwise 1.
+ ***************************************************************************/
+inline int
+ms_bigendianhost (void)
+{
+  const uint16_t endian = 256;
+  return *(const uint8_t *)&endian;
+} /* End of ms_bigendianhost() */
+
+/**********************************************************************/ /**
  * @brief Read leap second file specified by an environment variable
  *
  * Leap seconds are loaded into the library's global leapsecond list.
+ *
+ * @param[in] envvarname Environment variable that identifies the leap second file
  *
  * @returns positive number of leap seconds read
  * @retval -1 on file read error
@@ -1078,6 +1098,8 @@ ms_readleapseconds (const char *envvarname)
  * The file is expected to be standard IETF leap second list format.
  * The list is usually available from:
  * https://www.ietf.org/timezones/data/leap-seconds.list
+ *
+ * @param[in] filename File containing leap second list
  *
  * @returns positive number of leap seconds read on success
  * @retval -1 on error

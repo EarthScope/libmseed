@@ -94,7 +94,10 @@ msr3_free (MS3Record **ppmsr)
  * If the \a datadup flag is true (non-zero) and the source
  * ::MS3Record has associated data samples copy them as well.
  *
- * @returns Pointer to a new ::MS3Record on success and NULL on error.
+ * @param[in] msr ::MS3Record to duplicate
+ * @param[in] datadup Flag to control duplication of data samples
+ *
+ * @returns Pointer to a new ::MS3Record on success and NULL on error
  ***************************************************************************/
 MS3Record *
 msr3_duplicate (MS3Record *msr, int8_t datadup)
@@ -175,6 +178,8 @@ msr3_duplicate (MS3Record *msr, int8_t datadup)
  * information the values are ambiguous.
  * \sa ms_readleapsecondfile()
  *
+ * @param[in] msr ::MS3Record to calculate end time of
+ *
  * @returns Time of the last sample on success and NSTERROR on error.
  ***************************************************************************/
 nstime_t
@@ -239,7 +244,7 @@ msr3_print (MS3Record *msr, int8_t details)
             msr->sid, msr->pubversion, msr->reclen, msr->formatversion);
     ms_log (0, "             start time: %s\n", time);
     ms_log (0, "      number of samples: %d\n", msr->samplecnt);
-    ms_log (0, "       sample rate (Hz): %.10g\n", msr_sampratehz(msr));
+    ms_log (0, "       sample rate (Hz): %.10g\n", msr3_sampratehz(msr));
 
     if (details > 1)
     {
@@ -286,6 +291,22 @@ msr3_print (MS3Record *msr, int8_t details)
 } /* End of msr3_print() */
 
 /**********************************************************************/ /**
+ * @brief Calculate sample rate in Hertz for a given ::MS3Record
+ *
+ * @param[in] msr ::MS3Record to calculate sample rate for
+ *
+ * @returns Return sample rate in Hertz (samples per second)
+ ***************************************************************************/
+inline double
+msr3_sampratehz (MS3Record *msr)
+{
+  if (msr->samprate < 0.0)
+    return (-1.0 / msr->samprate);
+  else
+    return msr->samprate;
+} /* End of msr3_sampratehz() */
+
+/**********************************************************************/ /**
  * @brief Calculate data latency based on the host time
  *
  * Calculation is based on the time of the last sample in the record; in
@@ -294,6 +315,8 @@ msr3_print (MS3Record *msr, int8_t details)
  *
  * Double precision is returned, but the true precision is dependent
  * on the accuracy of the host system clock among other things.
+ *
+ * @param[in] msr ::MS3Record to calculate lactency for
  *
  * @returns seconds of latency or 0.0 on error (indistinguishable from
  * 0.0 latency).

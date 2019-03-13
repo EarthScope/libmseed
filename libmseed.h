@@ -98,40 +98,6 @@ extern "C" {
 
 #define LM_SIDLEN 64       //!< Length of source ID string
 
-/** @defgroup encoding-values Data encodings
-    @brief Data encoding type defines
-    @{ */
-#define DE_ASCII       0            //!< ASCII (text) encoding
-#define DE_INT16       1            //!< 16-bit integer
-#define DE_INT32       3            //!< 32-bit integer
-#define DE_FLOAT32     4            //!< 32-bit float (IEEE)
-#define DE_FLOAT64     5            //!< 64-bit float (IEEE)
-#define DE_STEIM1      10           //!< Steim-1 compressed integers
-#define DE_STEIM2      11           //!< Steim-2 compressed integers
-#define DE_GEOSCOPE24  12           //!< [Legacy] GEOSCOPE 24-bit integer
-#define DE_GEOSCOPE163 13           //!< [Legacy] GEOSCOPE 16-bit gain ranged, 3-bit exponent
-#define DE_GEOSCOPE164 14           //!< [Legacy] GEOSCOPE 16-bit gain ranged, 4-bit exponent
-#define DE_CDSN        16           //!< [Legacy] CDSN 16-bit gain ranged
-#define DE_SRO         30           //!< [Legacy] SRO 16-bit gain ranged
-#define DE_DWWSSN      32           //!< [Legacy] DWWSSN 16-bit gain ranged
-/** @} */
-
-/** @defgroup return-values Return codes
-    @brief Common error codes returned by library functions.  Error values will always be negative.
-
-    \sa ms_errorstr()
-    @{ */
-#define MS_ENDOFFILE        1        //!< End of file reached return value
-#define MS_NOERROR          0        //!< No error
-#define MS_GENERROR        -1        //!< Generic unspecified error
-#define MS_NOTSEED         -2        //!< Data not SEED
-#define MS_WRONGLENGTH     -3        //!< Length of data read was not correct
-#define MS_OUTOFRANGE      -4        //!< SEED record length out of range
-#define MS_UNKNOWNFORMAT   -5        //!< Unknown data encoding format
-#define MS_STBADCOMPFLAG   -6        //!< Steim, invalid compression flag(s)
-#define MS_INVALIDCRC      -7        //!< Invalid CRC
-/** @} */
-
 /** @def MS_ISRATETOLERABLE
     @brief Macro to test default sample rate tolerance: abs(1-sr1/sr2) < 0.0001 */
 #define MS_ISRATETOLERABLE(A,B) (ms_dabs (1.0 - (A / B)) < 0.0001)
@@ -281,33 +247,15 @@ extern int ms_md2doy (int year, int month, int mday, int *yday);
     - \c 'd' - 64-bit float (IEEE) data samples
 */
 
-/** @defgroup control-flags Control flags
-    @brief Parsing and packing control flags
-    @{ */
-#define MSF_UNPACKDATA  0x0001  //!< [Parsing] unpack data samples
-#define MSF_SKIPNOTDATA 0x0002  //!< [Parsing] skip input that cannot be identified as miniSEED
-#define MSF_VALIDATECRC 0x0004  //!< [Parsing] validate CRC (if version 3)
-#define MSF_SEQUENCE    0x0008  //!< [Packing] UNSUPPORTED: Maintain a record-level sequence number
-#define MSF_FLUSHDATA   0x0010  //!< [Packing] pack all available data even if final record would not be filled
-#define MSF_ATENDOFFILE 0x0020  //!< [Parsing] reading routine is at the end of the file
-/** @} */
-
-/** @defgroup byte-swap-flags Byte swap flags
-    @brief Flags indicating whether the header or payload needed byte swapping
-    @{ */
-#define MSSWAP_HEADER   0x01    //!< Header needed byte swapping
-#define MSSWAP_PAYLOAD  0x02    //!< Data payload needed byte swapping
-/** @} */
-
-/** @defgroup miniseed-record miniSEED record handling
+/** @defgroup miniseed-record Record Handling
     @brief Definitions and functions related to individual miniSEED records
     @{ */
 
-/** miniSEED record structure */
+/** @brief miniSEED record container */
 typedef struct MS3Record {
   char           *record;            //!< Raw miniSEED record, if available
   int32_t         reclen;            //!< Length of miniSEED record in bytes
-  uint8_t         swapflag;          //!< Byte swap indicator, see @ref byte-swap-flags
+  uint8_t         swapflag;          //!< Byte swap indicator (bitmask), see @ref byte-swap-flags
 
   /* Common header fields in accessible form */
   char            sid[LM_SIDLEN];    //!< Source identifier as URN, max length @ref LM_SIDLEN
@@ -315,7 +263,7 @@ typedef struct MS3Record {
   uint8_t         flags;             //!< Record-level bit flags
   nstime_t        starttime;         //!< Record start time (first sample)
   double          samprate;          //!< Nominal sample rate (Hz)
-  int8_t          encoding;          //!< Data encoding format
+  int8_t          encoding;          //!< Data encoding format, see @ref encoding-values
   uint8_t         pubversion;        //!< Publication version
   int64_t         samplecnt;         //!< Number of samples in record
   uint32_t        crc;               //!< CRC of entire record
@@ -350,6 +298,7 @@ extern void       msr3_free (MS3Record **ppmsr);
 extern MS3Record* msr3_duplicate (MS3Record *msr, int8_t datadup);
 extern nstime_t   msr3_endtime (MS3Record *msr);
 extern void       msr3_print (MS3Record *msr, int8_t details);
+extern double     msr3_sampratehz (MS3Record *msr);
 extern double     msr3_host_latency (MS3Record *msr);
 
 extern int ms3_detect (const char *record, int recbuflen, uint8_t *formatversion);
@@ -383,7 +332,7 @@ extern int ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t sw
         - ...
     @{ */
 
-/** Container for a continuous trace segment, linkable */
+/** @brief Container for a continuous trace segment, linkable */
 typedef struct MS3TraceSeg {
   nstime_t        starttime;         //!< Time of first sample
   nstime_t        endtime;           //!< Time of last sample
@@ -397,7 +346,7 @@ typedef struct MS3TraceSeg {
   struct MS3TraceSeg *next;          //!< Pointer to next segment, NULL if the last
 } MS3TraceSeg;
 
-/** Container for a trace ID, linkable */
+/** @brief Container for a trace ID, linkable */
 typedef struct MS3TraceID {
   char            sid[LM_SIDLEN];    //!< Source identifier as URN, max length @ref LM_SIDLEN
   uint8_t         pubversion;        //!< Publication version
@@ -410,7 +359,7 @@ typedef struct MS3TraceID {
   struct MS3TraceID *next;           //!< Pointer to next trace ID, NULL if the last
 } MS3TraceID;
 
-/** Container for a continuous trace segment, linkable */
+/** @brief Container for a collection of continuous trace segment, linkable */
 typedef struct MS3TraceList {
   uint32_t           numtraces;      //!< Number of traces in list
   struct MS3TraceID *traces;         //!< Pointer to list of traces
@@ -436,7 +385,104 @@ extern void mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
                                 double *mingap, double *maxgap);
 /** @} */
 
-/** @defgroup extra-headers Extra headers
+/** @defgroup data-selections Data Selections
+    @brief Data selections to be used as filters
+
+    Selections are the identification of data, by source identifier
+    and time ranges, that are desired.  Capability is included to read
+    selections from files and to match data against a selection list.
+
+    The ms3_readmsr_selection() and ms3_readtracelist_selection()
+    routines accept ::MS3Selections and allow selective (and
+    efficient) reading of data from files.
+    @{ */
+/** @brief Data selection structure time window definition containers */
+typedef struct MS3SelectTime {
+  nstime_t starttime;                //!< Earliest data for matching channels
+  nstime_t endtime;                  //!< Latest data for matching channels
+  struct MS3SelectTime *next;        //!< Pointer to next selection time, NULL if the last
+} MS3SelectTime;
+
+/** @brief Data selection structure definition containers */
+typedef struct MS3Selections {
+  char sidpattern[100];              //!< Matching (globbing) pattern for source ID
+  struct MS3SelectTime *timewindows; //!< Pointer to time window list for this source ID
+  struct MS3Selections *next;        //!< Pointer to next selection, NULL if the last
+  uint8_t pubversion;                //!< Selected publication version, use 0 for any
+} MS3Selections;
+
+extern MS3Selections *ms3_matchselect (MS3Selections *selections, char *sid,
+                                       nstime_t starttime, nstime_t endtime,
+                                       int pubversion, MS3SelectTime **ppselecttime);
+extern MS3Selections *msr3_matchselect (MS3Selections *selections, MS3Record *msr,
+                                        MS3SelectTime **ppselecttime);
+extern int ms3_addselect (MS3Selections **ppselections, char *sidpattern,
+                          nstime_t starttime, nstime_t endtime, uint8_t pubversion);
+extern int ms3_addselect_comp (MS3Selections **ppselections,
+                               char *network, char* station, char *location, char *channel,
+                               nstime_t starttime, nstime_t endtime, uint8_t pubversion);
+extern int ms3_readselectionsfile (MS3Selections **ppselections, char *filename);
+extern void ms3_freeselections (MS3Selections *selections);
+extern void ms3_printselections (MS3Selections *selections);
+/** @} */
+
+/** @defgroup io-functions File I/O
+    @brief Reading and writing interfaces for miniSEED records in files
+    @{ */
+
+/** @brief State container for reading miniSEED records from files.
+    __Callers should not modify these values directly and generally
+    should not need to access them.__ */
+typedef struct MS3FileParam
+{
+  FILE *fp;            //!< File handle
+  char filename[512];  //!< File name
+  char *readbuffer;    //!< Read buffer
+  int readlength;      //!< Length of data in read buffer
+  int readoffset;      //!< Read offset in read buffer
+  int64_t filepos;     //!< File position corresponding to start of buffer
+  int64_t filesize;    //!< File size
+  int64_t recordcount; //!< Count of records read from this file
+} MS3FileParam;
+
+extern int ms3_readmsr (MS3Record **ppmsr, const char *msfile, int64_t *fpos, int8_t *last,
+                        uint32_t flags, int8_t verbose);
+extern int ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
+                          int64_t *fpos, int8_t *last, uint32_t flags, int8_t verbose);
+extern int ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
+                                  int64_t *fpos, int8_t *last, uint32_t flags,
+                                  MS3Selections *selections, int8_t verbose);
+extern int ms3_readtracelist (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
+                              int8_t splitversion, uint32_t flags, int8_t verbose);
+extern int ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
+                                      nstime_t starttime, nstime_t endtime, int8_t splitversion, uint32_t flags,
+                                      int8_t verbose);
+extern int ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
+                                        MS3Selections *selections, int8_t splitversion, uint32_t flags, int8_t verbose);
+extern int msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
+                            uint32_t flags, int8_t verbose);
+extern int mstl3_writemseed (MS3TraceList *mst, const char *msfile, int8_t overwrite,
+                             int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose);
+/** @} */
+
+/** @defgroup string-functions Source Identifiers
+    @brief Source identifier (SID) and string manipulation functions
+
+    A source identifier uniquely identifies the generator of data in a
+    record.  This is a small string, usually in the form of a URI.
+    For data identified with FDSN codes, the SID is usally a simple
+    combination of the codes.
+
+    @{ */
+extern int      ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan);
+extern int      ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
+                              char *net, char *sta, char *loc, char *chan);
+extern int      ms_strncpclean (char *dest, const char *source, int length);
+extern int      ms_strncpcleantail (char *dest, const char *source, int length);
+extern int      ms_strncpopen (char *dest, const char *source, int length);
+/** @} */
+
+/** @defgroup extra-headers Extra Headers
     @brief Structures and funtions to support extra headers
 
     Extra headers are stored as JSON within a data record header using
@@ -466,7 +512,7 @@ extern void mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
     @{ */
 
 /**
- * @brief A container for event detection parameters for use in extra headers
+ * @brief Container for event detection parameters for use in extra headers
  *
  * Actual values are optional, with special values indicating an unset
  * state.
@@ -490,7 +536,7 @@ typedef struct MSEHEventDetection
 } MSEHEventDetection;
 
 /**
- * @brief A container for calibration parameters for use in extra headers
+ * @brief Container for calibration parameters for use in extra headers
  *
  * Actual values are optional, with special values indicating an unset
  * state.
@@ -522,7 +568,7 @@ typedef struct MSEHCalibration
 } MSEHCalibration;
 
 /**
- * @brief A container for timing exception parameters for use in extra headers
+ * @brief Container for timing exception parameters for use in extra headers
  *
  * Actual values are optional, with special values indicating an unset
  * state.
@@ -541,7 +587,7 @@ typedef struct MSEHTimingException
 } MSEHTimingException;
 
 /**
- * @brief A container for recenter parameters for use in extra headers
+ * @brief Container for recenter parameters for use in extra headers
  *
  * Actual values are optional, with special values indicating an unset
  * state.
@@ -622,121 +668,6 @@ extern int mseh_add_recenter (MS3Record *msr, const char *path,
 extern int mseh_print (MS3Record *msr, int indent);
 /** @} */
 
-/** @defgroup data-selections Data Selections
-    @brief Data selections to be used as filters
-
-    Selections are the identification of data, by source identifier
-    and time ranges, that are desired.  Capability is included to read
-    selections from files and to match data against a selection list.
-
-    The ms3_readmsr_selection() and ms3_readtracelist_selection()
-    routines accept ::MS3Selections and allow selective (and
-    efficient) reading of data from files.
-    @{ */
-/** Data selection structure time window definition containers */
-typedef struct MS3SelectTime {
-  nstime_t starttime;                //!< Earliest data for matching channels
-  nstime_t endtime;                  //!< Latest data for matching channels
-  struct MS3SelectTime *next;        //!< Pointer to next selection time, NULL if the last
-} MS3SelectTime;
-
-/** Data selection structure definition containers */
-typedef struct MS3Selections {
-  char sidpattern[100];              //!< Matching (globbing) pattern for source ID
-  struct MS3SelectTime *timewindows; //!< Pointer to time window list for this source ID
-  struct MS3Selections *next;        //!< Pointer to next selection, NULL if the last
-  uint8_t pubversion;                //!< Selected publication version, use 0 for any
-} MS3Selections;
-
-extern MS3Selections *ms3_matchselect (MS3Selections *selections, char *sid,
-                                       nstime_t starttime, nstime_t endtime,
-                                       int pubversion, MS3SelectTime **ppselecttime);
-extern MS3Selections *msr3_matchselect (MS3Selections *selections, MS3Record *msr,
-                                        MS3SelectTime **ppselecttime);
-extern int ms3_addselect (MS3Selections **ppselections, char *sidpattern,
-                          nstime_t starttime, nstime_t endtime, uint8_t pubversion);
-extern int ms3_addselect_comp (MS3Selections **ppselections,
-                               char *network, char* station, char *location, char *channel,
-                               nstime_t starttime, nstime_t endtime, uint8_t pubversion);
-extern int ms3_readselectionsfile (MS3Selections **ppselections, char *filename);
-extern void ms3_freeselections (MS3Selections *selections);
-extern void ms3_printselections (MS3Selections *selections);
-/** @} */
-
-/** @defgroup io-functions File I/O
-    @brief Reading and writing interfaces for miniSEED records in files
-    @{ */
-
-/** @brief State container for reading miniSEED records from files.
-    __Callers should not modify these values directly and generally
-    should not need to access them.__ */
-typedef struct MS3FileParam
-{
-  FILE *fp;            //!< File handle
-  char filename[512];  //!< File name
-  char *readbuffer;    //!< Read buffer
-  int readlength;      //!< Length of data in read buffer
-  int readoffset;      //!< Read offset in read buffer
-  int64_t filepos;     //!< File position corresponding to start of buffer
-  int64_t filesize;    //!< File size
-  int64_t recordcount; //!< Count of records read from this file
-} MS3FileParam;
-
-extern int ms3_readmsr (MS3Record **ppmsr, const char *msfile, int64_t *fpos, int8_t *last,
-                        uint32_t flags, int8_t verbose);
-extern int ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
-                          int64_t *fpos, int8_t *last, uint32_t flags, int8_t verbose);
-extern int ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
-                                  int64_t *fpos, int8_t *last, uint32_t flags,
-                                  MS3Selections *selections, int8_t verbose);
-extern int ms3_readtracelist (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
-                              int8_t splitversion, uint32_t flags, int8_t verbose);
-extern int ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
-                                      nstime_t starttime, nstime_t endtime, int8_t splitversion, uint32_t flags,
-                                      int8_t verbose);
-extern int ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
-                                        MS3Selections *selections, int8_t splitversion, uint32_t flags, int8_t verbose);
-extern int msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
-                            uint32_t flags, int8_t verbose);
-extern int mstl3_writemseed (MS3TraceList *mst, const char *msfile, int8_t overwrite,
-                             int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose);
-/** @} */
-
-/** @defgroup string-functions Source Identifier and String functions
-    @brief Source identifier (SID) and string manipulation functions
-    @{ */
-extern int      ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan);
-extern int      ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
-                              char *net, char *sta, char *loc, char *chan);
-extern int      ms_strncpclean (char *dest, const char *source, int length);
-extern int      ms_strncpcleantail (char *dest, const char *source, int length);
-extern int      ms_strncpopen (char *dest, const char *source, int length);
-/** @} */
-
-/**********************************************************************/ /**
- * @brief Runtime test for host endianess
- * @returns 0 if the host is little endian, otherwise 1.
- ***************************************************************************/
-static inline int
-ms_bigendianhost (void)
-{
-  const uint16_t endian = 256;
-  return *(const uint8_t *)&endian;
-}
-
-/**********************************************************************/ /**
- * @brief Calculate sample rate in Hertz for a given ::MS3Record
- * @returns Return sample rate in Hertz (samples per second)
- ***************************************************************************/
-static inline double
-msr_sampratehz (MS3Record *msr)
-{
-  if (msr->samprate < 0.0)
-    return (-1.0 / msr->samprate);
-  else
-    return msr->samprate;
-}
-
 /** @defgroup logging Central Logging
     @brief Central logging functions for the library and calling programs
 
@@ -788,7 +719,7 @@ extern MSLogParam *ms_loginit_l (MSLogParam *logp,
                                  void (*diag_print)(char*), const char *errprefix);
 /** @} */
 
-/** @defgroup leapsecond Leap second handling
+/** @defgroup leapsecond Leap Second Handling
     @brief Utilities for handling leap seconds
 
     The library contains functionality to load a list of leap seconds
@@ -815,7 +746,7 @@ extern MSLogParam *ms_loginit_l (MSLogParam *logp,
     values of "60" are generated.
 
     @{ */
-/** Leap second list container */
+/** @brief Leap second list container */
 typedef struct LeapSecond
 {
   nstime_t leapsecond;       //!< Time of leap second as epoch since 1 January 1900
@@ -829,25 +760,24 @@ extern int ms_readleapseconds (const char *envvarname);
 extern int ms_readleapsecondfile (const char *filename);
 /** @} */
 
-/** @defgroup utility-functions General utility functions
+/** @defgroup utility-functions General Utility Functions
     @brief General utilities
     @{ */
-
 
 extern uint8_t  ms_samplesize (const char sampletype);
 extern const char* ms_encodingstr (const uint8_t encoding);
 extern const char* ms_errorstr (int errorcode);
 
-/** Return CRC32C value of supplied buffer, with optional starting CRC32C value */
-extern uint32_t ms_crc32c (const uint8_t* input, int length, uint32_t previousCRC32C);
-
-/** Return the absolute value of the specified double */
 extern double ms_dabs (double val);
+extern int ms_bigendianhost (void);
 
 /** Portable version of POSIX ftello() to get file position in large files */
 extern int64_t lmp_ftell64 (FILE *stream);
 /** Portable version of POSIX fseeko() to set position in large files */
 extern int lmp_fseek64 (FILE *stream, int64_t offset, int whence);
+
+/** Return CRC32C value of supplied buffer, with optional starting CRC32C value */
+extern uint32_t ms_crc32c (const uint8_t* input, int length, uint32_t previousCRC32C);
 
 /** In-place byte swapping of 2 byte quantity */
 extern void ms_gswap2 ( void *data2 );
@@ -865,12 +795,82 @@ extern void ms_gswap8a ( void *data8 );
 
 /** @} */
 
-/** @defgroup legacy Legacy style helpers
-    @brief Declarations and support for legacy or similar to legacy interfaces
-    @{ */
-/** Single byte flag type */
+/** Single byte flag type, for legacy use */
 typedef int8_t flag;
+
+/** @defgroup low-level Low level definitions
+    @brief The low-down, the nitty gritty, the basics
+*/
+
+/** @defgroup encoding-values Data encodings
+    @ingroup low-level
+    @brief Data encoding type defines
+
+    These are FDSN-defined miniSEED data encoding values.  The value
+    of ::MS3Record.encoding is set to one of these.  These values may
+    be used anywhere and encoding value is needed.
+
+    @{ */
+#define DE_ASCII       0            //!< ASCII (text) encoding
+#define DE_INT16       1            //!< 16-bit integer
+#define DE_INT32       3            //!< 32-bit integer
+#define DE_FLOAT32     4            //!< 32-bit float (IEEE)
+#define DE_FLOAT64     5            //!< 64-bit float (IEEE)
+#define DE_STEIM1      10           //!< Steim-1 compressed integers
+#define DE_STEIM2      11           //!< Steim-2 compressed integers
+#define DE_GEOSCOPE24  12           //!< [Legacy] GEOSCOPE 24-bit integer
+#define DE_GEOSCOPE163 13           //!< [Legacy] GEOSCOPE 16-bit gain ranged, 3-bit exponent
+#define DE_GEOSCOPE164 14           //!< [Legacy] GEOSCOPE 16-bit gain ranged, 4-bit exponent
+#define DE_CDSN        16           //!< [Legacy] CDSN 16-bit gain ranged
+#define DE_SRO         30           //!< [Legacy] SRO 16-bit gain ranged
+#define DE_DWWSSN      32           //!< [Legacy] DWWSSN 16-bit gain ranged
 /** @} */
+
+/** @defgroup byte-swap-flags Byte swap flags
+    @ingroup low-level
+    @brief Flags indicating whether the header or payload needed byte swapping
+
+    These are bit flags normally used to set/test the ::MS3Record.swapflag value.
+
+    @{ */
+#define MSSWAP_HEADER   0x01    //!< Header needed byte swapping
+#define MSSWAP_PAYLOAD  0x02    //!< Data payload needed byte swapping
+/** @} */
+
+/** @defgroup return-values Return codes
+    @ingroup low-level
+    @brief Common error codes returned by library functions.  Error values will always be negative.
+
+    \sa ms_errorstr()
+    @{ */
+#define MS_ENDOFFILE        1        //!< End of file reached return value
+#define MS_NOERROR          0        //!< No error
+#define MS_GENERROR        -1        //!< Generic unspecified error
+#define MS_NOTSEED         -2        //!< Data not SEED
+#define MS_WRONGLENGTH     -3        //!< Length of data read was not correct
+#define MS_OUTOFRANGE      -4        //!< SEED record length out of range
+#define MS_UNKNOWNFORMAT   -5        //!< Unknown data encoding format
+#define MS_STBADCOMPFLAG   -6        //!< Steim, invalid compression flag(s)
+#define MS_INVALIDCRC      -7        //!< Invalid CRC
+/** @} */
+
+/** @defgroup control-flags Control flags
+    @ingroup low-level
+    @brief Parsing and packing control flags
+
+    These are bit flags that can be combined into a bitmask to control
+    aspects of the libraries parsing and packing routines.
+
+    @{ */
+#define MSF_UNPACKDATA  0x0001  //!< [Parsing] unpack data samples
+#define MSF_SKIPNOTDATA 0x0002  //!< [Parsing] skip input that cannot be identified as miniSEED
+#define MSF_VALIDATECRC 0x0004  //!< [Parsing] validate CRC (if version 3)
+#define MSF_SEQUENCE    0x0008  //!< [Packing] UNSUPPORTED: Maintain a record-level sequence number
+#define MSF_FLUSHDATA   0x0010  //!< [Packing] pack all available data even if final record would not be filled
+#define MSF_ATENDOFFILE 0x0020  //!< [Parsing] reading routine is at the end of the file
+/** @} */
+
+
 
 #ifdef __cplusplus
 }

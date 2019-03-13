@@ -16,10 +16,11 @@
       <tab type="classmembers" visible="yes" title="" intro=""/>
     </tab>
     <tab type="files" visible="no" title="">
-      <tab type="filelist" visible="yes" title="" intro=""/>
-      <tab type="globals" visible="yes" title="" intro=""/>
+      <tab type="filelist" visible="no" title="" intro=""/>
+      <tab type="globals" visible="no" title="" intro=""/>
     </tab>
-    <tab type="examples" visible="no" title="" intro=""/>  
+    <tab type="globals" visible="yes" title="Functions, etc." intro=""/>
+    <tab type="examples" visible="yes" title="" intro=""/>  
   </navindex>
 
   <!-- Layout definition for a class page -->
