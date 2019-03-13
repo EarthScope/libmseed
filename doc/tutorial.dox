@@ -183,4 +183,11 @@ the record before returning.  This design allows a program to do
 whatever is needed with generated miniSEED, i.e. write to files, send
 over the network, or even injection of more information.
 
+@section msview-example Full example to read miniSEED
+
+Below is a full example program included in the source distribution at
+\c example/msview.c as an illustration:
+
+@include msview.c
+
 */

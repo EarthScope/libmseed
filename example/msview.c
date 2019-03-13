@@ -16,25 +16,19 @@
 #include <string.h>
 #include <time.h>
 
-#ifndef WIN32
-#include <signal.h>
-static void term_handler (int sig);
-#endif
-
 #include <libmseed.h>
 
 #define VERSION "[libmseed " LIBMSEED_VERSION " example]"
 #define PACKAGE "msview"
 
-static flag verbose = 0;
-static flag ppackets = 0;
-static flag basicsum = 0;
+static int8_t verbose = 0;
+static int8_t ppackets = 0;
+static int8_t basicsum = 0;
 static int printdata = 0;
 static char *inputfile = 0;
 
 static int parameter_proc (int argcount, char **argvec);
 static void usage (void);
-static void term_handler (int sig);
 
 int
 main (int argc, char **argv)
@@ -45,23 +39,6 @@ main (int argc, char **argv)
   int64_t totalrecs = 0;
   int64_t totalsamps = 0;
   int retcode;
-
-#ifndef WIN32
-  /* Signal handling, use POSIX calls with standardized semantics */
-  struct sigaction sa;
-
-  sa.sa_flags = SA_RESTART;
-  sigemptyset (&sa.sa_mask);
-
-  sa.sa_handler = term_handler;
-  sigaction (SIGINT, &sa, NULL);
-  sigaction (SIGQUIT, &sa, NULL);
-  sigaction (SIGTERM, &sa, NULL);
-
-  sa.sa_handler = SIG_IGN;
-  sigaction (SIGHUP, &sa, NULL);
-  sigaction (SIGPIPE, &sa, NULL);
-#endif
 
   /* Process given parameters (command line and parameter file) */
   if (parameter_proc (argc, argv) < 0)
@@ -235,15 +212,3 @@ usage (void)
            " file           File of Mini-SEED records\n"
            "\n");
 } /* End of usage() */
-
-#ifndef WIN32
-/***************************************************************************
- * term_handler:
- * Signal handler routine.
- ***************************************************************************/
-static void
-term_handler (int sig)
-{
-  exit (0);
-}
-#endif
