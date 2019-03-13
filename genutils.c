@@ -658,8 +658,9 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
 
   /* Print no subseconds */
   if (subseconds == NONE ||
-      (subseconds == MICRO_IFEXIST && microsec == 0) ||
-      (subseconds == NANO_IFEXIST && nanosec == 0))
+      (subseconds == MICRO_NONE && microsec == 0) ||
+      (subseconds == NANO_NONE && nanosec == 0) ||
+      (subseconds == NANO_MICRO_NONE && nanosec == 0))
   {
     switch (timeformat)
     {
@@ -689,9 +690,10 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
   }
   /* Print microseconds */
   else if (subseconds == MICRO ||
-           (subseconds == MICRO_IFEXIST && microsec) ||
-           (subseconds == NANO_IFEXIST_OTHERWISE_MICRO && submicro == 0))
-  {
+           (subseconds == MICRO_NONE && microsec) ||
+           (subseconds == NANO_MICRO && submicro == 0) ||
+           (subseconds == NANO_MICRO_NONE && submicro == 0))
+    {
     switch (timeformat)
     {
     case ISOMONTHDAY:
@@ -720,8 +722,9 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
   }
   /* Print nanoseconds */
   else if (subseconds == NANO ||
-           (subseconds == NANO_IFEXIST && nanosec) ||
-           (subseconds == NANO_IFEXIST_OTHERWISE_MICRO && submicro))
+           (subseconds == NANO_NONE && nanosec) ||
+           (subseconds == NANO_MICRO && submicro) ||
+           (subseconds == NANO_MICRO_NONE && submicro))
   {
     switch (timeformat)
     {
@@ -765,6 +768,42 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
   else
     return timestr;
 } /* End of ms_nstime2timestr() */
+
+/**********************************************************************/ /**
+ * @brief Convert an ::nstime_t to a time string with 'Z' suffix
+ *
+ * This is a wrapper for ms_nstime2timestr() that includes a 'Z'
+ * suffix to denote UTC time.
+ *
+ * The provided \a timestr buffer must have enough room for the
+ * resulting time string, a maximum of 31 characters.
+ *
+ * @param[in] nstime Time value to convert
+ * @param[out] timestr Buffer for ISO time string
+ * @param timeformat Time string format, one of @ref ms_timeformat_t
+ * @param subseconds Inclusion of subseconds, one of @ref ms_subseconds_t
+ *
+ * @returns Pointer to the resulting string or NULL on error.
+ ***************************************************************************/
+char *
+ms_nstime2timestrz (nstime_t nstime, char *timestr,
+                    ms_timeformat_t timeformat, ms_subseconds_t subseconds)
+{
+  char *formatted;
+
+  formatted = ms_nstime2timestr (nstime, timestr, timeformat, subseconds);
+
+  if (formatted)
+  {
+    /* Append (UTC) Z suffix */
+    while (*formatted)
+      formatted++;
+    *formatted++ = 'Z';
+    *formatted   = '\0';
+  }
+
+  return formatted;
+} /* End of ms_nstime2timestrz() */
 
 /***************************************************************************
  * INTERNAL Convert specified date-time values to a high precision epoch time.

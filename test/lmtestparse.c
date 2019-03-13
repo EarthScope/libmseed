@@ -160,7 +160,7 @@ main (int argc, char **argv)
     ms_log (2, "Cannot read %s: %s\n", inputfile, ms_errorstr (retcode));
 
   if (tracegap)
-    mstl3_printtracelist (mstl, 0, 1, 1);
+    mstl3_printtracelist (mstl, SEEDORDINAL, 1, 1);
 
   /* Make sure everything is cleaned up */
   ms3_readmsr (&msr, NULL, NULL, NULL, flags, 0);

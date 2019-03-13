@@ -303,7 +303,6 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
   JSON_Object *object = NULL;
   JSON_Array *array   = NULL;
   char timestring[30];
-  char *cp = NULL;
 
 #define EVALSET(KEY, SET)                                \
   if (SET != JSONSuccess)                                \
@@ -356,14 +355,15 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
   }
   if (eventdetection->onsettime != NSTERROR)
   {
-    /* Create ISO-formatted time string with (UTC) Z suffix */
-    cp = ms_nstime2timestr (eventdetection->onsettime, timestring, 0, -1);
-    while (*cp)
-      cp++;
-    *cp++ = 'Z';
-    *cp   = '\0';
-
-    EVALSET ("OnsetTime", json_object_set_string (object, "OnsetTime", timestring));
+    if (ms_nstime2timestrz (eventdetection->onsettime, timestring, ISOMONTHDAY, NANO_MICRO_NONE))
+    {
+      EVALSET ("OnsetTime", json_object_set_string (object, "OnsetTime", timestring));
+    }
+    else
+    {
+      ms_log (2, "%s(): Cannot create time string for %lld\n", __func__, (long long int)eventdetection->onsettime);
+      return MS_GENERROR;
+    }
   }
   if (memcmp (eventdetection->medsnr, (uint8_t[]){0, 0, 0, 0, 0, 0}, 6))
   {
@@ -432,7 +432,6 @@ mseh_add_calibration (MS3Record *msr, const char *path,
   JSON_Object *object = NULL;
   char beginstring[31];
   char endstring[31];
-  char *cp = NULL;
 
 #define EVALSET(KEY, SET)                                \
   if (SET != JSONSuccess)                                \
@@ -465,25 +464,27 @@ mseh_add_calibration (MS3Record *msr, const char *path,
   }
   if (calibration->begintime != NSTERROR)
   {
-    /* Create ISO-formatted time string with (UTC) Z suffix */
-    cp = ms_nstime2timestr (calibration->begintime, beginstring, 0, -1);
-    while (*cp)
-      cp++;
-    *cp++ = 'Z';
-    *cp   = '\0';
-
-    EVALSET ("BeginTime", json_object_set_string (object, "BeginTime", beginstring));
+    if (ms_nstime2timestrz (calibration->begintime, beginstring, ISOMONTHDAY, NANO_MICRO_NONE))
+    {
+      EVALSET ("BeginTime", json_object_set_string (object, "BeginTime", beginstring));
+    }
+    else
+    {
+      ms_log (2, "%s(): Cannot create time string for %lld\n", __func__, (long long int)calibration->begintime);
+      return MS_GENERROR;
+    }
   }
   if (calibration->endtime != NSTERROR)
   {
-    /* Create ISO-formatted time string with (UTC) Z suffix */
-    cp = ms_nstime2timestr (calibration->endtime, endstring, 0, -1);
-    while (*cp)
-      cp++;
-    *cp++ = 'Z';
-    *cp   = '\0';
-
-    EVALSET ("EndTime", json_object_set_string (object, "EndTime", endstring));
+    if (ms_nstime2timestrz (calibration->endtime, endstring, ISOMONTHDAY, NANO_MICRO_NONE))
+    {
+      EVALSET ("EndTime", json_object_set_string (object, "EndTime", endstring));
+    }
+    else
+    {
+      ms_log (2, "%s(): Cannot create time string for %lld\n", __func__, (long long int)calibration->endtime);
+      return MS_GENERROR;
+    }
   }
   if (calibration->steps >= 0)
   {
@@ -581,7 +582,6 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
   JSON_Value *value   = NULL;
   JSON_Object *object = NULL;
   char timestring[30];
-  char *cp = NULL;
 
 #define EVALSET(KEY, SET)                                \
   if (SET != JSONSuccess)                                \
@@ -614,14 +614,15 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
   }
   if (exception->time != NSTERROR)
   {
-    /* Create ISO-formatted time string with (UTC) Z suffix */
-    cp = ms_nstime2timestr (exception->time, timestring, 0, -1);
-    while (*cp)
-      cp++;
-    *cp++ = 'Z';
-    *cp   = '\0';
-
-    EVALSET ("Time", json_object_set_string (object, "Time", timestring));
+    if (ms_nstime2timestrz (exception->time, timestring, ISOMONTHDAY, NANO_MICRO_NONE))
+    {
+      EVALSET ("Time", json_object_set_string (object, "Time", timestring));
+    }
+    else
+    {
+      ms_log (2, "%s(): Cannot create time string for %lld\n", __func__, (long long int)exception->time);
+      return MS_GENERROR;
+    }
   }
   if (exception->receptionquality >= 0)
   {
@@ -671,7 +672,6 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
   JSON_Object *object = NULL;
   char beginstring[31];
   char endstring[31];
-  char *cp = NULL;
 
 #define EVALSET(KEY, SET)                                \
   if (SET != JSONSuccess)                                \
@@ -704,25 +704,27 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
   }
   if (recenter->begintime != NSTERROR)
   {
-    /* Create ISO-formatted time string with (UTC) Z suffix */
-    cp = ms_nstime2timestr (recenter->begintime, beginstring, 0, -1);
-    while (*cp)
-      cp++;
-    *cp++ = 'Z';
-    *cp   = '\0';
-
-    EVALSET ("BeginTime", json_object_set_string (object, "BeginTime", beginstring));
+    if (ms_nstime2timestrz (recenter->begintime, beginstring, ISOMONTHDAY, NANO_MICRO_NONE))
+    {
+      EVALSET ("BeginTime", json_object_set_string (object, "BeginTime", beginstring));
+    }
+    else
+    {
+      ms_log (2, "%s(): Cannot create time string for %lld\n", __func__, (long long int)recenter->begintime);
+      return MS_GENERROR;
+    }
   }
   if (recenter->endtime != NSTERROR)
   {
-    /* Create ISO-formatted time string with (UTC) Z suffix */
-    cp = ms_nstime2timestr (recenter->endtime, endstring, 0, -1);
-    while (*cp)
-      cp++;
-    *cp++ = 'Z';
-    *cp   = '\0';
-
-    EVALSET ("EndTime", json_object_set_string (object, "EndTime", endstring));
+    if (ms_nstime2timestrz (recenter->endtime, endstring, ISOMONTHDAY, NANO_MICRO_NONE))
+    {
+      EVALSET ("EndTime", json_object_set_string (object, "EndTime", endstring));
+    }
+    else
+    {
+      ms_log (2, "%s(): Cannot create time string for %lld\n", __func__, (long long int)recenter->endtime);
+      return MS_GENERROR;
+    }
   }
   if (recenter->trigger[0])
   {

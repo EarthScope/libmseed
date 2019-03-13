@@ -211,24 +211,28 @@ typedef enum
     - \b NONE - No subseconds
     - \b MICRO - Microsecond resolution
     - \b NANO - Nanosecond resolution
-    - \b MICRO_IFEXIST - Microsecond resolution if subseconds are non-zero
-    - \b NANO_IFEXIST - Nanosecond resolution if subseconds are non-zero
-    - \b NANO_IFEXIST_OTHERWISE_MICRO - Nanosecond resolution if there are sub-microseconds, otherwise microconds resolution
+    - \b MICRO_NONE - Microsecond resolution if subseconds are non-zero, otherwise no subseconds
+    - \b NANO_NONE - Nanosecond resolution if subseconds are non-zero, otherwise no subseconds
+    - \b NANO_MICRO - Nanosecond resolution if there are sub-microseconds, otherwise microseconds resolution
+    - \b NANO_MICRO_NONE - Nanosecond resolution if present, microsecond if present, otherwise no subseconds
  */
 typedef enum
 {
   NONE,
   MICRO,
   NANO,
-  MICRO_IFEXIST,
-  NANO_IFEXIST,
-  NANO_IFEXIST_OTHERWISE_MICRO
+  MICRO_NONE,
+  NANO_NONE,
+  NANO_MICRO,
+  NANO_MICRO_NONE
 } ms_subseconds_t;
 
 extern int ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *yday,
                            uint8_t *hour, uint8_t *min, uint8_t *sec, uint32_t *nsec);
 extern char *ms_nstime2timestr (nstime_t nstime, char *timestr,
                                 ms_timeformat_t timeformat, ms_subseconds_t subsecond);
+extern char *ms_nstime2timestrz (nstime_t nstime, char *timestr,
+                                 ms_timeformat_t timeformat, ms_subseconds_t subsecond);
 extern nstime_t ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec);
 extern nstime_t ms_timestr2nstime (char *timestr);
 extern nstime_t ms_seedtimestr2nstime (char *seedtimestr);

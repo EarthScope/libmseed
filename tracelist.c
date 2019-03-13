@@ -1233,10 +1233,10 @@ mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
     while (seg)
     {
       /* Create formatted time strings */
-      if (ms_nstime2timestr (seg->starttime, stime, timeformat, NANO_IFEXIST_OTHERWISE_MICRO) == NULL)
+      if (ms_nstime2timestr (seg->starttime, stime, timeformat, NANO_MICRO) == NULL)
         ms_log (2, "Cannot convert trace start time for %s\n", id->sid);
 
-      if (ms_nstime2timestr (seg->endtime, etime, timeformat, NANO_IFEXIST_OTHERWISE_MICRO) == NULL)
+      if (ms_nstime2timestr (seg->endtime, etime, timeformat, NANO_MICRO) == NULL)
         ms_log (2, "Cannot convert trace end time for %s\n", id->sid);
 
       /* Print segment info at varying levels */
@@ -1466,10 +1466,10 @@ mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
           snprintf (gapstr, sizeof (gapstr), "%-4.4g", gap);
 
         /* Create formatted time strings */
-        if (ms_nstime2timestr (seg->endtime, time1, timeformat, NANO_IFEXIST_OTHERWISE_MICRO) == NULL)
+        if (ms_nstime2timestr (seg->endtime, time1, timeformat, NANO_MICRO) == NULL)
           ms_log (2, "Cannot convert trace start time for %s\n", id->sid);
 
-        if (ms_nstime2timestr (seg->next->starttime, time2, timeformat, NANO_IFEXIST_OTHERWISE_MICRO) == NULL)
+        if (ms_nstime2timestr (seg->next->starttime, time2, timeformat, NANO_MICRO) == NULL)
           ms_log (2, "Cannot convert trace end time for %s\n", id->sid);
 
         ms_log (0, "%-17s %-24s %-24s %-4s %-.8g\n",
