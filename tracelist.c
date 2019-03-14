@@ -641,7 +641,7 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
  * @param[in] timetol Time tolerance in seconds for merging time series
  * @param[in] sampratetol Sample rate tolerance in samples per second
  * @param[in] splitversion Flag to control splitting of version/quality
- * @param[in] flags Flag to control pasing of miniSEED, see msr3_parse()
+ * @param[in] int8_t Flag to control pasing of miniSEED, see msr3_parse()
  * @param[in] verbose Controls verbosity, 0 means no diagnostic output
  *
  * @returns The number of records parsed on success, otherwise a
@@ -887,7 +887,7 @@ mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
  * machine representations of floating point values, e.g. "40.0"
  * represented by "39.99999999".
  *
- * If the truncate flag is true (non-zero) data samples will be
+ * If the \a truncate flag is true (non-zero) data samples will be
  * truncated to integers even if loss of sample precision is detected.
  * If the truncate flag is false (zero) and loss of precision is
  * detected an error is returned.  Loss of precision is determined by
