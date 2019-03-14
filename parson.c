@@ -2,8 +2,6 @@
  Parson ( http://kgabis.github.com/parson/ )
  Copyright (c) 2012 - 2017 Krzysztof Gabis
 
- Version: commit 4f3eaa6849ba62404fc5756650168bb2056d0b46
-
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
  in the Software without restriction, including without limitation the rights
@@ -22,6 +20,9 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
 */
+
+/* Version: commit 302fba9cbb31ffc523bf10a1ce705040194c289d libmseed */
+
 #ifdef _MSC_VER
 #ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
@@ -45,7 +46,7 @@
 #define MAX_NESTING       2048
 
 /*#define FLOAT_FORMAT "%1.17g" */ /* do not increase precision without incresing NUM_BUF_SIZE */
-#define FLOAT_FORMAT "%1.9g" /* Reduced precision for libmseed embedded version */
+#define FLOAT_FORMAT "%1.9g" /* libmseed */
 #define NUM_BUF_SIZE 64 /* double printed with "%1.17g" shouldn't be longer than 25 bytes so let's be paranoid and use 64 */
 
 #define SIZEOF_TOKEN(a)       (sizeof(a) - 1)
@@ -56,8 +57,16 @@
 #undef malloc
 #undef free
 
+#if defined(isnan) && defined(isinf)
+#define IS_NUMBER_INVALID(x) (isnan((x)) || isinf((x)))
+#else
+#define IS_NUMBER_INVALID(x) (((x) * 0.0) != 0.0)
+#endif
+
 static JSON_Malloc_Function parson_malloc = malloc;
 static JSON_Free_Function parson_free = free;
+
+static int parson_escape_slashes = 1;
 
 #define IS_CONT(b) (((unsigned char)(b) & 0xC0) == 0x80) /* is utf-8 continuation byte */
 
@@ -1015,7 +1024,6 @@ static int json_serialize_string(const char *string, char *buf) {
         switch (c) {
             case '\"': APPEND_STRING("\\\""); break;
             case '\\': APPEND_STRING("\\\\"); break;
-            case '/':  APPEND_STRING("\\/"); break; /* to make json embeddable in xml\/html */
             case '\b': APPEND_STRING("\\b"); break;
             case '\f': APPEND_STRING("\\f"); break;
             case '\n': APPEND_STRING("\\n"); break;
@@ -1053,6 +1061,13 @@ static int json_serialize_string(const char *string, char *buf) {
             case '\x1d': APPEND_STRING("\\u001d"); break;
             case '\x1e': APPEND_STRING("\\u001e"); break;
             case '\x1f': APPEND_STRING("\\u001f"); break;
+            case '/':
+                if (parson_escape_slashes) {
+                    APPEND_STRING("\\/");  /* to make json embeddable in xml\/html */
+                } else {
+                    APPEND_STRING("/");
+                }
+                break;
             default:
                 if (buf != NULL) {
                     buf[0] = c;
@@ -1367,7 +1382,7 @@ JSON_Value * json_value_init_string(const char *string) {
 
 JSON_Value * json_value_init_number(double number) {
     JSON_Value *new_value = NULL;
-    if ((number * 0.0) != 0.0) { /* nan and inf test */
+    if (IS_NUMBER_INVALID(number)) {
         return NULL;
     }
     new_value = (JSON_Value*)parson_malloc(sizeof(JSON_Value));
@@ -2040,4 +2055,8 @@ int json_boolean(const JSON_Value *value) {
 void json_set_allocation_functions(JSON_Malloc_Function malloc_fun, JSON_Free_Function free_fun) {
     parson_malloc = malloc_fun;
     parson_free = free_fun;
+}
+
+void json_set_escape_slashes(int escape_slashes) {
+    parson_escape_slashes = escape_slashes;
 }

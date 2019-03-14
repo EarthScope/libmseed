@@ -2,8 +2,6 @@
  Parson ( http://kgabis.github.com/parson/ )
  Copyright (c) 2012 - 2017 Krzysztof Gabis
 
- Version: commit 4f3eaa6849ba62404fc5756650168bb2056d0b46
-
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
  in the Software without restriction, including without limitation the rights
@@ -22,6 +20,8 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
 */
+
+/* Version: commit 302fba9cbb31ffc523bf10a1ce705040194c289d libmseed */
 
 #ifndef parson_parson_h
 #define parson_parson_h
@@ -61,6 +61,10 @@ typedef void   (*JSON_Free_Function)(void *);
 /* Call only once, before calling any other function from parson API. If not called, malloc and free
    from stdlib will be used for all allocations */
 void json_set_allocation_functions(JSON_Malloc_Function malloc_fun, JSON_Free_Function free_fun);
+
+/* Sets if slashes should be escaped or not when serializing JSON. By default slashes are escaped.
+ This function sets a global setting and is not thread safe. */
+void json_set_escape_slashes(int escape_slashes);
 
 /* Parses first JSON value in a file, returns NULL in case of error */
 JSON_Value * json_parse_file(const char *filename);
@@ -176,7 +180,7 @@ double        json_array_get_number (const JSON_Array *array, size_t index); /* 
 int           json_array_get_boolean(const JSON_Array *array, size_t index); /* returns -1 on fail */
 size_t        json_array_get_count  (const JSON_Array *array);
 JSON_Value  * json_array_get_wrapping_value(const JSON_Array *array);
-    
+
 /* Frees and removes value at given index, does nothing and returns JSONFailure if index doesn't exist.
  * Order of values in array may change during execution.  */
 JSON_Status json_array_remove(JSON_Array *array, size_t i);
