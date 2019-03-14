@@ -170,7 +170,7 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
   msr->extralength = HO2u (*pMS3FSDH_EXTRALENGTH (record), msr->swapflag);
   if (msr->extralength)
   {
-    if ((msr->extra = (char *)malloc (msr->extralength)) == NULL)
+    if ((msr->extra = (char *)libmseed_memory.malloc (msr->extralength)) == NULL)
     {
       ms_log (2, "%s(%s): Cannot allocate memory for extra headers\n", __func__, msr->sid);
       return MS_GENERROR;
@@ -207,7 +207,7 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
   else
   {
     if (msr->datasamples)
-      free (msr->datasamples);
+      libmseed_memory.free (msr->datasamples);
 
     msr->datasamples = 0;
     msr->numsamples = 0;
@@ -834,7 +834,14 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       {
         length = snprintf (sval, sizeof(sval), "{\"FDSN\":{\"Time\":{\"Quality\":%d}}}",
                            *pMS2B1001_TIMINGQUALITY (record + blkt_offset));
-        msr->extra = strdup(sval);
+
+        if (!(msr->extra = (char *)libmseed_memory.malloc (length + 1)))
+        {
+          ms_log (2, "%s(%s): Cannot allocate memory for extra headers\n", __func__, msr->sid);
+          return MS_GENERROR;
+        }
+        memcpy (msr->extra, sval, length + 1);
+
         msr->extralength = length;
       }
       else
@@ -961,7 +968,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   else
   {
     if (msr->datasamples)
-      free (msr->datasamples);
+      libmseed_memory.free (msr->datasamples);
 
     msr->datasamples = 0;
     msr->numsamples = 0;
@@ -1176,7 +1183,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   /* Copy encoded data to aligned/malloc'd buffer if not aligned for sample size */
   if (samplesize && !is_aligned (encoded, samplesize))
   {
-    if ((encoded_allocated = (char *) malloc (datasize)) == NULL)
+    if ((encoded_allocated = (char *) libmseed_memory.malloc (datasize)) == NULL)
     {
       ms_log (2, "%s(): Cannot allocate memory for encoded data\n", __func__);
       return MS_GENERROR;
@@ -1192,20 +1199,20 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   /* (Re)Allocate space for the unpacked data */
   if (unpacksize > 0)
   {
-    msr->datasamples = realloc (msr->datasamples, unpacksize);
+    msr->datasamples = libmseed_memory.realloc (msr->datasamples, unpacksize);
 
     if (msr->datasamples == NULL)
     {
       ms_log (2, "%s(%s): Cannot (re)allocate memory\n", __func__, msr->sid);
       if (encoded_allocated)
-        free (encoded_allocated);
+        libmseed_memory.free (encoded_allocated);
       return MS_GENERROR;
     }
   }
   else
   {
     if (msr->datasamples)
-      free (msr->datasamples);
+      libmseed_memory.free (msr->datasamples);
     msr->datasamples = 0;
     msr->numsamples = 0;
   }
@@ -1362,7 +1369,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   }
 
   if (encoded_allocated)
-    free (encoded_allocated);
+    libmseed_memory.free (encoded_allocated);
 
   if (nsamples >= 0 && nsamples != msr->samplecnt)
   {

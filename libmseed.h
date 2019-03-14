@@ -77,7 +77,6 @@ extern "C" {
     #define strcasecmp _stricmp
     #define strncasecmp _strnicmp
     #define strtoull _strtoui64
-    #define strdup _strdup
     #define fileno _fileno
   #endif
 
@@ -403,6 +402,7 @@ extern void mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
     routines accept ::MS3Selections and allow selective (and
     efficient) reading of data from files.
     @{ */
+
 /** @brief Data selection structure time window definition containers */
 typedef struct MS3SelectTime {
   nstime_t starttime;                //!< Earliest data for matching channels
@@ -809,7 +809,37 @@ typedef int8_t flag;
     @brief The low-down, the nitty gritty, the basics
 */
 
-/** @defgroup encoding-values Data encodings
+/** @defgroup memory-allocators Memory Allocators
+    @ingroup low-level
+    @brief User-definable memory allocators used by library
+
+    The global structure \b libmseed_memory contains three function
+    pointers that are used for all memory allocation and freeing done
+    by the library.
+
+    The following function pointers are available:
+    - \b libmseed_memory.malloc - requires a malloc()-like function
+    - \b libmseed_memory.realloc - requires a realloc()-like function
+    - \b libmseed_memory.free - requires a free()-like function
+
+    By default the system malloc(), realloc(), and free() are used.
+
+    @{ */
+
+/** Container for memory management function pointers */
+typedef struct LIBMSEED_MEMORY
+{
+  void *(*malloc) (size_t);           //!< Pointer to desired malloc()
+  void *(*realloc) (void *, size_t);  //!< Pointer to desired realloc()
+  void  (*free) (void *);             //!< Pointer to desired free()
+} LIBMSEED_MEMORY;
+
+/** Global memory management function list */
+extern LIBMSEED_MEMORY libmseed_memory;
+
+/** @} */
+
+/** @defgroup encoding-values Data Encodings
     @ingroup low-level
     @brief Data encoding type defines
 
@@ -876,8 +906,6 @@ typedef int8_t flag;
 #define MSF_FLUSHDATA   0x0010  //!< [Packing] pack all available data even if final record would not be filled
 #define MSF_ATENDOFFILE 0x0020  //!< [Parsing] reading routine is at the end of the file
 /** @} */
-
-
 
 #ifdef __cplusplus
 }

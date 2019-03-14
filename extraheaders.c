@@ -58,6 +58,9 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
   if (!msr->extra)
     return MS_GENERROR;
 
+  json_set_allocation_functions (libmseed_memory.malloc,
+                                 libmseed_memory.free);
+
   /* Parse JSON extra headers */
   rootvalue = json_parse_string (msr->extra);
 
@@ -163,6 +166,9 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
   if (!msr || !value || !path)
     return MS_GENERROR;
 
+  json_set_allocation_functions (libmseed_memory.malloc,
+                                 libmseed_memory.free);
+
   /* Parse existing extra headers */
   if (msr->extra && msr->extralength > 0)
   {
@@ -255,7 +261,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
     return MS_GENERROR;
   }
 
-  serialized = (char *)malloc (serializationsize);
+  serialized = (char *)libmseed_memory.malloc (serializationsize);
 
   if (!serialized)
   {
@@ -276,7 +282,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
 
   /* Set new extra headers, replacing existing headers */
   if (msr->extra)
-    free (msr->extra);
+    libmseed_memory.free (msr->extra);
   msr->extra       = serialized;
   msr->extralength = (uint16_t)serializationsize - 1;
 
@@ -315,6 +321,9 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
 
   if (!msr || !eventdetection)
     return MS_GENERROR;
+
+  json_set_allocation_functions (libmseed_memory.malloc,
+                                 libmseed_memory.free);
 
   /* Initialize a new object */
   value  = json_value_init_object ();
@@ -444,6 +453,9 @@ mseh_add_calibration (MS3Record *msr, const char *path,
 
   if (!msr || !calibration)
     return MS_GENERROR;
+
+  json_set_allocation_functions (libmseed_memory.malloc,
+                                 libmseed_memory.free);
 
   /* Initialize a new object */
   value  = json_value_init_object ();
@@ -595,6 +607,9 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
   if (!msr || !exception)
     return MS_GENERROR;
 
+  json_set_allocation_functions (libmseed_memory.malloc,
+                                 libmseed_memory.free);
+
   /* Initialize a new object */
   value  = json_value_init_object ();
   object = json_value_get_object (value);
@@ -684,6 +699,9 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
 
   if (!msr || !recenter)
     return MS_GENERROR;
+
+  json_set_allocation_functions (libmseed_memory.malloc,
+                                 libmseed_memory.free);
 
   /* Initialize a new object */
   value  = json_value_init_object ();

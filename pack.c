@@ -184,7 +184,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   swapflag = (ms_bigendianhost ()) ? 1 : 0;
 
   /* Allocate space for data record */
-  rawrec = (char *)malloc (msr->reclen);
+  rawrec = (char *)libmseed_memory.malloc (msr->reclen);
 
   if (rawrec == NULL)
   {
@@ -220,12 +220,12 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   /* Allocate space for encoded data separately for alignment */
   if (msr->numsamples > 0)
   {
-    encoded = (char *)malloc (maxdatabytes);
+    encoded = (char *)libmseed_memory.malloc (maxdatabytes);
 
     if (encoded == NULL)
     {
       ms_log (2, "%s(%s): Cannot allocate memory\n", __func__, msr->sid);
-      free (rawrec);
+      libmseed_memory.free (rawrec);
       return -1;
     }
   }
@@ -247,8 +247,8 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     if (packsamples < 0)
     {
       ms_log (2, "%s(%s): Error packing data samples\n", __func__, msr->sid);
-      free (encoded);
-      free (rawrec);
+      libmseed_memory.free (encoded);
+      libmseed_memory.free (rawrec);
       return -1;
     }
 
@@ -287,9 +287,9 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     ms_log (1, "%s: Packed %d total samples\n", msr->sid, totalpackedsamples);
 
   if (encoded)
-    free (encoded);
+    libmseed_memory.free (encoded);
 
-  free (rawrec);
+  libmseed_memory.free (rawrec);
 
   return recordcnt;
 } /* End of msr3_pack_mseed3() */

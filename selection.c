@@ -162,11 +162,12 @@ ms3_addselect (MS3Selections **ppselections, char *sidpattern,
     return -1;
 
   /* Allocate new SelectTime and populate */
-  if (!(newst = (MS3SelectTime *)calloc (1, sizeof (MS3SelectTime))))
+  if (!(newst = (MS3SelectTime *)libmseed_memory.malloc (sizeof (MS3SelectTime))))
   {
     ms_log (2, "%s(): Cannot allocate memory\n", __func__);
     return -1;
   }
+  memset (newst, 0, sizeof (MS3SelectTime));
 
   newst->starttime = starttime;
   newst->endtime = endtime;
@@ -175,11 +176,12 @@ ms3_addselect (MS3Selections **ppselections, char *sidpattern,
   if (!*ppselections)
   {
     /* Allocate new Selections and populate */
-    if (!(newsl = (MS3Selections *)calloc (1, sizeof (MS3Selections))))
+    if (!(newsl = (MS3Selections *)libmseed_memory.malloc (sizeof (MS3Selections))))
     {
       ms_log (2, "%s(): Cannot allocate memory\n", __func__);
       return -1;
     }
+    memset (newsl, 0, sizeof (MS3Selections));
 
     strncpy (newsl->sidpattern, sidpattern, sizeof (newsl->sidpattern));
     newsl->sidpattern[sizeof (newsl->sidpattern) - 1] = '\0';
@@ -215,11 +217,12 @@ ms3_addselect (MS3Selections **ppselections, char *sidpattern,
     else
     {
       /* Allocate new MS3Selections and populate */
-      if (!(newsl = (MS3Selections *)calloc (1, sizeof (MS3Selections))))
+      if (!(newsl = (MS3Selections *)libmseed_memory.malloc (sizeof (MS3Selections))))
       {
         ms_log (2, "%s(): Cannot allocate memory\n", __func__);
         return -1;
       }
+      memset (newsl, 0, sizeof (MS3Selections));
 
       strncpy (newsl->sidpattern, sidpattern, sizeof (newsl->sidpattern));
       newsl->sidpattern[sizeof (newsl->sidpattern) - 1] = '\0';
@@ -624,12 +627,12 @@ ms3_freeselections (MS3Selections *selections)
       {
         selecttimenext = selecttime->next;
 
-        free (selecttime);
+        libmseed_memory.free (selecttime);
 
         selecttime = selecttimenext;
       }
 
-      free (select);
+      libmseed_memory.free (select);
 
       select = selectnext;
     }

@@ -201,7 +201,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
   /* Initialize the file read parameters if needed */
   if (!msfp)
   {
-    msfp = (MS3FileParam *)malloc (sizeof (MS3FileParam));
+    msfp = (MS3FileParam *)libmseed_memory.malloc (sizeof (MS3FileParam));
 
     if (msfp == NULL)
     {
@@ -231,7 +231,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
       fclose (msfp->fp);
 
     if (msfp->readbuffer != NULL)
-      free (msfp->readbuffer);
+      libmseed_memory.free (msfp->readbuffer);
 
     /* If the file parameters are the global parameters reset them */
     if (*ppmsfp == &gMS3FileParam)
@@ -248,7 +248,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
     /* Otherwise free the MS3FileParam */
     else
     {
-      free (*ppmsfp);
+      libmseed_memory.free (*ppmsfp);
       *ppmsfp = NULL;
     }
 
@@ -258,7 +258,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
   /* Allocate reading buffer */
   if (msfp->readbuffer == NULL)
   {
-    if (!(msfp->readbuffer = (char *)malloc (MAXRECLEN)))
+    if (!(msfp->readbuffer = (char *)libmseed_memory.malloc (MAXRECLEN)))
     {
       ms_log (2, "%s(): Cannot allocate memory for read buffer\n", __func__);
       return MS_GENERROR;

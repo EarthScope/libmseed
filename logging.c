@@ -76,7 +76,7 @@ ms_loginit_l (MSLogParam *logp,
 
   if (logp == NULL)
   {
-    llog = (MSLogParam *)malloc (sizeof (MSLogParam));
+    llog = (MSLogParam *)libmseed_memory.malloc (sizeof (MSLogParam));
 
     if (llog == NULL)
     {

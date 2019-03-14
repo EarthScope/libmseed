@@ -34,14 +34,14 @@ msr3_init (MS3Record *msr)
 
   if (!msr)
   {
-    msr = (MS3Record *)malloc (sizeof (MS3Record));
+    msr = (MS3Record *)libmseed_memory.malloc (sizeof (MS3Record));
   }
   else
   {
     datasamples = msr->datasamples;
 
     if (msr->extra)
-      free (msr->extra);
+      libmseed_memory.free (msr->extra);
   }
 
   if (msr == NULL)
@@ -75,12 +75,12 @@ msr3_free (MS3Record **ppmsr)
   if (ppmsr != NULL && *ppmsr != 0)
   {
     if ((*ppmsr)->extra)
-      free ((*ppmsr)->extra);
+      libmseed_memory.free ((*ppmsr)->extra);
 
     if ((*ppmsr)->datasamples)
-      free ((*ppmsr)->datasamples);
+      libmseed_memory.free ((*ppmsr)->datasamples);
 
-    free (*ppmsr);
+    libmseed_memory.free (*ppmsr);
 
     *ppmsr = NULL;
   }
@@ -123,7 +123,7 @@ msr3_duplicate (MS3Record *msr, int8_t datadup)
   if (msr->extralength > 0 && msr->extra)
   {
     /* Allocate memory for new FSDH structure */
-    if ((dupmsr->extra = (char *)malloc (msr->extralength)) == NULL)
+    if ((dupmsr->extra = (char *)libmseed_memory.malloc (msr->extralength)) == NULL)
     {
       ms_log (2, "%s(): Error allocating memory\n", __func__);
       msr3_free (&dupmsr);
@@ -147,7 +147,7 @@ msr3_duplicate (MS3Record *msr, int8_t datadup)
     }
 
     /* Allocate memory for new data array */
-    if ((dupmsr->datasamples = (void *)malloc ((size_t) (msr->numsamples * samplesize))) == NULL)
+    if ((dupmsr->datasamples = libmseed_memory.malloc ((size_t) (msr->numsamples * samplesize))) == NULL)
     {
       ms_log (2, "%s(): Error allocating memory\n", __func__);
       msr3_free (&dupmsr);

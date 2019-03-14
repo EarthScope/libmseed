@@ -17,6 +17,10 @@ static nstime_t ms_time2nstime_int (int year, int day, int hour,
                                     int min, int sec, uint32_t nsec);
 
 /** @cond UNDOCUMENTED */
+
+/* Global set of allocation functions, defaulting to system malloc(), realloc() and free() */
+LIBMSEED_MEMORY libmseed_memory = { .malloc = malloc, .realloc = realloc, .free = free };
+
 /* A constant number of seconds between the NTP and Posix/Unix time epoch */
 #define NTPPOSIXEPOCHDELTA 2208988800LL
 
@@ -55,6 +59,7 @@ static const int monthdays_leap[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30,
 #define VALIDNANOSEC(nanosec) (nanosec >= 0 && nanosec <= 999999999)
 /** @endcond End of UNDOCUMENTED */
 
+
 /**********************************************************************/ /**
  * @brief Parse network, station, location and channel from a source ID URI
  *
@@ -81,6 +86,7 @@ static const int monthdays_leap[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30,
 int
 ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan)
 {
+  size_t idlen;
   char *id;
   char *ptr, *top, *next;
   int sepcnt = 0;
@@ -109,11 +115,13 @@ ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan)
       return -1;
     }
 
-    if (!(id = strdup (sid)))
+    idlen = strlen (sid) + 1;
+    if (!(id = libmseed_memory.malloc (idlen)))
     {
       ms_log (2, "%s(): Error duplicating identifier\n", __func__);
       return -1;
     }
+    memcpy (id, sid, idlen);
 
     /* Network */
     top = id;
@@ -157,7 +165,7 @@ ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan)
 
     /* Free duplicated ID */
     if (id)
-      free (id);
+      libmseed_memory.free (id);
   }
   else
   {
@@ -1170,7 +1178,7 @@ ms_readleapsecondfile (const char *filename)
   while (leapsecondlist != NULL)
   {
     LeapSecond *next = leapsecondlist->next;
-    free (leapsecondlist);
+    libmseed_memory.free (leapsecondlist);
     leapsecondlist = next;
   }
 
@@ -1219,7 +1227,7 @@ ms_readleapsecondfile (const char *filename)
 
     if (fields == 2)
     {
-      if ((ls = (LeapSecond *)malloc (sizeof (LeapSecond))) == NULL)
+      if ((ls = (LeapSecond *)libmseed_memory.malloc (sizeof (LeapSecond))) == NULL)
       {
         ms_log (2, "Cannot allocate LeapSecond, out of memory?\n");
         return -1;
