@@ -462,7 +462,7 @@ int
 ms_doy2md (int year, int yday, int *month, int *mday)
 {
   int idx;
-  const int(*days)[];
+  const int(*days)[12];
 
   if (!VALIDYEAR (year))
   {
@@ -508,7 +508,7 @@ int
 ms_md2doy (int year, int month, int mday, int *yday)
 {
   int idx;
-  const int(*days)[];
+  const int(*days)[12];
 
   if (!VALIDYEAR (year))
   {
