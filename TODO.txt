@@ -6,16 +6,7 @@
 * MSBuild project for building, MS Visual Studio 2017 dropped support for NMake
   - Use CMake to build project files?
 
-* Document build system, ideally from in-source docs, resulting in man pages and HTML, doxygen?
-
 * Add some xSEED/mseed3 parsing tests, reference data.
-
-* Marked as UNSUPPORTED. Consider optional functionality with a bit flag:
-#define MSF_SEQUENCE    0x0008  /* Maintain a record-level sequence number */
-
-
-Extra handling:
-- Fetch/extraction for event detection, calibration, timing, recenter structures
 
 Loss from miniSEED 2.x:
 - Beam 400 & 405
@@ -23,8 +14,4 @@ Loss from miniSEED 2.x:
 - Multiple "Clock Model" designations if multiple Blockette 500s
 - "sequence" numbers are now optional
 - data quality indicator is now optional
-
-Things that need consideration:
-
-- Identifiers: convention for location codes, expanded channel codes
 
