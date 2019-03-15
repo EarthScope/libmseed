@@ -1234,7 +1234,7 @@ ms_readleapsecondfile (const char *filename)
       }
 
       /* Convert NTP epoch time to Unix epoch time and then to nttime_t */
-      ls->leapsecond = MS_EPOCH2NSTIME ((leapsecond - NTPPOSIXEPOCHDELTA));
+      ls->leapsecond = MS_EPOCH2NSTIME (leapsecond - NTPPOSIXEPOCHDELTA);
       ls->TAIdelta   = TAIdelta;
       ls->next       = NULL;
       count++;

@@ -153,7 +153,7 @@ msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
  * @retval >0 Size of the record in bytes
  *********************************************************************/
 int
-ms3_detect (const char *record, int recbuflen, uint8_t *formatversion)
+ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion)
 {
   uint8_t swapflag = 0; /* Byte swapping flag */
   uint8_t foundlen = 0; /* Found record length */
@@ -177,8 +177,8 @@ ms3_detect (const char *record, int recbuflen, uint8_t *formatversion)
   {
     *formatversion = 3;
 
-    reclen = MS3FSDH_LENGTH /* Length of fixed portion of header */
-             + *pMS3FSDH_SIDLENGTH (record) /* Length of source identifier */
+    reclen = MS3FSDH_LENGTH                   /* Length of fixed portion of header */
+             + *pMS3FSDH_SIDLENGTH (record)   /* Length of source identifier */
              + *pMS3FSDH_EXTRALENGTH (record) /* Length of extra headers */
              + *pMS3FSDH_DATALENGTH (record); /* Length of data payload */
 
