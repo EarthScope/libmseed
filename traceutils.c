@@ -1341,8 +1341,8 @@ mst_printtracelist (MSTraceGroup *mstg, flag timeformat,
     /* Create formatted time strings */
     if (timeformat == 2)
     {
-      snprintf (stime, sizeof (stime), "%.6f", (double)MS_HPTIME2EPOCH (mst->starttime));
-      snprintf (etime, sizeof (etime), "%.6f", (double)MS_HPTIME2EPOCH (mst->endtime));
+      snprintf (stime, sizeof (stime), "%.6f", MS_HPTIME2EPOCH ((double)mst->starttime));
+      snprintf (etime, sizeof (etime), "%.6f", MS_HPTIME2EPOCH ((double)mst->endtime));
     }
     else if (timeformat == 1)
     {
@@ -1586,8 +1586,8 @@ mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
         /* Create formatted time strings */
         if (timeformat == 2)
         {
-          snprintf (time1, sizeof (time1), "%.6f", (double)MS_HPTIME2EPOCH (mst->endtime));
-          snprintf (time2, sizeof (time2), "%.6f", (double)MS_HPTIME2EPOCH (mst->next->starttime));
+          snprintf (time1, sizeof (time1), "%.6f", MS_HPTIME2EPOCH ((double)mst->endtime));
+          snprintf (time2, sizeof (time2), "%.6f", MS_HPTIME2EPOCH ((double)mst->next->starttime));
         }
         else if (timeformat == 1)
         {
