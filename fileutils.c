@@ -28,9 +28,9 @@ MS3FileParam gMS3FileParam = {NULL, "", NULL, 0, 0, 0, 0, 0};
 /*****************************************************************/ /**
  * @brief Read miniSEED records from a file
  *
- * This routine is a simple wrapper for ms3_readmsr_selection() that uses
- * the global file reading parameters.  This routine is _not_ thread
- * safe and cannot be used to read more than one file at a time.
+ * This routine is a wrapper for ms3_readmsr_selection() that uses the
+ * global file reading parameters.  This routine is _not_ thread safe
+ * and cannot be used to read more than one file at a time.
  *
  * See ms3_readmsr_selection() for a further description of arguments.
  *
@@ -49,10 +49,10 @@ ms3_readmsr (MS3Record **ppmsr, const char *msfile, int64_t *fpos,
 /*****************************************************************/ /**
  * @brief Read miniSEED records from a file in a thread-safe way
  *
- * This routine is a simple wrapper for ms3_readmsr_selection() that
- * uses the re-entrant capabilities.  This routine is thread safe and
- * can be used to read more than one file at a time as long as
- * separate MS3FileParam containers are used for each file.
+ * This routine is a wrapper for ms3_readmsr_selection() that uses the
+ * re-entrant capabilities.  This routine is thread safe and can be
+ * used to read more than one file at a time as long as separate
+ * MS3FileParam containers are used for each file.
  *
  * A ::MS3FileParam container will be allocated if \c *ppmsfp is \c
  * NULL.
@@ -139,6 +139,7 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  *  - ::MSF_SKIPNOTDATA - skip input that cannot be identified as
  * miniSEED
  *  - ::MSF_UNPACKDATA data samples will be unpacked
+ *  - ::MSF_VALIDATECRC Validate CRC (if present in format)
  *
  * If \a selections is not NULL, the ::MS3Selections will be used to
  * limit what is returned to the caller.  Any data not matching the

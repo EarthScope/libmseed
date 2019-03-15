@@ -32,7 +32,8 @@
  * @param ppmsr Pointer-to-point to a ::MS3Record that will be populated
  * @param flags Flags controlling features:
  * @parblock
- *   - \c ::MSF_UNPACKDATA - Unpack data samples
+ *  - \c ::MSF_UNPACKDATA - Unpack data samples
+ *  - \c ::MSF_VALIDATECRC Validate CRC (if present in format)
  * @endparblock
  * @param verbose control verbosity of diagnostic output
  *
