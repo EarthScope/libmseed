@@ -181,11 +181,11 @@ typedef int64_t nstime_t;
 
 /** @def MS_EPOCH2NSTIME
     @brief macro to convert Unix/POSIX epoch time to high precision epoch time */
-#define MS_EPOCH2NSTIME(X) X * (nstime_t) NSTMODULUS
+#define MS_EPOCH2NSTIME(X) ((X) * (nstime_t) NSTMODULUS)
 
 /** @def MS_NSTIME2EPOCH
     @brief Macro to convert high precision epoch time to Unix/POSIX epoch time */
-#define MS_NSTIME2EPOCH(X) X / NSTMODULUS
+#define MS_NSTIME2EPOCH(X) ((X) / NSTMODULUS)
 
 /** @enum ms_timeformat_t
     @brief Time format identifiers
