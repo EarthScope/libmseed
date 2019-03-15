@@ -9,7 +9,7 @@ related data.  The library includes the functionality to read and
 write data records, in addition to reconstructing time series from
 multiple records.
 
-The library should work in Unix-like, Windows and potentially more
+The library should work in Unix-like, Windows and potentially other
 environments.
 
 @subsection main-tutorial Getting started
@@ -30,6 +30,15 @@ contains release versions.
 For installation instructions see the
 <a href="https://github.com/iris-edu/libmseed/tree/master/INSTALL.md">INSTALL</a>
 file.
+
+@subsection develop-main Development and issues
+
+Please report <a href="https://github.com/iris-edu/libmseed/issues">issues</a>
+to the project.
+
+If you would like to contribute to the project please file Pull Requests
+and/or create issues for discussion at the <a href="https://github.com/iris-edu/libmseed/">
+libmseed project</a>.
 
 @subsection main-acknowledgements Acknowlegements
 
