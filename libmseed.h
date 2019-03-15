@@ -307,7 +307,7 @@ extern void       msr3_print (MS3Record *msr, int8_t details);
 extern double     msr3_sampratehz (MS3Record *msr);
 extern double     msr3_host_latency (MS3Record *msr);
 
-extern int ms3_detect (const char *record, int recbuflen, uint8_t *formatversion);
+extern int ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion);
 extern int ms_parse_raw3 (char *record, int maxreclen, int8_t details);
 extern int ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag);
 /** @} */
