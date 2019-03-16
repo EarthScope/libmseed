@@ -178,7 +178,7 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  * code is returned and *ppmsr is set to NULL.
  * @retval ::MS_ENDOFFILE on End-Of-File
  *
- * \sa selection-functions
+ * \sa @ref data-selections
  *********************************************************************/
 int
 ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
@@ -518,6 +518,8 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
  * arguments.
  *
  * @returns Return value from ms3_readtracelist_selection()
+ *
+ * \sa @ref trace-list
  *********************************************************************/
 int
 ms3_readtracelist (MS3TraceList **ppmstl, const char *msfile,
@@ -540,6 +542,8 @@ ms3_readtracelist (MS3TraceList **ppmstl, const char *msfile,
  * arguments.
  *
  * @returns Return value from ms3_readtracelist_selection()
+ *
+ * \sa @ref trace-list
  *********************************************************************/
 int
 ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
@@ -600,7 +604,8 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
  * @returns ::MS_NOERROR and populates an ::MS3TraceList struct at *ppmstl
  * on success, otherwise returns a (negative) libmseed error code.
  *
- * \sa selection-functions
+ * \sa @ref trace-list
+ * \sa @ref data-selections
  *********************************************************************/
 int
 ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,

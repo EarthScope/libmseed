@@ -336,6 +336,11 @@ extern int ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t sw
           - MS3TraceSeg
           - ...
         - ...
+
+    \sa ms3_readtracelist()
+    \sa ms3_readtracelist_timewin()
+    \sa ms3_readtracelist_selection()
+    \sa mstl3_writemseed()
     @{ */
 
 /** @brief Container for a continuous trace segment, linkable */
