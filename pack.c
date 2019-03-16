@@ -549,6 +549,13 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
       return -1;
     }
 
+    if (maxdatabytes < sizeof(int16_t))
+    {
+      ms_log (2, "%s: Not enough space in record (%d) for INT16 encoding, need at least %d bytes\n",
+              sid, maxdatabytes, sizeof(int16_t));
+      return -1;
+    }
+
     if (verbose > 1)
       ms_log (1, "%s: Packing INT16 data samples\n", sid);
 
@@ -564,6 +571,13 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     {
       ms_log (2, "%s: Sample type must be integer (i) for INT32 encoding not '%c'\n",
               sid, sampletype);
+      return -1;
+    }
+
+    if (maxdatabytes < sizeof(int32_t))
+    {
+      ms_log (2, "%s: Not enough space in record (%d) for INT32 encoding, need at least %d bytes\n",
+              sid, maxdatabytes, sizeof(int32_t));
       return -1;
     }
 
@@ -585,6 +599,13 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
       return -1;
     }
 
+    if (maxdatabytes < sizeof(float))
+    {
+      ms_log (2, "%s: Not enough space in record (%d) for FLOAT32 encoding, need at least %d bytes\n",
+              sid, maxdatabytes, sizeof(float));
+      return -1;
+    }
+
     if (verbose > 1)
       ms_log (1, "%s: Packing FLOAT32 data samples\n", sid);
 
@@ -600,6 +621,13 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     {
       ms_log (2, "%s: Sample type must be double (d) for FLOAT64 encoding not '%c'\n",
               sid, sampletype);
+      return -1;
+    }
+
+    if (maxdatabytes < sizeof(double))
+    {
+      ms_log (2, "%s: Not enough space in record (%d) for FLOAT64 encoding, need at least %d bytes\n",
+              sid, maxdatabytes, sizeof(double));
       return -1;
     }
 
@@ -621,6 +649,13 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
       return -1;
     }
 
+    if (maxdatabytes < 64)
+    {
+      ms_log (2, "%s: Not enough space in record (%d) for STEIM1 encoding, need at least 64 bytes\n",
+              sid, maxdatabytes);
+      return -1;
+    }
+
     if (verbose > 1)
       ms_log (1, "%s: Packing Steim1 data frames\n", sid);
 
@@ -636,6 +671,13 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     {
       ms_log (2, "%s: Sample type must be integer (i) for Steim2 compression not '%c'\n",
               sid, sampletype);
+      return -1;
+    }
+
+    if (maxdatabytes < 64)
+    {
+      ms_log (2, "%s: Not enough space in record (%d) for STEIM2 encoding, need at least 64 bytes\n",
+              sid, maxdatabytes);
       return -1;
     }
 
