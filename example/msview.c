@@ -47,11 +47,11 @@ main (int argc, char **argv)
   /* Set flag to validate CRCs when reading */
   flags |= MSF_VALIDATECRC;
 
-  /* Set flag to unpack data */
+  /* Set flag to unpack data if printing samples */
   if (printdata)
     flags |= MSF_UNPACKDATA;
 
-  /* Loop over the input file */
+  /* Loop over the input file record by record */
   while ((retcode = ms3_readmsr (&msr, inputfile, NULL, NULL,
                                  flags, verbose)) == MS_NOERROR)
   {
@@ -60,6 +60,7 @@ main (int argc, char **argv)
 
     msr3_print (msr, ppackets);
 
+    /* Print data samples */
     if (printdata && msr->numsamples > 0)
     {
       int line, col, cnt, samplesize;

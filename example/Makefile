@@ -10,16 +10,13 @@ CFLAGS += -I..
 LDFLAGS = -L..
 LDLIBS = -lmseed
 
-all: msview msrepack
+all: msview 
 
 msview: msview.o
 	$(CC) $(CFLAGS) -o $@ msview.o $(LDFLAGS) $(LDLIBS)
 
-msrepack: msrepack.o
-	$(CC) $(CFLAGS) -o $@ msrepack.o $(LDFLAGS) $(LDLIBS)
-
 clean:
-	rm -f msview.o msview msrepack.o msrepack
+	rm -f msview.o msview
 
 install:
 	@echo

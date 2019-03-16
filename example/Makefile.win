@@ -7,12 +7,9 @@ NODEBUG=1
 INCS = /I..
 OPTS = -D_CRT_SECURE_NO_WARNINGS
 LIBS = ../libmseed.lib
-BINS = msrepack.exe msview.exe
+BINS = msview.exe
 
 all: $(BINS)
-
-msrepack.exe: msrepack.obj
-	link.exe /nologo /out:msrepack.exe $(LIBS) msrepack.obj
 
 msview.exe: msview.obj
 	link.exe /nologo /out:msview.exe $(LIBS) msview.obj
