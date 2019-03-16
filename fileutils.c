@@ -789,8 +789,9 @@ int
 mstl3_writemseed (MS3TraceList *mstl, const char *msfile, int8_t overwrite,
                   int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose)
 {
-  MS3TraceID *tid;
-  MS3TraceSeg *seg;
+  MS3TraceID *tid = NULL;
+  MS3TraceSeg *seg = NULL;
+  MS3Record msr;
   FILE *ofp;
   const char *perms        = (overwrite) ? "wb" : "ab";
   int64_t segpackedrecords = 0;
@@ -815,6 +816,15 @@ mstl3_writemseed (MS3TraceList *mstl, const char *msfile, int8_t overwrite,
   tid = mstl->traces;
   while (tid)
   {
+    memset (&msr, 0, sizeof (MS3Record));
+    msr.reclen = maxreclen;
+    strcpy (msr.sid, tid->sid);
+    msr.formatversion = 3;
+    msr.encoding      = encoding;
+    msr.pubversion    = tid->pubversion;
+    msr.extralength   = 0;
+    msr.extra         = NULL;
+
     seg = tid->first;
     while (seg)
     {
@@ -824,16 +834,16 @@ mstl3_writemseed (MS3TraceList *mstl, const char *msfile, int8_t overwrite,
         continue;
       }
 
-      fprintf (stderr, "id.seg packing for %s not implemented\n", tid->sid);
+      msr.starttime   = seg->starttime;
+      msr.samprate    = seg->samprate;
+      msr.samplecnt   = seg->samplecnt;
+      msr.crc         = 0;
+      msr.datalength  = 0;
+      msr.datasamples = seg->datasamples;
+      msr.numsamples  = seg->numsamples;
+      msr.sampletype  = seg->sampletype;
 
-      // TODO
-      // Map to a MS3Record container for the Segment and pack it
-      //
-      //msr->encoding = encoding;
-      //msr->reclen = reclen;
-      //msr->byteorder = byteorder;
-      //
-      //segpackedrecords = msr_pack (msr, &ms_record_handler_int, ofp, NULL, flags, verbose - 1);
+      segpackedrecords = msr3_pack (&msr, &ms_record_handler_int, ofp, NULL, flags, verbose - 1);
 
       if (segpackedrecords < 0)
       {
