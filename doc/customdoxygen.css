@@ -1,3 +1,7 @@
+.memtitle {
+  padding-left: 0px;
+}
+
 /* Replace content of permalinks */
 .permalink a {
   visibility: hidden;
