@@ -1,0 +1,38 @@
+/**
+@page page-examples Examples
+
+@section examples-overview Overview of examples
+
+@tableofcontents
+
+The most basic usage of the library is illustrated in the @ref
+page-tutorial.  This page contains full example programs that utilize
+the library for common tasks.  These examples are included in the
+source distribution and (most) are used in the test suite.
+
+While these are full working programs the aspects not related to
+library usage, e.g. argument parsing, are often minimized and left
+uncommented as they will change in real world usage.
+
+@subsection example-msview Reading miniSEED data
+
+
+@subsubsection example-sub Reading miniSEED records from files
+
+subsubsecond
+@anchor anch1
+
+@code
+int main ()
+{
+}
+@endcode
+
+@section msview-example Full example to read miniSEED
+
+A simple program to read miniSEED from files and print details from
+each record:
+
+@include msview.c
+
+*/
