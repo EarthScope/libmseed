@@ -1,8 +1,7 @@
 /***************************************************************************
  * lm_read_buffer.c
  *
- * A libmseed snippet example program for reading miniSEED from buffers
- *
+ * A libmseed snippet program for reading miniSEED from buffers
  ***************************************************************************/
 
 #include <stdio.h>
