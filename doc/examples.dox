@@ -1,7 +1,7 @@
 /**
 @page page-examples Examples
 
-@section examples-overview Overview of examples
+@section examples-overview Overview
 
 @tableofcontents
 
@@ -14,25 +14,29 @@ While these are full working programs the aspects not related to
 library usage, e.g. argument parsing, are often minimized and left
 uncommented as they will change in real world usage.
 
-@subsection example-msview Reading miniSEED data
-
-
-@subsubsection example-sub Reading miniSEED records from files
-
-subsubsecond
-@anchor anch1
-
-@code
-int main ()
-{
-}
-@endcode
-
-@section msview-example Full example to read miniSEED
+@section example-msview Read miniSEED from files
 
 A simple program to read miniSEED from files and print details from
 each record:
 
 @include msview.c
+
+@section example-lm_read_selection Reading with 
+
+Read miniSEED from memory buffers.  In this case a file is read into a
+buffer simply to illustrate reading from a buffer.  In practice this
+would functionality would be used with data received via a network
+connection or some other, non-file, mechanism.
+
+@include lm_read_buffer.c
+
+@section example-lm_read_buffer Reading from memory buffers
+
+Read miniSEED from memory buffers.  In this case a file is read into a
+buffer simply to illustrate reading from a buffer.  In practice this
+would functionality would be used with data received via a network
+connection or some other, non-file, mechanism.
+
+@include lm_read_buffer.c
 
 */
