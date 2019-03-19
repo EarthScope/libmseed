@@ -323,8 +323,16 @@ ms3_addselect_comp (MS3Selections **ppselections, char *network, char *station,
 
   if (channel)
   {
-    strncpy (selchan, channel, sizeof (selchan));
-    selchan[sizeof (selchan) - 1] = '\0';
+    /* Convert a 3-character SEED 2.x channel code to an extended code */
+    if (ms_globmatch (channel, "[?*a-zA-Z0-9][?*a-zA-Z0-9][?*a-zA-Z0-9]"))
+    {
+      ms_seedchan2xchan (selchan, channel);
+    }
+    else
+    {
+      strncpy (selchan, channel, sizeof (selchan));
+      selchan[sizeof (selchan) - 1] = '\0';
+    }
   }
   else
   {
@@ -333,7 +341,7 @@ ms3_addselect_comp (MS3Selections **ppselections, char *network, char *station,
 
   /* Create the source identifier globbing match for this entry */
   if (ms_nslc2sid (sidpattern, sizeof (sidpattern), 0,
-                    selnet, selsta, selloc, selchan))
+                   selnet, selsta, selloc, selchan) < 0)
     return -1;
 
   /* Add selection to list */
@@ -439,8 +447,6 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
     {
       line = cp = cp+1;
     }
-
-    printf ("DEBUG line: '%s'\n", line);
 
     /* Skip empty lines */
     if (!strlen (line))
@@ -796,10 +802,10 @@ ms_globmatch (const char *string, const char *pattern)
         break;
       return GLOBMATCH_FALSE;
 
-    /* set specification is inclusive, that is [a-z] is a, z and
-	   * everything in between. this means [z-a] may be interpreted
-	   * as a set that contains z, a and nothing in between.
-	   */
+      /* set specification is inclusive, that is [a-z] is a, z and
+       * everything in between. this means [z-a] may be interpreted
+       * as a set that contains z, a and nothing in between.
+       */
     case '[':
       if (*pattern != GLOBMATCH_NEGATE)
         negate = GLOBMATCH_FALSE;
