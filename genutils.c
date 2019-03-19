@@ -65,8 +65,11 @@ static const int monthdays_leap[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30,
  *
  * Parse a source identifier into separate components, expecting:
  *  \c "XFDSN:NET_STA_LOC_CHAN", where \c CHAN="BAND_SOURCE_POSITION"
- * or
- *  \c "FDSN:NET_STA_LOC_CHAN" for a simple combination of SEED 2.4 idenitifers.
+ *
+ * The CHAN value will be converted to a SEED channel code if
+ * possible.  Meaning, if the BAND, SOURCE, and POSITION are single
+ * characters, the underscore delimiters will not be included in the
+ * returned channel.
  *
  * Identifiers may contain additional namespace identifiers, e.g.:
  *  \c "XFDSN:AGENCY:NET_STA_LOC_CHAN"
@@ -160,7 +163,11 @@ ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan)
     /* Channel */
     if (*top && chan)
     {
-      strcpy (chan, top);
+      /* Map extended channel to SEED channel if possible, otherwise direct copy */
+      if (ms_xchan2seedchan(chan, top))
+      {
+        strcpy (chan, top);
+      }
     }
 
     /* Free duplicated ID */
@@ -187,6 +194,11 @@ ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan)
  * specific component is NULL it will be empty in the resulting
  * identifier.
  *
+ * The \a chan value will be converted to extended channel format if
+ * it appears to be in SEED channel form.  Meaning, if the \a chan is
+ * 3 characters with no delimiters, it will be converted to \c
+ * "BAND_SOURCE_POSITION" form by adding delimiters between the codes.
+ *
  * @param[out] sid Destination string for source identifier
  * @param sidlen Maximum length of \a sid
  * @param flags Currently unused, set to 0
@@ -203,6 +215,7 @@ ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
              char *net, char *sta, char *loc, char *chan)
 {
   char *sptr = sid;
+  char xchan[6] = {0};
   int needed = 0;
 
   if (!sid)
@@ -269,6 +282,12 @@ ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
 
   if (chan)
   {
+    /* Map SEED channel to extended channel if possible, otherwise direct copy */
+    if (!ms_seedchan2xchan (xchan, chan))
+    {
+      chan = xchan;
+    }
+
     while (*chan)
     {
       if ((sptr - sid) < sidlen)
