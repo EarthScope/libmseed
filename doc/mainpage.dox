@@ -40,6 +40,11 @@ If you would like to contribute to the project please file Pull Requests
 and/or create issues for discussion at the <a class="el" href="https://github.com/iris-edu/libmseed/">
 libmseed project</a>.
 
+@subsubsection porting-main Porting from earlier version of the library
+
+A @ref porting-guide is available for developer porting software that
+previously used version 2 of the library.
+
 @subsection main-acknowledgements Acknowlegements
 
 Numerous improvements have been incorporated based on feedback and
