@@ -1,17 +1,13 @@
 {
   global:
       ms_*;
+      ms3_*;
       msr_*;
-      mst_*;
-      mstl_*;
-      packheaderbyteorder;
-      packdatabyteorder;
-      unpackheaderbyteorder;
-      unpackdatabyteorder;
-      unpackencodingformat;
-      unpackencodingfallback;
-      LM_SIZEOF_OFF_T;
-
+      msr3_*;
+      mstl3_*;
+      mseh_*;
+      leapsecondlist;
+      libmseed_memory;
   local:
       *;
 };
