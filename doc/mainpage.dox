@@ -28,7 +28,7 @@ The <a href="https://github.com/iris-edu/libmseed/releases">releases</a> area
 contains release versions.
 
 For installation instructions see the
-<a href="https://github.com/iris-edu/libmseed/tree/master/INSTALL.md">INSTALL</a>
+<b><a href="https://github.com/iris-edu/libmseed/tree/master/INSTALL.md">INSTALL</a></b>
 file.
 
 @subsection develop-main Development and issues
