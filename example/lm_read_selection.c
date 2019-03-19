@@ -3,7 +3,7 @@
  *
  * A libmseed snippet program for reading miniSEED using data
  * selections to limit which data is read.  This program also
- * illustrates traversing a @ref tracelist.
+ * illustrates traversing a trace list.
  ***************************************************************************/
 
 #include <stdio.h>
@@ -62,8 +62,8 @@ main (int argc, char **argv)
   tid = mstl->traces;
   while (tid)
   {
-    if (!ms_nstime2timestr (tid->earliest, starttimestr, ISOMONTHDAY, NANO_MICRO_NONE) ||
-        !ms_nstime2timestr (tid->latest, endtimestr, ISOMONTHDAY, NANO_MICRO_NONE))
+    if (!ms_nstime2timestr (tid->earliest, starttimestr, SEEDORDINAL, NANO_MICRO_NONE) ||
+        !ms_nstime2timestr (tid->latest, endtimestr, SEEDORDINAL, NANO_MICRO_NONE))
     {
       ms_log (2, "Cannot create time strings\n");
       starttimestr[0] = endtimestr[0] = '\0';
@@ -75,8 +75,8 @@ main (int argc, char **argv)
     seg = tid->first;
     while (seg)
     {
-      if (!ms_nstime2timestr (seg->starttime, starttimestr, ISOMONTHDAY, NANO_MICRO_NONE) ||
-          !ms_nstime2timestr (seg->endtime, endtimestr, ISOMONTHDAY, NANO_MICRO_NONE))
+      if (!ms_nstime2timestr (seg->starttime, starttimestr, SEEDORDINAL, NANO_MICRO_NONE) ||
+          !ms_nstime2timestr (seg->endtime, endtimestr, SEEDORDINAL, NANO_MICRO_NONE))
       {
         ms_log (2, "Cannot create time strings\n");
         starttimestr[0] = endtimestr[0] = '\0';
