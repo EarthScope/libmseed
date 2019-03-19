@@ -50,7 +50,7 @@ $(TESTOUTS) : %.test.out : %.test $(BINS) FORCE
           fi
 
 clean:
-	@rm -f $(BINS) $(TESTOUTS)
+	@rm -rf $(BINS) $(TESTOUTS) *.dSYM
 
 # Any targets using this empty FORCE rule as a prerequisite will always run
 FORCE:
