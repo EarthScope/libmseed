@@ -24,11 +24,11 @@ fundamentals and capabilities of the library.
 
 @subsection main-downloding Downloading and installing
 
-The <a href="https://github.com/iris-edu/libmseed/releases">releases</a> area
-contains release versions.
+The <a class="el" href="https://github.com/iris-edu/libmseed/releases">releases</a>
+area contains release versions.
 
 For installation instructions see the
-<b><a href="https://github.com/iris-edu/libmseed/tree/master/INSTALL.md">INSTALL</a></b>
+<a class="el" href="https://github.com/iris-edu/libmseed/tree/master/INSTALL.md">INSTALL</a>
 file.
 
 @subsection develop-main Development and issues
@@ -37,7 +37,7 @@ Please report <a href="https://github.com/iris-edu/libmseed/issues">issues</a>
 to the project.
 
 If you would like to contribute to the project please file Pull Requests
-and/or create issues for discussion at the <a href="https://github.com/iris-edu/libmseed/">
+and/or create issues for discussion at the <a class="el" href="https://github.com/iris-edu/libmseed/">
 libmseed project</a>.
 
 @subsection main-acknowledgements Acknowlegements
