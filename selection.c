@@ -373,8 +373,10 @@ ms3_addselect_comp (MS3Selections **ppselections, char *network, char *station,
  *   Network  Station  Location  Channel  [Quality  [Starttime  [Endtime]]]
  * @endcode
  *
- * In the latter version, the Quality field is ignored as of libmseed
- * version 3.
+ * In the latter version, if the "Channel" field is a SEED 2.x channel
+ * (3-characters) it will automatically be converted into extended
+ * channel form (band,source, position).  Also, the "Quality" field is
+ * ignored as of library version 3.
  *
  * @returns Count of selections added on success and -1 on error.
  ***************************************************************************/

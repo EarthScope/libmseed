@@ -1,5 +1,7 @@
 
-* Selection file mapping, matching.  How to handle wildcard locations?  Needs testing.
+* Porting guide for libmseed 2.x => 3.x.
+
+* More examples
 
 * miniSEED 2.4 packing?
 
