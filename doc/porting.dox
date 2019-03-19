@@ -1,0 +1,37 @@
+/**
+@page porting Guide for porting from earlier libmseed versions
+
+- Change MSRecord to MS3Record
+- Change MSTraceList to MS3TraceList
+- Convert usage of MSTraceGroups to MSTraceLists, Trace Groups are no longer supported
+- The 'flag' typedef is now legacy, you may wish to convert to using int8_t
+
+- All \c hptime_t types are now \c nstime_t
+@note the \c nstime_t type is a nanosecond epoch value, whereas
+the previous \c hptime_t was a microsecond epoch value.  Careful
+review is required is value is used by a program directly (it really _should not_ be).
+
+- All functions with \c hptime in the name are now \c nstime
+- The ms_htime2isotimestr(), ms_hptime2mdtimestr, and ms_hptime2seedtimestr() functions
+are replaced with ms_nstime2timestr().
+
+- The time format and subseconds flags have changed from integers to \c enum values, review and change
+calling of ms_nstime2timestr(), mstl3_printtracelist(), mstl3_printsynclist(), and mstl3_printgaplist().
+@note if the above functions are not changed to use the enumerated types
+and integers left as arguments, there may be a non-obvious bug.  Most
+compilers will quiety accept an integer, which may or may not match the
+desired time format or subsecond handling. Assume _not_.
+
+- The supported range for the internal time scale is a maximum of year 2262,
+reduced from year 5000.  If an application previously used the library with
+years beyond 2262, they should be adjusted accordingly.
+
+- The channel identification has changed from \c NN_SSS_LL_CHA to an URI-style
+Source Identifier (SID) with the pattern \c XFDSN:NN_SSS_LL_C_H_A.  The following helper
+functions are available for mapping between identification schemes:
+  - ms_sid2nslc(): convert SID to traditional SEED identifiers
+  - ms_nslc2sid(): convert traditional SEED identifiers to an SID
+  - ms_seedchan2xchan(): convert SEED channel to SID-style channel components
+  - ms_xchan2seedchan(): convert SID band, source and position to SEED channel
+
+*/
