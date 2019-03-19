@@ -291,6 +291,94 @@ ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
 } /* End of ms_nslc2sid() */
 
 /**********************************************************************/ /**
+ * @brief Convert SEED 2.x channel to extended channel
+ *
+ * The SEED 2.x channel at \a seedchan must be a 3-character string.
+ * The \a xchan buffer must be at least 6 bytes, for the extended
+ * channel (band,source,position) and the terminating NULL.
+ *
+ * This functionality simply maps patterns, it does not check the
+ * validity of any codes.
+ *
+ * @param[out] xchan Destination for extended channel string, must be at least 6 bytes
+ * @param[in] seedchan Source string, must be a 3-character string
+ *
+ * @retval 0 on successful mapping of channel
+ * @retval -1 on error
+ ***************************************************************************/
+int
+ms_seedchan2xchan (char *xchan, const char *seedchan)
+{
+  if (!seedchan || !xchan)
+    return -1;
+
+  if (seedchan[0] &&
+      seedchan[1] &&
+      seedchan[2] &&
+      seedchan[3] == '\0')
+  {
+    xchan[0] = seedchan[0]; /* Band code */
+    xchan[1] = '_';
+    xchan[2] = seedchan[1]; /* Source (aka instrument) code */
+    xchan[3] = '_';
+    xchan[4] = seedchan[2]; /* Position (aka orientation) code */
+    xchan[5] = '\0';
+
+    return 0;
+  }
+
+  return -1;
+} /* End of ms_seedchan2xchan() */
+
+/**********************************************************************/ /**
+ * @brief Convert extended channel to SEED 2.x channel
+ *
+ * The extended channel at \a xchan must be a 5-character string.
+ *
+ * The \a seedchan buffer must be at least 4 bytes, for the SEED
+ * channel and the terminating NULL.  Alternatively, \a seedchan may
+ * be set to NULL in which case this function becomes a test for
+ * whether the \a xchan _could_ be mapped without actually doing the
+ * conversion.  Finally, \a seedchan can be the same buffer as \a
+ * xchan for an in-place conversion.
+ *
+ * This routine simply maps patterns, it does not check the validity
+ * of any specific codes.
+ *
+ * @param[out] seedchan Destination for SEED channel string, must be at least 4 bytes
+ * @param[in] xchan Source string, must be a 5-character string
+ *
+ * @retval 0 on successful mapping of channel
+ * @retval -1 on error
+ ***************************************************************************/
+int
+ms_xchan2seedchan (char *seedchan, const char *xchan)
+{
+  if (!xchan)
+    return -1;
+
+  if (xchan[0] &&
+      xchan[1] == '_' &&
+      xchan[2] &&
+      xchan[3] == '_' &&
+      xchan[4] &&
+      xchan[5] == '\0')
+  {
+    if (seedchan)
+    {
+      seedchan[0] = xchan[0]; /* Band code */
+      seedchan[1] = xchan[2]; /* Source (aka instrument) code */
+      seedchan[2] = xchan[4]; /* Position (aka orientation) code */
+      seedchan[3] = '\0';
+    }
+
+    return 0;
+  }
+
+  return -1;
+}  /* End of ms_xchan2seedchan() */
+
+/**********************************************************************/ /**
  * @brief Copy string, removing spaces, always terminated
  *
  * Copy up to \a length characters from \a source to \a dest while

@@ -486,12 +486,14 @@ extern int mstl3_writemseed (MS3TraceList *mst, const char *msfile, int8_t overw
     combination of the codes.
 
     @{ */
-extern int      ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan);
-extern int      ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
-                              char *net, char *sta, char *loc, char *chan);
-extern int      ms_strncpclean (char *dest, const char *source, int length);
-extern int      ms_strncpcleantail (char *dest, const char *source, int length);
-extern int      ms_strncpopen (char *dest, const char *source, int length);
+extern int ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan);
+extern int ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
+                        char *net, char *sta, char *loc, char *chan);
+extern int ms_seedchan2xchan (char *xchan, const char *seedchan);
+extern int ms_xchan2seedchan (char *seedchan, const char *xchan);
+extern int ms_strncpclean (char *dest, const char *source, int length);
+extern int ms_strncpcleantail (char *dest, const char *source, int length);
+extern int ms_strncpopen (char *dest, const char *source, int length);
 /** @} */
 
 /** @defgroup extra-headers Extra Headers
