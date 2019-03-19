@@ -21,14 +21,13 @@ each record:
 
 @include msview.c
 
-@section example-lm_read_selection Reading with 
+@section example-lm_read_selection Reading with selections
 
-Read miniSEED from memory buffers.  In this case a file is read into a
-buffer simply to illustrate reading from a buffer.  In practice this
-would functionality would be used with data received via a network
-connection or some other, non-file, mechanism.
+Read miniSEED with @ref data-selections used to limit what is read.
+Additionally, this program reads data into a @ref trace-list and
+illustrates traversing the entries.
 
-@include lm_read_buffer.c
+@include lm_read_selection.c
 
 @section example-lm_read_buffer Reading from memory buffers
 
