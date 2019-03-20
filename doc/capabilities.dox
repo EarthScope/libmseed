@@ -1,9 +1,9 @@
 /**
 @page page-capabilities Capabilities
 
-@section overview Overview
-
 @tableofcontents
+
+@section overview Overview
 
 This section describes the capabilities and fundamentals of the
 library.
@@ -18,124 +18,61 @@ data records is an excersize for a format reader, e.g. this library.
 
 A miniSEED record is represented in the library using the MS3Record
 structure.  This structure is used for both unpacking and packing of
-miniSEED records.  When unpacking with msr_unpack() this structure is
-populated.  When packing with msr_pack() this structure is used as a
+miniSEED records.  When unpacking with msr3_parse() this structure is
+populated.  When packing with msr3_pack() this structure is used as a
 template for the resulting data records and as a source of samples to
 be packed.
 
-Blockettes following the fixed section of the header are contained in
-the blockette chain of BlktLink structures.  Shortcut pointers to
-commonly used blockettes are maintained for types 100, 1000 and 1001.
+@subsubsection Data Sample Encodings
 
-@subsection Data Sample Encodings
-
-Data samples in a record ...
-CHAD
-The following data encoding formats are supported for both unpacking
-and packing: ASCII, INT16, INT32, FLOAT32, FLOAT64, STEIM1 and STEIM2.
+The library supports all commonly used @ref encoding-values for
+decoding and a subset of the most common values for encoding.  The
+following data encoding formats are supported for both unpacking and
+packing: ASCII, INT16, INT32, FLOAT32, FLOAT64, STEIM1 and STEIM2.
 The INT and FLOAT encodings each have two versions for quantities with
-a different number of bits of representation.  The STEIM decompression
-produces 32-bit integers; likewise the compression routines require
-32-bit integers as input.  The following data encoding formats are
-supported for unpacking only: GEOSCOPE (24-bit, 16/3 and 16/4 gain
-ranged), CDSN, SRO and DWWSSN.
-
-
+a different number of bits of representation.  The STEIM compression
+encodings work with 32-bit integers.  The following data encoding
+formats are supported for unpacking only: GEOSCOPE (24-bit, 16/3 and
+16/4 gain ranged), CDSN, SRO and DWWSSN.
 
 @subsection traces Traces
 
-In order to manage continuous trace segments the library provides
-*Trace Lists*.
+In order to reconstruct, manage and process continuous trace segments
+the library provides @ref trace-list functionality.
 
-Trace lists provide a structure that contains an arbitrary number of
-identified time series, each containing an arbitrary number continuous
-segments, aka traces.  While a trace list is normally used to hold
-trace information and associated data samples they can also be used
-without data samples as a means of tracking data coverage without
-actual samples.
-
-Numerous routines are provided for basic management of MSTrace
-structures, including the creation of new MSTrace structures, adding
-data from miniSEED data structures to MSTrace structures, printing
-trace information, etc.
-
-@see mstl3_init
-@see mstl3_free
-@see mstl3_addmsr
-@see mstl3_readbuffer
-@see mstl3_convertsamples
-@see mstl3_pack
-@see mstl3_printtracelist
-@see mstl3_printsynclist
-@see mstl3_printgaplist
+@ref trace-list structures are nested to contain an arbitrary number
+of identified time series, each containing an arbitrary number
+continuous time series segments, aka traces.  While a trace list is
+normally used to hold trace information and associated data samples
+they can also be used without data samples as a means of tracking data
+coverage without actual sample values.
 
 @subsection time-representation Time representation
 
-Internally time stamps are represented as nanoseconds since the
-Unix/POSIX epoch via the nstime_t type.  A number of functions exist
-to parse or generate date-time strings to or from this representation.
+Internally, time stamps are represented as nanoseconds since the
+Unix/POSIX epoch via the nstime_t data type.  A number of functions
+exist to parse or generate date-time strings to or from this
+representation.  See @ref time-related.
 
 *Note:* nanosecond time resolution does not mean the data included
  this resolution.
 
-@see MS_EPOCH2NSTIME(X)
-@see MS_NSTIME2EPOCH(X)
-@see ms_nstime2time
-@see ms_nstime2isotimestr
-@see ms_nstime2mdtimestr
-@see ms_nstime2seedtimestr
-@see ms_time2nstime
-@see ms_seedtimestr2nstime
-@see ms_timestr2nstime
-
 @subsection time-series-data Time series data formats
 
-Time series data samples are supported in a couple of different
-formats depending on how they are unpacked or will be packed.  An
-array of samples is completely represented by an array of sample
-values, the number of samples and a sample type.  Samples can be
+Time series data samples are supported in a few different formats
+depending on how they are unpacked or will be packed.  Samples can be
 either ASCII, 32-bit integer, 32-bit floats or 64-bit double precision
-floats.
-
-Sample types are identified by a type character:
-'a' - ASCII (8 bits)
-'i' - integer (32 bits)
-'f' - float (32 bits)
-'d' - double (64 bits)
-
-The size of each sample type in bytes is returned by the
-ms_samplesize lookup routine.
+floats.  These types are represented internally using the
+single-character @ref sample-types.
 
 @subsection log-messages Log messages
 
 All of the log and diagnostic messages emitted by the library
-functions use private logging functions.  It is common for programs
-that use the library to also use these logging functions.  The output
-from these logging interfaces can be controlled.  This is useful when
-the library will be embedded in a larger system with a custom logging
-facility.  See the man page for more details.
-
-  ms_log() : the central logging facility.  Behavior is controlled by the
-        settings specified with ms_loginit().
-
-  ms_loginit() : set the functions and prefixes used for log,
-        diagnostic and error messages.
-
-The default destination for log messages is standard output (stdout),
-while all diagnostic (including error) messages go to standard error
-(stderr).  Most of the internal messages emmited by the library are
-considered diagnostic and will, by default, go to standard error.
-
-The default prefix for log and diagnostic messages is nothing. The
-default prefix for diagnostic error messages is "error: ".
-
-There are reentrant versions of these functions that operate directly
-on a logging parameter MSLogParam struct.  These are intended for use
-in threaded programs or where a complex logging scheme is desired.
-
-@see ms_log
-@see ms_loginit
-@see ms_log_l
-@see ms_loginit_l
+functions use a central logging facility.  It is common for programs
+that use the library to also use these logging functions.
+Furthermore, the output from these logging interfaces can be
+controlled by directing output to callback functions.  This is useful
+when the library will be embedded in a larger system with it's own
+logging facility.  See the @ref logging page for more details.
 
 */

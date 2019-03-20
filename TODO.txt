@@ -1,6 +1,4 @@
 
-* Porting guide for libmseed 2.x => 3.x.
-
 * More examples
 
 * miniSEED 2.4 packing?
@@ -9,11 +7,4 @@
   - Use CMake to build project files?
 
 * Add some xSEED/mseed3 parsing tests, reference data.
-
-Loss from miniSEED 2.x:
-- Beam 400 & 405
-- Blockette 2000
-- Multiple "Clock Model" designations if multiple Blockette 500s
-- "sequence" numbers are now optional
-- data quality indicator is now optional
 

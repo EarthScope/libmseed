@@ -1,6 +1,8 @@
 /**
 @page porting-guide Guide for porting from earlier libmseed versions
 
+@tableofcontents
+
 @section porting-overview Overview and approach
 
 This page contains a description of major API changes from version 2
@@ -81,5 +83,29 @@ API changed as follows:
   - Some internal functions and structures rarely used by callers were changed
 
 - The \c flag typedef is now legacy, you may wish to convert to directly using int8_t
+
+@subsection porting-data-model-change Ramifications for change in data model
+
+With an internal change in the data model, from miniSEED 2.x to
+version 2, results in the following consequences:
+
+- Version 2.x bleam blockettes (400 & 405) are no longer supported,
+  they will be dropped if reading records that contain such
+  blockettes.
+
+- Version 2.x opaque blockettes (2000) are no longer supported, they
+  will be dropped if reading records that contain such blockettes.
+  Note that the format version 3 @ref extra-headers functionality can
+  be used to contain most arbitrary data.
+
+- Version 2.x timing blockettes (500) contain one "Clock Model"
+  designation per blockette, potentially allowing for multiple
+  designations in a single record.  Upon reading such a record, only
+  the last clock model is retained (in the \c FDSN.Clock.Model @ref
+  extra-headers).
+
+- Version 2.x sequence numbers, as six digit ASCII string, are not
+  retained.  In the new format these values may be placed in @ref
+  extra-headers by a calling program as desired.
 
 */

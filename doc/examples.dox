@@ -1,9 +1,9 @@
 /**
 @page page-examples Examples
 
-@section examples-overview Overview
-
 @tableofcontents
+
+@section examples-overview Overview
 
 The most basic usage of the library is illustrated in the @ref
 page-tutorial.  This page contains full example programs that utilize

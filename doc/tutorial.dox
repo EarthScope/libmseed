@@ -1,9 +1,9 @@
 /**
 @page page-tutorial Tutorial
 
-@section common-usage Common usage
-
 @tableofcontents
+
+@section common-usage Common usage
 
 This page contains a description of basic library usage for the most
 common usage cases.

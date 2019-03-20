@@ -243,7 +243,7 @@ extern int ms_md2doy (int year, int month, int mday, int *yday);
 
 /** @} */
 
-/** @page sample-types
+/** @page sample-types Sample Types
     @brief Data sample types used by the library.
 
     Sample types are represented using a single character as follows:
