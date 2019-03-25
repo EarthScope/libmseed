@@ -26,39 +26,31 @@ LIB_SRCS = fileutils.c genutils.c gswap.c lmplatform.c lookup.c \
            parseutils.c unpack.c unpackdata.c selection.c logging.c
 
 LIB_OBJS = $(LIB_SRCS:.c=.o)
-LIB_DOBJS = $(LIB_SRCS:.c=.lo)
+LIB_LOBJS = $(LIB_SRCS:.c=.lo)
 
-LIB_PREFIX = libmseed
-LIB_A = ${LIB_NAME}.a
+LIB_NAME = libmseed
+LIB_A = $(LIB_NAME).a
 
 OS := $(shell uname -s)
 
+# Build dynamic (.dylib) on macOS/Darwin, otherwise shared (.so)
 ifeq ($(OS), Darwin)
-  LIB_EXTN = dylib
-  LIB_SO_BASE = $(LIB_PREFIX).$(LIB_EXTN)
-	LIB_SO_NAME = $(LIB_SO_BASE)
-	LIB_SO = $(LIB_PREFIX).$(FULL_VER).dylib
-  LIB_DYN = $(LIB_SO)
+	LIB_SO_BASE = $(LIB_NAME).dylib
+	LIB_SO_MAJOR = $(LIB_NAME).$(MAJOR_VER).dylib
+	LIB_SO = $(LIB_NAME).$(FULL_VER).dylib
+	LIB_OPTS = -dynamiclib -compatibility_version $(COMPAT_VER) -current_version $(FULL_VER) -install_name $(LIB_SO)
 else
-	LIB_EXTN = so
-	LIB_SO_BASE = $(LIB_PREFIX).$(LIB_EXTN)
-	LIB_SO_NAME = $(LIB_SO_BASE).$(MAJOR_VER)
-	LIB_SO = $(LIB_PREFIX).$(LIB_EXTN).$(FULL_VER)
+	LIB_SO_BASE = $(LIB_NAME).so
+	LIB_SO_MAJOR = $(LIB_NAME).so.$(MAJOR_VER)
+	LIB_SO = $(LIB_NAME).so.$(FULL_VER)
+	LIB_OPTS = -shared -Wl,--version-script=libmseed.map -Wl,-soname,$(LIB_SO_NAME)
 endif
-
-LIB_FILES = Blarg
 
 all: static
 
 static: $(LIB_A)
 
-# Build dynamic (.dylib) on macOS/Darwin, otherwise shared (.so)
-shared dynamic:
-ifeq ($(OS),Darwin)
-	$(MAKE) $(LIB_DYN)
-else
-	$(MAKE) $(LIB_SO)
-endif
+shared dynamic: $(LIB_SO)
 
 # Build static library
 $(LIB_A): $(LIB_OBJS)
@@ -66,26 +58,19 @@ $(LIB_A): $(LIB_OBJS)
 	$(RM) -f $(LIB_A)
 	$(AR) -crs $(LIB_A) $(LIB_OBJS)
 
-# Build shared library using GCC-style options
-$(LIB_SO): $(LIB_DOBJS)
+# Build shared/dynamic library
+$(LIB_SO): $(LIB_LOBJS)
 	@echo "Building shared library $(LIB_SO)"
 	$(RM) -f $(LIB_SO) $(LIB_SONAME) $(LIB_SO_BASE)
-	$(CC) $(CFLAGS) $(LDFLAGS) -shared -Wl,--version-script=libmseed.map -Wl,-soname,$(LIB_SO_NAME) -o $(LIB_SO) $(LIB_DOBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(LIB_OPTS) -o $(LIB_SO) $(LIB_LOBJS)
 	ln -s $(LIB_SO) $(LIB_SO_BASE)
-	ln -s $(LIB_SO) $(LIB_SO_NAME)
-
-# Build dynamic library (usually for macOS)
-$(LIB_DYN): $(LIB_DOBJS)
-	@echo "Building dynamic library $(LIB_SO)"
-	$(RM) -f $(LIB_SO) $(LIB_SO_NAME)
-	$(CC) $(CFLAGS) -dynamiclib -compatibility_version $(COMPAT_VER) -current_version $(FULL_VER) -install_name $(LIB_SO_NAME) -o $(LIB_SO) $(LIB_DOBJS)
-	ln -sf $(LIB_SO) $(LIB_SO_NAME)
+	ln -s $(LIB_SO) $(LIB_SO_MAJOR)
 
 test check: static FORCE
 	@$(MAKE) -C test test
 
 clean:
-	@$(RM) -f $(LIB_OBJS) $(LIB_DOBJS) $(LIB_A) $(LIB_SO) $(LIB_SO_NAME) $(LIB_SO_BASE) 
+	$(RM) $(LIB_OBJS) $(LIB_LOBJS) $(LIB_A) $(LIB_SO) $(LIB_SO_MAJOR) $(LIB_SO_BASE) 
 	@$(MAKE) -C test clean
 	@echo "All clean."
 
@@ -100,13 +85,13 @@ install: shared
 	@echo cp -a $(LIB_SO_BASE) $(LIB_SO_NAME) $(LIB_SO) $(DESTDIR)$(LIBDIR)
 	@cp -a $(LIB_SO_BASE) $(LIB_SO_NAME) $(LIB_SO) $(DESTDIR)$(LIBDIR)
 	@sed -e 's|@prefix@|$(PREFIX)|g' \
-			-e 's|@exec_prefix@|$(EXEC_PREFIX)|g' \
-			-e 's|@libdir@|$(LIBDIR)|g' \
-			-e 's|@includedir@|$(PREFIX)/include|g' \
-			-e 's|@PACKAGE_NAME@|libmseed|g' \
-			-e 's|@PACKAGE_URL@|http://ds.iris.edu/ds/nodes/dmc/software/downloads/libmseed/|g' \
-			-e 's|@VERSION@|$(FULL_VER)|g' \
-			mseed.pc.in > $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
+	     -e 's|@exec_prefix@|$(EXEC_PREFIX)|g' \
+	     -e 's|@libdir@|$(LIBDIR)|g' \
+	     -e 's|@includedir@|$(PREFIX)/include|g' \
+	     -e 's|@PACKAGE_NAME@|libmseed|g' \
+	     -e 's|@PACKAGE_URL@|http://ds.iris.edu/ds/nodes/dmc/software/downloads/libmseed/|g' \
+	     -e 's|@VERSION@|$(FULL_VER)|g' \
+	     mseed.pc.in > $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
 	@mkdir -p $(DESTDIR)$(DOCDIR)/example
 	@cp -r example $(DESTDIR)$(DOCDIR)/
 	@cp doc/libmseed-UsersGuide $(DESTDIR)$(DOCDIR)/
@@ -119,7 +104,7 @@ install: shared
 .c.o:
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-# Standard object building for dynamic library components using -fPIC
+# Standard object building for shared library using -fPIC
 .c.lo:
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -c $< -o $@
 
