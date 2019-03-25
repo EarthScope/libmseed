@@ -76,14 +76,10 @@ clean:
 
 install: shared
 	@echo "Installing into $(PREFIX)"
-	@echo mkdir -p $(DESTDIR)$(PREFIX)/include
 	@mkdir -p $(DESTDIR)$(PREFIX)/include
-	@echo cp libmseed.h $(DESTDIR)$(PREFIX)/include
 	@cp libmseed.h $(DESTDIR)$(PREFIX)/include
-	@echo mkdir -p $(DESTDIR)$(LIBDIR)/pkgconfig
 	@mkdir -p $(DESTDIR)$(LIBDIR)/pkgconfig
-	@echo cp -a $(LIB_SO_BASE) $(LIB_SO_NAME) $(LIB_SO) $(DESTDIR)$(LIBDIR)
-	@cp -a $(LIB_SO_BASE) $(LIB_SO_NAME) $(LIB_SO) $(DESTDIR)$(LIBDIR)
+	@cp -a $(LIB_SO_BASE) $(LIB_SO_MAJOR) $(LIB_SO_NAME) $(LIB_SO) $(DESTDIR)$(LIBDIR)
 	@sed -e 's|@prefix@|$(PREFIX)|g' \
 	     -e 's|@exec_prefix@|$(EXEC_PREFIX)|g' \
 	     -e 's|@libdir@|$(LIBDIR)|g' \
