@@ -331,7 +331,7 @@ msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
     return -1;
   }
 
-  if (recbuflen < (MS3FSDH_LENGTH + msr->extralength))
+  if (recbuflen < (uint32_t)(MS3FSDH_LENGTH + msr->extralength))
   {
     ms_log (2, "%s(%s): Record buffer length (%d) is not large enough for header (%d) and extra (%d)\n",
             __func__, msr->sid, recbuflen, MS3FSDH_LENGTH, msr->extralength);
@@ -361,7 +361,7 @@ msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
     return -1;
   }
 
-  if (recbuflen < (MS3FSDH_LENGTH + msr->extralength + origdatasize))
+  if (recbuflen < (uint32_t)(MS3FSDH_LENGTH + msr->extralength + origdatasize))
   {
     ms_log (2, "%s(%s): Destination record buffer length (%d) is not large enough for record (%d)\n",
             __func__, msr->sid, recbuflen, (MS3FSDH_LENGTH + msr->extralength + origdatasize));
@@ -410,7 +410,7 @@ int
 msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose)
 {
   int extraoffset = 0;
-  uint8_t sidlength;
+  size_t sidlength;
   int8_t swapflag;
 
   uint16_t year;
@@ -435,7 +435,7 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
     return -1;
   }
 
-  if (recbuflen < (MS3FSDH_LENGTH + msr->extralength))
+  if (recbuflen < (uint32_t)(MS3FSDH_LENGTH + msr->extralength))
   {
     ms_log (2, "%s(%s): Buffer length (%d) is not large enough for fixed header (%d) and extra (%d)\n",
             __func__, msr->sid, msr->reclen, MS3FSDH_LENGTH, msr->extralength);
@@ -456,6 +456,14 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   }
 
   sidlength = strlen (msr->sid);
+
+  /* Ensure that SID length fits in format, which uses data type uint8_t */
+  if (sidlength > 255)
+  {
+    ms_log (2, "%s(%s): Source ID too long: %llu bytes\n", __func__, msr->sid, (unsigned long long)sidlength);
+    return -1;
+  }
+
   extraoffset = MS3FSDH_LENGTH + sidlength;
 
   /* Build fixed header */
@@ -478,7 +486,7 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
     *pMS3FSDH_SAMPLERATE(record) = HO8f(msr->samprate, swapflag);
 
   *pMS3FSDH_PUBVERSION(record) = msr->pubversion;
-  *pMS3FSDH_SIDLENGTH(record) = sidlength;
+  *pMS3FSDH_SIDLENGTH(record) = (uint8_t)sidlength;
   *pMS3FSDH_EXTRALENGTH(record) = HO2u(msr->extralength, swapflag);
   memcpy (pMS3FSDH_SID(record), msr->sid, sidlength);
 

@@ -62,14 +62,16 @@ msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
      - length could not be determined
      - buffer is at the end of the file
      - buffer length is a power of 2
+     - within supported record length
 
      Power of two if (X & (X - 1)) == 0 */
   if (formatversion == 2 &&
       reclen < 0 &&
       flags & MSF_ATENDOFFILE &&
-      (recbuflen & (recbuflen - 1)) == 0)
+      (recbuflen & (recbuflen - 1)) == 0 &&
+      recbuflen <= MAXRECLEN)
   {
-    reclen = recbuflen;
+    reclen = (int)recbuflen;
   }
 
   /* No data record detected */
@@ -103,9 +105,9 @@ msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
   {
     if (verbose > 2)
       ms_log (1, "Detected %d byte record, need %d more bytes\n",
-              reclen, (reclen - recbuflen));
+              reclen, (int)(reclen - recbuflen));
 
-    return (reclen - recbuflen);
+    return (int)(reclen - recbuflen);
   }
 
   /* Unpack record */

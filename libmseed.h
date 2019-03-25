@@ -471,10 +471,10 @@ extern int ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
                                       int8_t verbose);
 extern int ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
                                         MS3Selections *selections, int8_t splitversion, uint32_t flags, int8_t verbose);
-extern int msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
-                            uint32_t flags, int8_t verbose);
-extern int mstl3_writemseed (MS3TraceList *mst, const char *msfile, int8_t overwrite,
-                             int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose);
+extern int64_t msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
+                                uint32_t flags, int8_t verbose);
+extern int64_t mstl3_writemseed (MS3TraceList *mst, const char *msfile, int8_t overwrite,
+                                 int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose);
 /** @} */
 
 /** @defgroup string-functions Source Identifiers

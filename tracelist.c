@@ -1079,6 +1079,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
   int64_t segpackedsamples = 0;
   int samplesize;
   int64_t bufsize;
+  size_t extralength;
 
   if (!mstl || !record_handler)
   {
@@ -1102,7 +1103,16 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
   if (extra)
   {
     msr->extra = extra;
-    msr->extralength = strlen(extra);
+    extralength = strlen(extra);
+
+    if (extralength > UINT16_MAX)
+    {
+      ms_log (2, "%s(): Extra headers are too long: %lld\n",
+              __func__, (unsigned long long)extralength);
+      return -1;
+    }
+
+    msr->extralength = (uint16_t)extralength;
   }
 
   /* Loop through trace list */

@@ -1003,7 +1003,7 @@ msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint16_t *datasize)
 {
   uint8_t nullframe[64] = {0};
   uint8_t samplebytes = 0;
-  uint16_t rawsize;
+  uint64_t rawsize;
 
   if (!msr || !dataoffset || !datasize)
     return MS_GENERROR;
@@ -1052,7 +1052,7 @@ msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint16_t *datasize)
     rawsize = msr->samplecnt * samplebytes;
 
     if (rawsize < *datasize)
-      *datasize = rawsize;
+      *datasize = (uint16_t)rawsize;
   }
 
   /* If datasize is a multiple of 64-bytes and a Steim encoding, test for
@@ -1092,11 +1092,11 @@ msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint16_t *datasize)
  *
  * @return number of samples unpacked or negative libmseed error code.
  ************************************************************************/
-int
+int32_t
 msr3_unpack_data (MS3Record *msr, int8_t verbose)
 {
   uint16_t datasize; /* byte size of data samples in record */
-  int nsamples; /* number of samples unpacked */
+  int32_t nsamples; /* number of samples unpacked */
   size_t unpacksize; /* byte size of unpacked samples */
   int8_t samplesize = 0; /* size of the data samples in bytes */
   uint32_t dataoffset = 0;
@@ -1122,7 +1122,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   }
 
   /* Sanity check record length */
-  if (msr->reclen == -1)
+  if (msr->reclen < 0)
   {
     ms_log (2, "%s(%s): Record size unknown\n", __func__, msr->sid);
     return MS_NOTSEED;
@@ -1133,12 +1133,19 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
     return MS_OUTOFRANGE;
   }
 
+  if (msr->samplecnt > INT32_MAX)
+  {
+    ms_log (2, "%s(%s): Too many samples to unpack: %" PRId64 "\n",
+            __func__, msr->sid, msr->samplecnt);
+    return MS_GENERROR;
+  }
+
   /* Determine offset to data and length of data payload */
   if (msr3_data_bounds (msr, &dataoffset, &datasize))
     return MS_GENERROR;
 
   /* Sanity check data offset before creating a pointer based on the value */
-  if (dataoffset < MINRECLEN || dataoffset >= msr->reclen)
+  if (dataoffset < MINRECLEN || dataoffset >= (uint32_t)msr->reclen)
   {
     ms_log (2, "%s(%s): data offset value is not valid: %d\n", __func__, msr->sid, dataoffset);
     return MS_GENERROR;
@@ -1194,7 +1201,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   }
 
   /* Calculate buffer size needed for unpacked samples */
-  unpacksize = msr->samplecnt * samplesize;
+  unpacksize = (size_t)msr->samplecnt * samplesize;
 
   /* (Re)Allocate space for the unpacked data */
   if (unpacksize > 0)
@@ -1227,7 +1234,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
     if (verbose > 1)
       ms_log (1, "%s: Found ASCII data\n", msr->sid);
 
-    nsamples = msr->samplecnt;
+    nsamples = (int32_t)msr->samplecnt;
     if (nsamples > 0)
     {
       memcpy (msr->datasamples, encoded, nsamples);

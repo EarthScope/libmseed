@@ -721,7 +721,7 @@ ms_record_handler_int (char *record, int reclen, void *ofp)
  *
  * \sa msr3_pack()
  ***************************************************************************/
-int
+int64_t
 msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
                  uint32_t flags, int8_t verbose)
 {
@@ -785,7 +785,7 @@ msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
  *
  * \sa msr3_pack()
  ***************************************************************************/
-int
+int64_t
 mstl3_writemseed (MS3TraceList *mstl, const char *msfile, int8_t overwrite,
                   int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose)
 {

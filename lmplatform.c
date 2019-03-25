@@ -36,7 +36,7 @@ int
 lmp_fseek64 (FILE *stream, int64_t offset, int whence)
 {
 #if defined(LMP_WIN)
-  return (int)fseek (stream, (int64_t)offset, whence);
+  return (int)_fseeki64 (stream, offset, whence);
 #else
   return (int)fseeko (stream, offset, whence);
 #endif
