@@ -3,9 +3,9 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: @PACKAGE_NAME@
-Description: read and write miniSEED data records (seismology)
-URL: @PACKAGE_URL@
+Name: libmseed
+Description: Read and write miniSEED data records (seismological format)
+URL: https://iris-edu.github.io/libmseed/
 Version: @VERSION@
 Cflags: -I${includedir}
 Libs: -L${libdir} -lmseed

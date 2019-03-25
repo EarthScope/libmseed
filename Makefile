@@ -92,8 +92,6 @@ endif
 	     -e 's|@exec_prefix@|$(EXEC_PREFIX)|g' \
 	     -e 's|@libdir@|$(LIBDIR)|g' \
 	     -e 's|@includedir@|$(PREFIX)/include|g' \
-	     -e 's|@PACKAGE_NAME@|libmseed|g' \
-	     -e 's|@PACKAGE_URL@|http://ds.iris.edu/ds/nodes/dmc/software/downloads/libmseed/|g' \
 	     -e 's|@VERSION@|$(FULL_VER)|g' \
 	     mseed.pc.in > $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
 	@mkdir -p $(DESTDIR)$(DOCDIR)/example
