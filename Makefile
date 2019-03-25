@@ -70,7 +70,7 @@ test check: static FORCE
 	@$(MAKE) -C test test
 
 clean:
-	$(RM) $(LIB_OBJS) $(LIB_LOBJS) $(LIB_A) $(LIB_SO) $(LIB_SO_MAJOR) $(LIB_SO_BASE)
+	@$(RM) $(LIB_OBJS) $(LIB_LOBJS) $(LIB_A) $(LIB_SO) $(LIB_SO_MAJOR) $(LIB_SO_BASE)
 	@$(MAKE) -C test clean
 	@echo "All clean."
 
