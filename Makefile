@@ -80,10 +80,10 @@ install: shared
 	@cp libmseed.h $(DESTDIR)$(PREFIX)/include
 	@mkdir -p $(DESTDIR)$(LIBDIR)/pkgconfig
 	@cp -a $(LIB_SO_BASE) $(LIB_SO_MAJOR) $(LIB_SO_NAME) $(LIB_SO) $(DESTDIR)$(LIBDIR)
-	@sed -e 's|@prefix@|$(PREFIX)|g' \
-	     -e 's|@exec_prefix@|$(EXEC_PREFIX)|g' \
-	     -e 's|@libdir@|$(LIBDIR)|g' \
-	     -e 's|@includedir@|$(PREFIX)/include|g' \
+	@sed -e 's|@PREFIX@|$(PREFIX)|g' \
+	     -e 's|@EXEC_PREFIX@|$(EXEC_PREFIX)|g' \
+	     -e 's|@LIBDIR@|$(LIBDIR)|g' \
+	     -e 's|@INCLUDEDIR@|$(PREFIX)/include|g' \
 	     -e 's|@VERSION@|$(FULL_VER)|g' \
 	     mseed.pc.in > $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
 	@mkdir -p $(DESTDIR)$(DOCDIR)/example
