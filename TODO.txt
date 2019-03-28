@@ -1,10 +1,7 @@
 
 * More examples
 
-* miniSEED 2.4 packing?
-
-* MSBuild project for building, MS Visual Studio 2017 dropped support for NMake
-  - Use CMake to build project files?
+* miniSEED 2.4 packing
 
 * Add some xSEED/mseed3 parsing tests, reference data.
 
