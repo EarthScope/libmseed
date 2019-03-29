@@ -17,8 +17,6 @@ environments.
 The @subpage page-tutorial contains an overview of basic usage and
 examples to get you going.
 
-@subsection main-capabilites Capabilies and fundamentals
-
 The @subpage page-capabilities page provides an overview the data format
 fundamentals and capabilities of the library.
 
@@ -33,7 +31,7 @@ file.
 
 @subsection develop-main Development and issues
 
-Please report <a href="https://github.com/iris-edu/libmseed/issues">issues</a>
+Please report <a class="el" href="https://github.com/iris-edu/libmseed/issues">issues</a>
 to the project.
 
 If you would like to contribute to the project please file Pull Requests
