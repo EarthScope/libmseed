@@ -14,12 +14,12 @@ While these are full working programs the aspects not related to
 library usage, e.g. argument parsing, are often minimized and left
 uncommented as they will change in real world usage.
 
-@section example-msview Read miniSEED from files
+@section example-mseedview Read miniSEED from files
 
 A simple program to read miniSEED from files and print details from
 each record:
 
-@include msview.c
+@include mseedview.c
 
 @section example-lm_read_selection Reading with selections
 
@@ -37,5 +37,12 @@ would functionality would be used with data received via a network
 connection or some other, non-file, mechanism.
 
 @include lm_read_buffer.c
+
+@section example-lm_pack Writing miniSEED
+
+An example of creating miniSEED.  Static data with known signal is
+used for input for illustration and testing.
+
+@include lm_pack.c
 
 */
