@@ -49,6 +49,7 @@ static void usage (void);
 
 /* Binary I/O for Windows platforms */
 #ifdef LMP_WIN
+  #include <fcntl.h>
   unsigned int _CRT_fmode = _O_BINARY;
 #endif
 
@@ -310,6 +311,6 @@ usage (void)
            " -s             Print a basic summary after processing a file\n"
            " -r bytes       Specify record length in bytes, required if no Blockette 1000\n"
            "\n"
-           " file           File of Mini-SEED records\n"
+           " file           File of miniSEED records\n"
            "\n");
 } /* End of usage() */

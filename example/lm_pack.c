@@ -101,6 +101,7 @@ static char *textdata =
 
 /* Binary I/O for Windows platforms */
 #ifdef LMP_WIN
+  #include <fcntl.h>
   unsigned int _CRT_fmode = _O_BINARY;
 #endif
 
