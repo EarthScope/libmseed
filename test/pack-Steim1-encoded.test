@@ -1,4 +1,4 @@
 #!/bin/sh
 LD_LIBRARY_PATH=.. \
 DYLD_LIBRARY_PATH=.. \
-./lmtestpack -e 10 -o -
+./lm_pack -e 10 -o -
