@@ -86,6 +86,9 @@ extern "C" {
   #if defined(__MINGW32__) || defined(__MINGW64__)
     #include <fcntl.h>
 
+    #define _fseeki64 fseeko64
+    #define _ftelli64 ftello64
+
     #define fstat _fstat
     #define stat _stat
   #endif
