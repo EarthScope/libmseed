@@ -1,7 +1,5 @@
 /***************************************************************************
- * gmtime64.h:
- *
- * Interface declarations function in gmtime64.c.
+ * Interface declaration for function in gmtime64.c.
  *
  * See gmtime.c for copyright and license.
  ***************************************************************************/

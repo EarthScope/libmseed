@@ -1,6 +1,4 @@
 /***************************************************************************
- * gmtime64.c
- *
  * The contained ms_gmtime64_r() is a 64-bit version of the standard
  * gmtime_r() and was derived from the y2038 project:
  * https://github.com/evalEmpire/y2038/
