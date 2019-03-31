@@ -472,12 +472,12 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       if (*pMS2B200_FLAGS (record + blkt_offset) & 0x04)
       {
         if (*pMS2B200_FLAGS (record + blkt_offset) & 0x01)
-          strncpy (eventdetection.detectionwave, "DILATATION", sizeof (eventdetection.detectionwave));
+          strncpy (eventdetection.wave, "DILATATION", sizeof (eventdetection.wave));
         else
-          strncpy (eventdetection.detectionwave, "COMPRESSION", sizeof (eventdetection.detectionwave));
+          strncpy (eventdetection.wave, "COMPRESSION", sizeof (eventdetection.wave));
       }
       else
-        eventdetection.detectionwave[0] = '\0';
+        eventdetection.wave[0] = '\0';
 
       if (*pMS2B200_FLAGS (record + blkt_offset) & 0x02)
         strncpy (eventdetection.units, "DECONVOLVED", sizeof (eventdetection.units));
@@ -513,9 +513,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
       /* If bit 0 is set, dilatation wave otherwise compression */
       if (*pMS2B201_FLAGS (record + blkt_offset) & 0x01)
-        strncpy (eventdetection.detectionwave, "DILATATION", sizeof (eventdetection.detectionwave));
+        strncpy (eventdetection.wave, "DILATATION", sizeof (eventdetection.wave));
       else
-        strncpy (eventdetection.detectionwave, "COMPRESSION", sizeof (eventdetection.detectionwave));
+        strncpy (eventdetection.wave, "COMPRESSION", sizeof (eventdetection.wave));
 
       eventdetection.onsettime = ms_btime2nstime ((uint8_t*)pMS2B201_YEAR (record + blkt_offset), msr->swapflag);
       if (eventdetection.onsettime == NSTERROR)

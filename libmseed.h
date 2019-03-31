@@ -545,7 +545,7 @@ typedef struct MSEHEventDetection
   double signalamplitude; /**< SignalAmplitude, 0.0 = not included */
   double signalperiod; /**< Signal period, 0.0 = not included */
   double backgroundestimate; /**< Background estimate, 0.0 = not included */
-  char detectionwave[30]; /**< Detection wave (e.g. "DILATATION"), zero length = not included */
+  char wave[30]; /**< Detection wave (e.g. "DILATATION"), zero length = not included */
   char units[30]; /**< Units of amplitude and background estimate (e.g. "COUNTS"), zero length = not included */
   nstime_t onsettime; /**< Onset time, NSTERROR = not included */
   uint8_t medsnr[6]; /**< Signal to noise ratio for Murdock event detection, all zeros = not included */

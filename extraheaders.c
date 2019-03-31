@@ -367,9 +367,9 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
   {
     EVALSET ("BackgroundEstimate", json_object_set_number (object, "BackgroundEstimate", eventdetection->backgroundestimate));
   }
-  if (eventdetection->detectionwave[0])
+  if (eventdetection->wave[0])
   {
-    EVALSET ("DetectionWave", json_object_set_string (object, "DetectionWave", eventdetection->detectionwave));
+    EVALSET ("Wave", json_object_set_string (object, "Wave", eventdetection->wave));
   }
   if (eventdetection->units[0])
   {
