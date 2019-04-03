@@ -104,11 +104,11 @@ extern "C" {
 
 /** @def MS_ISRATETOLERABLE
     @brief Macro to test default sample rate tolerance: abs(1-sr1/sr2) < 0.0001 */
-#define MS_ISRATETOLERABLE(A,B) (ms_dabs (1.0 - (A / B)) < 0.0001)
+#define MS_ISRATETOLERABLE(A,B) (ms_dabs (1.0 - ((A) / (B))) < 0.0001)
 
 /** @def MS2_ISDATAINDICATOR
     @brief Macro to test a character for miniSEED 2.x data record/quality indicators */
-#define MS2_ISDATAINDICATOR(X) (X=='D' || X=='R' || X=='Q' || X=='M')
+#define MS2_ISDATAINDICATOR(X) ((X)=='D' || (X)=='R' || (X)=='Q' || (X)=='M')
 
 /** @def MS3_ISVALIDHEADER
  * @hideinitializer
@@ -126,11 +126,11 @@ extern "C" {
  *   MS3_ISVALIDHEADER ((char *)X)
  * @endcode
  */
-#define MS3_ISVALIDHEADER(X) (                                   \
-    *(X) == 'M' && *(X + 1) == 'S' && *(X + 2) == 3 &&           \
-    (uint8_t) (*(X + 12)) >= 0 && (uint8_t) (*(X + 12)) <= 23 && \
-    (uint8_t) (*(X + 13)) >= 0 && (uint8_t) (*(X + 13)) <= 59 && \
-    (uint8_t) (*(X + 14)) >= 0 && (uint8_t) (*(X + 14)) <= 60)
+#define MS3_ISVALIDHEADER(X) (                                       \
+    *(X) == 'M' && *((X) + 1) == 'S' && *((X) + 2) == 3 &&           \
+    (uint8_t) (*((X) + 12)) >= 0 && (uint8_t) (*((X) + 12)) <= 23 && \
+    (uint8_t) (*((X) + 13)) >= 0 && (uint8_t) (*((X) + 13)) <= 59 && \
+    (uint8_t) (*((X) + 14)) >= 0 && (uint8_t) (*((X) + 14)) <= 60)
 
 /** @def MS2_ISVALIDHEADER
  * @hideinitializer
@@ -148,18 +148,18 @@ extern "C" {
  *   MS2_ISVALIDHEADER ((char *)X)
  * @endcode
  */
-#define MS2_ISVALIDHEADER(X) (                                         \
-    (isdigit ((uint8_t) * (X)) || *(X) == ' ' || !*(X)) &&             \
-    (isdigit ((uint8_t) * (X + 1)) || *(X + 1) == ' ' || !*(X + 1)) && \
-    (isdigit ((uint8_t) * (X + 2)) || *(X + 2) == ' ' || !*(X + 2)) && \
-    (isdigit ((uint8_t) * (X + 3)) || *(X + 3) == ' ' || !*(X + 3)) && \
-    (isdigit ((uint8_t) * (X + 4)) || *(X + 4) == ' ' || !*(X + 4)) && \
-    (isdigit ((uint8_t) * (X + 5)) || *(X + 5) == ' ' || !*(X + 5)) && \
-    MS2_ISDATAINDICATOR (*(X + 6)) &&                                  \
-    (*(X + 7) == ' ' || *(X + 7) == '\0') &&                           \
-    (uint8_t) (*(X + 24)) >= 0 && (uint8_t) (*(X + 24)) <= 23 &&       \
-    (uint8_t) (*(X + 25)) >= 0 && (uint8_t) (*(X + 25)) <= 59 &&       \
-    (uint8_t) (*(X + 26)) >= 0 && (uint8_t) (*(X + 26)) <= 60)
+#define MS2_ISVALIDHEADER(X) (                                               \
+    (isdigit ((uint8_t) * (X)) || *(X) == ' ' || !*(X)) &&                   \
+    (isdigit ((uint8_t) * ((X) + 1)) || *((X) + 1) == ' ' || !*((X) + 1)) && \
+    (isdigit ((uint8_t) * ((X) + 2)) || *((X) + 2) == ' ' || !*((X) + 2)) && \
+    (isdigit ((uint8_t) * ((X) + 3)) || *((X) + 3) == ' ' || !*((X) + 3)) && \
+    (isdigit ((uint8_t) * ((X) + 4)) || *((X) + 4) == ' ' || !*((X) + 4)) && \
+    (isdigit ((uint8_t) * ((X) + 5)) || *((X) + 5) == ' ' || !*((X) + 5)) && \
+    MS2_ISDATAINDICATOR (*((X) + 6)) &&                                      \
+    (*((X) + 7) == ' ' || *((X) + 7) == '\0') &&                             \
+    (uint8_t) (*((X) + 24)) >= 0 && (uint8_t) (*((X) + 24)) <= 23 &&         \
+    (uint8_t) (*((X) + 25)) >= 0 && (uint8_t) (*((X) + 25)) <= 59 &&         \
+    (uint8_t) (*((X) + 26)) >= 0 && (uint8_t) (*((X) + 26)) <= 60)
 
 /** A simple bitwise AND test to return 0 or 1 */
 #define bit(x,y) ((x)&(y))?1:0
