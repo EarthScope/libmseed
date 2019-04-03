@@ -1121,6 +1121,9 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   if (!msr)
     return MS_GENERROR;
 
+  if (msr->samplecnt <= 0)
+    return 0;
+
   if (!msr->record)
   {
     ms_log (2, "%s(%s): Raw record pointer is unset\n", __func__, msr->sid);
