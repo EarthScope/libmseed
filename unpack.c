@@ -945,7 +945,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     msr->starttime += (nstime_t)*pMS2B1001_MICROSECOND (record + B1001offset) * (NSTMODULUS / 1000000);
   }
 
-  msr->datalength = msr->reclen - HO2u (*pMS2FSDH_DATAOFFSET (record), msr->swapflag);
+  msr->datalength = HO2u (*pMS2FSDH_DATAOFFSET (record), msr->swapflag);
+  if (msr->datalength > 0)
+    msr->datalength = msr->reclen - msr->datalength;
 
   /* Determine byte order of the data and set the swapflag as needed;
      if no Blkt1000, assume the order is the same as the header */
