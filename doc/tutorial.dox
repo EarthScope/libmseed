@@ -148,7 +148,8 @@ mstl3_writemseed() respectively.
 A code snippet for writing miniSEED to a file from an MS3Record using msr3_writemseed():
 @anchor msr3-writemseed-snippet
 @code
-int main() {
+int main()
+{
   int packedrecords;
   int verbose = 0;
   char *msfile = "output.mseed";
