@@ -835,6 +835,13 @@ typedef int8_t flag;
     - \b libmseed_memory.free - requires a free()-like function
 
     By default the system malloc(), realloc(), and free() are used.
+    Equivalent to setting:
+
+    \code
+    libmseed_memory.malloc = malloc;
+    libmseed_memory.realloc = realloc;
+    libmseed_memory.free = free;
+    \endcode
 
     @{ */
 
