@@ -41,10 +41,12 @@ not_ be).
 - Review and change functions with \c hptime in the name to their
   closest equivalent for the new \c nstime version.  See @ref time-related.
 
-- Change all usage of \c ms_htime2isotimestr(), \c
-ms_hptime2mdtimestr(), and \c ms_hptime2seedtimestr() functions to use
-ms_nstime2timestr(), which has enumerated flags to specify the time
-string format.
+- Change all usage of \c ms_hptime2isotimestr(), \c ms_hptime2mdtimestr(),
+and \c ms_hptime2seedtimestr() functions to use ms_nstime2timestr(), which
+has enumerated flags to specify the time string format.  In general:
+  - ms_hptime2isotimestr() becomes ms_nstime2timestr(nstime, timestr, ISOMONTHDAY, subsecond)
+  - ms_hptime2mdtimestr() becomes ms_nstime2timestr(nstime, timestr, ISOMONTHDAY_SPACE, subsecond)
+  - ms_hptime2seedtimestr() becomes ms_nstime2timestr(nstime, timestr, SEEDORDINAL, subsecond)
 
 - The _time format_ and _subseconds_ flags have changed from integers
 to \c enum values, review and change calling of \c
