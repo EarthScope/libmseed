@@ -8,7 +8,7 @@ and their unsigned counterpart types.
 A simple 'make' on most Unix-like systems should build the library.
 
 The included Makefile should work for most Unix-like environments and
-most make variants. It is know to work with GNU make, which, if not the
+most make variants. It is known to work with GNU make, which, if not the
 default, is sometimes installed as gmake.
 
 The CC, CFLAGS, LDFLAGS and CPPFLAGS environment variables can be set
@@ -26,11 +26,9 @@ example:
 
 make install PREFIX=/path/to/install/
 
-## Windows (Win32)
+## Windows
 
-On a WIN32 platform the library can be compiled by using the
-Nmake compatible Makefile.win (e.g. 'nmake -f Makefile.win') or Open
-Watcom's Wmake with Makefile.wat (e.g. 'wmake -f Makefile.wat'). The
-default target is a static library 'libmseed.lib'.  The library has
-been tested with Open Watcom 1.8.  A libmseed.def file is included
-for use building and linking a DLL.
+On a Windows platform the library can be compiled by using the
+NMake compatible Makefile.win (e.g. 'nmake -f Makefile.win').
+The default target is a static library 'libmseed.lib'.
+A libmseed.def file is included for use building and linking a DLL.

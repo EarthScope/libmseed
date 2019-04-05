@@ -3,7 +3,23 @@
  * STEIM2, GEOSCOPE (24bit and gain ranged), CDSN, SRO and DWWSSN
  * encoded data.
  *
- * modified: 2017.283
+ * This file is part of the miniSEED Library.
+ *
+ * Copyright (c) 2019 Chad Trabant, IRIS Data Management Center
+ *
+ * The miniSEED Library is free software; you can redistribute it
+ * and/or modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * The miniSEED Library is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License (GNU-LGPL) for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software. If not, see
+ * <https://www.gnu.org/licenses/>
  ************************************************************************/
 
 #include <memory.h>
@@ -14,7 +30,7 @@
 #include "unpackdata.h"
 
 /* Control for printing debugging information */
-int decodedebug = 0;
+int libmseed_decodedebug = -1;
 
 /* Extract bit range.  Byte order agnostic & defined when used with unsigned values */
 #define EXTRACTBITRANGE(VALUE, STARTBIT, LENGTH) ((VALUE >> STARTBIT) & ((1U << LENGTH) - 1))
@@ -33,8 +49,8 @@ int decodedebug = 0;
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_int16 (int16_t *input, int samplecount, int32_t *output,
-                  int outputlength, int swapflag)
+msr_decode_int16 (int16_t *input, int64_t samplecount, int32_t *output,
+                  int64_t outputlength, int swapflag)
 {
   int16_t sample;
   int idx;
@@ -69,8 +85,8 @@ msr_decode_int16 (int16_t *input, int samplecount, int32_t *output,
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_int32 (int32_t *input, int samplecount, int32_t *output,
-                  int outputlength, int swapflag)
+msr_decode_int32 (int32_t *input, int64_t samplecount, int32_t *output,
+                  int64_t outputlength, int swapflag)
 {
   int32_t sample;
   int idx;
@@ -105,8 +121,8 @@ msr_decode_int32 (int32_t *input, int samplecount, int32_t *output,
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_float32 (float *input, int samplecount, float *output,
-                    int outputlength, int swapflag)
+msr_decode_float32 (float *input, int64_t samplecount, float *output,
+                    int64_t outputlength, int swapflag)
 {
   float sample;
   int idx;
@@ -141,8 +157,8 @@ msr_decode_float32 (float *input, int samplecount, float *output,
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_float64 (double *input, int samplecount, double *output,
-                    int outputlength, int swapflag)
+msr_decode_float64 (double *input, int64_t samplecount, double *output,
+                    int64_t outputlength, int swapflag)
 {
   double sample;
   int idx;
@@ -177,8 +193,8 @@ msr_decode_float64 (double *input, int samplecount, double *output,
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_steim1 (int32_t *input, int inputlength, int samplecount,
-                   int32_t *output, int outputlength, char *srcname,
+msr_decode_steim1 (int32_t *input, int inputlength, int64_t samplecount,
+                   int32_t *output, int64_t outputlength, char *srcname,
                    int swapflag)
 {
   int32_t *outputptr = output; /* Pointer to next output sample location */
@@ -205,7 +221,7 @@ msr_decode_steim1 (int32_t *input, int inputlength, int samplecount,
   if (!input || !output || outputlength <= 0 || maxframes <= 0)
     return -1;
 
-  if (decodedebug)
+  if (libmseed_decodedebug > 0)
     ms_log (1, "Decoding %d Steim1 frames, swapflag: %d, srcname: %s\n",
             maxframes, swapflag, (srcname) ? srcname : "");
 
@@ -229,14 +245,14 @@ msr_decode_steim1 (int32_t *input, int inputlength, int samplecount,
 
       startnibble = 3; /* First frame: skip nibbles, X0, and Xn */
 
-      if (decodedebug)
+      if (libmseed_decodedebug > 0)
         ms_log (1, "Frame %d: X0=%d  Xn=%d\n", frameidx, X0, Xn);
     }
     else
     {
       startnibble = 1; /* Subsequent frames: skip nibbles */
 
-      if (decodedebug)
+      if (libmseed_decodedebug > 0)
         ms_log (1, "Frame %d\n", frameidx);
     }
 
@@ -256,14 +272,14 @@ msr_decode_steim1 (int32_t *input, int inputlength, int samplecount,
       switch (nibble)
       {
       case 0: /* 00: Special flag, no differences */
-        if (decodedebug)
+        if (libmseed_decodedebug > 0)
           ms_log (1, "  W%02d: 00=special\n", widx);
         break;
 
       case 1: /* 01: Four 1-byte differences */
         diffcount = 4;
 
-        if (decodedebug)
+        if (libmseed_decodedebug > 0)
           ms_log (1, "  W%02d: 01=4x8b  %d  %d  %d  %d\n",
                   widx, word->d8[0], word->d8[1], word->d8[2], word->d8[3]);
         break;
@@ -277,7 +293,7 @@ msr_decode_steim1 (int32_t *input, int inputlength, int samplecount,
           ms_gswap2a (&word->d16[1]);
         }
 
-        if (decodedebug)
+        if (libmseed_decodedebug > 0)
           ms_log (1, "  W%02d: 10=2x16b  %d  %d\n", widx, word->d16[0], word->d16[1]);
         break;
 
@@ -286,7 +302,7 @@ msr_decode_steim1 (int32_t *input, int inputlength, int samplecount,
         if (swapflag)
           ms_gswap4a (&word->d32);
 
-        if (decodedebug)
+        if (libmseed_decodedebug > 0)
           ms_log (1, "  W%02d: 11=1x32b  %d\n", widx, word->d32);
         break;
       } /* Done with decoding 32-bit word based on nibble */
@@ -330,8 +346,8 @@ msr_decode_steim1 (int32_t *input, int inputlength, int samplecount,
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
-                   int32_t *output, int outputlength, char *srcname,
+msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
+                   int32_t *output, int64_t outputlength, char *srcname,
                    int swapflag)
 {
   int32_t *outputptr = output; /* Pointer to next output sample location */
@@ -360,7 +376,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
   if (!input || !output || outputlength <= 0 || maxframes <= 0)
     return -1;
 
-  if (decodedebug)
+  if (libmseed_decodedebug > 0)
     ms_log (1, "Decoding %d Steim2 frames, swapflag: %d, srcname: %s\n",
             maxframes, swapflag, (srcname) ? srcname : "");
 
@@ -384,14 +400,14 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
 
       startnibble = 3; /* First frame: skip nibbles, X0, and Xn */
 
-      if (decodedebug)
+      if (libmseed_decodedebug > 0)
         ms_log (1, "Frame %d: X0=%d  Xn=%d\n", frameidx, X0, Xn);
     }
     else
     {
       startnibble = 1; /* Subsequent frames: skip nibbles */
 
-      if (decodedebug)
+      if (libmseed_decodedebug > 0)
         ms_log (1, "Frame %d\n", frameidx);
     }
 
@@ -409,7 +425,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
       switch (nibble)
       {
       case 0: /* nibble=00: Special flag, no differences */
-        if (decodedebug)
+        if (libmseed_decodedebug > 0)
           ms_log (1, "  W%02d: 00=special\n", widx);
 
         break;
@@ -422,7 +438,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
           diff[idx] = word->d8[idx];
         }
 
-        if (decodedebug)
+        if (libmseed_decodedebug > 0)
           ms_log (1, "  W%02d: 01=4x8b  %d  %d  %d  %d\n", widx, diff[0], diff[1], diff[2], diff[3]);
         break;
 
@@ -445,7 +461,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
           diff[0]   = EXTRACTBITRANGE (frame[widx], 0, 30);
           diff[0]   = (diff[0] ^ semask) - semask;
 
-          if (decodedebug)
+          if (libmseed_decodedebug > 0)
             ms_log (1, "  W%02d: 10,01=1x30b  %d\n", widx, diff[0]);
           break;
 
@@ -458,7 +474,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
             diff[idx] = (diff[idx] ^ semask) - semask;
           }
 
-          if (decodedebug)
+          if (libmseed_decodedebug > 0)
             ms_log (1, "  W%02d: 10,10=2x15b  %d  %d\n", widx, diff[0], diff[1]);
           break;
 
@@ -471,7 +487,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
             diff[idx] = (diff[idx] ^ semask) - semask;
           }
 
-          if (decodedebug)
+          if (libmseed_decodedebug > 0)
             ms_log (1, "  W%02d: 10,11=3x10b  %d  %d  %d\n", widx, diff[0], diff[1], diff[2]);
           break;
         }
@@ -494,7 +510,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
             diff[idx] = (diff[idx] ^ semask) - semask;
           }
 
-          if (decodedebug)
+          if (libmseed_decodedebug > 0)
             ms_log (1, "  W%02d: 11,00=5x6b  %d  %d  %d  %d  %d\n",
                     widx, diff[0], diff[1], diff[2], diff[3], diff[4]);
           break;
@@ -508,7 +524,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
             diff[idx] = (diff[idx] ^ semask) - semask;
           }
 
-          if (decodedebug)
+          if (libmseed_decodedebug > 0)
             ms_log (1, "  W%02d: 11,01=6x5b  %d  %d  %d  %d  %d  %d\n",
                     widx, diff[0], diff[1], diff[2], diff[3], diff[4], diff[5]);
           break;
@@ -522,7 +538,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
             diff[idx] = (diff[idx] ^ semask) - semask;
           }
 
-          if (decodedebug)
+          if (libmseed_decodedebug > 0)
             ms_log (1, "  W%02d: 11,10=7x4b  %d  %d  %d  %d  %d  %d  %d\n",
                     widx, diff[0], diff[1], diff[2], diff[3], diff[4], diff[5], diff[6]);
           break;
@@ -578,8 +594,8 @@ msr_decode_steim2 (int32_t *input, int inputlength, int samplecount,
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_geoscope (char *input, int samplecount, float *output,
-                     int outputlength, int encoding,
+msr_decode_geoscope (char *input, int64_t samplecount, float *output,
+                     int64_t outputlength, int encoding,
                      char *srcname, int swapflag)
 {
   int idx = 0;
@@ -734,8 +750,8 @@ msr_decode_geoscope (char *input, int samplecount, float *output,
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_cdsn (int16_t *input, int samplecount, int32_t *output,
-                 int outputlength, int swapflag)
+msr_decode_cdsn (int16_t *input, int64_t samplecount, int32_t *output,
+                 int64_t outputlength, int swapflag)
 {
   int32_t idx = 0;
   int32_t mantissa;  /* mantissa */
@@ -820,8 +836,8 @@ msr_decode_cdsn (int16_t *input, int samplecount, int32_t *output,
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_sro (int16_t *input, int samplecount, int32_t *output,
-                int outputlength, char *srcname, int swapflag)
+msr_decode_sro (int16_t *input, int64_t samplecount, int32_t *output,
+                int64_t outputlength, char *srcname, int swapflag)
 {
   int32_t idx = 0;
   int32_t mantissa;   /* mantissa */
@@ -884,8 +900,8 @@ msr_decode_sro (int16_t *input, int samplecount, int32_t *output,
  * Return number of samples in output buffer on success, -1 on error.
  ************************************************************************/
 int
-msr_decode_dwwssn (int16_t *input, int samplecount, int32_t *output,
-                   int outputlength, int swapflag)
+msr_decode_dwwssn (int16_t *input, int64_t samplecount, int32_t *output,
+                   int64_t outputlength, int swapflag)
 {
   int32_t idx = 0;
   int32_t sample;

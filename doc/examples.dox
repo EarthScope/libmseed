@@ -1,0 +1,48 @@
+/**
+@page page-examples Examples
+
+@tableofcontents
+
+@section examples-overview Overview
+
+The most basic usage of the library is illustrated in the @ref
+page-tutorial.  This page contains full example programs that utilize
+the library for common tasks.  These examples are included in the
+source distribution and (most) are used in the test suite.
+
+While these are full working programs the aspects not related to
+library usage, e.g. argument parsing, are often minimized and left
+uncommented as they will change in real world usage.
+
+@section example-mseedview Read miniSEED from files
+
+A simple program to read miniSEED from files and print details from
+each record:
+
+@include mseedview.c
+
+@section example-lm_read_selection Reading with selections
+
+Read miniSEED with @ref data-selections used to limit what is read.
+Additionally, this program reads data into a @ref trace-list and
+illustrates traversing the entries.
+
+@include lm_read_selection.c
+
+@section example-lm_read_buffer Reading from memory buffers
+
+Read miniSEED from memory buffers.  In this case a file is read into a
+buffer simply to illustrate reading from a buffer.  In practice this
+would functionality would be used with data received via a network
+connection or some other, non-file, mechanism.
+
+@include lm_read_buffer.c
+
+@section example-lm_pack Writing miniSEED
+
+An example of creating miniSEED.  Static data with known signal is
+used for input for illustration and testing.
+
+@include lm_pack.c
+
+*/

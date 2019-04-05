@@ -14,11 +14,14 @@ OBJS=	fileutils.obj	\
 	gswap.obj	\
 	lmplatform.obj	\
 	lookup.obj	\
+	parson.obj	\
 	msrutils.obj	\
+	extraheaders.obj\
 	pack.obj	\
 	packdata.obj	\
-	traceutils.obj	\
 	tracelist.obj	\
+	gmtime64.obj	\
+	crc32c.obj	\
 	parseutils.obj	\
 	unpack.obj	\
 	unpackdata.obj  \

@@ -2,7 +2,23 @@
  * Routines for packing text/ASCII, INT_16, INT_32, FLOAT_32, FLOAT_64,
  * STEIM1 and STEIM2 data records.
  *
- * modified: 2017.053
+ * This file is part of the miniSEED Library.
+ *
+ * Copyright (c) 2019 Chad Trabant, IRIS Data Management Center
+ *
+ * The miniSEED Library is free software; you can redistribute it
+ * and/or modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * The miniSEED Library is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License (GNU-LGPL) for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software. If not, see
+ * <https://www.gnu.org/licenses/>
  ************************************************************************/
 
 #include <memory.h>
@@ -13,7 +29,7 @@
 #include "packdata.h"
 
 /* Control for printing debugging information */
-int encodedebug = 0;
+int libmseed_encodedebug = -1;
 
 /************************************************************************
  * msr_encode_text:
@@ -233,7 +249,8 @@ msr_encode_float64 (double *input, int samplecount, double *output,
  ************************************************************************/
 int
 msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
-                   int outputlength, int32_t diff0, int swapflag)
+                   int outputlength, int32_t diff0, uint16_t *byteswritten,
+                   int swapflag)
 {
   int32_t *frameptr;   /* Frame pointer in output */
   int32_t *Xnp = NULL; /* Reverse integration constant, aka last sample */
@@ -261,7 +278,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
   if (!input || !output || outputlength <= 0)
     return -1;
 
-  if (encodedebug)
+  if (libmseed_encodedebug > 0)
     ms_log (1, "Encoding Steim1 frames, samples: %d, max frames: %d, swapflag: %d\n",
             samplecount, maxframes, swapflag);
 
@@ -283,7 +300,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
     {
       frameptr[1] = input[0];
 
-      if (encodedebug)
+      if (libmseed_encodedebug > 0)
         ms_log (1, "Frame %d: X0=%d\n", frameidx, frameptr[1]);
 
       if (swapflag)
@@ -297,7 +314,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
     {
       startnibble = 1; /* Subsequent frames: skip nibbles */
 
-      if (encodedebug)
+      if (libmseed_encodedebug > 0)
         ms_log (1, "Frame %d\n", frameidx);
     }
 
@@ -334,7 +351,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
           bitwidth[0] <= 8 && bitwidth[1] <= 8 &&
           bitwidth[2] <= 8 && bitwidth[3] <= 8)
       {
-        if (encodedebug)
+        if (libmseed_encodedebug > 0)
           ms_log (1, "  W%02d: 01=4x8b  %d  %d  %d  %d\n",
                   widx, diffs[0], diffs[1], diffs[2], diffs[3]);
 
@@ -352,7 +369,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
       else if (diffcount >= 2 &&
                bitwidth[0] <= 16 && bitwidth[1] <= 16)
       {
-        if (encodedebug)
+        if (libmseed_encodedebug > 0)
           ms_log (1, "  W%02d: 2=2x16b  %d  %d\n", widx, diffs[0], diffs[1]);
 
         word->d16[0] = diffs[0];
@@ -372,7 +389,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
       /* 1 x 32-bit difference */
       else
       {
-        if (encodedebug)
+        if (libmseed_encodedebug > 0)
           ms_log (1, "  W%02d: 3=1x32b  %d\n", widx, diffs[0]);
 
         frameptr[widx] = diffs[0];
@@ -401,9 +418,8 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
   if (swapflag)
     ms_gswap4a (Xnp);
 
-  /* Pad any remaining bytes */
-  if ((frameidx * 64) < outputlength)
-    memset (output + (frameidx * 16), 0, outputlength - (frameidx * 64));
+  if (byteswritten)
+    *byteswritten = frameidx * 64;
 
   return outputsamples;
 } /* End of msr_encode_steim1() */
@@ -423,8 +439,8 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
  ************************************************************************/
 int
 msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
-                   int outputlength, int32_t diff0,
-                   char *srcname, int swapflag)
+                   int outputlength, int32_t diff0, uint16_t *byteswritten,
+                   char *sid, int swapflag)
 {
   uint32_t *frameptr;  /* Frame pointer in output */
   int32_t *Xnp = NULL; /* Reverse integration constant, aka last sample */
@@ -452,7 +468,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
   if (!input || !output || outputlength <= 0)
     return -1;
 
-  if (encodedebug)
+  if (libmseed_encodedebug > 0)
     ms_log (1, "Encoding Steim2 frames, samples: %d, max frames: %d, swapflag: %d\n",
             samplecount, maxframes, swapflag);
 
@@ -474,7 +490,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
     {
       frameptr[1] = input[0];
 
-      if (encodedebug)
+      if (libmseed_encodedebug > 0)
         ms_log (1, "Frame %d: X0=%d\n", frameidx, frameptr[1]);
 
       if (swapflag)
@@ -488,7 +504,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
     {
       startnibble = 1; /* Subsequent frames: skip nibbles */
 
-      if (encodedebug)
+      if (libmseed_encodedebug > 0)
         ms_log (1, "Frame %d\n", frameidx);
     }
 
@@ -528,7 +544,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
           bitwidth[1] <= 4 && bitwidth[2] <= 4 && bitwidth[3] <= 4 &&
           bitwidth[4] <= 4 && bitwidth[5] <= 4 && bitwidth[6] <= 4)
       {
-        if (encodedebug)
+        if (libmseed_encodedebug > 0)
           ms_log (1, "  W%02d: 11,10=7x4b  %d  %d  %d  %d  %d  %d  %d\n",
                   widx, diffs[0], diffs[1], diffs[2], diffs[3], diffs[4], diffs[5], diffs[6]);
 
@@ -554,7 +570,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
                bitwidth[0] <= 5 && bitwidth[1] <= 5 && bitwidth[2] <= 5 &&
                bitwidth[3] <= 5 && bitwidth[4] <= 5 && bitwidth[5] <= 5)
       {
-        if (encodedebug)
+        if (libmseed_encodedebug > 0)
           ms_log (1, "  W%02d: 11,01=6x5b  %d  %d  %d  %d  %d  %d\n",
                   widx, diffs[0], diffs[1], diffs[2], diffs[3], diffs[4], diffs[5]);
 
@@ -579,7 +595,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
                bitwidth[0] <= 6 && bitwidth[1] <= 6 && bitwidth[2] <= 6 &&
                bitwidth[3] <= 6 && bitwidth[4] <= 6)
       {
-        if (encodedebug)
+        if (libmseed_encodedebug > 0)
           ms_log (1, "  W%02d: 11,00=5x6b  %d  %d  %d  %d  %d\n",
                   widx, diffs[0], diffs[1], diffs[2], diffs[3], diffs[4]);
 
@@ -602,7 +618,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
                bitwidth[0] <= 8 && bitwidth[1] <= 8 &&
                bitwidth[2] <= 8 && bitwidth[3] <= 8)
       {
-        if (encodedebug)
+        if (libmseed_encodedebug > 0)
           ms_log (1, "  W%02d: 01=4x8b  %d  %d  %d  %d\n",
                   widx, diffs[0], diffs[1], diffs[2], diffs[3]);
 
@@ -622,7 +638,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
       else if (diffcount >= 3 &&
                bitwidth[0] <= 10 && bitwidth[1] <= 10 && bitwidth[2] <= 10)
       {
-        if (encodedebug)
+        if (libmseed_encodedebug > 0)
           ms_log (1, "  W%02d: 10,11=3x10b  %d  %d  %d\n",
                   widx, diffs[0], diffs[1], diffs[2]);
 
@@ -643,7 +659,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
       else if (diffcount >= 2 &&
                bitwidth[0] <= 15 && bitwidth[1] <= 15)
       {
-        if (encodedebug)
+        if (libmseed_encodedebug > 0)
           ms_log (1, "  W%02d: 10,10=2x15b  %d  %d\n",
                   widx, diffs[0], diffs[1]);
 
@@ -663,7 +679,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
       else if (diffcount >= 1 &&
                bitwidth[0] <= 30)
       {
-        if (encodedebug)
+        if (libmseed_encodedebug > 0)
           ms_log (1, "  W%02d: 10,01=1x30b  %d\n",
                   widx, diffs[0]);
 
@@ -681,7 +697,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
       else
       {
         ms_log (2, "msr_encode_steim2(%s): Unable to represent difference in <= 30 bits\n",
-                srcname);
+                sid);
         return -1;
       }
 
@@ -704,9 +720,8 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
   if (swapflag)
     ms_gswap4a (Xnp);
 
-  /* Pad any remaining bytes */
-  if ((frameidx * 64) < outputlength)
-    memset (output + (frameidx * 16), 0, outputlength - (frameidx * 64));
+  if (byteswritten)
+    *byteswritten = frameidx * 64;
 
   return outputsamples;
 } /* End of msr_encode_steim2() */

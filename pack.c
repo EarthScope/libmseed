@@ -1,13 +1,24 @@
 /***************************************************************************
- * pack.c:
- *
- * Generic routines to pack Mini-SEED records using an MSrecord as a
+ * Generic routines to pack miniSEED records using an MS3Record as a
  * header template and data source.
  *
- * Written by Chad Trabant,
- *   IRIS Data Management Center
+ * This file is part of the miniSEED Library.
  *
- * modified: 2015.273
+ * Copyright (c) 2019 Chad Trabant, IRIS Data Management Center
+ *
+ * The miniSEED Library is free software; you can redistribute it
+ * and/or modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * The miniSEED Library is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License (GNU-LGPL) for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software. If not, see
+ * <https://www.gnu.org/licenses/>
  ***************************************************************************/
 
 #include <stdio.h>
@@ -16,193 +27,161 @@
 #include <time.h>
 
 #include "libmseed.h"
+#include "mseedformat.h"
 #include "packdata.h"
 
 /* Function(s) internal to this file */
-static int msr_pack_header_raw (MSRecord *msr, char *rawrec, int maxheaderlen,
-                                flag swapflag, flag normalize,
-                                struct blkt_1001_s **blkt1001,
-                                char *srcname, flag verbose);
-static int msr_update_header (MSRecord *msr, char *rawrec, flag swapflag,
-                              struct blkt_1001_s *blkt1001,
-                              char *srcname, flag verbose);
+static int msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
+                             void *handlerdata, int64_t *packedsamples,
+                             uint32_t flags, int8_t verbose);
+
 static int msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
-                          int32_t *lastintsample, flag comphistory,
-                          char sampletype, flag encoding, flag swapflag,
-                          char *srcname, flag verbose);
+                          char sampletype, int8_t encoding, int8_t swapflag,
+                          uint16_t *byteswritten, char *sid, int8_t verbose);
 
-/* Header and data byte order flags controlled by environment variables */
-/* -2 = not checked, -1 = checked but not set, or 0 = LE and 1 = BE */
-flag packheaderbyteorder = -2;
-flag packdatabyteorder   = -2;
-
-/***************************************************************************
- * msr_pack:
+/**********************************************************************/ /**
+ * @brief Pack data into miniSEED records.
  *
- * Pack data into SEED data records.  Using the record header values
- * in the MSRecord as a template the common header fields are packed
- * into the record header, blockettes in the blockettes chain are
- * packed and data samples are packed in the encoding format indicated
- * by the MSRecord->encoding field.  A Blockette 1000 will be added if
- * one is not present.
+ * Packing is performed according to the version at
+ * @ref MS3Record.formatversion.
  *
- * The MSRecord->datasamples array and MSRecord->numsamples value will
- * not be changed by this routine.  It is the responsibility of the
- * calling routine to adjust the data buffer if desired.
+ * The @ref MS3Record.datasamples array and @ref MS3Record.numsamples
+ * value will __not__ be changed by this routine.  It is the
+ * responsibility of the calling routine to adjust the data buffer if
+ * desired.
  *
- * As each record is filled and finished they are passed to
- * record_handler which expects 1) a char * to the record, 2) the
- * length of the record and 3) a pointer supplied by the original
- * caller containing optional private data (handlerdata).  It is the
- * responsibility of record_handler to process the record, the memory
- * will be re-used or freed when record_handler returns.
+ * As each record is filled and finished they are passed to \a
+ * record_handler() which should expect 1) a \c char* to the record,
+ * 2) the length of the record and 3) a pointer supplied by the
+ * original caller containing optional private data (\a handlerdata).
+ * It is the responsibility of \a record_handler() to process the
+ * record, the memory will be re-used or freed when \a
+ * record_handler() returns.
  *
- * If the flush flag != 0 all of the data will be packed into data
- * records even though the last one will probably not be filled.
+ * The following data encodings and expected @ref MS3Record.sampletype
+ * are supported:
+ *   - ::DE_ASCII (0), text (ASCII), expects type \c 'a'
+ *   - ::DE_INT16 (1), 16-bit integer, expects type \c 'i'
+ *   - ::DE_INT32 (3), 32-bit integer, expects type \c 'i'
+ *   - ::DE_FLOAT32 (4), 32-bit float (IEEE), expects type \c 'f'
+ *   - ::DE_FLOAT64 (5), 64-bit float (IEEE), expects type \c 'd'
+ *   - ::DE_STEIM1 (10), Stiem-1 compressed integers, expects type \c 'i'
+ *   - ::DE_STEIM2 (11), Stiem-2 compressed integers, expects type \c 'i'
  *
- * Default values are: data record & quality indicator = 'D', record
- * length = 4096, encoding = 11 (Steim2) and byteorder = 1 (MSBF).
- * The defaults are triggered when the the msr->dataquality is 0 or
- * msr->reclen, msr->encoding and msr->byteorder are -1 respectively.
+ * If \a flags has ::MSF_FLUSHDATA set, all of the data will be packed
+ * into data records even though the last one will probably be smaller
+ * than requested or, in the case of miniSEED 2.X, unfilled.
  *
- * Returns the number of records created on success and -1 on error.
+ * Default values are: record length = 4096, encoding = 11 (Steim2).
+ * The defaults are triggered when \a msr.reclen and \a msr.encoding
+ * are set to -1.
+ *
+ * @param[in] msr ::MS3Record containing data to pack
+ * @param[in] record_handler() Callback function called for each record
+ * @param[in] handlerdata A pointer that will be provided to the \a record_handler()
+ * @param[out] packedsamples The number of samples packed, returned to caller
+ * @param[in] flags Flags used to control the packing process:
+ * @parblock
+ *  - \c ::MSF_FLUSHDATA : Pack all data in the buffer
+ * @endparblock
+ * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
+ *
+ * @returns the number of records created on success and -1 on error.
  ***************************************************************************/
 int
-msr_pack (MSRecord *msr, void (*record_handler) (char *, int, void *),
-          void *handlerdata, int64_t *packedsamples, flag flush, flag verbose)
+msr3_pack (MS3Record *msr, void (*record_handler) (char *, int, void *),
+           void *handlerdata, int64_t *packedsamples, uint32_t flags, int8_t verbose)
 {
-  uint16_t *HPnumsamples;
-  uint16_t *HPdataoffset;
-  struct blkt_1001_s *HPblkt1001 = NULL;
-
-  char *rawrec;
-  char *envvariable;
-  char srcname[50];
-
-  flag headerswapflag = 0;
-  flag dataswapflag   = 0;
-
-  int samplesize;
-  int headerlen;
-  int dataoffset;
-  int maxdatabytes;
-  int maxsamples;
-  int recordcnt = 0;
-  int packsamples, packoffset;
-  int64_t totalpackedsamples;
-  hptime_t segstarttime;
+  int packedrecs = 0;
 
   if (!msr)
     return -1;
 
   if (!record_handler)
   {
-    ms_log (2, "msr_pack(): record_handler() function pointer not set!\n");
+    ms_log (2, "%s(): record_handler() function pointer not set!\n", __func__);
     return -1;
   }
 
-  /* Allocate stream processing state space if needed */
-  if (!msr->ststate)
-  {
-    msr->ststate = (StreamState *)malloc (sizeof (StreamState));
-    if (!msr->ststate)
-    {
-      ms_log (2, "msr_pack(): Could not allocate memory for StreamState\n");
-      return -1;
-    }
-    memset (msr->ststate, 0, sizeof (StreamState));
-  }
-
-  /* Generate source name for MSRecord */
-  if (msr_srcname (msr, srcname, 1) == NULL)
-  {
-    ms_log (2, "msr_unpack_data(): Cannot generate srcname\n");
-    return MS_GENERROR;
-  }
-
-  /* Track original segment start time for new start time calculation */
-  segstarttime = msr->starttime;
-
-  /* Read possible environmental variables that force byteorder */
-  if (packheaderbyteorder == -2)
-  {
-    if ((envvariable = getenv ("PACK_HEADER_BYTEORDER")))
-    {
-      if (*envvariable != '0' && *envvariable != '1')
-      {
-        ms_log (2, "Environment variable PACK_HEADER_BYTEORDER must be set to '0' or '1'\n");
-        return -1;
-      }
-      else if (*envvariable == '0')
-      {
-        packheaderbyteorder = 0;
-        if (verbose > 2)
-          ms_log (1, "PACK_HEADER_BYTEORDER=0, packing little-endian header\n");
-      }
-      else
-      {
-        packheaderbyteorder = 1;
-        if (verbose > 2)
-          ms_log (1, "PACK_HEADER_BYTEORDER=1, packing big-endian header\n");
-      }
-    }
-    else
-    {
-      packheaderbyteorder = -1;
-    }
-  }
-  if (packdatabyteorder == -2)
-  {
-    if ((envvariable = getenv ("PACK_DATA_BYTEORDER")))
-    {
-      if (*envvariable != '0' && *envvariable != '1')
-      {
-        ms_log (2, "Environment variable PACK_DATA_BYTEORDER must be set to '0' or '1'\n");
-        return -1;
-      }
-      else if (*envvariable == '0')
-      {
-        packdatabyteorder = 0;
-        if (verbose > 2)
-          ms_log (1, "PACK_DATA_BYTEORDER=0, packing little-endian data samples\n");
-      }
-      else
-      {
-        packdatabyteorder = 1;
-        if (verbose > 2)
-          ms_log (1, "PACK_DATA_BYTEORDER=1, packing big-endian data samples\n");
-      }
-    }
-    else
-    {
-      packdatabyteorder = -1;
-    }
-  }
-
-  /* Set default indicator, record length, byte order and encoding if needed */
-  if (msr->dataquality == 0)
-    msr->dataquality = 'D';
+  /* Set default record length and encoding if needed */
   if (msr->reclen == -1)
     msr->reclen = 4096;
-  if (msr->byteorder == -1)
-    msr->byteorder = 1;
   if (msr->encoding == -1)
     msr->encoding = DE_STEIM2;
 
-  /* Cleanup/reset sequence number */
-  if (msr->sequence_number <= 0 || msr->sequence_number > 999999)
-    msr->sequence_number = 1;
-
   if (msr->reclen < MINRECLEN || msr->reclen > MAXRECLEN)
   {
-    ms_log (2, "msr_pack(%s): Record length is out of range: %d\n",
-            srcname, msr->reclen);
+    ms_log (2, "%s(%s): Record length is out of range: %d\n",
+            __func__, msr->sid, msr->reclen);
+    return -1;
+  }
+
+  if (msr->formatversion == 2)
+  {
+    /* TODO */
+    //packedrecs = msr3_pack_mseed2(msr, record_handler, handlerdata, packedsamples,
+    //                           flags, verbose);
+    ms_log (1, "%s(%s): miniSEED version 2 packing not yet supported\n",
+            __func__, msr->sid);
+    return -1;
+  }
+  else /* Pack version 3 by default */
+  {
+    packedrecs = msr3_pack_mseed3 (msr, record_handler, handlerdata, packedsamples,
+                                   flags, verbose);
+  }
+
+  return packedrecs;
+} /* End of msr3_pack() */
+
+/***************************************************************************
+ * msr3_pack_mseed3:
+ *
+ * Pack data into miniSEED version 3 records.
+ *
+ * Returns the number of records created on success and -1 on error.
+ ***************************************************************************/
+int
+msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
+                  void *handlerdata, int64_t *packedsamples,
+                  uint32_t flags, int8_t verbose)
+{
+  char *rawrec = NULL;
+  char *encoded = NULL;  /* Separate encoded data buffer for alignment */
+  int8_t swapflag;
+  int dataoffset = 0;
+
+  int samplesize;
+  int maxdatabytes;
+  int maxsamples;
+  int recordcnt = 0;
+  int packsamples;
+  int packoffset;
+  int64_t totalpackedsamples;
+  int32_t reclen;
+
+  uint32_t crc;
+  uint16_t datalength;
+
+  if (!msr)
+    return -1;
+
+  if (!record_handler)
+  {
+    ms_log (2, "%s(): record_handler() function pointer not set!\n", __func__);
+    return -1;
+  }
+
+  if (msr->reclen < (MS3FSDH_LENGTH + msr->extralength))
+  {
+    ms_log (2, "%s(%s): Record length (%d) is not large enough for header (%d) and extra (%d)\n",
+            __func__, msr->sid, msr->reclen, MS3FSDH_LENGTH, msr->extralength);
     return -1;
   }
 
   if (msr->numsamples <= 0)
   {
-    ms_log (2, "msr_pack(%s): No samples to pack\n", srcname);
+    ms_log (2, "%s(%s): No samples to pack\n", __func__, msr->sid);
     return -1;
   }
 
@@ -210,106 +189,30 @@ msr_pack (MSRecord *msr, void (*record_handler) (char *, int, void *),
 
   if (!samplesize)
   {
-    ms_log (2, "msr_pack(%s): Unknown sample type '%c'\n",
-            srcname, msr->sampletype);
+    ms_log (2, "%s(%s): Unknown sample type '%c'\n", __func__, msr->sid, msr->sampletype);
     return -1;
   }
 
-  /* Sanity check for msr/quality indicator */
-  if (!MS_ISDATAINDICATOR (msr->dataquality))
-  {
-    ms_log (2, "msr_pack(%s): Record header & quality indicator unrecognized: '%c'\n",
-            srcname, msr->dataquality);
-    ms_log (2, "msr_pack(%s): Packing failed.\n", srcname);
-    return -1;
-  }
+  /* Check to see if byte swapping is needed, miniSEED 3 is little endian */
+  swapflag = (ms_bigendianhost ()) ? 1 : 0;
 
   /* Allocate space for data record */
-  rawrec = (char *)malloc (msr->reclen);
+  rawrec = (char *)libmseed_memory.malloc (msr->reclen);
 
   if (rawrec == NULL)
   {
-    ms_log (2, "msr_pack(%s): Cannot allocate memory\n", srcname);
+    ms_log (2, "%s(%s): Cannot allocate memory\n", __func__, msr->sid);
     return -1;
   }
 
-  /* Set header pointers to known offsets into FSDH */
-  HPnumsamples = (uint16_t *)(rawrec + 30);
-  HPdataoffset = (uint16_t *)(rawrec + 44);
+  /* Pack fixed header and extra headers, returned size is data offset */
+  dataoffset = msr3_pack_header3 (msr, rawrec, msr->reclen, verbose);
 
-  /* Check to see if byte swapping is needed */
-  if (msr->byteorder != ms_bigendianhost ())
-    headerswapflag = dataswapflag = 1;
-
-  /* Check if byte order is forced */
-  if (packheaderbyteorder >= 0)
+  if (dataoffset < 0)
   {
-    headerswapflag = (msr->byteorder != packheaderbyteorder) ? 1 : 0;
-  }
-
-  if (packdatabyteorder >= 0)
-  {
-    dataswapflag = (msr->byteorder != packdatabyteorder) ? 1 : 0;
-  }
-
-  if (verbose > 2)
-  {
-    if (headerswapflag && dataswapflag)
-      ms_log (1, "%s: Byte swapping needed for packing of header and data samples\n", srcname);
-    else if (headerswapflag)
-      ms_log (1, "%s: Byte swapping needed for packing of header\n", srcname);
-    else if (dataswapflag)
-      ms_log (1, "%s: Byte swapping needed for packing of data samples\n", srcname);
-    else
-      ms_log (1, "%s: Byte swapping NOT needed for packing\n", srcname);
-  }
-
-  /* Add a blank 1000 Blockette if one is not present, the blockette values
-     will be populated in msr_pack_header_raw()/msr_normalize_header() */
-  if (!msr->Blkt1000)
-  {
-    struct blkt_1000_s blkt1000;
-    memset (&blkt1000, 0, sizeof (struct blkt_1000_s));
-
-    if (verbose > 2)
-      ms_log (1, "%s: Adding 1000 Blockette\n", srcname);
-
-    if (!msr_addblockette (msr, (char *)&blkt1000, sizeof (struct blkt_1000_s), 1000, 0))
-    {
-      ms_log (2, "msr_pack(%s): Error adding 1000 Blockette\n", srcname);
-      free (rawrec);
-      return -1;
-    }
-  }
-
-  headerlen = msr_pack_header_raw (msr, rawrec, msr->reclen, headerswapflag, 1,
-                                   &HPblkt1001, srcname, verbose);
-
-  if (headerlen == -1)
-  {
-    ms_log (2, "msr_pack(%s): Error packing header\n", srcname);
-    free (rawrec);
+    ms_log (2, "%s(%s): Cannot pack miniSEED version 3 header\n", __func__, msr->sid);
     return -1;
   }
-
-  /* Determine offset to encoded data */
-  if (msr->encoding == DE_STEIM1 || msr->encoding == DE_STEIM2)
-  {
-    dataoffset = 64;
-    while (dataoffset < headerlen)
-      dataoffset += 64;
-
-    /* Zero memory between blockettes and data if any */
-    memset (rawrec + headerlen, 0, dataoffset - headerlen);
-  }
-  else
-  {
-    dataoffset = headerlen;
-  }
-
-  *HPdataoffset = (uint16_t)dataoffset;
-  if (headerswapflag)
-    ms_gswap2 (HPdataoffset);
 
   /* Determine the max data bytes and sample count */
   maxdatabytes = msr->reclen - dataoffset;
@@ -327,569 +230,287 @@ msr_pack (MSRecord *msr, void (*record_handler) (char *, int, void *),
     maxsamples = maxdatabytes / samplesize;
   }
 
+  /* Allocate space for encoded data separately for alignment */
+  if (msr->numsamples > 0)
+  {
+    encoded = (char *)libmseed_memory.malloc (maxdatabytes);
+
+    if (encoded == NULL)
+    {
+      ms_log (2, "%s(%s): Cannot allocate memory\n", __func__, msr->sid);
+      libmseed_memory.free (rawrec);
+      return -1;
+    }
+  }
+
   /* Pack samples into records */
-  *HPnumsamples      = 0;
   totalpackedsamples = 0;
-  packoffset         = 0;
+  packoffset = 0;
   if (packedsamples)
     *packedsamples = 0;
 
-  while ((msr->numsamples - totalpackedsamples) > maxsamples || flush)
+  while ((msr->numsamples - totalpackedsamples) > maxsamples || flags & MSF_FLUSHDATA)
   {
-    packsamples = msr_pack_data (rawrec + dataoffset,
+    packsamples = msr_pack_data (encoded,
                                  (char *)msr->datasamples + packoffset,
                                  (int)(msr->numsamples - totalpackedsamples), maxdatabytes,
-                                 &msr->ststate->lastintsample, msr->ststate->comphistory,
-                                 msr->sampletype, msr->encoding, dataswapflag,
-                                 srcname, verbose);
+                                 msr->sampletype, msr->encoding, swapflag,
+                                 &datalength, msr->sid, verbose);
 
     if (packsamples < 0)
     {
-      ms_log (2, "msr_pack(%s): Error packing data samples\n", srcname);
-      free (rawrec);
+      ms_log (2, "%s(%s): Error packing data samples\n", __func__, msr->sid);
+      libmseed_memory.free (encoded);
+      libmseed_memory.free (rawrec);
       return -1;
     }
 
     packoffset += packsamples * samplesize;
+    reclen = dataoffset + datalength;
 
-    /* Update number of samples */
-    *HPnumsamples = (uint16_t)packsamples;
-    if (headerswapflag)
-      ms_gswap2 (HPnumsamples);
+    /* Copy encoded data into record */
+    memcpy (rawrec + dataoffset, encoded, datalength);
 
-    if (verbose > 0)
-      ms_log (1, "%s: Packed %d samples\n", srcname, packsamples);
+    /* Update number of samples and data length */
+    *pMS3FSDH_NUMSAMPLES(rawrec) = HO4u (packsamples, swapflag);
+    *pMS3FSDH_DATALENGTH(rawrec) = HO2u (datalength, swapflag);
+
+    /* Calculate CRC (with CRC field set to 0) and set */
+    memset (pMS3FSDH_CRC(rawrec), 0, sizeof(uint32_t));
+    crc = ms_crc32c ((const uint8_t*)rawrec, reclen, 0);
+    *pMS3FSDH_CRC(rawrec) = HO4u (crc, swapflag);
+
+    if (verbose >= 1)
+      ms_log (1, "%s: Packed %d samples into %d byte record\n", msr->sid, packsamples, reclen);
 
     /* Send record to handler */
-    record_handler (rawrec, msr->reclen, handlerdata);
+    record_handler (rawrec, reclen, handlerdata);
 
     totalpackedsamples += packsamples;
     if (packedsamples)
       *packedsamples = totalpackedsamples;
-    msr->ststate->packedsamples += packsamples;
-
-    /* Update record header for next record */
-    msr->sequence_number = (msr->sequence_number >= 999999) ? 1 : msr->sequence_number + 1;
-    if (msr->samprate > 0)
-      msr->starttime = segstarttime + (hptime_t) (totalpackedsamples / msr->samprate * HPTMODULUS + 0.5);
-
-    msr_update_header (msr, rawrec, headerswapflag, HPblkt1001, srcname, verbose);
 
     recordcnt++;
-    msr->ststate->packedrecords++;
-
-    /* Set compression history flag for subsequent records (Steim encodings) */
-    if (!msr->ststate->comphistory)
-      msr->ststate->comphistory = 1;
 
     if (totalpackedsamples >= msr->numsamples)
       break;
   }
 
-  if (verbose > 2)
-    ms_log (1, "%s: Packed %d total samples\n", srcname, totalpackedsamples);
+  if (verbose >= 2)
+    ms_log (1, "%s: Packed %d total samples\n", msr->sid, totalpackedsamples);
 
-  free (rawrec);
+  if (encoded)
+    libmseed_memory.free (encoded);
+
+  libmseed_memory.free (rawrec);
 
   return recordcnt;
-} /* End of msr_pack() */
+} /* End of msr3_pack_mseed3() */
 
-/***************************************************************************
- * msr_pack_header:
+/**********************************************************************/ /**
+ * @brief Repack a parsed miniSEED record into a version 3 record.
  *
- * Pack data header/blockettes into the SEED record at
- * MSRecord->record.  Unlike msr_pack no default values are applied,
- * the header structures are expected to be self describing and no
- * Blockette 1000 will be added.  This routine is only useful for
- * re-packing a record header.
+ * Pack the parsed header into a version 3 header and copy the raw
+ * encoded data from the original record.  The original record must be
+ * available at the ::MS3Record.record pointer.
  *
- * Returns the header length in bytes on success and -1 on error.
+ * This can be used to efficiently convert format versions or modify
+ * header values without unpacking the data samples.
+ *
+ * @param[in] msr ::MS3Record containing record to repack
+ * @param[out] record Destination buffer for repacked record
+ * @param[in] recbuflen Length of destination buffer
+ * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
+ *
+ * @returns record length on success and -1 on error.
  ***************************************************************************/
 int
-msr_pack_header (MSRecord *msr, flag normalize, flag verbose)
+msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
+                    int8_t verbose)
 {
-  char srcname[50];
-  char *envvariable;
-  flag headerswapflag = 0;
-  int headerlen;
-  int maxheaderlen;
+  int dataoffset;
+  uint32_t origdataoffset;
+  uint16_t origdatasize;
+  uint32_t crc;
+  uint32_t reclen;
+  int8_t swapflag;
 
   if (!msr)
     return -1;
 
-  /* Generate source name for MSRecord */
-  if (msr_srcname (msr, srcname, 1) == NULL)
+  if (!record)
   {
-    ms_log (2, "msr_unpack_data(): Cannot generate srcname\n");
-    return MS_GENERROR;
+    ms_log (2, "%s(): record buffer is not set!\n", __func__);
+    return -1;
   }
 
-  /* Read possible environmental variables that force byteorder */
-  if (packheaderbyteorder == -2)
+  if (recbuflen < (uint32_t)(MS3FSDH_LENGTH + msr->extralength))
   {
-    if ((envvariable = getenv ("PACK_HEADER_BYTEORDER")))
-    {
-      if (*envvariable != '0' && *envvariable != '1')
-      {
-        ms_log (2, "Environment variable PACK_HEADER_BYTEORDER must be set to '0' or '1'\n");
-        return -1;
-      }
-      else if (*envvariable == '0')
-      {
-        packheaderbyteorder = 0;
-        if (verbose > 2)
-          ms_log (1, "PACK_HEADER_BYTEORDER=0, packing little-endian header\n");
-      }
-      else
-      {
-        packheaderbyteorder = 1;
-        if (verbose > 2)
-          ms_log (1, "PACK_HEADER_BYTEORDER=1, packing big-endian header\n");
-      }
-    }
-    else
-    {
-      packheaderbyteorder = -1;
-    }
+    ms_log (2, "%s(%s): Record buffer length (%d) is not large enough for header (%d) and extra (%d)\n",
+            __func__, msr->sid, recbuflen, MS3FSDH_LENGTH, msr->extralength);
+    return -1;
   }
+
+  if (msr->samplecnt > UINT32_MAX)
+  {
+    ms_log (2, "%s(%s): Too many samples in input record (%" PRId64 " for a single record)\n",
+            __func__, msr->sid, msr->samplecnt);
+    return -1;
+  }
+
+  /* Pack fixed header and extra headers, returned size is data offset */
+  dataoffset = msr3_pack_header3 (msr, record, recbuflen, verbose);
+
+  if (dataoffset < 0)
+  {
+    ms_log (2, "%s(%s): Cannot pack miniSEED version 3 header\n", __func__, msr->sid);
+    return -1;
+  }
+
+  /* Determine encoded data size */
+  if (msr3_data_bounds (msr, &origdataoffset, &origdatasize))
+  {
+    ms_log (2, "%s(%s): Cannot determine original data bounds\n", __func__, msr->sid);
+    return -1;
+  }
+
+  if (recbuflen < (uint32_t)(MS3FSDH_LENGTH + msr->extralength + origdatasize))
+  {
+    ms_log (2, "%s(%s): Destination record buffer length (%d) is not large enough for record (%d)\n",
+            __func__, msr->sid, recbuflen, (MS3FSDH_LENGTH + msr->extralength + origdatasize));
+    return -1;
+  }
+
+  reclen = dataoffset + origdatasize;
+
+  /* Copy encoded data into record */
+  memcpy (record + dataoffset, msr->record + origdataoffset, origdatasize);
+
+  /* Check to see if byte swapping is needed, miniSEED 3 is little endian */
+  swapflag = (ms_bigendianhost ()) ? 1 : 0;
+
+  /* Update number of samples and data length */
+  *pMS3FSDH_NUMSAMPLES(record) = HO4u ((uint32_t)msr->samplecnt, swapflag);
+  *pMS3FSDH_DATALENGTH(record) = HO2u (origdatasize, swapflag);
+
+  /* Calculate CRC (with CRC field set to 0) and set */
+  memset (pMS3FSDH_CRC(record), 0, sizeof(uint32_t));
+  crc = ms_crc32c ((const uint8_t*)record, reclen, 0);
+  *pMS3FSDH_CRC(record) = HO4u (crc, swapflag);
+
+  if (verbose >= 1)
+    ms_log (1, "%s: Repacked %d samples into a %d byte record\n",
+            msr->sid, msr->samplecnt, reclen);
+
+  return reclen;
+} /* End of msr3_repack_mseed3() */
+
+/**********************************************************************/ /**
+ * @brief Pack a miniSEED version 3 header into the specified buffer.
+ *
+ * Default values are: record length = 4096, encoding = 11 (Steim2).
+ * The defaults are triggered when \a msr.reclen and \a msr.encoding
+ * are set to -1.
+ *
+ * @param[in] msr ::MS3Record to pack
+ * @param[out] record Destination for packed header
+ * @param[in] recbuflen Length of destination buffer
+ * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
+ *
+ * @returns the size of the header (fixed and extra) on success, otherwise -1.
+ ***************************************************************************/
+int
+msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose)
+{
+  int extraoffset = 0;
+  size_t sidlength;
+  int8_t swapflag;
+
+  uint16_t year;
+  uint16_t day;
+  uint8_t hour;
+  uint8_t min;
+  uint8_t sec;
+  uint32_t nsec;
+
+  if (!msr || !record)
+    return -1;
+
+  /* Set default record length and encoding if needed */
+  if (msr->reclen == -1)
+    msr->reclen = 4096;
+  if (msr->encoding == -1)
+    msr->encoding = DE_STEIM2;
 
   if (msr->reclen < MINRECLEN || msr->reclen > MAXRECLEN)
   {
-    ms_log (2, "msr_pack_header(%s): record length is out of range: %d\n",
-            srcname, msr->reclen);
+    ms_log (2, "%s(%s): Record length is out of range: %d\n", __func__, msr->sid, msr->reclen);
     return -1;
   }
 
-  if (msr->byteorder != 0 && msr->byteorder != 1)
+  if (recbuflen < (uint32_t)(MS3FSDH_LENGTH + msr->extralength))
   {
-    ms_log (2, "msr_pack_header(%s): byte order is not defined correctly: %d\n",
-            srcname, msr->byteorder);
+    ms_log (2, "%s(%s): Buffer length (%d) is not large enough for fixed header (%d) and extra (%d)\n",
+            __func__, msr->sid, msr->reclen, MS3FSDH_LENGTH, msr->extralength);
     return -1;
   }
 
-  if (msr->fsdh)
+  /* Check to see if byte swapping is needed, miniSEED 3 is little endian */
+  swapflag = (ms_bigendianhost ()) ? 1 : 0;
+
+  if (verbose > 2 && swapflag)
+    ms_log (1, "%s: Byte swapping needed for packing of header\n", msr->sid);
+
+  /* Break down start time into individual components */
+  if (ms_nstime2time (msr->starttime, &year, &day, &hour, &min, &sec, &nsec))
   {
-    maxheaderlen = (msr->fsdh->data_offset > 0) ? msr->fsdh->data_offset : msr->reclen;
+    ms_log (2, "%s(%s): Cannot convert starttime: %" PRId64 "\n", __func__, msr->sid, msr->starttime);
+    return -1;
   }
+
+  sidlength = strlen (msr->sid);
+
+  /* Ensure that SID length fits in format, which uses data type uint8_t */
+  if (sidlength > 255)
+  {
+    ms_log (2, "%s(%s): Source ID too long: %llu bytes\n", __func__, msr->sid, (unsigned long long)sidlength);
+    return -1;
+  }
+
+  extraoffset = MS3FSDH_LENGTH + sidlength;
+
+  /* Build fixed header */
+  record[0] = 'M';
+  record[1] = 'S';
+  *pMS3FSDH_FORMATVERSION (record) = 3;
+  *pMS3FSDH_FLAGS (record) = msr->flags;
+  *pMS3FSDH_YEAR (record) = HO2u (year, swapflag);
+  *pMS3FSDH_DAY (record) = HO2u (day, swapflag);
+  *pMS3FSDH_HOUR (record) = hour;
+  *pMS3FSDH_MIN (record) = min;
+  *pMS3FSDH_SEC (record) = sec;
+  *pMS3FSDH_ENCODING (record) = msr->encoding;
+  *pMS3FSDH_NSEC (record) = HO4u (nsec, swapflag);
+
+  /* If rate positive and less than one, convert to period notation */
+  if (msr->samprate != 0.0 && msr->samprate > 0 && msr->samprate < 1.0)
+    *pMS3FSDH_SAMPLERATE(record) = HO8f((-1.0 / msr->samprate), swapflag);
   else
-  {
-    maxheaderlen = msr->reclen;
-  }
+    *pMS3FSDH_SAMPLERATE(record) = HO8f(msr->samprate, swapflag);
 
-  /* Check to see if byte swapping is needed */
-  if (msr->byteorder != ms_bigendianhost ())
-    headerswapflag = 1;
+  *pMS3FSDH_PUBVERSION(record) = msr->pubversion;
+  *pMS3FSDH_SIDLENGTH(record) = (uint8_t)sidlength;
+  *pMS3FSDH_EXTRALENGTH(record) = HO2u(msr->extralength, swapflag);
+  memcpy (pMS3FSDH_SID(record), msr->sid, sidlength);
 
-  /* Check if byte order is forced */
-  if (packheaderbyteorder >= 0)
-  {
-    headerswapflag = (msr->byteorder != packheaderbyteorder) ? 1 : 0;
-  }
+  if (msr->extralength > 0)
+    memcpy (record + extraoffset, msr->extra, msr->extralength);
 
-  if (verbose > 2)
-  {
-    if (headerswapflag)
-      ms_log (1, "%s: Byte swapping needed for packing of header\n", srcname);
-    else
-      ms_log (1, "%s: Byte swapping NOT needed for packing of header\n", srcname);
-  }
-
-  headerlen = msr_pack_header_raw (msr, msr->record, maxheaderlen,
-                                   headerswapflag, normalize, NULL,
-                                   srcname, verbose);
-
-  return headerlen;
-} /* End of msr_pack_header() */
-
-/***************************************************************************
- * msr_pack_header_raw:
- *
- * Pack data header/blockettes into the specified SEED data record.
- *
- * Returns the header length in bytes on success or -1 on error.
- ***************************************************************************/
-static int
-msr_pack_header_raw (MSRecord *msr, char *rawrec, int maxheaderlen,
-                     flag swapflag, flag normalize,
-                     struct blkt_1001_s **blkt1001,
-                     char *srcname, flag verbose)
-{
-  struct blkt_link_s *cur_blkt;
-  struct fsdh_s *fsdh;
-  int16_t offset;
-  int blktcnt = 0;
-  int nextoffset;
-
-  if (!msr || !rawrec)
-    return -1;
-
-  /* Make sure a fixed section of data header is available */
-  if (!msr->fsdh)
-  {
-    msr->fsdh = (struct fsdh_s *)calloc (1, sizeof (struct fsdh_s));
-
-    if (msr->fsdh == NULL)
-    {
-      ms_log (2, "msr_pack_header_raw(%s): Cannot allocate memory\n", srcname);
-      return -1;
-    }
-  }
-
-  /* Update the SEED structures associated with the MSRecord */
-  if (normalize)
-    if (msr_normalize_header (msr, verbose) < 0)
-    {
-      ms_log (2, "msr_pack_header_raw(%s): error normalizing header values\n", srcname);
-      return -1;
-    }
-
-  if (verbose > 2)
-    ms_log (1, "%s: Packing fixed section of data header\n", srcname);
-
-  if (maxheaderlen > msr->reclen)
-  {
-    ms_log (2, "msr_pack_header_raw(%s): maxheaderlen of %d is beyond record length of %d\n",
-            srcname, maxheaderlen, msr->reclen);
-    return -1;
-  }
-
-  if (maxheaderlen < (int)sizeof (struct fsdh_s))
-  {
-    ms_log (2, "msr_pack_header_raw(%s): maxheaderlen of %d is too small, must be >= %d\n",
-            srcname, maxheaderlen, sizeof (struct fsdh_s));
-    return -1;
-  }
-
-  fsdh   = (struct fsdh_s *)rawrec;
-  offset = 48;
-
-  /* Roll-over sequence number if necessary */
-  if (msr->sequence_number > 999999)
-    msr->sequence_number = 1;
-
-  /* Copy FSDH associated with the MSRecord into the record */
-  memcpy (fsdh, msr->fsdh, sizeof (struct fsdh_s));
-
-  /* Swap byte order? */
-  if (swapflag)
-  {
-    MS_SWAPBTIME (&fsdh->start_time);
-    ms_gswap2 (&fsdh->numsamples);
-    ms_gswap2 (&fsdh->samprate_fact);
-    ms_gswap2 (&fsdh->samprate_mult);
-    ms_gswap4 (&fsdh->time_correct);
-    ms_gswap2 (&fsdh->data_offset);
-    ms_gswap2 (&fsdh->blockette_offset);
-  }
-
-  /* Traverse blockette chain and pack blockettes at 'offset' */
-  cur_blkt = msr->blkts;
-
-  while (cur_blkt && offset < maxheaderlen)
-  {
-    /* Check that the blockette fits */
-    if ((offset + 4 + cur_blkt->blktdatalen) > maxheaderlen)
-    {
-      ms_log (2, "msr_pack_header_raw(%s): header exceeds maxheaderlen of %d\n",
-              srcname, maxheaderlen);
-      break;
-    }
-
-    /* Pack blockette type and leave space for next offset */
-    memcpy (rawrec + offset, &cur_blkt->blkt_type, 2);
-    if (swapflag)
-      ms_gswap2 (rawrec + offset);
-    nextoffset = offset + 2;
-    offset += 4;
-
-    if (cur_blkt->blkt_type == 100)
-    {
-      struct blkt_100_s *blkt_100 = (struct blkt_100_s *)(rawrec + offset);
-      memcpy (blkt_100, cur_blkt->blktdata, sizeof (struct blkt_100_s));
-      offset += sizeof (struct blkt_100_s);
-
-      if (swapflag)
-      {
-        ms_gswap4 (&blkt_100->samprate);
-      }
-    }
-
-    else if (cur_blkt->blkt_type == 200)
-    {
-      struct blkt_200_s *blkt_200 = (struct blkt_200_s *)(rawrec + offset);
-      memcpy (blkt_200, cur_blkt->blktdata, sizeof (struct blkt_200_s));
-      offset += sizeof (struct blkt_200_s);
-
-      if (swapflag)
-      {
-        ms_gswap4 (&blkt_200->amplitude);
-        ms_gswap4 (&blkt_200->period);
-        ms_gswap4 (&blkt_200->background_estimate);
-        MS_SWAPBTIME (&blkt_200->time);
-      }
-    }
-
-    else if (cur_blkt->blkt_type == 201)
-    {
-      struct blkt_201_s *blkt_201 = (struct blkt_201_s *)(rawrec + offset);
-      memcpy (blkt_201, cur_blkt->blktdata, sizeof (struct blkt_201_s));
-      offset += sizeof (struct blkt_201_s);
-
-      if (swapflag)
-      {
-        ms_gswap4 (&blkt_201->amplitude);
-        ms_gswap4 (&blkt_201->period);
-        ms_gswap4 (&blkt_201->background_estimate);
-        MS_SWAPBTIME (&blkt_201->time);
-      }
-    }
-
-    else if (cur_blkt->blkt_type == 300)
-    {
-      struct blkt_300_s *blkt_300 = (struct blkt_300_s *)(rawrec + offset);
-      memcpy (blkt_300, cur_blkt->blktdata, sizeof (struct blkt_300_s));
-      offset += sizeof (struct blkt_300_s);
-
-      if (swapflag)
-      {
-        MS_SWAPBTIME (&blkt_300->time);
-        ms_gswap4 (&blkt_300->step_duration);
-        ms_gswap4 (&blkt_300->interval_duration);
-        ms_gswap4 (&blkt_300->amplitude);
-        ms_gswap4 (&blkt_300->reference_amplitude);
-      }
-    }
-
-    else if (cur_blkt->blkt_type == 310)
-    {
-      struct blkt_310_s *blkt_310 = (struct blkt_310_s *)(rawrec + offset);
-      memcpy (blkt_310, cur_blkt->blktdata, sizeof (struct blkt_310_s));
-      offset += sizeof (struct blkt_310_s);
-
-      if (swapflag)
-      {
-        MS_SWAPBTIME (&blkt_310->time);
-        ms_gswap4 (&blkt_310->duration);
-        ms_gswap4 (&blkt_310->period);
-        ms_gswap4 (&blkt_310->amplitude);
-        ms_gswap4 (&blkt_310->reference_amplitude);
-      }
-    }
-
-    else if (cur_blkt->blkt_type == 320)
-    {
-      struct blkt_320_s *blkt_320 = (struct blkt_320_s *)(rawrec + offset);
-      memcpy (blkt_320, cur_blkt->blktdata, sizeof (struct blkt_320_s));
-      offset += sizeof (struct blkt_320_s);
-
-      if (swapflag)
-      {
-        MS_SWAPBTIME (&blkt_320->time);
-        ms_gswap4 (&blkt_320->duration);
-        ms_gswap4 (&blkt_320->ptp_amplitude);
-        ms_gswap4 (&blkt_320->reference_amplitude);
-      }
-    }
-
-    else if (cur_blkt->blkt_type == 390)
-    {
-      struct blkt_390_s *blkt_390 = (struct blkt_390_s *)(rawrec + offset);
-      memcpy (blkt_390, cur_blkt->blktdata, sizeof (struct blkt_390_s));
-      offset += sizeof (struct blkt_390_s);
-
-      if (swapflag)
-      {
-        MS_SWAPBTIME (&blkt_390->time);
-        ms_gswap4 (&blkt_390->duration);
-        ms_gswap4 (&blkt_390->amplitude);
-      }
-    }
-
-    else if (cur_blkt->blkt_type == 395)
-    {
-      struct blkt_395_s *blkt_395 = (struct blkt_395_s *)(rawrec + offset);
-      memcpy (blkt_395, cur_blkt->blktdata, sizeof (struct blkt_395_s));
-      offset += sizeof (struct blkt_395_s);
-
-      if (swapflag)
-      {
-        MS_SWAPBTIME (&blkt_395->time);
-      }
-    }
-
-    else if (cur_blkt->blkt_type == 400)
-    {
-      struct blkt_400_s *blkt_400 = (struct blkt_400_s *)(rawrec + offset);
-      memcpy (blkt_400, cur_blkt->blktdata, sizeof (struct blkt_400_s));
-      offset += sizeof (struct blkt_400_s);
-
-      if (swapflag)
-      {
-        ms_gswap4 (&blkt_400->azimuth);
-        ms_gswap4 (&blkt_400->slowness);
-        ms_gswap2 (&blkt_400->configuration);
-      }
-    }
-
-    else if (cur_blkt->blkt_type == 405)
-    {
-      struct blkt_405_s *blkt_405 = (struct blkt_405_s *)(rawrec + offset);
-      memcpy (blkt_405, cur_blkt->blktdata, sizeof (struct blkt_405_s));
-      offset += sizeof (struct blkt_405_s);
-
-      if (swapflag)
-      {
-        ms_gswap2 (&blkt_405->delay_values);
-      }
-
-      if (verbose > 0)
-      {
-        ms_log (1, "msr_pack_header_raw(%s): WARNING Blockette 405 cannot be fully supported\n",
-                srcname);
-      }
-    }
-
-    else if (cur_blkt->blkt_type == 500)
-    {
-      struct blkt_500_s *blkt_500 = (struct blkt_500_s *)(rawrec + offset);
-      memcpy (blkt_500, cur_blkt->blktdata, sizeof (struct blkt_500_s));
-      offset += sizeof (struct blkt_500_s);
-
-      if (swapflag)
-      {
-        ms_gswap4 (&blkt_500->vco_correction);
-        MS_SWAPBTIME (&blkt_500->time);
-        ms_gswap4 (&blkt_500->exception_count);
-      }
-    }
-
-    else if (cur_blkt->blkt_type == 1000)
-    {
-      struct blkt_1000_s *blkt_1000 = (struct blkt_1000_s *)(rawrec + offset);
-      memcpy (blkt_1000, cur_blkt->blktdata, sizeof (struct blkt_1000_s));
-      offset += sizeof (struct blkt_1000_s);
-
-      /* This guarantees that the byte order is in sync with msr_pack() */
-      if (packdatabyteorder >= 0)
-        blkt_1000->byteorder = packdatabyteorder;
-    }
-
-    else if (cur_blkt->blkt_type == 1001)
-    {
-      struct blkt_1001_s *blkt_1001 = (struct blkt_1001_s *)(rawrec + offset);
-      memcpy (blkt_1001, cur_blkt->blktdata, sizeof (struct blkt_1001_s));
-      offset += sizeof (struct blkt_1001_s);
-
-      /* Track location of Blockette 1001 if requested */
-      if (blkt1001)
-        *blkt1001 = blkt_1001;
-    }
-
-    else if (cur_blkt->blkt_type == 2000)
-    {
-      struct blkt_2000_s *blkt_2000 = (struct blkt_2000_s *)(rawrec + offset);
-      memcpy (blkt_2000, cur_blkt->blktdata, cur_blkt->blktdatalen);
-      offset += cur_blkt->blktdatalen;
-
-      if (swapflag)
-      {
-        ms_gswap2 (&blkt_2000->length);
-        ms_gswap2 (&blkt_2000->data_offset);
-        ms_gswap4 (&blkt_2000->recnum);
-      }
-
-      /* Nothing done to pack the opaque headers and data, they should already
-         be packed into the blockette payload */
-    }
-
-    else
-    {
-      memcpy (rawrec + offset, cur_blkt->blktdata, cur_blkt->blktdatalen);
-      offset += cur_blkt->blktdatalen;
-    }
-
-    /* Pack the offset to the next blockette */
-    if (cur_blkt->next)
-    {
-      memcpy (rawrec + nextoffset, &offset, 2);
-      if (swapflag)
-        ms_gswap2 (rawrec + nextoffset);
-    }
-    else
-    {
-      memset (rawrec + nextoffset, 0, 2);
-    }
-
-    blktcnt++;
-    cur_blkt = cur_blkt->next;
-  }
-
-  fsdh->numblockettes = blktcnt;
-
-  if (verbose > 2)
-    ms_log (1, "%s: Packed %d blockettes\n", srcname, blktcnt);
-
-  return offset;
-} /* End of msr_pack_header_raw() */
-
-/***************************************************************************
- * msr_update_header:
- *
- * Update the header values that change between records: start time,
- * sequence number, etc.
- *
- * Returns 0 on success or -1 on error.
- ***************************************************************************/
-static int
-msr_update_header (MSRecord *msr, char *rawrec, flag swapflag,
-                   struct blkt_1001_s *blkt1001, char *srcname, flag verbose)
-{
-  struct fsdh_s *fsdh;
-  hptime_t hptimems;
-  int8_t usecoffset;
-  char seqnum[7];
-
-  if (!msr || !rawrec)
-    return -1;
-
-  if (verbose > 2)
-    ms_log (1, "%s: Updating fixed section of data header\n", srcname);
-
-  fsdh = (struct fsdh_s *)rawrec;
-
-  /* Pack values into the fixed section of header */
-  snprintf (seqnum, 7, "%06d", msr->sequence_number);
-  memcpy (fsdh->sequence_number, seqnum, 6);
-
-  /* Get start time rounded to tenths of milliseconds and microsecond offset */
-  ms_hptime2tomsusecoffset (msr->starttime, &hptimems, &usecoffset);
-
-  /* Update fixed-section start time */
-  ms_hptime2btime (hptimems, &(fsdh->start_time));
-
-  /* Swap byte order? */
-  if (swapflag)
-  {
-    MS_SWAPBTIME (&fsdh->start_time);
-  }
-
-  /* Update microsecond offset value if Blockette 1001 is present */
-  if (msr->Blkt1001 && blkt1001)
-  {
-    /* Update microseconds offset in blockette chain entry */
-    msr->Blkt1001->usec = usecoffset;
-
-    /* Update microseconds offset in packed header */
-    blkt1001->usec = usecoffset;
-  }
-
-  return 0;
-} /* End of msr_update_header() */
+  return (MS3FSDH_LENGTH + sidlength + msr->extralength);
+} /* End of msr3_pack_header3() */
 
 /************************************************************************
- *  msr_pack_data:
- *
- *  Pack Mini-SEED data samples.  The input data samples specified as
+ *  Pack miniSEED data samples.  The input data samples specified as
  *  'src' will be packed with 'encoding' format and placed in 'dest'.
  *
  *  If a pointer to a 32-bit integer sample is provided in the
@@ -903,16 +524,22 @@ msr_update_header (MSRecord *msr, char *rawrec, flag swapflag,
  ************************************************************************/
 static int
 msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
-               int32_t *lastintsample, flag comphistory, char sampletype,
-               flag encoding, flag swapflag, char *srcname, flag verbose)
+               char sampletype, int8_t encoding, int8_t swapflag,
+               uint16_t *byteswritten, char *sid, int8_t verbose)
 {
   int nsamples;
-  int32_t *intbuff;
-  int32_t d0;
 
   /* Check for encode debugging environment variable */
-  if (getenv ("ENCODE_DEBUG"))
-    encodedebug = 1;
+  if (libmseed_encodedebug < 0)
+  {
+    if (getenv ("ENCODE_DEBUG"))
+      libmseed_encodedebug = 1;
+    else
+      libmseed_encodedebug = 0;
+  }
+
+  if (byteswritten)
+    *byteswritten = 0;
 
   /* Decide if this is a format that we can encode */
   switch (encoding)
@@ -921,14 +548,17 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     if (sampletype != 'a')
     {
       ms_log (2, "%s: Sample type must be ascii (a) for ASCII text encoding not '%c'\n",
-              srcname, sampletype);
+              sid, sampletype);
       return -1;
     }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing ASCII data\n", srcname);
+      ms_log (1, "%s: Packing ASCII data\n", sid);
 
-    nsamples = msr_encode_text (src, maxsamples, dest, maxdatabytes);
+    nsamples = msr_encode_text ((char *)src, maxsamples, (char *)dest, maxdatabytes);
+
+    if (byteswritten && nsamples > 0)
+      *byteswritten = nsamples;
 
     break;
 
@@ -936,14 +566,24 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     if (sampletype != 'i')
     {
       ms_log (2, "%s: Sample type must be integer (i) for INT16 encoding not '%c'\n",
-              srcname, sampletype);
+              sid, sampletype);
+      return -1;
+    }
+
+    if (maxdatabytes < sizeof(int16_t))
+    {
+      ms_log (2, "%s: Not enough space in record (%d) for INT16 encoding, need at least %d bytes\n",
+              sid, maxdatabytes, sizeof(int16_t));
       return -1;
     }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing INT16 data samples\n", srcname);
+      ms_log (1, "%s: Packing INT16 data samples\n", sid);
 
-    nsamples = msr_encode_int16 (src, maxsamples, dest, maxdatabytes, swapflag);
+    nsamples = msr_encode_int16 ((int32_t *)src, maxsamples, (int16_t *)dest, maxdatabytes, swapflag);
+
+    if (byteswritten && nsamples > 0)
+      *byteswritten = nsamples * 2;
 
     break;
 
@@ -951,14 +591,24 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     if (sampletype != 'i')
     {
       ms_log (2, "%s: Sample type must be integer (i) for INT32 encoding not '%c'\n",
-              srcname, sampletype);
+              sid, sampletype);
+      return -1;
+    }
+
+    if (maxdatabytes < sizeof(int32_t))
+    {
+      ms_log (2, "%s: Not enough space in record (%d) for INT32 encoding, need at least %d bytes\n",
+              sid, maxdatabytes, sizeof(int32_t));
       return -1;
     }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing INT32 data samples\n", srcname);
+      ms_log (1, "%s: Packing INT32 data samples\n", sid);
 
-    nsamples = msr_encode_int32 (src, maxsamples, dest, maxdatabytes, swapflag);
+    nsamples = msr_encode_int32 ((int32_t *)src, maxsamples, (int32_t *)dest, maxdatabytes, swapflag);
+
+    if (byteswritten && nsamples > 0)
+      *byteswritten = nsamples * 4;
 
     break;
 
@@ -966,14 +616,24 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     if (sampletype != 'f')
     {
       ms_log (2, "%s: Sample type must be float (f) for FLOAT32 encoding not '%c'\n",
-              srcname, sampletype);
+              sid, sampletype);
+      return -1;
+    }
+
+    if (maxdatabytes < sizeof(float))
+    {
+      ms_log (2, "%s: Not enough space in record (%d) for FLOAT32 encoding, need at least %d bytes\n",
+              sid, maxdatabytes, sizeof(float));
       return -1;
     }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing FLOAT32 data samples\n", srcname);
+      ms_log (1, "%s: Packing FLOAT32 data samples\n", sid);
 
-    nsamples = msr_encode_float32 (src, maxsamples, dest, maxdatabytes, swapflag);
+    nsamples = msr_encode_float32 ((float *)src, maxsamples, (float *)dest, maxdatabytes, swapflag);
+
+    if (byteswritten && nsamples > 0)
+      *byteswritten = nsamples * 4;
 
     break;
 
@@ -981,14 +641,24 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     if (sampletype != 'd')
     {
       ms_log (2, "%s: Sample type must be double (d) for FLOAT64 encoding not '%c'\n",
-              srcname, sampletype);
+              sid, sampletype);
+      return -1;
+    }
+
+    if (maxdatabytes < sizeof(double))
+    {
+      ms_log (2, "%s: Not enough space in record (%d) for FLOAT64 encoding, need at least %d bytes\n",
+              sid, maxdatabytes, sizeof(double));
       return -1;
     }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing FLOAT64 data samples\n", srcname);
+      ms_log (1, "%s: Packing FLOAT64 data samples\n", sid);
 
-    nsamples = msr_encode_float64 (src, maxsamples, dest, maxdatabytes, swapflag);
+    nsamples = msr_encode_float64 ((double *)src, maxsamples, (double *)dest, maxdatabytes, swapflag);
+
+    if (byteswritten && nsamples > 0)
+      *byteswritten = nsamples * 8;
 
     break;
 
@@ -996,23 +666,24 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     if (sampletype != 'i')
     {
       ms_log (2, "%s: Sample type must be integer (i) for Steim1 compression not '%c'\n",
-              srcname, sampletype);
+              sid, sampletype);
       return -1;
     }
 
-    intbuff = (int32_t *)src;
-
-    /* If a previous sample is supplied use it for compression history otherwise cold-start */
-    d0 = (lastintsample && comphistory) ? (intbuff[0] - *lastintsample) : 0;
+    if (maxdatabytes < 64)
+    {
+      ms_log (2, "%s: Not enough space in record (%d) for STEIM1 encoding, need at least 64 bytes\n",
+              sid, maxdatabytes);
+      return -1;
+    }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing Steim1 data frames\n", srcname);
+      ms_log (1, "%s: Packing Steim1 data frames\n", sid);
 
-    nsamples = msr_encode_steim1 (src, maxsamples, dest, maxdatabytes, d0, swapflag);
+    /* Always big endian Steim1 */
+    swapflag = (ms_bigendianhost()) ? 0 : 1;
 
-    /* If a previous sample is supplied update it with the last sample value */
-    if (lastintsample && nsamples > 0)
-      *lastintsample = intbuff[nsamples - 1];
+    nsamples = msr_encode_steim1 ((int32_t *)src, maxsamples, (int32_t *)dest, maxdatabytes, 0, byteswritten, swapflag);
 
     break;
 
@@ -1020,28 +691,29 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     if (sampletype != 'i')
     {
       ms_log (2, "%s: Sample type must be integer (i) for Steim2 compression not '%c'\n",
-              srcname, sampletype);
+              sid, sampletype);
       return -1;
     }
 
-    intbuff = (int32_t *)src;
-
-    /* If a previous sample is supplied use it for compression history otherwise cold-start */
-    d0 = (lastintsample && comphistory) ? (intbuff[0] - *lastintsample) : 0;
+    if (maxdatabytes < 64)
+    {
+      ms_log (2, "%s: Not enough space in record (%d) for STEIM2 encoding, need at least 64 bytes\n",
+              sid, maxdatabytes);
+      return -1;
+    }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing Steim2 data frames\n", srcname);
+      ms_log (1, "%s: Packing Steim2 data frames\n", sid);
 
-    nsamples = msr_encode_steim2 (src, maxsamples, dest, maxdatabytes, d0, srcname, swapflag);
+    /* Always big endian Steim2 */
+    swapflag = (ms_bigendianhost()) ? 0 : 1;
 
-    /* If a previous sample is supplied update it with the last sample value */
-    if (lastintsample && nsamples > 0)
-      *lastintsample = intbuff[nsamples - 1];
+    nsamples = msr_encode_steim2 ((int32_t *)src, maxsamples, (int32_t *)dest, maxdatabytes, 0, byteswritten, sid, swapflag);
 
     break;
 
   default:
-    ms_log (2, "%s: Unable to pack format %d\n", srcname, encoding);
+    ms_log (2, "%s: Unable to pack format %d\n", sid, encoding);
 
     return -1;
   }

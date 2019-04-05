@@ -10,16 +10,19 @@ CFLAGS += -I..
 LDFLAGS = -L..
 LDLIBS = -lmseed
 
-all: msview msrepack
+# Build all *.c source as independent programs
+SRCS := $(sort $(wildcard *.c))
+BINS := $(SRCS:%.c=%)
 
-msview: msview.o
-	$(CC) $(CFLAGS) -o $@ msview.o $(LDFLAGS) $(LDLIBS)
+all: $(BINS)
 
-msrepack: msrepack.o
-	$(CC) $(CFLAGS) -o $@ msrepack.o $(LDFLAGS) $(LDLIBS)
+# Build programs and check for executable
+$(BINS) : % : %.c
+	@printf 'Building $<\n';
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LDLIBS) 
 
 clean:
-	rm -f msview.o msview msrepack.o msrepack
+	rm -rf *.o $(BINS) *.dSYM
 
 install:
 	@echo

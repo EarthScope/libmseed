@@ -1,4 +1,4 @@
 #!/bin/sh
 LD_LIBRARY_PATH=.. \
 DYLD_LIBRARY_PATH=.. \
-./lmtestparse data/unapplied-timecorrection.mseed -pp
+./lm_parse data/unapplied-timecorrection.mseed -pp
