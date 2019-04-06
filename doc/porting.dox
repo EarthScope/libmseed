@@ -86,6 +86,35 @@ API changed as follows:
 
 - The \c flag typedef is now legacy, you may wish to convert to directly using int8_t
 
+- For applications that need access to flags in the miniSEED 2.x fixed
+  header, they have moved to the following locations:
+  - Activity flags (field 12):
+    - Bit 0 (calibration signals present) => Fixed header flags, bit 0
+    - Bit 1 (time correction applied), not retained
+    - Bit 2 (begining of event) => Extra header FDSN.Event.Begin
+    - Bit 3 (end of event) => Extra header FDSN.Event.End
+    - Bit 4 (positive leap second included) => Extra header FDSN.Time.LeapSecond
+    - Bit 5 (negative leap second included) => Extra header FDSN.Time.LeapSecond
+    - Bit 6 (event in progress) => Extra header FDSN.Event.InProgress
+  - I/O flags (field 13):
+    - Bit 0 (Station volume parity error) => Extra header FDSN.Flags.StationVolumeParityError
+    - Bit 1 (Long record read) => Extra header FDSN.Flags.LongRecordRead
+    - Bit 2 (Short record read) => Extra header FDSN.Flags.ShortRecordRead
+    - Bit 3 (Start of time series) => Extra header FDSN.Flags.StartOfTimeSeries
+    - Bit 4 (End of time series) => Extra header FDSN.Flags.EndOfTimeSeries
+    - Bit 5 (Clock locked) => Fixed header flags, bit 2
+  - Data quality flags (field 14):
+    - Bit 0 (Amplifier saturation detected) => Extra header FDSN.Flags.AmplifierSaturation
+    - Bit 1 (Digitizer clipping detected) => Extra header FDSN.Flags.DigitizerClipping
+    - Bit 2 (Spikes detected) => Extra header FDSN.Flags.Spikes
+    - Bit 3 (Glitches detected) => Extra header FDSN.Flags.Glitches
+    - Bit 4 (Missing/padded data present) => Extra header FDSN.Flags.MissingData
+    - Bit 5 (Telemetry synchronization error) => Extra header FDSN.Flags.TelemetrySyncError
+    - Bit 6 (Digital filter may be charging) => Extra header FDSN.Flags.FilterCharging
+    - Bit 7 (Time tag questionable) => Fixed header flags, bit 1
+
+  The existence of these boolean extra header values can be tested with mseh_exists().
+
 @subsection porting-data-model-change Ramifications for change in data model
 
 With an internal change in the data model, from miniSEED 2.x to
