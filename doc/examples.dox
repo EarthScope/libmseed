@@ -45,4 +45,11 @@ used for input for illustration and testing.
 
 @include lm_pack.c
 
+@section example-lm_sids Working with Source Identifiers
+
+An example of mapping between source identifiers (SIDs) and SEED
+identifier codes.
+
+@include lm_sids.c
+
 */
