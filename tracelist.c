@@ -1197,6 +1197,8 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
     id = id->next;
   }
 
+  /* The record structure never owns the actual data so it should not free it. */
+  msr->datasamples = NULL;
   msr3_free (&msr);
 
   if (packedsamples)
