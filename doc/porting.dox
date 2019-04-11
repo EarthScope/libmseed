@@ -86,6 +86,14 @@ API changed as follows:
 
 - The \c flag typedef is now legacy, you may wish to convert to directly using int8_t
 
+- The SEED 2.x data quality identifiers no longer exist in the new data model.
+  The library maps these values to integer publications versions as follows:
+  - Quality \b R => \b 1
+  - Quality \b D => \b 2
+  - Quality \b Q => \b 3
+  - Quality \b M => \b 4
+  - Unknown quality => \b 0
+
 - For applications that need access to flags in the miniSEED 2.x fixed
   header, they have moved to the following locations:
   - Activity flags (field 12):
@@ -117,10 +125,13 @@ API changed as follows:
 
 @subsection porting-data-model-change Ramifications for change in data model
 
-With an internal change in the data model, from miniSEED 2.x to
-version 2, results in the following consequences:
+With an internal change in the data model, from miniSEED 2 to
+version 3, results in the following consequences:
 
-- Version 2.x bleam blockettes (400 & 405) are no longer supported,
+- Version 2.x data quality indicators (D, R, Q and M) are no longer
+  supported.  These are mapped to version 3 publication versions.
+
+- Version 2.x beam blockettes (400 & 405) are no longer supported,
   they will be dropped if reading records that contain such
   blockettes.
 
