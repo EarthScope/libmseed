@@ -287,7 +287,7 @@ msr3_print (MS3Record *msr, int8_t details)
 } /* End of msr3_print() */
 
 /**********************************************************************/ /**
- * @brief Calculate sample rate in Hertz for a given ::MS3Record
+ * @brief Calculate sample rate in samples/second (Hertz) for a given ::MS3Record
  *
  * @param[in] msr ::MS3Record to calculate sample rate for
  *

@@ -273,7 +273,7 @@ typedef struct MS3Record {
   uint8_t         formatversion;     //!< Format major version
   uint8_t         flags;             //!< Record-level bit flags
   nstime_t        starttime;         //!< Record start time (first sample)
-  double          samprate;          //!< Nominal sample rate (Hz) or period (s)
+  double          samprate;          //!< Nominal sample rate as samples/second (Hz) or period (s)
   int8_t          encoding;          //!< Data encoding format, see @ref encoding-values
   uint8_t         pubversion;        //!< Publication version
   int64_t         samplecnt;         //!< Number of samples in record
