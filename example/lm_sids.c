@@ -29,7 +29,7 @@ map_sid (char *original_sid)
   char network[11];
   char station[11];
   char location[11];
-  char channel[11];
+  char channel[31];
   int rv;
 
   /* Parse network, station, location and channel from SID */
