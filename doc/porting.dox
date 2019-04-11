@@ -69,6 +69,19 @@ and the traditional SEED networ, station, location, channel scheme:
   - ms_seedchan2xchan(): convert SEED channel to SID-style channel components
   - ms_xchan2seedchan(): convert SID band, source and position to SEED channel
 
+- The new data model allows sampling rate to be specified in samples/second
+  (Hertz) or sampling period (seconds).  This is represented in the \a
+  samprate values, such as ::MS3Record.samprate, as follows:
+  - \c samprate >= 0.0 is a rate in samples/second (Hertz)
+  - \c samprate < 0.0 is a (negated) sampling period in seconds
+
+  It is common that rates equal to or greater than 1 Hz are reprensented
+  in samples/second and rates less than 1 Hz are represented as a
+  period.
+
+  Applications that must consistenly have access to the samples/second
+  representation may use the msr3_sampratehz() function.
+
 @subsection porting-other Other changes that may need attention
 
 - The supported range for the internal time scale is reduced from year
