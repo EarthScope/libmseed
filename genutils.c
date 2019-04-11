@@ -1208,6 +1208,67 @@ ms_seedtimestr2nstime (char *seedtimestr)
 } /* End of ms_seedtimestr2nstime() */
 
 /**********************************************************************/ /**
+ * @brief Calculate the time of a sample in an array
+ *
+ * Given a time, sample offset and sample rate/period calculate the
+ * time of the sample at the offset.
+ *
+ * If \a samprate is negative the negated value is interpreted as a
+ * sample period in seconds, otherwise the value is assumed to be a
+ * sample rate in Hertz.
+ *
+ * If leap seconds have been loaded into the internal library list:
+ * when a time span, from start to offset, completely contains a leap
+ * second, starts before and ends after, the calculated sample time
+ * will be adjusted (reduced) by one second.
+ * @note On the epoch time scale the value of a leap second is the
+ * same as the second following the leap second, without external
+ * information the values are ambiguous.
+ * \sa ms_readleapsecondfile()
+ *
+ * @param[in] time Time value for first sample in array
+ * @param[in] offset Offset of sample to calculate time of
+ * @param[in] samprate Sample rate (when positive) or period (when negative)
+ *
+ * @returns Time of the sample at specified offset
+ ***************************************************************************/
+nstime_t
+ms_sampletime (nstime_t time, int64_t offset, double samprate)
+{
+  nstime_t span = 0;
+  LeapSecond *lslist = leapsecondlist;
+
+  if (offset > 0)
+  {
+    /* Calculate time span using sample rate */
+    if (samprate > 0.0)
+      span = (nstime_t) (((double)offset / samprate * NSTMODULUS) + 0.5);
+
+    /* Calculate time span using sample period */
+    else if (samprate < 0.0)
+      span = (nstime_t) (((double)offset * -samprate * NSTMODULUS) + 0.5);
+  }
+
+  /* Check if the time range contains a leap second, if list is available */
+  if (lslist)
+  {
+    while (lslist)
+    {
+      if (lslist->leapsecond > time &&
+          lslist->leapsecond <= (time + span - NSTMODULUS))
+      {
+        span -= NSTMODULUS;
+        break;
+      }
+
+      lslist = lslist->next;
+    }
+  }
+
+  return (time + span);
+} /* End of ms_sampletime() */
+
+/**********************************************************************/ /**
  * @brief Determine the absolute value of an input double
  *
  * Actually just test if the input double is positive multiplying by

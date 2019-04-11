@@ -198,32 +198,15 @@ msr3_duplicate (MS3Record *msr, int8_t datadup)
 nstime_t
 msr3_endtime (MS3Record *msr)
 {
-  nstime_t span = 0;
-  LeapSecond *lslist = leapsecondlist;
+  int64_t sampleoffset = 0;
 
   if (!msr)
     return NSTERROR;
 
-  if (msr->samprate > 0.0 && msr->samplecnt > 0)
-    span = (nstime_t) (((double)(msr->samplecnt - 1) / msr->samprate * NSTMODULUS) + 0.5);
+  if (msr->samplecnt > 0)
+    sampleoffset = msr->samplecnt - 1;
 
-  /* Check if the record contains a leap second, if list is available */
-  if (lslist)
-  {
-    while (lslist)
-    {
-      if (lslist->leapsecond > msr->starttime &&
-          lslist->leapsecond <= (msr->starttime + span - NSTMODULUS))
-      {
-        span -= NSTMODULUS;
-        break;
-      }
-
-      lslist = lslist->next;
-    }
-  }
-
-  return (msr->starttime + span);
+  return ms_sampletime (msr->starttime, sampleoffset, msr->samprate);
 } /* End of msr3_endtime() */
 
 

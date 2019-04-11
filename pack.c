@@ -162,6 +162,13 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
   uint32_t crc;
   uint16_t datalength;
+  nstime_t nextstarttime;
+  uint16_t year;
+  uint16_t day;
+  uint8_t hour;
+  uint8_t min;
+  uint8_t sec;
+  uint32_t nsec;
 
   if (!msr)
     return -1;
@@ -294,6 +301,24 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
     if (totalpackedsamples >= msr->numsamples)
       break;
+
+    /* Update record start time for next record */
+    nextstarttime = ms_sampletime (msr->starttime, totalpackedsamples, msr->samprate);
+
+    if (ms_nstime2time (nextstarttime, &year, &day, &hour, &min, &sec, &nsec))
+    {
+      ms_log (2, "%s(%s): Cannot convert next record starttime: %" PRId64 "\n",
+              __func__, msr->sid, nextstarttime);
+      libmseed_memory.free (rawrec);
+      return -1;
+    }
+
+    *pMS3FSDH_NSEC (rawrec) = HO4u (nsec, swapflag);
+    *pMS3FSDH_YEAR (rawrec) = HO2u (year, swapflag);
+    *pMS3FSDH_DAY (rawrec) = HO2u (day, swapflag);
+    *pMS3FSDH_HOUR (rawrec) = hour;
+    *pMS3FSDH_MIN (rawrec) = min;
+    *pMS3FSDH_SEC (rawrec) = sec;
   }
 
   if (verbose >= 2)
@@ -484,13 +509,13 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   record[1] = 'S';
   *pMS3FSDH_FORMATVERSION (record) = 3;
   *pMS3FSDH_FLAGS (record) = msr->flags;
+  *pMS3FSDH_NSEC (record) = HO4u (nsec, swapflag);
   *pMS3FSDH_YEAR (record) = HO2u (year, swapflag);
   *pMS3FSDH_DAY (record) = HO2u (day, swapflag);
   *pMS3FSDH_HOUR (record) = hour;
   *pMS3FSDH_MIN (record) = min;
   *pMS3FSDH_SEC (record) = sec;
   *pMS3FSDH_ENCODING (record) = msr->encoding;
-  *pMS3FSDH_NSEC (record) = HO4u (nsec, swapflag);
 
   /* If rate positive and less than one, convert to period notation */
   if (msr->samprate != 0.0 && msr->samprate > 0 && msr->samprate < 1.0)
