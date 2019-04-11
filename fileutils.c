@@ -536,11 +536,10 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
  *********************************************************************/
 int
 ms3_readtracelist (MS3TraceList **ppmstl, const char *msfile,
-                   double timetol, double sampratetol,
-                   int8_t splitversion, uint32_t flags, int8_t verbose)
+                   MS3Tolerance *tolerance, int8_t splitversion,
+                   uint32_t flags, int8_t verbose)
 {
-  return ms3_readtracelist_selection (ppmstl, msfile, timetol,
-                                      sampratetol, NULL,
+  return ms3_readtracelist_selection (ppmstl, msfile, tolerance, NULL,
                                       splitversion, flags, verbose);
 } /* End of ms3_readtracelist() */
 
@@ -560,7 +559,7 @@ ms3_readtracelist (MS3TraceList **ppmstl, const char *msfile,
  *********************************************************************/
 int
 ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
-                           double timetol, double sampratetol,
+                           MS3Tolerance *tolerance,
                            nstime_t starttime, nstime_t endtime,
                            int8_t splitversion, uint32_t flags, int8_t verbose)
 {
@@ -576,9 +575,8 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
   selecttime.endtime   = endtime;
   selecttime.next      = NULL;
 
-  return ms3_readtracelist_selection (ppmstl, msfile, timetol,
-                                      sampratetol, &selection,
-                                      splitversion, flags,
+  return ms3_readtracelist_selection (ppmstl, msfile, tolerance,
+                                      &selection, splitversion, flags,
                                       verbose);
 } /* End of ms3_readtracelist_timewin() */
 
@@ -595,11 +593,8 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
  * matching the selections will be skipped.
  *
  * As this routine reads miniSEED records it attempts to construct
- * continuous time series, merging segments when possible.  The \a
- * timetol and \a sampratetol values define the tolerances used when
- * merging time series, and specifying either as -1 uses a default
- * value that is appropriate for most cases.  See mstl3_addmsr() for
- * full details.
+ * continuous time series, merging segments when possible.  See
+ * mstl3_addmsr() for details of \a tolerance.
  *
  * The \a splitversion flag controls whether data are grouped
  * according to data publication version (or quality for miniSEED
@@ -607,8 +602,7 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
  *
  * @param[out] ppmstl Pointer-to-pointer to a ::MS3TraceList to populate
  * @param[in] msfile File to read
- * @param[in] timetol Time tolerance in seconds for merging time series
- * @param[in] sampratetol Sample rate tolerance in samples per second
+ * @param[in] tolerance Tolerance function pointers as ::MS3Tolerance
  * @param[in] selections Pointer to ::MS3Selections for limiting data
  * @param[in] splitversion Flag to control splitting of version/quality
  * @param[in] flags Flags to control reading, see ms3_readmsr_selection()
@@ -622,9 +616,8 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
  *********************************************************************/
 int
 ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
-                             double timetol, double sampratetol,
-                             MS3Selections *selections, int8_t splitversion,
-                             uint32_t flags, int8_t verbose)
+                             MS3Tolerance *tolerance, MS3Selections *selections,
+                             int8_t splitversion, uint32_t flags, int8_t verbose)
 {
   MS3Record *msr     = 0;
   MS3FileParam *msfp = 0;
@@ -659,7 +652,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
     }
 
     /* Add to trace list */
-    mstl3_addmsr (*ppmstl, msr, splitversion, 1, timetol, sampratetol);
+    mstl3_addmsr (*ppmstl, msr, splitversion, 1, tolerance);
   }
 
   /* Reset return code to MS_NOERROR on successful read by ms_readmsr() */

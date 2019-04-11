@@ -382,12 +382,42 @@ typedef struct MS3TraceList {
   struct MS3TraceID *last;           //!< Pointer to last modified trace in list
 } MS3TraceList;
 
+/** @brief Callback functions that return time and sample rate tolerances
+ *
+ * A container for function pointers that return time and sample rate
+ * tolerances that are used for merging data into ::MS3TraceList
+ * containers. The functions are provided with a ::MS3Record and must
+ * return the acceptable tolerances to merge this with other data.
+ *
+ * The \c time(MS3Record) function must return a time tolerance in seconds.
+ *
+ * The \c samprate(MS3Record) function must return a sampling rate tolerance in Hertz.
+ *
+ * For any function pointer set to NULL a default tolerance will be used.
+ *
+ * Illustrated usage:
+ * @code
+ * MS3Tolerance tolerance;
+ *
+ * tolerance.time = my_time_tolerance_function;
+ * tolerance.samprate = my_samprate_tolerance_function;
+ *
+ * mstl3_addmsr (mstl, msr, 0, 1, &tolerance);
+ * @endcode
+ *
+ * \sa mstl3_addmsr()
+ */
+typedef struct MS3Tolerance {
+  double (*time)(MS3Record *msr);
+  double (*samprate)(MS3Record *msr);
+} MS3Tolerance;
+
 extern MS3TraceList* mstl3_init (MS3TraceList *mstl);
 extern void          mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr);
 extern MS3TraceSeg*  mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
-                                   int8_t autoheal, double timetol, double sampratetol);
+                                   int8_t autoheal, MS3Tolerance *tolerance);
 extern int64_t       mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
-                                       double timetol, double sampratetol, int8_t splitversion,
+                                       MS3Tolerance *tolerance, int8_t splitversion,
                                        uint32_t flags, int8_t verbose);
 extern int mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate);
 extern int mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
@@ -469,12 +499,12 @@ extern int ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *
 extern int ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
                                   int64_t *fpos, int8_t *last, uint32_t flags,
                                   MS3Selections *selections, int8_t verbose);
-extern int ms3_readtracelist (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
+extern int ms3_readtracelist (MS3TraceList **ppmstl, const char *msfile, MS3Tolerance *tolerance,
                               int8_t splitversion, uint32_t flags, int8_t verbose);
-extern int ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
+extern int ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile, MS3Tolerance *tolerance,
                                       nstime_t starttime, nstime_t endtime, int8_t splitversion, uint32_t flags,
                                       int8_t verbose);
-extern int ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile, double timetol, double sampratetol,
+extern int ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile, MS3Tolerance *tolerance,
                                         MS3Selections *selections, int8_t splitversion, uint32_t flags, int8_t verbose);
 extern int64_t msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
                                 uint32_t flags, int8_t verbose);

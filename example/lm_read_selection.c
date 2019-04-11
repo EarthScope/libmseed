@@ -65,7 +65,7 @@ main (int argc, char **argv)
   flags |= MSF_UNPACKDATA;
 
   /* Read all miniSEED into a trace list, limiting to selections */
-  rv = ms3_readtracelist_selection (&mstl, mseedfile, -1.0, -1.0,
+  rv = ms3_readtracelist_selection (&mstl, mseedfile, NULL,
                                     selections, 0, flags, verbose);
 
   if (rv != MS_NOERROR)

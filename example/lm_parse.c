@@ -40,9 +40,6 @@ static int printdata   = 0;
 static int reclen      = -1;
 static char *inputfile = 0;
 
-static double timetol     = -1.0; /* Time tolerance for continuous traces */
-static double sampratetol = -1.0; /* Sample rate tolerance for continuous traces */
-
 static int parameter_proc (int argcount, char **argvec);
 static void print_stderr (char *message);
 static void usage (void);
@@ -89,7 +86,7 @@ main (int argc, char **argv)
 
     if (tracegap)
     {
-      mstl3_addmsr (mstl, msr, 0, 1, timetol, sampratetol);
+      mstl3_addmsr (mstl, msr, 0, 1, NULL);
     }
     else
     {

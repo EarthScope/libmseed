@@ -99,6 +99,10 @@ API changed as follows:
 
 - The \c flag typedef is now legacy, you may wish to convert to directly using int8_t
 
+- The time and sample rate tolerances, specified as \c timetol and
+  \c sampratetol arguments, have been replaced with ::MS3Tolerance which
+  identifies callback functions that return tolerances for a specified ::MS3Record.
+
 - The SEED 2.x data quality identifiers no longer exist in the new data model.
   The library maps these values to integer publications versions as follows:
   - Quality \b R => \b 1

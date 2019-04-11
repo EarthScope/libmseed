@@ -134,13 +134,13 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
  *
  * As this routine adds data to a trace list it attempts to construct
  * continuous time series, merging segments when possible.  The \a
- * timetol and \a sampratetol values define the tolerances used when
- * merging time series.  If \a timetol is ‐1.0 the default time
- * tolerance of 1/2 the sample period will be used.  If sampratetol is
- * ‐1.0 the default tolerance of abs(1‐sr1/sr2) < 0.0001 is used.  If
- * sampratetol or timetol is ‐2.0 the respective tolerance check will
- * not be performed.  If time tolerance is not checked the data will
- * be merged with a segment that fits best.
+ * tolerance pointer to a ::MS3Tolerance identifies function pointers
+ * that are expected to return time tolerace, in seconds, and sample
+ * rate tolerance, in Hertz, for the given ::MS3Record.  If \a
+ * tolerance is NULL, or the function pointers it identifies are NULL,
+ * default tolerances will be used as follows:
+ * - Default time tolerance is 1/2 the sampling period
+ * - Default sample rate (sr) tolerance is abs(1‐sr1/sr2) < 0.0001
  *
  * If the \a splitversion flag is true the publication versions will be
  * kept separate, i.e. they must be the same to be merged. Otherwise,
@@ -149,10 +149,10 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
  * segments, its publication version will be the set to the largest
  * contributing version.
  *
- * If the \a autoheal flag is true extra processing is invoked to
+ * If the \a autoheal flag is true, extra processing is invoked to
  * conjoin trace segments that fit together after the ::MS3Record
  * coverage is added.  For segments that are removed, any memory at
- * the prvtptr will be freed.
+ * the ::MS3TraceSeg.prvtptr will be freed.
  *
  * The lists are always maintained in a sorted order.  An
  * ::MS3TraceList is always maintained with the ::MS3TraceID entries
@@ -163,14 +163,13 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
  * @param[in] msr ::MS3Record containing the data to add to list
  * @param[in] splitversion Flag to control splitting of version/quality
  * @param[in] autoheal Flag to control automatic merging of segments
- * @param[in] timetol Time tolerance in seconds for merging time series
- * @param[in] sampratetol Sample rate tolerance in samples per second
+ * @param[in] tolerance Tolerance function pointers as ::MS3Tolerance
  *
  * @returns a pointer to the ::MS3TraceSeg updated or NULL on error.
  ***************************************************************************/
 MS3TraceSeg *
 mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
-              int8_t autoheal, double timetol, double sampratetol)
+              int8_t autoheal, MS3Tolerance *tolerance)
 {
   MS3TraceID *id = 0;
   MS3TraceID *searchid = 0;
@@ -191,6 +190,8 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
   nstime_t nstimetol = 0;
   nstime_t nnstimetol = 0;
 
+  double sampratehz;
+  double sampratetol = -1.0;
   char *s1, *s2;
   int8_t whence;
   int8_t lastratecheck;
@@ -331,16 +332,27 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
   /* Add data coverage to the matching MS3TraceID */
   else
   {
-    /* Calculate high-precision sample period */
-    nsdelta = (nstime_t) ((msr->samprate) ? (NSTMODULUS / msr->samprate) : 0.0);
+    /* Calculate high-precision sample period, handling different rate notations */
+    if (msr->samprate > 0.0)
+      nsdelta = (nstime_t) (NSTMODULUS / msr->samprate); /* samples/second */
+    else if (msr->samprate < 0.0)
+      nsdelta = (nstime_t) (NSTMODULUS * -msr->samprate); /* period */
+    else
+      nsdelta = 0;
 
     /* Calculate high-precision time tolerance */
-    if (timetol == -1.0)
+    if (tolerance && tolerance->time)
+      nstimetol = (nstime_t) (NSTMODULUS * tolerance->time (msr));
+    else
       nstimetol = (nstime_t) (0.5 * nsdelta); /* Default time tolerance is 1/2 sample period */
-    else if (timetol >= 0.0)
-      nstimetol = (nstime_t) (timetol * NSTMODULUS);
 
     nnstimetol = (nstimetol) ? -nstimetol : 0;
+
+    /* Calculate sample rate tolerance */
+    if (tolerance && tolerance->samprate)
+      sampratetol = tolerance->samprate (msr);
+
+    sampratehz = msr3_sampratehz(msr);
 
     /* last/firstgap are negative when the record overlaps the trace
      * segment and positive when there is a time gap. */
@@ -352,15 +364,15 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
     firstgap = id->first->starttime - endtime - nsdelta;
 
     /* Sample rate tolerance checks for first and last segments */
-    if (sampratetol == -1.0)
+    if (tolerance && tolerance->samprate)
     {
-      lastratecheck = MS_ISRATETOLERABLE (msr->samprate, id->last->samprate);
-      firstratecheck = MS_ISRATETOLERABLE (msr->samprate, id->first->samprate);
+      lastratecheck = (sampratetol < 0.0 || ms_dabs (sampratehz - id->last->samprate) > sampratetol) ? 0 : 1;
+      firstratecheck = (sampratetol < 0.0 || ms_dabs (sampratehz - id->first->samprate) > sampratetol) ? 0 : 1;
     }
     else
     {
-      lastratecheck = (ms_dabs (msr->samprate - id->last->samprate) > sampratetol) ? 0 : 1;
-      firstratecheck = (ms_dabs (msr->samprate - id->first->samprate) > sampratetol) ? 0 : 1;
+      lastratecheck = MS_ISRATETOLERABLE (sampratehz, id->last->samprate);
+      firstratecheck = MS_ISRATETOLERABLE (sampratehz, id->first->samprate);
     }
 
     /* Search first for the simple scenarios in order of likelihood:
@@ -452,9 +464,9 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
           continue;
         }
 
-        if (sampratetol == -1.0)
+        if (tolerance && tolerance->samprate)
         {
-          if (!MS_ISRATETOLERABLE (msr->samprate, searchseg->samprate))
+          if (sampratetol >= 0 && ms_dabs (sampratehz - searchseg->samprate) > sampratetol)
           {
             searchseg = searchseg->next;
             continue;
@@ -462,7 +474,7 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
         }
         else
         {
-          if (ms_dabs (msr->samprate - searchseg->samprate) > sampratetol)
+          if (!MS_ISRATETOLERABLE (sampratehz, searchseg->samprate))
           {
             searchseg = searchseg->next;
             continue;
@@ -642,8 +654,7 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
 /****************************************************************/ /**
  * @brief Parse miniSEED from a buffer and populate a ::MS3TraceList
  *
- * For a full description of \a timetol and \a sampratetol see
- * mstl3_addmsr().
+ * For a full description of \a tolerance see mstl3_addmsr().
  *
  * If the ::MSF_UNPACKDATA flag is set in \a flags, the data samples
  * will be unpacked.  In most cases the caller probably wants this
@@ -653,18 +664,19 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
  * @param[in] ppmstl Pointer-to-point to destination MS3TraceList
  * @param[in] buffer Source buffer to read miniSEED records from
  * @param[in] bufferlength Maximum length of \a buffer
- * @param[in] timetol Time tolerance in seconds for merging time series
- * @param[in] sampratetol Sample rate tolerance in samples per second
+ * @param[in] tolerance Tolerance function pointers as ::MS3Tolerance
  * @param[in] splitversion Flag to control splitting of version/quality
  * @param[in] flags Flag to control pasing of miniSEED, see msr3_parse()
  * @param[in] verbose Controls verbosity, 0 means no diagnostic output
  *
  * @returns The number of records parsed on success, otherwise a
  * negative library error code.
+ *
+ * \sa mstl3_addmsr()
  *********************************************************************/
 int64_t
 mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
-                  double timetol, double sampratetol, int8_t splitversion,
+                  MS3Tolerance *tolerance, int8_t splitversion,
                   uint32_t flags, int8_t verbose)
 {
   MS3Record *msr = 0;
@@ -694,7 +706,7 @@ mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
     if (parsevalue > 0)
       break;
 
-    if (mstl3_addmsr (*ppmstl, msr, splitversion, 1, timetol, sampratetol) == 0)
+    if (mstl3_addmsr (*ppmstl, msr, splitversion, 1, tolerance) == 0)
       return MS_GENERROR;
 
     reccount += 1;
@@ -725,7 +737,7 @@ mstl3_msr2seg (MS3Record *msr, nstime_t endtime)
   /* Populate MS3TraceSeg */
   seg->starttime = msr->starttime;
   seg->endtime = endtime;
-  seg->samprate = msr->samprate;
+  seg->samprate = msr3_sampratehz(msr);
   seg->samplecnt = msr->samplecnt;
   seg->sampletype = msr->sampletype;
   seg->numsamples = msr->numsamples;
