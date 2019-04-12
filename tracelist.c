@@ -30,6 +30,8 @@
 MS3TraceSeg *mstl3_msr2seg (MS3Record *msr, nstime_t endtime);
 MS3TraceSeg *mstl3_addmsrtoseg (MS3TraceSeg *seg, MS3Record *msr, nstime_t endtime, int8_t whence);
 MS3TraceSeg *mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2);
+MS3Metadata *mstl3_add_metadata (MS3TraceSeg *seg, MS3Record *msr);
+
 
 /**********************************************************************/ /**
  * @brief Initialize a ::MS3TraceList container
@@ -79,6 +81,8 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
   MS3TraceID *nextid = 0;
   MS3TraceSeg *seg = 0;
   MS3TraceSeg *nextseg = 0;
+  MS3Metadata *metadata;
+  MS3Metadata *nextmetadata;
 
   if (!ppmstl)
     return;
@@ -104,6 +108,20 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
         /* Free data array if allocated */
         if (seg->datasamples)
           libmseed_memory.free (seg->datasamples);
+
+        /* Free associated metadata list */
+        metadata = seg->metadata;
+        while (metadata)
+        {
+          nextmetadata = metadata->next;
+
+          if (metadata->extra)
+            libmseed_memory.free (metadata->extra);
+
+          libmseed_memory.free (metadata);
+
+          metadata = nextmetadata;
+        }
 
         libmseed_memory.free (seg);
         seg = nextseg;
@@ -163,13 +181,14 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
  * @param[in] msr ::MS3Record containing the data to add to list
  * @param[in] splitversion Flag to control splitting of version/quality
  * @param[in] autoheal Flag to control automatic merging of segments
+ * @param[in] flags Flags to control optional functionality.
  * @param[in] tolerance Tolerance function pointers as ::MS3Tolerance
  *
  * @returns a pointer to the ::MS3TraceSeg updated or NULL on error.
  ***************************************************************************/
 MS3TraceSeg *
 mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
-              int8_t autoheal, MS3Tolerance *tolerance)
+              int8_t autoheal, uint32_t flags, MS3Tolerance *tolerance)
 {
   MS3TraceID *id = 0;
   MS3TraceID *searchid = 0;
@@ -202,13 +221,13 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
   int ltcmp;
 
   if (!mstl || !msr)
-    return 0;
+    return NULL;
 
   /* Calculate end time for MS3Record */
   if ((endtime = msr3_endtime (msr)) == NSTERROR)
   {
     ms_log (2, "%s(): Error calculating record end time\n", __func__);
-    return 0;
+    return NULL;
   }
 
   /* Search for matching trace ID starting with last accessed ID and
@@ -297,7 +316,7 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
     if (!(id = (MS3TraceID *)libmseed_memory.malloc (sizeof (MS3TraceID))))
     {
       ms_log (2, "%s(): Error allocating memory\n", __func__);
-      return 0;
+      return NULL;
     }
     memset (id, 0, sizeof (MS3TraceID));
 
@@ -311,7 +330,7 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
 
     if (!(seg = mstl3_msr2seg (msr, endtime)))
     {
-      return 0;
+      return NULL;
     }
     id->first = id->last = seg;
 
@@ -388,7 +407,7 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
     if (lastgap <= nstimetol && lastgap >= nnstimetol && lastratecheck)
     {
       if (!mstl3_addmsrtoseg (id->last, msr, endtime, 1))
-        return 0;
+        return NULL;
 
       seg = id->last;
 
@@ -399,7 +418,7 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
     else if ((msr->starttime - nsdelta - nstimetol) > id->latest)
     {
       if (!(seg = mstl3_msr2seg (msr, endtime)))
-        return 0;
+        return NULL;
 
       /* Add to end of list */
       id->last->next = seg;
@@ -414,7 +433,7 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
     else if ((endtime + nsdelta + nstimetol) < id->earliest)
     {
       if (!(seg = mstl3_msr2seg (msr, endtime)))
-        return 0;
+        return NULL;
 
       /* Add to beginning of list */
       id->first->prev = seg;
@@ -429,7 +448,7 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
     else if (firstgap <= nstimetol && firstgap >= nnstimetol && firstratecheck)
     {
       if (!mstl3_addmsrtoseg (id->first, msr, endtime, 2))
-        return 0;
+        return NULL;
 
       seg = id->first;
 
@@ -502,7 +521,7 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
       {
         if (!mstl3_addmsrtoseg (segbefore, msr, endtime, 1))
         {
-          return 0;
+          return NULL;
         }
 
         /* Merge two segments that now fit if autohealing */
@@ -511,7 +530,7 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
           /* Add segafter coverage to segbefore */
           if (!mstl3_addsegtoseg (segbefore, segafter))
           {
-            return 0;
+            return NULL;
           }
 
           /* Shift last segment pointer if it's going to be removed */
@@ -541,7 +560,7 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
       {
         if (!mstl3_addmsrtoseg (segafter, msr, endtime, 2))
         {
-          return 0;
+          return NULL;
         }
 
         seg = segafter;
@@ -552,7 +571,7 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
         /* Create new segment */
         if (!(seg = mstl3_msr2seg (msr, endtime)))
         {
-          return 0;
+          return NULL;
         }
 
         /* Add new segment as first in list */
@@ -647,6 +666,15 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
   /* Set MS3TraceID as last accessed */
   mstl->last = id;
 
+  /* Store record-level metadata at segment level if requested */
+  if (flags & MSF_STOREMETADATA)
+  {
+    if (mstl3_add_metadata(seg, msr) == NULL)
+    {
+      ms_log (1, "%s(): Error adding record metadata to segment\n", __func__);
+    }
+  }
+
   return seg;
 } /* End of mstl3_addmsr() */
 
@@ -661,12 +689,17 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
  * flag set, without it the trace list will merely be a list of
  * channels.
  *
+ * If the ::MSF_STOREMETADATA flag is set in \a flags, the raw bit
+ * flags and extra headers for record will be stored in a list of
+ * ::MS3Metadata structures associated with the appropriate
+ * ::MS3TraceSeg.
+ *
  * @param[in] ppmstl Pointer-to-point to destination MS3TraceList
  * @param[in] buffer Source buffer to read miniSEED records from
  * @param[in] bufferlength Maximum length of \a buffer
- * @param[in] tolerance Tolerance function pointers as ::MS3Tolerance
  * @param[in] splitversion Flag to control splitting of version/quality
- * @param[in] flags Flag to control pasing of miniSEED, see msr3_parse()
+ * @param[in] flags Flags to control parsing of miniSEED, see msr3_parse()
+ * @param[in] tolerance Tolerance function pointers as ::MS3Tolerance
  * @param[in] verbose Controls verbosity, 0 means no diagnostic output
  *
  * @returns The number of records parsed on success, otherwise a
@@ -676,12 +709,12 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
  *********************************************************************/
 int64_t
 mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
-                  MS3Tolerance *tolerance, int8_t splitversion,
-                  uint32_t flags, int8_t verbose)
+                  int8_t splitversion, uint32_t flags,
+                  MS3Tolerance *tolerance, int8_t verbose)
 {
   return mstl3_readbuffer_selection (ppmstl, buffer, bufferlength,
-                                     tolerance, NULL, splitversion,
-                                     flags, verbose);
+                                     splitversion, flags, tolerance,
+                                     NULL, verbose);
 } /* End of mstl3_readbuffer() */
 
 /****************************************************************/ /**
@@ -694,6 +727,11 @@ mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
  * flag set, without it the trace list will merely be a list of
  * channels.
  *
+ * If the ::MSF_STOREMETADATA flag is set in \a flags, the raw bit
+ * flags and extra headers for record will be stored in a list of
+ * ::MS3Metadata structures associated with the appropriate
+ * ::MS3TraceSeg.
+ *
  * If \a selections is not NULL, the ::MS3Selections will be used to
  * limit what is returned to the caller.  Any data not matching the
  * selections will be skipped.
@@ -701,9 +739,9 @@ mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
  * @param[in] ppmstl Pointer-to-point to destination MS3TraceList
  * @param[in] buffer Source buffer to read miniSEED records from
  * @param[in] bufferlength Maximum length of \a buffer
- * @param[in] tolerance Tolerance function pointers as ::MS3Tolerance
  * @param[in] splitversion Flag to control splitting of version/quality
- * @param[in] flags Flag to control pasing of miniSEED, see msr3_parse()
+ * @param[in] flags Flags to control parsing of miniSEED, see msr3_parse()
+ * @param[in] tolerance Tolerance function pointers as ::MS3Tolerance
  * @param[in] selections Specify limits to which data should be returned, see @ref data-selections
  * @param[in] verbose Controls verbosity, 0 means no diagnostic output
  *
@@ -714,10 +752,11 @@ mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
  *********************************************************************/
 int64_t
 mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
+                            int8_t splitversion, uint32_t flags,
                             MS3Tolerance *tolerance, MS3Selections *selections,
-                            int8_t splitversion, uint32_t flags, int8_t verbose)
+                            int8_t verbose)
 {
-  MS3Record *msr  = 0;
+  MS3Record *msr  = NULL;
   uint64_t offset = 0;
   uint32_t pflags = flags;
   int parsevalue;
@@ -744,7 +783,12 @@ mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *buffer, uint64_t buffer
     parsevalue = msr3_parse (buffer + offset, bufferlength - offset, &msr, pflags, verbose);
 
     if (parsevalue < 0)
+    {
+      if (msr)
+        msr3_free (&msr);
+
       return parsevalue;
+    }
 
     if (parsevalue > 0)
       break;
@@ -770,19 +814,28 @@ mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *buffer, uint64_t buffer
       {
         if (msr3_unpack_data (msr, verbose) != msr->samplecnt)
         {
+          if (msr)
+            msr3_free (&msr);
+
           return MS_GENERROR;
         }
       }
     }
 
-    if (mstl3_addmsr (*ppmstl, msr, splitversion, 1, tolerance) == 0)
+    if (mstl3_addmsr (*ppmstl, msr, splitversion, 1, flags, tolerance) == 0)
     {
+      if (msr)
+        msr3_free (&msr);
+
       return MS_GENERROR;
     }
 
     reccount += 1;
     offset += msr->reclen;
   }
+
+  if (msr)
+    msr3_free (&msr);
 
   return reccount;
 } /* End of mstl3_readbuffer_selection() */
@@ -1599,3 +1652,61 @@ mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
 
   return;
 } /* End of mstl3_printgaplist() */
+
+
+/***************************************************************************
+ * Add a new MS3Metadata entry to a MS3TraceSeg
+ *
+ * A new MS3Metadata is allocated, populated from the supplied
+ * MS3Record and added to the specified MS3TraceSeg.
+ *
+ * For efficiency, the new MS3Metadata entry is added to the
+ * beginning of the metadata list held by the MS3TraceSeg.  This
+ * means the list is in the reverse order that it was populated.
+ *
+ * Returns a pointer to the new MS3Metadata entry on success or NULL on error.
+ ***************************************************************************/
+MS3Metadata *
+mstl3_add_metadata (MS3TraceSeg *seg, MS3Record *msr)
+{
+  MS3Metadata *metadata = NULL;
+
+  if (!seg || !msr)
+    return NULL;
+
+  metadata = (MS3Metadata *)libmseed_memory.malloc (sizeof (MS3Metadata));
+
+  if (metadata == NULL)
+  {
+    ms_log (2, "%s(): Cannot allocate memory\n", __func__);
+    return NULL;
+  }
+
+  metadata->starttime = msr->starttime;
+  metadata->endtime = msr3_endtime(msr);
+  metadata->flags = msr->flags;
+
+  if (msr->extralength > 0)
+  {
+    metadata->extra = (char *)libmseed_memory.malloc (msr->extralength + 1);
+
+    if (metadata->extra == NULL)
+    {
+      ms_log (2, "%s(): Cannot allocate memory\n", __func__);
+      free (metadata);
+      return NULL;
+    }
+
+    memcpy (metadata->extra, msr->extra, msr->extralength);
+    metadata->extra[msr->extralength] = '\0';
+  }
+  else
+  {
+    metadata->extra = NULL;
+  }
+
+  metadata->next = seg->metadata;
+  seg->metadata = metadata;
+
+  return metadata;
+} /* End of mstl3_add_metadata() */

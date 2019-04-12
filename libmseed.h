@@ -390,6 +390,28 @@ extern void ms3_printselections (MS3Selections *selections);
     \sa mstl3_writemseed()
     @{ */
 
+/**
+ * @brief Container for a list of raw flags and extra headers
+ *
+ * A list of bit flags and extra headers with a time range of the
+ * record they came from.  In @ref trace-list functionality, this
+ * container is used to retain flags and extra headers that
+ * contributed to each entry.
+ *
+ * Note: the list is stored in the reverse order that they entries
+ * were added.
+ *
+ * @see mstl3_add_metadata()
+ */
+typedef struct MS3Metadata
+{
+  nstime_t starttime;       //!< Start time for record containing metadata
+  nstime_t endtime;         //!< End time for record containing metadata
+  uint8_t flags;            //!< Record-level bit flags
+  char *extra;              //!< Record-level extra headers, NULL-terminated if existing
+  struct MS3Metadata *next; //!< Pointer to next entry, NULL if the last
+} MS3Metadata;
+
 /** @brief Container for a continuous trace segment, linkable */
 typedef struct MS3TraceSeg {
   nstime_t        starttime;         //!< Time of first sample
@@ -400,6 +422,7 @@ typedef struct MS3TraceSeg {
   int64_t         numsamples;        //!< Number of data samples in datasamples
   char            sampletype;        //!< Sample type code, see @ref sample-types
   void           *prvtptr;           //!< Private pointer for general use, unused by library
+  struct MS3Metadata *metadata;      //!< List of flags and extra headers from records that contributed
   struct MS3TraceSeg *prev;          //!< Pointer to previous segment
   struct MS3TraceSeg *next;          //!< Pointer to next segment, NULL if the last
 } MS3TraceSeg;
@@ -449,21 +472,23 @@ typedef struct MS3TraceList {
  *
  * \sa mstl3_addmsr()
  */
-typedef struct MS3Tolerance {
-  double (*time)(MS3Record *msr);
-  double (*samprate)(MS3Record *msr);
+typedef struct MS3Tolerance
+{
+  double (*time) (MS3Record *msr);     //!< Pointer to function that returns time tolerance
+  double (*samprate) (MS3Record *msr); //!< Pointer to function that returns sample rate tolerance
 } MS3Tolerance;
 
 extern MS3TraceList* mstl3_init (MS3TraceList *mstl);
 extern void          mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr);
 extern MS3TraceSeg*  mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
-                                   int8_t autoheal, MS3Tolerance *tolerance);
+                                   int8_t autoheal, uint32_t flags, MS3Tolerance *tolerance);
 extern int64_t       mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
-                                       MS3Tolerance *tolerance, int8_t splitversion,
-                                       uint32_t flags, int8_t verbose);
+                                       int8_t splitversion, uint32_t flags,
+                                       MS3Tolerance *tolerance, int8_t verbose);
 extern int64_t       mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
+                                                 int8_t splitversion, uint32_t flags,
                                                  MS3Tolerance *tolerance, MS3Selections *selections,
-                                                 int8_t splitversion, uint32_t flags, int8_t verbose);
+                                                 int8_t verbose);
 extern int mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate);
 extern int mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
                        void *handlerdata, int reclen, int8_t encoding,
@@ -946,18 +971,19 @@ extern LIBMSEED_MEMORY libmseed_memory;
 
 /** @defgroup control-flags Control flags
     @ingroup low-level
-    @brief Parsing and packing control flags
+    @brief Parsing, packing and trace construction control flags
 
     These are bit flags that can be combined into a bitmask to control
-    aspects of the libraries parsing and packing routines.
+    aspects of the library's parsing, packing and trace managment routines.
 
     @{ */
-#define MSF_UNPACKDATA  0x0001  //!< [Parsing] unpack data samples
-#define MSF_SKIPNOTDATA 0x0002  //!< [Parsing] skip input that cannot be identified as miniSEED
-#define MSF_VALIDATECRC 0x0004  //!< [Parsing] validate CRC (if version 3)
-#define MSF_SEQUENCE    0x0008  //!< [Packing] UNSUPPORTED: Maintain a record-level sequence number
-#define MSF_FLUSHDATA   0x0010  //!< [Packing] pack all available data even if final record would not be filled
-#define MSF_ATENDOFFILE 0x0020  //!< [Parsing] reading routine is at the end of the file
+#define MSF_UNPACKDATA    0x0001  //!< [Parsing] unpack data samples
+#define MSF_SKIPNOTDATA   0x0002  //!< [Parsing] skip input that cannot be identified as miniSEED
+#define MSF_VALIDATECRC   0x0004  //!< [Parsing] validate CRC (if version 3)
+#define MSF_SEQUENCE      0x0008  //!< [Packing] UNSUPPORTED: Maintain a record-level sequence number
+#define MSF_FLUSHDATA     0x0010  //!< [Packing] pack all available data even if final record would not be filled
+#define MSF_ATENDOFFILE   0x0020  //!< [Parsing] reading routine is at the end of the file
+#define MSF_STOREMETADATA 0x0040  //!< [Tracelist] store record-level metadata in trace lists
 /** @} */
 
 #ifdef __cplusplus

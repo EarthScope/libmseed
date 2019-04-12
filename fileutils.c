@@ -637,6 +637,11 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
  * according to data publication version (or quality for miniSEED
  * 2.x).  See mstl3_addmsr() for full details.
  *
+ * If the ::MSF_STOREMETADATA flag is set in \a flags, the raw bit
+ * flags and extra headers for record will be stored in a list of
+ * ::MS3Metadata structures associated with the appropriate
+ * ::MS3TraceSeg.
+ *
  * @param[out] ppmstl Pointer-to-pointer to a ::MS3TraceList to populate
  * @param[in] msfile File to read
  * @param[in] tolerance Tolerance function pointers as ::MS3Tolerance
@@ -676,7 +681,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
   while ((retcode = ms3_readmsr_selection (&msfp, &msr, msfile, NULL, NULL,
                                            flags, selections, verbose)) == MS_NOERROR)
   {
-    mstl3_addmsr (*ppmstl, msr, splitversion, 1, tolerance);
+    mstl3_addmsr (*ppmstl, msr, splitversion, 1, flags, tolerance);
   }
 
   /* Reset return code to MS_NOERROR on successful read by ms_readmsr_selection() */

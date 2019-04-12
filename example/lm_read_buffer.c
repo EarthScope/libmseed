@@ -85,8 +85,8 @@ main (int argc, char **argv)
   }
 
   /* Read all miniSEED in buffer, accumulate in MS3TraceList */
-  records = mstl3_readbuffer (&mstl, buffer, bufferlength, NULL,
-                              splitversion, flags, verbose);
+  records = mstl3_readbuffer (&mstl, buffer, bufferlength,
+                              splitversion, flags, NULL, verbose);
 
   if (records < 0)
   {

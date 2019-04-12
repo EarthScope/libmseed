@@ -86,7 +86,7 @@ main (int argc, char **argv)
 
     if (tracegap)
     {
-      mstl3_addmsr (mstl, msr, 0, 1, NULL);
+      mstl3_addmsr (mstl, msr, 0, 1, flags, NULL);
     }
     else
     {
