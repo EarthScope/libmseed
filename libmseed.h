@@ -317,6 +317,48 @@ extern int ms_parse_raw3 (char *record, int maxreclen, int8_t details);
 extern int ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag);
 /** @} */
 
+/** @defgroup data-selections Data Selections
+    @brief Data selections to be used as filters
+
+    Selections are the identification of data, by source identifier
+    and time ranges, that are desired.  Capability is included to read
+    selections from files and to match data against a selection list.
+
+    The ms3_readmsr_selection() and ms3_readtracelist_selection()
+    routines accept ::MS3Selections and allow selective (and
+    efficient) reading of data from files.
+    @{ */
+
+/** @brief Data selection structure time window definition containers */
+typedef struct MS3SelectTime {
+  nstime_t starttime;                //!< Earliest data for matching channels
+  nstime_t endtime;                  //!< Latest data for matching channels
+  struct MS3SelectTime *next;        //!< Pointer to next selection time, NULL if the last
+} MS3SelectTime;
+
+/** @brief Data selection structure definition containers */
+typedef struct MS3Selections {
+  char sidpattern[100];              //!< Matching (globbing) pattern for source ID
+  struct MS3SelectTime *timewindows; //!< Pointer to time window list for this source ID
+  struct MS3Selections *next;        //!< Pointer to next selection, NULL if the last
+  uint8_t pubversion;                //!< Selected publication version, use 0 for any
+} MS3Selections;
+
+extern MS3Selections *ms3_matchselect (MS3Selections *selections, char *sid,
+                                       nstime_t starttime, nstime_t endtime,
+                                       int pubversion, MS3SelectTime **ppselecttime);
+extern MS3Selections *msr3_matchselect (MS3Selections *selections, MS3Record *msr,
+                                        MS3SelectTime **ppselecttime);
+extern int ms3_addselect (MS3Selections **ppselections, char *sidpattern,
+                          nstime_t starttime, nstime_t endtime, uint8_t pubversion);
+extern int ms3_addselect_comp (MS3Selections **ppselections,
+                               char *network, char* station, char *location, char *channel,
+                               nstime_t starttime, nstime_t endtime, uint8_t pubversion);
+extern int ms3_readselectionsfile (MS3Selections **ppselections, char *filename);
+extern void ms3_freeselections (MS3Selections *selections);
+extern void ms3_printselections (MS3Selections *selections);
+/** @} */
+
 /** @defgroup trace-list Trace List
     @brief A container for continuous data
 
@@ -419,6 +461,9 @@ extern MS3TraceSeg*  mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t sp
 extern int64_t       mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
                                        MS3Tolerance *tolerance, int8_t splitversion,
                                        uint32_t flags, int8_t verbose);
+extern int64_t       mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
+                                                 MS3Tolerance *tolerance, MS3Selections *selections,
+                                                 int8_t splitversion, uint32_t flags, int8_t verbose);
 extern int mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate);
 extern int mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
                        void *handlerdata, int reclen, int8_t encoding,
@@ -429,48 +474,6 @@ extern void mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat
 extern void mstl3_printsynclist (MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds);
 extern void mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
                                 double *mingap, double *maxgap);
-/** @} */
-
-/** @defgroup data-selections Data Selections
-    @brief Data selections to be used as filters
-
-    Selections are the identification of data, by source identifier
-    and time ranges, that are desired.  Capability is included to read
-    selections from files and to match data against a selection list.
-
-    The ms3_readmsr_selection() and ms3_readtracelist_selection()
-    routines accept ::MS3Selections and allow selective (and
-    efficient) reading of data from files.
-    @{ */
-
-/** @brief Data selection structure time window definition containers */
-typedef struct MS3SelectTime {
-  nstime_t starttime;                //!< Earliest data for matching channels
-  nstime_t endtime;                  //!< Latest data for matching channels
-  struct MS3SelectTime *next;        //!< Pointer to next selection time, NULL if the last
-} MS3SelectTime;
-
-/** @brief Data selection structure definition containers */
-typedef struct MS3Selections {
-  char sidpattern[100];              //!< Matching (globbing) pattern for source ID
-  struct MS3SelectTime *timewindows; //!< Pointer to time window list for this source ID
-  struct MS3Selections *next;        //!< Pointer to next selection, NULL if the last
-  uint8_t pubversion;                //!< Selected publication version, use 0 for any
-} MS3Selections;
-
-extern MS3Selections *ms3_matchselect (MS3Selections *selections, char *sid,
-                                       nstime_t starttime, nstime_t endtime,
-                                       int pubversion, MS3SelectTime **ppselecttime);
-extern MS3Selections *msr3_matchselect (MS3Selections *selections, MS3Record *msr,
-                                        MS3SelectTime **ppselecttime);
-extern int ms3_addselect (MS3Selections **ppselections, char *sidpattern,
-                          nstime_t starttime, nstime_t endtime, uint8_t pubversion);
-extern int ms3_addselect_comp (MS3Selections **ppselections,
-                               char *network, char* station, char *location, char *channel,
-                               nstime_t starttime, nstime_t endtime, uint8_t pubversion);
-extern int ms3_readselectionsfile (MS3Selections **ppselections, char *filename);
-extern void ms3_freeselections (MS3Selections *selections);
-extern void ms3_printselections (MS3Selections *selections);
 /** @} */
 
 /** @defgroup io-functions File I/O

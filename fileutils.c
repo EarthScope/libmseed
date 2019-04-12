@@ -199,6 +199,8 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
                        MS3Selections *selections, int8_t verbose)
 {
   MS3FileParam *msfp;
+  uint32_t pflags = flags;
+
   int parseval  = 0;
   int readsize  = 0;
   int readcount = 0;
@@ -357,6 +359,10 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
   if (last)
     *last = 0;
 
+  /* Defer data unpacking if selections are used by unsetting MSF_UNPACKDATA */
+  if ((flags & MSF_UNPACKDATA) && selections)
+    pflags &= ~(MSF_UNPACKDATA);
+
   /* Read data and search for records */
   for (;;)
   {
@@ -406,32 +412,63 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
     {
       /* Set end of file flag if at EOF */
       if (feof (msfp->fp))
-        flags |= MSF_ATENDOFFILE;
+        pflags |= MSF_ATENDOFFILE;
 
-      parseval = msr3_parse (MSFPREADPTR (msfp), MSFPBUFLEN (msfp), ppmsr, flags, verbose);
+      parseval = msr3_parse (MSFPREADPTR (msfp), MSFPBUFLEN (msfp), ppmsr, pflags, verbose);
 
       /* Record detected and parsed */
       if (parseval == 0)
       {
-        if (verbose > 1)
-          ms_log (1, "Read record length of %d bytes\n", (*ppmsr)->reclen);
+        /* Test against selections if supplied */
+        if (selections &&
+            !ms3_matchselect (selections, (*ppmsr)->sid, (*ppmsr)->starttime,
+                              msr3_endtime (*ppmsr), (*ppmsr)->pubversion, NULL))
+        {
+          if (verbose > 1)
+          {
+            ms_log (1, "Skipping (selection) record for %s (%d bytes) starting at offset %" PRId64 "\n",
+                    (*ppmsr)->sid, (*ppmsr)->reclen, msfp->filepos);
+          }
 
-        /* Test if this is the last record if file size is known (not a pipe) */
-        if (last && msfp->filesize)
-          if ((msfp->filesize - (msfp->filepos + (*ppmsr)->reclen)) < MINRECLEN)
-            *last = 1;
+          /* Skip record length bytes, update reading offset and file position */
+          msfp->readoffset += (*ppmsr)->reclen;
+          msfp->filepos += (*ppmsr)->reclen;
+        }
+        else
+        {
+          /* Unpack data samples if this has been deferred */
+          if (!(pflags & MSF_UNPACKDATA) && (flags & MSF_UNPACKDATA) && (*ppmsr)->samplecnt > 0)
+          {
+            if (msr3_unpack_data ((*ppmsr), verbose) != (*ppmsr)->samplecnt)
+            {
+              ms_log (2, "Cannot unpack data samples for record at byte offset %" PRId64 ": %s\n",
+                      msfp->filepos, msfile);
 
-        /* Return file position for this record */
-        if (fpos)
-          *fpos = msfp->filepos;
+              retcode = MS_NOERROR;
+              break;
+            }
+          }
 
-        /* Update reading offset, file position and record count */
-        msfp->readoffset += (*ppmsr)->reclen;
-        msfp->filepos += (*ppmsr)->reclen;
-        msfp->recordcount++;
+          if (verbose > 1)
+            ms_log (1, "Read record length of %d bytes\n", (*ppmsr)->reclen);
 
-        retcode = MS_NOERROR;
-        break;
+          /* Test if this is the last record if file size is known (not a pipe) */
+          if (last && msfp->filesize)
+            if ((msfp->filesize - (msfp->filepos + (*ppmsr)->reclen)) < MINRECLEN)
+              *last = 1;
+
+          /* Return file position for this record */
+          if (fpos)
+            *fpos = msfp->filepos;
+
+          /* Update reading offset, file position and record count */
+          msfp->readoffset += (*ppmsr)->reclen;
+          msfp->filepos += (*ppmsr)->reclen;
+          msfp->recordcount++;
+
+          retcode = MS_NOERROR;
+          break;
+        }
       }
       else if (parseval < 0)
       {
@@ -635,27 +672,14 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
       return MS_GENERROR;
   }
 
-  /* Loop over the input file */
+  /* Loop over the input file and add each record to trace list */
   while ((retcode = ms3_readmsr_selection (&msfp, &msr, msfile, NULL, NULL,
-                                           flags, NULL, verbose)) == MS_NOERROR)
+                                           flags, selections, verbose)) == MS_NOERROR)
   {
-    /* Test against selections if supplied */
-    if (selections)
-    {
-      nstime_t endtime = msr3_endtime (msr);
-
-      if (ms3_matchselect (selections, msr->sid, msr->starttime,
-                           endtime, msr->pubversion, NULL) == NULL)
-      {
-        continue;
-      }
-    }
-
-    /* Add to trace list */
     mstl3_addmsr (*ppmstl, msr, splitversion, 1, tolerance);
   }
 
-  /* Reset return code to MS_NOERROR on successful read by ms_readmsr() */
+  /* Reset return code to MS_NOERROR on successful read by ms_readmsr_selection() */
   if (retcode == MS_ENDOFFILE)
     retcode = MS_NOERROR;
 

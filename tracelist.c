@@ -679,8 +679,47 @@ mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
                   MS3Tolerance *tolerance, int8_t splitversion,
                   uint32_t flags, int8_t verbose)
 {
-  MS3Record *msr = 0;
+  return mstl3_readbuffer_selection (ppmstl, buffer, bufferlength,
+                                     tolerance, NULL, splitversion,
+                                     flags, verbose);
+} /* End of mstl3_readbuffer() */
+
+/****************************************************************/ /**
+ * @brief Parse miniSEED from a buffer and populate a ::MS3TraceList
+ *
+ * For a full description of \a tolerance see mstl3_addmsr().
+ *
+ * If the ::MSF_UNPACKDATA flag is set in \a flags, the data samples
+ * will be unpacked.  In most cases the caller probably wants this
+ * flag set, without it the trace list will merely be a list of
+ * channels.
+ *
+ * If \a selections is not NULL, the ::MS3Selections will be used to
+ * limit what is returned to the caller.  Any data not matching the
+ * selections will be skipped.
+ *
+ * @param[in] ppmstl Pointer-to-point to destination MS3TraceList
+ * @param[in] buffer Source buffer to read miniSEED records from
+ * @param[in] bufferlength Maximum length of \a buffer
+ * @param[in] tolerance Tolerance function pointers as ::MS3Tolerance
+ * @param[in] splitversion Flag to control splitting of version/quality
+ * @param[in] flags Flag to control pasing of miniSEED, see msr3_parse()
+ * @param[in] selections Specify limits to which data should be returned, see @ref data-selections
+ * @param[in] verbose Controls verbosity, 0 means no diagnostic output
+ *
+ * @returns The number of records parsed on success, otherwise a
+ * negative library error code.
+ *
+ * \sa mstl3_addmsr()
+ *********************************************************************/
+int64_t
+mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
+                            MS3Tolerance *tolerance, MS3Selections *selections,
+                            int8_t splitversion, uint32_t flags, int8_t verbose)
+{
+  MS3Record *msr  = 0;
   uint64_t offset = 0;
+  uint32_t pflags = flags;
   int parsevalue;
   int64_t reccount = 0;
 
@@ -696,9 +735,13 @@ mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
       return MS_GENERROR;
   }
 
+  /* Defer data unpacking if selections are used by unsetting MSF_UNPACKDATA */
+  if ((flags & MSF_UNPACKDATA) && selections)
+    pflags &= ~(MSF_UNPACKDATA);
+
   while ((bufferlength - offset) > MINRECLEN)
   {
-    parsevalue = msr3_parse (buffer + offset, bufferlength - offset, &msr, flags, verbose);
+    parsevalue = msr3_parse (buffer + offset, bufferlength - offset, &msr, pflags, verbose);
 
     if (parsevalue < 0)
       return parsevalue;
@@ -706,15 +749,43 @@ mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
     if (parsevalue > 0)
       break;
 
+    /* Test data against selections if specified */
+    if (selections)
+    {
+      if (!ms3_matchselect (selections, msr->sid, msr->starttime,
+                            msr3_endtime (msr), msr->pubversion, NULL))
+      {
+        if (verbose > 1)
+        {
+          ms_log (1, "Skipping (selection) record for %s (%d bytes) starting at offset %" PRIu64 "\n",
+                  msr->sid, msr->reclen, offset);
+        }
+
+        offset += msr->reclen;
+        continue;
+      }
+
+      /* Unpack data samples if this has been deferred */
+      if ((flags & MSF_UNPACKDATA) && msr->samplecnt > 0)
+      {
+        if (msr3_unpack_data (msr, verbose) != msr->samplecnt)
+        {
+          return MS_GENERROR;
+        }
+      }
+    }
+
     if (mstl3_addmsr (*ppmstl, msr, splitversion, 1, tolerance) == 0)
+    {
       return MS_GENERROR;
+    }
 
     reccount += 1;
     offset += msr->reclen;
   }
 
   return reccount;
-} /* End of mstl3_readbuffer() */
+} /* End of mstl3_readbuffer_selection() */
 
 /***************************************************************************
  * Create an MS3TraceSeg structure from an MS3Record structure.

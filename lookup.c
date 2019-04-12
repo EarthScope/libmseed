@@ -159,7 +159,7 @@ ms_errorstr (int errorcode)
     return "Generic error";
     break;
   case MS_NOTSEED:
-    return "No SEED data detected";
+    return "No miniSEED data detected";
     break;
   case MS_WRONGLENGTH:
     return "Length of data read does not match record length";
