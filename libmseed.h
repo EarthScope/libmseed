@@ -31,8 +31,8 @@
 extern "C" {
 #endif
 
-#define LIBMSEED_VERSION "3.0.0"    //!< Library version
-#define LIBMSEED_RELEASE "2019.094" //!< Library release date
+#define LIBMSEED_VERSION "3.0.1"    //!< Library version
+#define LIBMSEED_RELEASE "2019.102" //!< Library release date
 
 /* C99 standard headers */
 #include <stdlib.h>
