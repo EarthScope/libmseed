@@ -157,8 +157,8 @@ extern int LM_SIZEOF_OFF_T;  /* Size of off_t data type determined at build time
 #define HPTERROR -2145916800000000LL
 
 /* Macros to scale between Unix/POSIX epoch time & high precision time */
-#define MS_EPOCH2HPTIME(X) ((X) * (hptime_t) HPTMODULUS)
-#define MS_HPTIME2EPOCH(X) ((X) / HPTMODULUS)
+#define MS_EPOCH2HPTIME(X) (X) * (hptime_t) HPTMODULUS
+#define MS_HPTIME2EPOCH(X) (X) / HPTMODULUS
 
 /* Macro to test a character for data record indicators */
 #define MS_ISDATAINDICATOR(X) (X=='D' || X=='R' || X=='Q' || X=='M')
