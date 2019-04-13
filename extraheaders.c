@@ -266,10 +266,10 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
     return MS_GENERROR;
   }
 
-  if (serializationsize > 65535)
+  if (serializationsize > UINT16_MAX)
   {
-    ms_log (2, "%s(): New serialization size exceeds limit of 65,535 bytes: %" PRIu64 "\n",
-            __func__, (uint64_t)serializationsize);
+    ms_log (2, "%s(): New serialization size exceeds limit of %d bytes: %" PRIu64 "\n",
+            __func__, UINT16_MAX, (uint64_t)serializationsize);
     json_value_free (rootvalue);
     return MS_GENERROR;
   }
@@ -298,6 +298,8 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
     libmseed_memory.free (msr->extra);
   msr->extra       = serialized;
   msr->extralength = (uint16_t)serializationsize - 1;
+
+  msr->extra[serializationsize] = '\0';
 
   return 0;
 #undef EVALSET

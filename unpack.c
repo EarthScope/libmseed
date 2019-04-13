@@ -180,16 +180,18 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
   msr->crc = HO4u (*pMS3FSDH_CRC (record), msr->swapflag);
   msr->pubversion = *pMS3FSDH_PUBVERSION (record);
 
+  /* Copy extra headers into a NULL-terminated string */
   msr->extralength = HO2u (*pMS3FSDH_EXTRALENGTH (record), msr->swapflag);
   if (msr->extralength)
   {
-    if ((msr->extra = (char *)libmseed_memory.malloc (msr->extralength)) == NULL)
+    if ((msr->extra = (char *)libmseed_memory.malloc (msr->extralength + 1)) == NULL)
     {
       ms_log (2, "%s(%s): Cannot allocate memory for extra headers\n", __func__, msr->sid);
       return MS_GENERROR;
     }
 
     memcpy (msr->extra, record + MS3FSDH_LENGTH + sidlength, msr->extralength);
+    msr->extra[msr->extralength] = '\0';
   }
 
   msr->datalength = HO2u (*pMS3FSDH_DATALENGTH (record), msr->swapflag);

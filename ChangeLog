@@ -1,3 +1,6 @@
+2019.103:
+	- Consistenly unpack version extra headers as terminated string.
+
 2019.102: 3.0.1
 	- Add mstl3_readbuffer_selection() and fix selection-based ms3_readmsr_selection()
 	- Use callback functions for time and sample rate tolerance instead of fixed values
