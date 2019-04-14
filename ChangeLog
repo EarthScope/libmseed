@@ -1,7 +1,7 @@
-2019.103:
-	- mstl3_pack() can be called without modifying the trace list with MSF_MAINTAINMSTL flag.
+2019.103: 3.0.2
+	- mstl3_pack() can be called without modifying the Trace List with MSF_MAINTAINMSTL flag.
 	- Add lm_pack_rollingbuffer.c example of generating records with a rolling buffer.
-	- Consistenly provide extra headers as terminated string from MS3Record.extra.
+	- Consistently provide extra headers as terminated string from MS3Record.extra.
 	- Fix segment start time tracking in mstl3_pack().
 
 2019.102: 3.0.1
