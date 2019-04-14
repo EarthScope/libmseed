@@ -1272,8 +1272,8 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
 
     if (extralength > UINT16_MAX)
     {
-      ms_log (2, "%s(): Extra headers are too long: %lld\n",
-              __func__, (unsigned long long)extralength);
+      ms_log (2, "%s(): Extra headers are too long: %zu\n",
+              __func__, extralength);
       return -1;
     }
 

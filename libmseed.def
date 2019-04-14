@@ -28,6 +28,7 @@ EXPORTS
    mstl3_free
    mstl3_addmsr
    mstl3_readbuffer
+   mstl3_readbuffer_selection
    mstl3_convertsamples
    mstl3_pack
    mstl3_printtracelist

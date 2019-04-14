@@ -385,7 +385,7 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
     }
     else
     {
-      ms_log (2, "%s(): Cannot create time string for %lld\n", __func__, (long long int)eventdetection->onsettime);
+      ms_log (2, "%s(): Cannot create time string for %"PRId64"\n", __func__, eventdetection->onsettime);
       return MS_GENERROR;
     }
   }
@@ -497,7 +497,7 @@ mseh_add_calibration (MS3Record *msr, const char *path,
     }
     else
     {
-      ms_log (2, "%s(): Cannot create time string for %lld\n", __func__, (long long int)calibration->begintime);
+      ms_log (2, "%s(): Cannot create time string for %"PRId64"\n", __func__, calibration->begintime);
       return MS_GENERROR;
     }
   }
@@ -509,7 +509,7 @@ mseh_add_calibration (MS3Record *msr, const char *path,
     }
     else
     {
-      ms_log (2, "%s(): Cannot create time string for %lld\n", __func__, (long long int)calibration->endtime);
+      ms_log (2, "%s(): Cannot create time string for %"PRId64"\n", __func__, calibration->endtime);
       return MS_GENERROR;
     }
   }
@@ -650,7 +650,7 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
     }
     else
     {
-      ms_log (2, "%s(): Cannot create time string for %lld\n", __func__, (long long int)exception->time);
+      ms_log (2, "%s(): Cannot create time string for %"PRId64"\n", __func__, exception->time);
       return MS_GENERROR;
     }
   }
@@ -743,7 +743,7 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
     }
     else
     {
-      ms_log (2, "%s(): Cannot create time string for %lld\n", __func__, (long long int)recenter->begintime);
+      ms_log (2, "%s(): Cannot create time string for %"PRId64"\n", __func__, recenter->begintime);
       return MS_GENERROR;
     }
   }
@@ -755,7 +755,7 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
     }
     else
     {
-      ms_log (2, "%s(): Cannot create time string for %lld\n", __func__, (long long int)recenter->endtime);
+      ms_log (2, "%s(): Cannot create time string for %"PRId64"\n", __func__, recenter->endtime);
       return MS_GENERROR;
     }
   }

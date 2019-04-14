@@ -811,11 +811,11 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
       break;
     case UNIXEPOCH:
       expected = -1;
-      printed  = snprintf (timestr, 22, "%lld", (long long int)isec);
+      printed  = snprintf (timestr, 22, "%"PRId64, isec);
       break;
     case NANOSECONDEPOCH:
       expected = -1;
-      printed  = snprintf (timestr, 22, "%lld", (long long int)nstime);
+      printed  = snprintf (timestr, 22, "%"PRId64, nstime);
       break;
     }
   }
@@ -843,11 +843,11 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
       break;
     case UNIXEPOCH:
       expected = -1;
-      printed  = snprintf (timestr, 22, "%lld.%06d", (long long int)isec, microsec);
+      printed  = snprintf (timestr, 22, "%"PRId64".%06d", isec, microsec);
       break;
     case NANOSECONDEPOCH:
       expected = -1;
-      printed  = snprintf (timestr, 22, "%lld", (long long int)nstime);
+      printed  = snprintf (timestr, 22, "%"PRId64, nstime);
       break;
     }
   }
@@ -875,11 +875,11 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
       break;
     case UNIXEPOCH:
       expected = -1;
-      printed  = snprintf (timestr, 22, "%lld.%09d", (long long int)isec, nanosec);
+      printed  = snprintf (timestr, 22, "%"PRId64".%09d", isec, nanosec);
       break;
     case NANOSECONDEPOCH:
       expected = -1;
-      printed  = snprintf (timestr, 22, "%lld", (long long int)nstime);
+      printed  = snprintf (timestr, 22, "%"PRId64, nstime);
       break;
     }
   }
@@ -887,8 +887,8 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
   else
   {
     ms_log (2, "%s(): Unhandled combination of timeformat and subseconds, please report!\n", __func__);
-    ms_log (2, "%s():   nstime: %lld, isec: %lld, nanosec: %d, mirosec: %d, submicro: %d\n",
-            __func__, (long long int)nstime, (long long int)isec, nanosec, microsec, submicro);
+    ms_log (2, "%s():   nstime: %"PRId64", isec: %"PRId64", nanosec: %d, mirosec: %d, submicro: %d\n",
+            __func__, nstime, isec, nanosec, microsec, submicro);
     ms_log (2, "%s():   timeformat: %d, subseconds: %d\n", __func__, timeformat, subseconds);
     return NULL;
   }

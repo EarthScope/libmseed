@@ -498,7 +498,7 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   /* Ensure that SID length fits in format, which uses data type uint8_t */
   if (sidlength > 255)
   {
-    ms_log (2, "%s(%s): Source ID too long: %llu bytes\n", __func__, msr->sid, (unsigned long long)sidlength);
+    ms_log (2, "%s(%s): Source ID too long: %zu bytes\n", __func__, msr->sid, sidlength);
     return -1;
   }
 
