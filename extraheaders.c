@@ -299,7 +299,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
   msr->extra       = serialized;
   msr->extralength = (uint16_t)serializationsize - 1;
 
-  msr->extra[serializationsize] = '\0';
+  msr->extra[serializationsize - 1] = '\0';
 
   return 0;
 #undef EVALSET
