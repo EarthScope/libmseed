@@ -1,12 +1,15 @@
 2019.103:
-	- Consistenly unpack version extra headers as terminated string.
+	- mstl3_pack() can be called without modifying the trace list with MSF_MAINTAINMSTL flag.
+	- Add lm_pack_rollingbuffer.c example of generating records with a rolling buffer.
+	- Consistenly provide extra headers as terminated string from MS3Record.extra.
+	- Fix segment start time tracking in mstl3_pack().
 
 2019.102: 3.0.1
-	- Add mstl3_readbuffer_selection() and fix selection-based ms3_readmsr_selection()
-	- Use callback functions for time and sample rate tolerance instead of fixed values
-	- Fix progression of record start time when packing records
-	- Optionally store record-level metadata, header flags and extra headers, in a MS3TraceList
-	- More documentation and examples
+	- Add mstl3_readbuffer_selection() and fix selection-based ms3_readmsr_selection().
+	- Use callback functions for time and sample rate tolerance instead of fixed values.
+	- Fix progression of record start time when packing records.
+	- Optionally store record-level metadata, header flags and extra headers, in a MS3TraceList.
+	- More documentation and examples.
 
 2019.094: 3.0.0
 	- A new major version refactored to support the next generation miniSEED

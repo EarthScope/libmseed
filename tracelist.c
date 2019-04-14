@@ -1184,8 +1184,23 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
 /**********************************************************************/ /**
  * @brief Pack ::MS3TraceList data into miniSEED records
  *
- * The datasamples array and numsamples field will be adjusted
- * (reduced) as data are packed.
+ * The datasamples array, numsamples and starttime fields of each
+ * trace segment will be adjusted as data are packed unless the
+ * ::MSF_MAINTAINMSTL flag is specified in \a flags. If
+ * ::MSF_MAINTAINMSTL is specified a caller would also normally set
+ * the ::MSF_FLUSHDATA flag to pack all data in the trace list.
+ *
+ * <b>Use as a rolling buffer to generate data records:</b>
+ * The behavior of adjusting the trace list as data are packed is
+ * intended to allow using a ::MS3TraceList as an intermediate
+ * collection of data buffers to generate data records from an
+ * arbitrarily large data source, e.g. continuous data.  In this
+ * concept, data are added to a ::MS3TraceList and mstl3_pack() is
+ * called repeatedly.  Data records are only produced if a complete
+ * record can be generated, which often leaves small amounts of data
+ * in each segment buffer.  On completion or shutdown the caller
+ * usually makes a final call to mst3_pack() with the ::MSF_FLUSHDATA
+ * flag set to flush all data from the buffers.
  *
  * As each record is filled and finished they are passed to \a
  * record_handler() which should expect 1) a \c char* to the record,
@@ -1205,7 +1220,7 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
  * @param[in] reclen Maximum record length to produce
  * @param[in] encoding Encoding for data samples, see msr3_pack()
  * @param[out] packedsamples The number of samples packed, returned to caller
- * @param[in] flags Flags used to control the packing process, see msr3_pack()
+ * @param[in] flags Flags to control packing, ::MSF_MAINTAINMSTL or ::MSF_FLUSHDATA
  * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
  * @param[in] extra If not NULL, add this buffer of extra headers to all records
  *
@@ -1283,6 +1298,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
       msr->numsamples = seg->numsamples;
       msr->sampletype = seg->sampletype;
 
+      segpackedsamples = 0;
       segpackedrecords = msr3_pack (msr, record_handler, handlerdata, &segpackedsamples, flags, verbose);
 
       if (verbose > 1)
@@ -1290,11 +1306,14 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
         ms_log (1, "Packed %d records for %s segment\n", segpackedrecords, msr->sid);
       }
 
-      /* Adjust segment start time, data array and sample count */
-      if (segpackedsamples > 0)
+      /* If MSF_MAINTAINMSTL not set, adjust segment start time, data array and sample counts */
+      if (!(flags & MSF_MAINTAINMSTL) && segpackedsamples > 0)
       {
-        /* The new start time was calculated my msr_pack */
-        seg->starttime = msr->starttime;
+        /* Calculate new start time, shortcut when all samples have been packed */
+        if (segpackedsamples == seg->numsamples)
+          seg->starttime = seg->endtime;
+        else
+          seg->starttime = ms_sampletime (seg->starttime, segpackedsamples, seg->samprate);
 
         samplesize = ms_samplesize (seg->sampletype);
         bufsize = (seg->numsamples - segpackedsamples) * samplesize;

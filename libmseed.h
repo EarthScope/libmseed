@@ -983,7 +983,8 @@ extern LIBMSEED_MEMORY libmseed_memory;
 #define MSF_SEQUENCE      0x0008  //!< [Packing] UNSUPPORTED: Maintain a record-level sequence number
 #define MSF_FLUSHDATA     0x0010  //!< [Packing] pack all available data even if final record would not be filled
 #define MSF_ATENDOFFILE   0x0020  //!< [Parsing] reading routine is at the end of the file
-#define MSF_STOREMETADATA 0x0040  //!< [Tracelist] store record-level metadata in trace lists
+#define MSF_STOREMETADATA 0x0040  //!< [TraceList] store record-level metadata in trace lists
+#define MSF_MAINTAINMSTL  0x0080  //!< [TraceList] do not modify a trace list when packing
 /** @} */
 
 #ifdef __cplusplus
