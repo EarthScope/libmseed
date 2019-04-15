@@ -324,6 +324,10 @@ extern int ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t sw
     and time ranges, that are desired.  Capability is included to read
     selections from files and to match data against a selection list.
 
+    For data to be selected it must only match one of the selection
+    entries.  In other words, multiple selection entries are treated
+    with OR logic.
+
     The ms3_readmsr_selection() and ms3_readtracelist_selection()
     routines accept ::MS3Selections and allow selective (and
     efficient) reading of data from files.
