@@ -77,11 +77,16 @@ ms3_matchselect (MS3Selections *selections, char *sid, nstime_t starttime,
           continue;
         }
 
-        /* It already passed the sidpattern glob test and the pubversion test. */
-        /* If no time windows are given, the selection matches. */
+        /* If no time selection, this is a match */
         if (!findsl->timewindows)
-          return findsl;
+        {
+          if (ppselecttime)
+            *ppselecttime = NULL;
 
+          return findsl;
+        }
+
+        /* Otherwise, search the time selections */
         findst = findsl->timewindows;
         while (findst)
         {
