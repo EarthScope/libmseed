@@ -919,7 +919,15 @@ mstl3_addmsrtoseg (MS3TraceSeg *seg, MS3Record *msr, nstime_t endtime, int8_t wh
       return 0;
     }
 
-    if (!(newdatasamples = libmseed_memory.realloc (seg->datasamples, (size_t) ((seg->numsamples + msr->numsamples) * samplesize))))
+    if (libmseed_prealloc_block_size)
+      newdatasamples = libmseed_memory_realloc (seg->datasamples,
+                                                (size_t) ((seg->numsamples + msr->numsamples) * samplesize),
+                                                &(seg->datasize));
+    else
+      newdatasamples = libmseed_memory.realloc (seg->datasamples,
+                                                (size_t) ((seg->numsamples + msr->numsamples) * samplesize));
+
+    if (!newdatasamples)
     {
       ms_log (2, "%s(): Error allocating memory\n", __func__);
       return 0;
@@ -1001,7 +1009,15 @@ mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
       return 0;
     }
 
-    if (!(newdatasamples = libmseed_memory.realloc (seg1->datasamples, (size_t) ((seg1->numsamples + seg2->numsamples) * samplesize))))
+    if (libmseed_prealloc_block_size)
+      newdatasamples = libmseed_memory_realloc (seg1->datasamples,
+                                                (size_t) ((seg1->numsamples + seg2->numsamples) * samplesize),
+                                                &(seg1->datasize));
+    else
+      newdatasamples = libmseed_memory.realloc (seg1->datasamples,
+                                                (size_t) ((seg1->numsamples + seg2->numsamples) * samplesize));
+
+    if (!newdatasamples)
     {
       ms_log (2, "%s(): Error allocating memory\n", __func__);
       return 0;
@@ -1115,11 +1131,14 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
         idata[idx] = (int32_t) (ddata[idx] + 0.5);
       }
 
-      /* Reallocate buffer for reduced size needed */
-      if (!(seg->datasamples = libmseed_memory.realloc (seg->datasamples, (size_t) (seg->numsamples * sizeof (int32_t)))))
+      /* Reallocate buffer for reduced size needed, only if not pre-allocating */
+      if (libmseed_prealloc_block_size == 0)
       {
-        ms_log (2, "mstl3_convertsamples: cannot re-allocate buffer for sample conversion\n");
-        return -1;
+        if (!(seg->datasamples = libmseed_memory.realloc (seg->datasamples, (size_t) (seg->numsamples * sizeof (int32_t)))))
+        {
+          ms_log (2, "mstl3_convertsamples: cannot re-allocate buffer for sample conversion\n");
+          return -1;
+        }
       }
     }
 
@@ -1139,11 +1158,14 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
       for (idx = 0; idx < seg->numsamples; idx++)
         fdata[idx] = (float)ddata[idx];
 
-      /* Reallocate buffer for reduced size needed */
-      if (!(seg->datasamples = libmseed_memory.realloc (seg->datasamples, (size_t) (seg->numsamples * sizeof (float)))))
+      /* Reallocate buffer for reduced size needed, only if not pre-allocating */
+      if (libmseed_prealloc_block_size == 0)
       {
-        ms_log (2, "mstl3_convertsamples: cannot re-allocate buffer after sample conversion\n");
-        return -1;
+        if (!(seg->datasamples = libmseed_memory.realloc (seg->datasamples, (size_t) (seg->numsamples * sizeof (float)))))
+        {
+          ms_log (2, "mstl3_convertsamples: cannot re-allocate buffer after sample conversion\n");
+          return -1;
+        }
       }
     }
 
@@ -1324,7 +1346,10 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
                    (uint8_t *)seg->datasamples + (segpackedsamples * samplesize),
                    (size_t)bufsize);
 
-          seg->datasamples = libmseed_memory.realloc (seg->datasamples, (size_t)bufsize);
+          if (libmseed_prealloc_block_size)
+            seg->datasamples = libmseed_memory_realloc (seg->datasamples, (size_t)bufsize, &(seg->datasize));
+          else
+            seg->datasamples = libmseed_memory.realloc (seg->datasamples, (size_t)bufsize);
 
           if (seg->datasamples == NULL)
           {

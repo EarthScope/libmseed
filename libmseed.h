@@ -284,6 +284,7 @@ typedef struct MS3Record {
 
   /* Data sample fields */
   void           *datasamples;       //!< Data samples, \a numsamples of type \a sampletype
+  size_t          datasize;          //!< Size of data sample buffer
   int64_t         numsamples;        //!< Number of data samples in datasamples
   char            sampletype;        //!< Sample type code: a, i, f, d @ref sample-types
 } MS3Record;
@@ -419,6 +420,7 @@ typedef struct MS3TraceSeg {
   double          samprate;          //!< Nominal sample rate (Hz)
   int64_t         samplecnt;         //!< Number of samples in trace coverage
   void           *datasamples;       //!< Data samples, \a numsamples of type \a sampletype
+  size_t          datasize;          //!< Size of data sample buffer
   int64_t         numsamples;        //!< Number of data samples in datasamples
   char            sampletype;        //!< Sample type code, see @ref sample-types
   void           *prvtptr;           //!< Private pointer for general use, unused by library
@@ -914,6 +916,13 @@ typedef struct LIBMSEED_MEMORY
 
 /** Global memory management function list */
 extern LIBMSEED_MEMORY libmseed_memory;
+
+/** Global pre-allocation block size.
+ * Set to 0 to disable pre-allocation. */
+extern size_t libmseed_prealloc_block_size;
+
+/** Internal realloc() wrapper that allocates in libmseed_prealloc_block_size blocks */
+extern void *libmseed_memory_realloc (void *ptr, size_t size, size_t *currentsize);
 
 /** @} */
 
