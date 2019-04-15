@@ -77,6 +77,16 @@ ms3_matchselect (MS3Selections *selections, char *sid, nstime_t starttime,
           continue;
         }
 
+        /* If no time selection, this is a match */
+        if (!findsl->timewindows)
+        {
+          if (ppselecttime)
+            *ppselecttime = NULL;
+
+          return findsl;
+        }
+
+        /* Otherwise, search the time selections */
         findst = findsl->timewindows;
         while (findst)
         {
