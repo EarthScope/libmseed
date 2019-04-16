@@ -71,12 +71,22 @@ ms3_matchselect (MS3Selections *selections, char *sid, nstime_t starttime,
     {
       if (ms_globmatch (sid, findsl->sidpattern))
       {
-        if (findsl->pubversion > 0 && findsl->pubversion == pubversion)
+        if (findsl->pubversion > 0 && findsl->pubversion != pubversion)
         {
           findsl = findsl->next;
           continue;
         }
 
+        /* If no time selection, this is a match */
+        if (!findsl->timewindows)
+        {
+          if (ppselecttime)
+            *ppselecttime = NULL;
+
+          return findsl;
+        }
+
+        /* Otherwise, search the time selections */
         findst = findsl->timewindows;
         while (findst)
         {
