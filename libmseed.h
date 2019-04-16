@@ -335,8 +335,8 @@ extern int ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t sw
 
 /** @brief Data selection structure time window definition containers */
 typedef struct MS3SelectTime {
-  nstime_t starttime;                //!< Earliest data for matching channels
-  nstime_t endtime;                  //!< Latest data for matching channels
+  nstime_t starttime;                //!< Earliest data for matching channels, use ::NSTERROR for open
+  nstime_t endtime;                  //!< Latest data for matching channels, use ::NSTERROR for open
   struct MS3SelectTime *next;        //!< Pointer to next selection time, NULL if the last
 } MS3SelectTime;
 
