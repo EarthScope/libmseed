@@ -434,7 +434,7 @@ typedef struct MS3TraceSeg {
 /** @brief Container for a trace ID, linkable */
 typedef struct MS3TraceID {
   char            sid[LM_SIDLEN];    //!< Source identifier as URN, max length @ref LM_SIDLEN
-  uint8_t         pubversion;        //!< Publication version
+  uint8_t         pubversion;        //!< Largest contributing publication version
   nstime_t        earliest;          //!< Time of earliest sample
   nstime_t        latest;            //!< Time of latest sample
   void           *prvtptr;           //!< Private pointer for general use, unused by library

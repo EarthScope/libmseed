@@ -160,12 +160,13 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
  * - Default time tolerance is 1/2 the sampling period
  * - Default sample rate (sr) tolerance is abs(1‐sr1/sr2) < 0.0001
  *
- * If the \a splitversion flag is true the publication versions will be
- * kept separate, i.e. they must be the same to be merged. Otherwise,
- * different versions of otherwise matching traces are merged.  If
- * more than one version contributes to a given source identifer's
- * segments, its publication version will be the set to the largest
- * contributing version.
+ * In recommended usage, the \a splitversion flag is \b 0 and
+ * different publication versions of otherwise matching data are
+ * merged.  If more than one version contributes to a given source
+ * identifer's segments, its ::MS3TraceID.pubversion will be the set to
+ * the largest contributing version.  If the \a splitversion flag is
+ * \b 1 the publication versions will be kept separate with each
+ * version isolated in separate ::MS3TraceID entries.
  *
  * If the \a autoheal flag is true, extra processing is invoked to
  * conjoin trace segments that fit together after the ::MS3Record
@@ -173,9 +174,11 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
  * the ::MS3TraceSeg.prvtptr will be freed.
  *
  * The lists are always maintained in a sorted order.  An
- * ::MS3TraceList is always maintained with the ::MS3TraceID entries
- * in descending alphanumeric order. An ::MS3TraceID is always
- * maintained with ::MS3TraceSeg entries in data time time order.
+ * ::MS3TraceList is maintained with the ::MS3TraceID entries in
+ * ascending alphanumeric order of SID. If repeated SIDs are present
+ * due to splitting on publication version, they are maintained in
+ * order of ascending version.  A ::MS3TraceID is always maintained
+ * with ::MS3TraceSeg entries in data time time order.
  *
  * @param[in] mstl Destination ::MS3TraceList to add data to
  * @param[in] msr ::MS3Record containing the data to add to list
@@ -243,9 +246,10 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
     }
     cmp = (*s1 - *--s2);
 
-    if (splitversion && mstl->last->pubversion != msr->pubversion)
+    /* If source names matched, check publication version if splitting */
+    if (!cmp && splitversion && mstl->last->pubversion != msr->pubversion)
     {
-      cmp = 1;
+      cmp = (mstl->last->pubversion < msr->pubversion) ? -1 : 1;
     }
 
     if (!cmp)
@@ -274,9 +278,10 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
         }
         cmp = (*s1 - *--s2);
 
-        if (splitversion && mstl->last->pubversion != msr->pubversion)
+        /* If source names matched, check publication version if splitting */
+        if (!cmp && splitversion && searchid->pubversion != msr->pubversion)
         {
-          cmp = 1;
+          cmp = (searchid->pubversion < msr->pubversion) ? -1 : 1;
         }
 
         /* If source names did not match track closest "less than" value
