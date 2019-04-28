@@ -88,9 +88,6 @@ install: shared
 	     mseed.pc.in > $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
 	@mkdir -p $(DESTDIR)$(DOCDIR)/example
 	@cp -r example $(DESTDIR)$(DOCDIR)/
-	@cp doc/libmseed-UsersGuide $(DESTDIR)$(DOCDIR)/
-	@mkdir -p $(DESTDIR)$(MAN3DIR)
-	@cp -a doc/ms*.3 $(DESTDIR)$(MAN3DIR)/
 
 .SUFFIXES: .c .o .lo
 
