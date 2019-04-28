@@ -14,16 +14,8 @@ fi
 CURRENT_YEAR=$(date -u +%Y)
 CURRENT_DATE=$(date -u +%Y-%m-%d)
 
-# Build extra options for injection into config
-DOXYGENCONFIG+="PROJECT_NUMBER=${PROJECT_VERSION}\n"
-DOXYGENCONFIG+="ALIASES+=currentyear='${CURRENT_YEAR}'\n"
-DOXYGENCONFIG+="ALIASES+=currentdate='${CURRENT_DATE}'\n"
-
-# Documentation build command, injecting current project version
-DOCBUILD="(cat Doxyfile; echo -e '${DOXYGENCONFIG}') | doxygen -"
-
 # Check for command line options
-while getopts ":YN" o; do
+while getopts ":YNP" o; do
     case "${o}" in
         Y)
             PUSHYES=Y
@@ -31,13 +23,28 @@ while getopts ":YN" o; do
         N)
             PUSHYES=N
             ;;
+        P)
+            BUILDPDF=Y
+            ;;
         *)
-            echo "Usage: $0 [-Y] [-N]" 1>&2;
+            echo "Usage: $0 [-Y] [-N] [-P]" 1>&2;
             exit 1;
             ;;
     esac
 done
 shift $((OPTIND-1))
+
+# Build extra options for injection into config
+DOXYGENCONFIG+="PROJECT_NUMBER=${PROJECT_VERSION}\n"
+DOXYGENCONFIG+="ALIASES+=currentyear='${CURRENT_YEAR}'\n"
+DOXYGENCONFIG+="ALIASES+=currentdate='${CURRENT_DATE}'\n"
+
+if [[ "$BUILDPDF" == "Y" ]]; then
+    DOXYGENCONFIG+="GENERATE_LATEX=YES\n"
+fi
+
+# Documentation build command, injecting current project version
+DOCBUILD="(cat Doxyfile; echo -e '${DOXYGENCONFIG}') | doxygen -"
 
 # Change to working directory, aka base directory of script
 BASEDIR=$(dirname $0)
@@ -48,7 +55,19 @@ rm -rf $DOCDIR
 mkdir $DOCDIR || { echo "Cannot create directory '$DOCDIR', exiting"; exit 1; }
 
 # Build docs
+echo "Building docs"
 eval $DOCBUILD || { echo "Error running '$DOCBUILD', exiting"; exit 1; }
+
+# Build PDF and copy to current directory
+if [[ "$BUILDPDF" == "Y" ]]; then
+    if [[ -d latex ]]; then
+        echo "Building PDF"
+        BUILDPDF=$(cd latex; make pdf 2>&1)
+        cp latex/refman.pdf libmseed.pdf
+    else
+        echo "WARNING: Cannot build PDF, no source latex directory"
+    fi
+fi
 
 GITREMOTE=$(git config --get remote.origin.url)
 
