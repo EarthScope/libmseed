@@ -6,7 +6,7 @@ XFDSN:XX_TEST_00_B_H_Z, version 1, 4096 bytes (format: 2)
                     CRC: 0x0
     extra header length: 34 bytes
     data payload length: 3968 bytes
-       payload encoding: STEIM 2 Compression (val: 11)
+       payload encoding: STEIM-2 integer compression (val: 11)
           extra headers:
                 "FDSN": {
                   "Time": {
