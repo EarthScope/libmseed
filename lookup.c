@@ -71,67 +71,67 @@ ms_encodingstr (const uint8_t encoding)
   switch (encoding)
   {
   case 0:
-    return "ASCII text";
+    return "Text";
     break;
   case 1:
-    return "16 bit integers";
+    return "16-bit integer";
     break;
   case 2:
-    return "24 bit integers";
+    return "24-bit integer";
     break;
   case 3:
-    return "32 bit integers";
+    return "32-bit integer";
     break;
   case 4:
-    return "IEEE floating point";
+    return "32-bit float (IEEE single)";
     break;
   case 5:
-    return "IEEE double precision float";
+    return "64-bit float (IEEE double)";
     break;
   case 10:
-    return "STEIM 1 Compression";
+    return "STEIM-1 integer compression";
     break;
   case 11:
-    return "STEIM 2 Compression";
+    return "STEIM-2 integer compression";
     break;
   case 12:
-    return "GEOSCOPE Muxed 24 bit int";
+    return "GEOSCOPE Muxed 24-bit integer";
     break;
   case 13:
-    return "GEOSCOPE Muxed 16/3 bit gain/exp";
+    return "GEOSCOPE Muxed 16/3-bit gain/exp";
     break;
   case 14:
-    return "GEOSCOPE Muxed 16/4 bit gain/exp";
+    return "GEOSCOPE Muxed 16/4-bit gain/exp";
     break;
   case 15:
     return "US National Network compression";
     break;
   case 16:
-    return "CDSN 16 bit gain ranged";
+    return "CDSN 16-bit gain ranged";
     break;
   case 17:
-    return "Graefenberg 16 bit gain ranged";
+    return "Graefenberg 16-bit gain ranged";
     break;
   case 18:
-    return "IPG - Strasbourg 16 bit gain";
+    return "IPG - Strasbourg 16-bit gain";
     break;
   case 19:
-    return "STEIM 3 Compression";
+    return "STEIM-3 integer compression";
     break;
   case 30:
-    return "SRO Gain Ranged Format";
+    return "SRO gain ranged";
     break;
   case 31:
-    return "HGLP Format";
+    return "HGLP";
     break;
   case 32:
-    return "DWWSSN Format";
+    return "DWWSSN";
     break;
   case 33:
     return "RSTN 16 bit gain ranged";
     break;
   default:
-    return "Unknown format code";
+    return "Unknown";
   }
 
 } /* End of ms_encodingstr() */
