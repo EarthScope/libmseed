@@ -925,9 +925,9 @@ mstl3_addmsrtoseg (MS3TraceSeg *seg, MS3Record *msr, nstime_t endtime, int8_t wh
     }
 
     if (libmseed_prealloc_block_size)
-      newdatasamples = libmseed_memory_realloc (seg->datasamples,
-                                                (size_t) ((seg->numsamples + msr->numsamples) * samplesize),
-                                                &(seg->datasize));
+      newdatasamples = libmseed_memory_prealloc (seg->datasamples,
+                                                 (size_t) ((seg->numsamples + msr->numsamples) * samplesize),
+                                                 &(seg->datasize));
     else
       newdatasamples = libmseed_memory.realloc (seg->datasamples,
                                                 (size_t) ((seg->numsamples + msr->numsamples) * samplesize));
@@ -1015,9 +1015,9 @@ mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
     }
 
     if (libmseed_prealloc_block_size)
-      newdatasamples = libmseed_memory_realloc (seg1->datasamples,
-                                                (size_t) ((seg1->numsamples + seg2->numsamples) * samplesize),
-                                                &(seg1->datasize));
+      newdatasamples = libmseed_memory_prealloc (seg1->datasamples,
+                                                 (size_t) ((seg1->numsamples + seg2->numsamples) * samplesize),
+                                                 &(seg1->datasize));
     else
       newdatasamples = libmseed_memory.realloc (seg1->datasamples,
                                                 (size_t) ((seg1->numsamples + seg2->numsamples) * samplesize));
@@ -1333,7 +1333,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
         ms_log (1, "Packed %d records for %s segment\n", segpackedrecords, msr->sid);
       }
 
-      /* If MSF_MAINTAINMSTL not set, adjust segment start time, data array and sample counts */
+      /* If MSF_MAINTAINMSTL not set, adjust segment start time and reduce data array and sample counts */
       if (!(flags & MSF_MAINTAINMSTL) && segpackedsamples > 0)
       {
         /* Calculate new start time, shortcut when all samples have been packed */
@@ -1351,15 +1351,16 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
                    (uint8_t *)seg->datasamples + (segpackedsamples * samplesize),
                    (size_t)bufsize);
 
-          if (libmseed_prealloc_block_size)
-            seg->datasamples = libmseed_memory_realloc (seg->datasamples, (size_t)bufsize, &(seg->datasize));
-          else
+          /* Reallocate buffer for reduced size needed, only if not pre-allocating */
+          if (libmseed_prealloc_block_size == 0)
+          {
             seg->datasamples = libmseed_memory.realloc (seg->datasamples, (size_t)bufsize);
 
-          if (seg->datasamples == NULL)
-          {
-            ms_log (2, "%s(): Cannot (re)allocate datasamples buffer\n", __func__);
-            return -1;
+            if (seg->datasamples == NULL)
+            {
+              ms_log (2, "%s(): Cannot (re)allocate datasamples buffer\n", __func__);
+              return -1;
+            }
           }
         }
         else

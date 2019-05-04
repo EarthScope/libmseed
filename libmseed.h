@@ -32,7 +32,7 @@ extern "C" {
 #endif
 
 #define LIBMSEED_VERSION "3.0.3"    //!< Library version
-#define LIBMSEED_RELEASE "2019.123" //!< Library release date
+#define LIBMSEED_RELEASE "2019.124" //!< Library release date
 
 /* C99 standard headers */
 #include <stdlib.h>
@@ -922,11 +922,22 @@ typedef struct LIBMSEED_MEMORY
 extern LIBMSEED_MEMORY libmseed_memory;
 
 /** Global pre-allocation block size.
- * Set to 0 to disable pre-allocation. */
+ *
+ * When non-zero, memory re-allocations will be increased in blocks of this
+ * size.  This is useful on platforms where the system realloc() is slow
+ * such as Windows.
+ *
+ * Default on Windows is 1 MiB, otherwise disabled.
+ *
+ * Set to 0 to disable pre-allocation.
+ */
 extern size_t libmseed_prealloc_block_size;
 
-/** Internal realloc() wrapper that allocates in libmseed_prealloc_block_size blocks */
-extern void *libmseed_memory_realloc (void *ptr, size_t size, size_t *currentsize);
+/** Internal realloc() wrapper that allocates in ::libmseed_prealloc_block_size blocks
+ *
+ * Preallocation is used by default on Windows and disabled otherwise.
+ * */
+extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsize);
 
 /** @} */
 

@@ -37,12 +37,16 @@ static nstime_t ms_time2nstime_int (int year, int day, int hour,
 /* Global set of allocation functions, defaulting to system malloc(), realloc() and free() */
 LIBMSEED_MEMORY libmseed_memory = { .malloc = malloc, .realloc = realloc, .free = free };
 
-/* Global pre-allocation block size, default 1 MiB */
+/* Global pre-allocation block size, default 1 MiB on Windows, disabled otherwise */
+#if defined(LMP_WIN)
 size_t libmseed_prealloc_block_size = 1048576;
+#else
+size_t libmseed_prealloc_block_size = 0;
+#endif
 
 /* Internal realloc() wrapper that allocates in libmseed_prealloc_block_size blocks */
 void *
-libmseed_memory_realloc (void *ptr, size_t size, size_t *currentsize)
+libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsize)
 {
   size_t newsize;
   void *newptr;

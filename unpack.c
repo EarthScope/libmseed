@@ -1227,7 +1227,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   if (unpacksize > 0)
   {
     if (libmseed_prealloc_block_size)
-      msr->datasamples = libmseed_memory_realloc (msr->datasamples, unpacksize, &(msr->datasize));
+      msr->datasamples = libmseed_memory_prealloc (msr->datasamples, unpacksize, &(msr->datasize));
     else
       msr->datasamples = libmseed_memory.realloc (msr->datasamples, unpacksize);
 
