@@ -5,7 +5,7 @@
 NODEBUG=1
 
 INCS = -I.
-OPTS = -D_CRT_SECURE_NO_WARNINGS
+OPTS = /O2 /D_CRT_SECURE_NO_WARNINGS
 LIB = libmseed.lib
 DLL = libmseed.dll
 
