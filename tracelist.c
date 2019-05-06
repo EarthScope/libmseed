@@ -854,6 +854,7 @@ MS3TraceSeg *
 mstl3_msr2seg (MS3Record *msr, nstime_t endtime)
 {
   MS3TraceSeg *seg = 0;
+  size_t datasize = 0;
   int samplesize;
 
   if (!(seg = (MS3TraceSeg *)libmseed_memory.malloc (sizeof (MS3TraceSeg))))
@@ -874,16 +875,23 @@ mstl3_msr2seg (MS3Record *msr, nstime_t endtime)
   /* Allocate space for and copy datasamples */
   if (msr->datasamples && msr->numsamples)
   {
-    samplesize = ms_samplesize (msr->sampletype);
+    if (!(samplesize = ms_samplesize (msr->sampletype)))
+    {
+      ms_log (2, "%s(): Unknown sample size for sample type: %c\n", __func__, msr->sampletype);
+      return 0;
+    }
 
-    if (!(seg->datasamples = libmseed_memory.malloc ((size_t) (samplesize * msr->numsamples))))
+    datasize = samplesize * msr->numsamples;
+
+    if (!(seg->datasamples = libmseed_memory.malloc ((size_t) (datasize))))
     {
       ms_log (2, "%s(): Error allocating memory\n", __func__);
       return 0;
     }
+    seg->datasize = datasize;
 
     /* Copy data samples from MS3Record to MS3TraceSeg */
-    memcpy (seg->datasamples, msr->datasamples, (size_t) (samplesize * msr->numsamples));
+    memcpy (seg->datasamples, msr->datasamples, datasize);
   }
 
   return seg;
@@ -903,7 +911,8 @@ MS3TraceSeg *
 mstl3_addmsrtoseg (MS3TraceSeg *seg, MS3Record *msr, nstime_t endtime, int8_t whence)
 {
   int samplesize = 0;
-  void *newdatasamples;
+  void *newdatasamples = NULL;
+  size_t newdatasize = 0;
 
   if (!seg || !msr)
     return 0;
@@ -924,13 +933,12 @@ mstl3_addmsrtoseg (MS3TraceSeg *seg, MS3Record *msr, nstime_t endtime, int8_t wh
       return 0;
     }
 
+    newdatasize = (seg->numsamples + msr->numsamples) * samplesize;
+
     if (libmseed_prealloc_block_size)
-      newdatasamples = libmseed_memory_prealloc (seg->datasamples,
-                                                 (size_t) ((seg->numsamples + msr->numsamples) * samplesize),
-                                                 &(seg->datasize));
+      newdatasamples = libmseed_memory_prealloc (seg->datasamples, newdatasize, &(seg->datasize));
     else
-      newdatasamples = libmseed_memory.realloc (seg->datasamples,
-                                                (size_t) ((seg->numsamples + msr->numsamples) * samplesize));
+      newdatasamples = libmseed_memory.realloc (seg->datasamples, newdatasize);
 
     if (!newdatasamples)
     {
@@ -939,6 +947,7 @@ mstl3_addmsrtoseg (MS3TraceSeg *seg, MS3Record *msr, nstime_t endtime, int8_t wh
     }
 
     seg->datasamples = newdatasamples;
+    seg->datasize = newdatasize;
   }
 
   /* Add coverage to end of segment */
@@ -993,7 +1002,8 @@ MS3TraceSeg *
 mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
 {
   int samplesize = 0;
-  void *newdatasamples;
+  void *newdatasamples = NULL;
+  size_t newdatasize = 0;
 
   if (!seg1 || !seg2)
     return 0;
@@ -1014,13 +1024,12 @@ mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
       return 0;
     }
 
+    newdatasize = (seg1->numsamples + seg2->numsamples) * samplesize;
+
     if (libmseed_prealloc_block_size)
-      newdatasamples = libmseed_memory_prealloc (seg1->datasamples,
-                                                 (size_t) ((seg1->numsamples + seg2->numsamples) * samplesize),
-                                                 &(seg1->datasize));
+      newdatasamples = libmseed_memory_prealloc (seg1->datasamples, newdatasize, &(seg1->datasize));
     else
-      newdatasamples = libmseed_memory.realloc (seg1->datasamples,
-                                                (size_t) ((seg1->numsamples + seg2->numsamples) * samplesize));
+      newdatasamples = libmseed_memory.realloc (seg1->datasamples, newdatasize);
 
     if (!newdatasamples)
     {
@@ -1029,6 +1038,7 @@ mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
     }
 
     seg1->datasamples = newdatasamples;
+    seg1->datasize = newdatasize;
   }
 
   /* Add seg2 coverage to end of seg1 */
@@ -1144,6 +1154,7 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
           ms_log (2, "mstl3_convertsamples: cannot re-allocate buffer for sample conversion\n");
           return -1;
         }
+        seg->datasize = seg->numsamples * sizeof (int32_t);
       }
     }
 
@@ -1171,6 +1182,7 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
           ms_log (2, "mstl3_convertsamples: cannot re-allocate buffer after sample conversion\n");
           return -1;
         }
+        seg->datasize = seg->numsamples * sizeof (float);
       }
     }
 
@@ -1202,6 +1214,7 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
     }
 
     seg->datasamples = ddata;
+    seg->datasize = seg->numsamples * sizeof (double);
     seg->sampletype = 'd';
   } /* Done converting to 64-bit doubles */
 
@@ -1270,7 +1283,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
   int segpackedrecords = 0;
   int64_t segpackedsamples = 0;
   int samplesize;
-  int64_t bufsize;
+  size_t bufsize;
   size_t extralength;
 
   if (!mstl || !record_handler)
@@ -1342,25 +1355,32 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
         else
           seg->starttime = ms_sampletime (seg->starttime, segpackedsamples, seg->samprate);
 
-        samplesize = ms_samplesize (seg->sampletype);
+        if (!(samplesize = ms_samplesize (seg->sampletype)))
+        {
+          ms_log (2, "%s(): Unknown sample size for sample type: %c\n", __func__, seg->sampletype);
+          return 0;
+        }
+
         bufsize = (seg->numsamples - segpackedsamples) * samplesize;
 
         if (bufsize > 0)
         {
           memmove (seg->datasamples,
                    (uint8_t *)seg->datasamples + (segpackedsamples * samplesize),
-                   (size_t)bufsize);
+                   bufsize);
 
           /* Reallocate buffer for reduced size needed, only if not pre-allocating */
           if (libmseed_prealloc_block_size == 0)
           {
-            seg->datasamples = libmseed_memory.realloc (seg->datasamples, (size_t)bufsize);
+            seg->datasamples = libmseed_memory.realloc (seg->datasamples, bufsize);
 
             if (seg->datasamples == NULL)
             {
               ms_log (2, "%s(): Cannot (re)allocate datasamples buffer\n", __func__);
               return -1;
             }
+
+            seg->datasize = bufsize;
           }
         }
         else
@@ -1368,6 +1388,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
           if (seg->datasamples)
             libmseed_memory.free (seg->datasamples);
           seg->datasamples = NULL;
+          seg->datasize = 0;
         }
 
         seg->samplecnt -= segpackedsamples;
@@ -1383,7 +1404,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
     id = id->next;
   }
 
-  /* The record structure never owns the actual data so it should not free it. */
+  /* The record structure never owns the actual data so it should not free it */
   msr->datasamples = NULL;
   msr3_free (&msr);
 

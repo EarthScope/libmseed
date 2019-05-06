@@ -284,7 +284,7 @@ typedef struct MS3Record {
 
   /* Data sample fields */
   void           *datasamples;       //!< Data samples, \a numsamples of type \a sampletype
-  size_t          datasize;          //!< Size of data sample buffer
+  size_t          datasize;          //!< Size of datasamples buffer in bytes
   int64_t         numsamples;        //!< Number of data samples in datasamples
   char            sampletype;        //!< Sample type code: a, i, f, d @ref sample-types
 } MS3Record;
@@ -424,7 +424,7 @@ typedef struct MS3TraceSeg {
   double          samprate;          //!< Nominal sample rate (Hz)
   int64_t         samplecnt;         //!< Number of samples in trace coverage
   void           *datasamples;       //!< Data samples, \a numsamples of type \a sampletype
-  size_t          datasize;          //!< Size of data sample buffer
+  size_t          datasize;          //!< Size of datasamples buffer in bytes
   int64_t         numsamples;        //!< Number of data samples in datasamples
   char            sampletype;        //!< Sample type code, see @ref sample-types
   void           *prvtptr;           //!< Private pointer for general use, unused by library

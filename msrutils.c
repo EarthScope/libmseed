@@ -43,7 +43,8 @@
 MS3Record *
 msr3_init (MS3Record *msr)
 {
-  void *datasamples = 0;
+  void *datasamples = NULL;
+  size_t datasize = 0;
 
   if (!msr)
   {
@@ -52,6 +53,7 @@ msr3_init (MS3Record *msr)
   else
   {
     datasamples = msr->datasamples;
+    datasize = msr->datasize;
 
     if (msr->extra)
       libmseed_memory.free (msr->extra);
@@ -66,6 +68,7 @@ msr3_init (MS3Record *msr)
   memset (msr, 0, sizeof (MS3Record));
 
   msr->datasamples = datasamples;
+  msr->datasize = datasize;
 
   msr->reclen    = -1;
   msr->samplecnt = -1;
@@ -116,6 +119,7 @@ MS3Record *
 msr3_duplicate (MS3Record *msr, int8_t datadup)
 {
   MS3Record *dupmsr = 0;
+  size_t datasize = 0;
   int samplesize = 0;
 
   if (!msr)
@@ -159,20 +163,24 @@ msr3_duplicate (MS3Record *msr, int8_t datadup)
       return NULL;
     }
 
+    datasize = msr->numsamples * samplesize;
+
     /* Allocate memory for new data array */
-    if ((dupmsr->datasamples = libmseed_memory.malloc ((size_t) (msr->numsamples * samplesize))) == NULL)
+    if ((dupmsr->datasamples = libmseed_memory.malloc ((size_t) (datasize))) == NULL)
     {
       ms_log (2, "%s(): Error allocating memory\n", __func__);
       msr3_free (&dupmsr);
       return NULL;
     }
+    msr->datasize = datasize;
 
-    memcpy (dupmsr->datasamples, msr->datasamples, ((size_t) (msr->numsamples * samplesize)));
+    memcpy (dupmsr->datasamples, msr->datasamples, datasize);
   }
   /* Otherwise make sure the sample array and count are zero */
   else
   {
-    dupmsr->datasamples = 0;
+    dupmsr->datasamples = NULL;
+    dupmsr->datasize = 0;
     dupmsr->numsamples  = 0;
   }
 
