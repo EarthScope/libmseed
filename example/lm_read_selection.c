@@ -98,7 +98,7 @@ main (int argc, char **argv)
         starttimestr[0] = endtimestr[0] = '\0';
       }
 
-      ms_log (0, "  Segment %s - %s, samples: %d, sample rate: %g, sample type: %c\n",
+      ms_log (0, "  Segment %s - %s, samples: %" PRId64 ", sample rate: %g, sample type: %c\n",
               starttimestr, endtimestr, seg->numsamples, seg->samprate, seg->sampletype);
 
       seg = seg->next;
