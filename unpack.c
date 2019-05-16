@@ -45,7 +45,7 @@
  * Unpack a miniSEED 3.x data record and populate a MS3Record struct.
  *
  * If MSF_UNPACKDATA is set in flags, the data samples are
- * unpacked/decompressed and the MS3Record->datasamples pointer is set
+ * unpacked/decompressed and the ::MS3Record.datasamples pointer is set
  * appropriately.  The data samples will be either 32-bit integers,
  * 32-bit floats or 64-bit floats (doubles) with the same byte order
  * as the host machine.  The MS3Record->numsamples will be set to the
@@ -224,7 +224,8 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
     if (msr->datasamples)
       libmseed_memory.free (msr->datasamples);
 
-    msr->datasamples = 0;
+    msr->datasamples = NULL;
+    msr->datasize = 0;
     msr->numsamples = 0;
   }
 
@@ -235,7 +236,7 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
  * Unpack a miniSEED 2.x data record and populate a MS3Record struct.
  *
  * If MSF_UNPACKDATA is set in flags the data samples are
- * unpacked/decompressed and the MS3Record->datasamples pointer is set
+ * unpacked/decompressed and the ::MS3Record.datasamples pointer is set
  * appropriately.  The data samples will be either 32-bit integers,
  * 32-bit floats or 64-bit floats (doubles) with the same byte order
  * as the host machine.  The MS3Record->numsamples will be set to the
@@ -987,7 +988,8 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     if (msr->datasamples)
       libmseed_memory.free (msr->datasamples);
 
-    msr->datasamples = 0;
+    msr->datasamples = NULL;
+    msr->datasize = 0;
     msr->numsamples = 0;
   }
 
@@ -1226,11 +1228,20 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   /* (Re)Allocate space for the unpacked data */
   if (unpacksize > 0)
   {
-    msr->datasamples = libmseed_memory.realloc (msr->datasamples, unpacksize);
+    if (libmseed_prealloc_block_size)
+    {
+      msr->datasamples = libmseed_memory_prealloc (msr->datasamples, unpacksize, &(msr->datasize));
+    }
+    else
+    {
+      msr->datasamples = libmseed_memory.realloc (msr->datasamples, unpacksize);
+      msr->datasize = unpacksize;
+    }
 
     if (msr->datasamples == NULL)
     {
       ms_log (2, "%s(%s): Cannot (re)allocate memory\n", __func__, msr->sid);
+      msr->datasize = 0;
       if (encoded_allocated)
         libmseed_memory.free (encoded_allocated);
       return MS_GENERROR;
@@ -1240,7 +1251,8 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   {
     if (msr->datasamples)
       libmseed_memory.free (msr->datasamples);
-    msr->datasamples = 0;
+    msr->datasamples = NULL;
+    msr->datasize = 0;
     msr->numsamples = 0;
   }
 

@@ -5,7 +5,7 @@
 NODEBUG=1
 
 INCS = /I..
-OPTS = -D_CRT_SECURE_NO_WARNINGS
+OPTS = /O2 /D_CRT_SECURE_NO_WARNINGS
 LIBS = ../libmseed.lib
 
 SRCS = mseedview.c lm_parse.c lm_pack.c lm_pack_rollingbuffer.c lm_read_selection.c lm_read_buffer.c

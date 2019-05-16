@@ -1,3 +1,6 @@
+2019.135:
+	- Add pre-allocation of data buffers, enable on Windows and disable otherwise.
+
 2019.103: 3.0.2
 	- mstl3_pack() can be called without modifying the Trace List with MSF_MAINTAINMSTL flag.
 	- Add lm_pack_rollingbuffer.c example of generating records with a rolling buffer.

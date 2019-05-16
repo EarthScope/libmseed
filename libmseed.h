@@ -32,7 +32,7 @@ extern "C" {
 #endif
 
 #define LIBMSEED_VERSION "3.0.3"    //!< Library version
-#define LIBMSEED_RELEASE "2019.123" //!< Library release date
+#define LIBMSEED_RELEASE "2019.124" //!< Library release date
 
 /* C99 standard headers */
 #include <stdlib.h>
@@ -284,6 +284,7 @@ typedef struct MS3Record {
 
   /* Data sample fields */
   void           *datasamples;       //!< Data samples, \a numsamples of type \a sampletype
+  size_t          datasize;          //!< Size of datasamples buffer in bytes
   int64_t         numsamples;        //!< Number of data samples in datasamples
   char            sampletype;        //!< Sample type code: a, i, f, d @ref sample-types
 } MS3Record;
@@ -309,6 +310,7 @@ extern void       msr3_free (MS3Record **ppmsr);
 extern MS3Record* msr3_duplicate (MS3Record *msr, int8_t datadup);
 extern nstime_t   msr3_endtime (MS3Record *msr);
 extern void       msr3_print (MS3Record *msr, int8_t details);
+extern int        msr3_resize_buffer (MS3Record *msr);
 extern double     msr3_sampratehz (MS3Record *msr);
 extern double     msr3_host_latency (MS3Record *msr);
 
@@ -423,6 +425,7 @@ typedef struct MS3TraceSeg {
   double          samprate;          //!< Nominal sample rate (Hz)
   int64_t         samplecnt;         //!< Number of samples in trace coverage
   void           *datasamples;       //!< Data samples, \a numsamples of type \a sampletype
+  size_t          datasize;          //!< Size of datasamples buffer in bytes
   int64_t         numsamples;        //!< Number of data samples in datasamples
   char            sampletype;        //!< Sample type code, see @ref sample-types
   void           *prvtptr;           //!< Private pointer for general use, unused by library
@@ -494,6 +497,7 @@ extern int64_t       mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *bu
                                                  MS3Tolerance *tolerance, MS3Selections *selections,
                                                  int8_t verbose);
 extern int mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate);
+extern int mstl3_resize_buffers (MS3TraceList *mstl);
 extern int mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
                        void *handlerdata, int reclen, int8_t encoding,
                        int64_t *packedsamples, uint32_t flags, int8_t verbose,
@@ -918,6 +922,27 @@ typedef struct LIBMSEED_MEMORY
 
 /** Global memory management function list */
 extern LIBMSEED_MEMORY libmseed_memory;
+
+/** Global pre-allocation block size.
+ *
+ * When non-zero, memory re-allocations will be increased in blocks of this
+ * size.  This is useful on platforms where the system realloc() is slow
+ * such as Windows.
+ *
+ * Default on Windows is 1 MiB, otherwise disabled.
+ *
+ * Set to 0 to disable pre-allocation.
+ *
+ * @see msr3_resize_buffer
+ * @see mstl3_resize_buffers
+ */
+extern size_t libmseed_prealloc_block_size;
+
+/** Internal realloc() wrapper that allocates in ::libmseed_prealloc_block_size blocks
+ *
+ * Preallocation is used by default on Windows and disabled otherwise.
+ * */
+extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsize);
 
 /** @} */
 
