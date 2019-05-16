@@ -1159,7 +1159,8 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
       /* Reallocate buffer for reduced size needed, only if not pre-allocating */
       if (libmseed_prealloc_block_size == 0)
       {
-        if (!(seg->datasamples = libmseed_memory.realloc (seg->datasamples, (size_t) (seg->numsamples * sizeof (int32_t)))))
+        if (!(seg->datasamples = libmseed_memory.realloc (seg->datasamples,
+                                                          (size_t) (seg->numsamples * sizeof (int32_t)))))
         {
           ms_log (2, "mstl3_convertsamples: cannot re-allocate buffer for sample conversion\n");
           return -1;
@@ -1187,7 +1188,8 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
       /* Reallocate buffer for reduced size needed, only if not pre-allocating */
       if (libmseed_prealloc_block_size == 0)
       {
-        if (!(seg->datasamples = libmseed_memory.realloc (seg->datasamples, (size_t) (seg->numsamples * sizeof (float)))))
+        if (!(seg->datasamples = libmseed_memory.realloc (seg->datasamples,
+                                                          (size_t) (seg->numsamples * sizeof (float)))))
         {
           ms_log (2, "mstl3_convertsamples: cannot re-allocate buffer after sample conversion\n");
           return -1;
@@ -1230,6 +1232,64 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
 
   return 0;
 } /* End of mstl3_convertsamples() */
+
+/**********************************************************************/ /**
+ * @brief Resize data sample buffers of ::MS3TraceList to what is needed
+ *
+ * This routine should only be used if pre-allocation of memory, via
+ * ::libmseed_prealloc_block_size, was enabled to allocate the buffers.
+ *
+ * @param[in] mstl ::MS3TraceList to resize buffers
+ *
+ * @returns Return 0 on success, otherwise returns a libmseed error code.
+ ***************************************************************************/
+int
+mstl3_resize_buffers (MS3TraceList *mstl)
+{
+  MS3TraceID *id = NULL;
+  MS3TraceSeg *seg = NULL;
+  uint8_t samplesize = 0;
+  size_t datasize;
+
+  if (!mstl)
+    return MS_GENERROR;
+
+  /* Loop through trace ID and segment lists */
+  id = mstl->traces;
+  while (id)
+  {
+    seg = id->first;
+    while (seg)
+    {
+      samplesize = ms_samplesize(seg->sampletype);
+
+      if (samplesize && seg->datasamples && seg->numsamples > 0)
+      {
+        datasize = (size_t) seg->numsamples * samplesize;
+
+        if (seg->datasize > datasize)
+        {
+          seg->datasamples = libmseed_memory.realloc (seg->datasamples, datasize);
+
+          if (seg->datasamples == NULL)
+          {
+            ms_log (2, "%s(%s): Cannot (re)allocate memory\n", __func__, id->sid);
+            return MS_GENERROR;
+          }
+
+          seg->datasize = datasize;
+        }
+      }
+
+      seg = seg->next;
+    }
+
+    id = id->next;
+  }
+
+  return 0;
+} /* End of mstl3_resize_buffers() */
+
 
 /**********************************************************************/ /**
  * @brief Pack ::MS3TraceList data into miniSEED records

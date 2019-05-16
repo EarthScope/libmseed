@@ -310,6 +310,7 @@ extern void       msr3_free (MS3Record **ppmsr);
 extern MS3Record* msr3_duplicate (MS3Record *msr, int8_t datadup);
 extern nstime_t   msr3_endtime (MS3Record *msr);
 extern void       msr3_print (MS3Record *msr, int8_t details);
+extern int        msr3_resize_buffer (MS3Record *msr);
 extern double     msr3_sampratehz (MS3Record *msr);
 extern double     msr3_host_latency (MS3Record *msr);
 
@@ -496,6 +497,7 @@ extern int64_t       mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *bu
                                                  MS3Tolerance *tolerance, MS3Selections *selections,
                                                  int8_t verbose);
 extern int mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate);
+extern int mstl3_resize_buffers (MS3TraceList *mstl);
 extern int mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
                        void *handlerdata, int reclen, int8_t encoding,
                        int64_t *packedsamples, uint32_t flags, int8_t verbose,
@@ -930,6 +932,9 @@ extern LIBMSEED_MEMORY libmseed_memory;
  * Default on Windows is 1 MiB, otherwise disabled.
  *
  * Set to 0 to disable pre-allocation.
+ *
+ * @see msr3_resize_buffer
+ * @see mstl3_resize_buffers
  */
 extern size_t libmseed_prealloc_block_size;
 
