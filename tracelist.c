@@ -936,18 +936,23 @@ mstl3_addmsrtoseg (MS3TraceSeg *seg, MS3Record *msr, nstime_t endtime, int8_t wh
     newdatasize = (seg->numsamples + msr->numsamples) * samplesize;
 
     if (libmseed_prealloc_block_size)
+    {
       newdatasamples = libmseed_memory_prealloc (seg->datasamples, newdatasize, &(seg->datasize));
+    }
     else
+    {
       newdatasamples = libmseed_memory.realloc (seg->datasamples, newdatasize);
+      seg->datasize = newdatasize;
+    }
 
     if (!newdatasamples)
     {
       ms_log (2, "%s(): Error allocating memory\n", __func__);
+      seg->datasize = 0;
       return 0;
     }
 
     seg->datasamples = newdatasamples;
-    seg->datasize = newdatasize;
   }
 
   /* Add coverage to end of segment */
@@ -1027,18 +1032,23 @@ mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
     newdatasize = (seg1->numsamples + seg2->numsamples) * samplesize;
 
     if (libmseed_prealloc_block_size)
+    {
       newdatasamples = libmseed_memory_prealloc (seg1->datasamples, newdatasize, &(seg1->datasize));
+    }
     else
+    {
       newdatasamples = libmseed_memory.realloc (seg1->datasamples, newdatasize);
+      seg1->datasize = newdatasize;
+    }
 
     if (!newdatasamples)
     {
       ms_log (2, "%s(): Error allocating memory\n", __func__);
+      seg1->datasize = 0;
       return 0;
     }
 
     seg1->datasamples = newdatasamples;
-    seg1->datasize = newdatasize;
   }
 
   /* Add seg2 coverage to end of seg1 */
