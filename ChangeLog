@@ -1,3 +1,6 @@
+2019.137:
+	- Allow packing records with no payload, i.e. header-only.
+
 2019.135:
 	- Add pre-allocation of data buffers, enable on Windows and disable otherwise.
 
@@ -48,7 +51,7 @@
 
 	- Remove all platform defines (LWP_*) except LWP_WIN for MS Windows.
 
-        - Rename all library structs by removing the "_s" suffix so they match their typedef names
+	- Rename all library structs by removing the "_s" suffix so they match their typedef names
 
 	- Rename macros and functions specific to miniSEED 2.x by adding "2".
 

@@ -780,14 +780,11 @@ msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
   }
 
   /* Pack the MS3Record */
-  if (msr->numsamples > 0)
-  {
-    packedrecords = msr3_pack (msr, &ms_record_handler_int, ofp, NULL, flags, verbose - 1);
+  packedrecords = msr3_pack (msr, &ms_record_handler_int, ofp, NULL, flags, verbose - 1);
 
-    if (packedrecords < 0)
-    {
-      ms_log (1, "Cannot write miniSEED for %s\n", msr->sid);
-    }
+  if (packedrecords < 0)
+  {
+    ms_log (1, "Cannot write miniSEED for %s\n", msr->sid);
   }
 
   /* Close file and return record count */

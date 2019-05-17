@@ -186,20 +186,6 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     return -1;
   }
 
-  if (msr->numsamples <= 0)
-  {
-    ms_log (2, "%s(%s): No samples to pack\n", __func__, msr->sid);
-    return -1;
-  }
-
-  samplesize = ms_samplesize (msr->sampletype);
-
-  if (!samplesize)
-  {
-    ms_log (2, "%s(%s): Unknown sample type '%c'\n", __func__, msr->sid, msr->sampletype);
-    return -1;
-  }
-
   /* Check to see if byte swapping is needed, miniSEED 3 is little endian */
   swapflag = (ms_bigendianhost ()) ? 1 : 0;
 
@@ -218,6 +204,39 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   if (dataoffset < 0)
   {
     ms_log (2, "%s(%s): Cannot pack miniSEED version 3 header\n", __func__, msr->sid);
+    return -1;
+  }
+
+  /* Short cut: if there are no samples, record packing is complete */
+  if (msr->numsamples <= 0)
+  {
+    /* Set encoding to ASCII for consistency and to reduce expectations */
+    *pMS3FSDH_ENCODING(rawrec) = DE_ASCII;
+
+    /* Calculate CRC (with CRC field set to 0) and set */
+    memset (pMS3FSDH_CRC(rawrec), 0, sizeof(uint32_t));
+    crc = ms_crc32c ((const uint8_t*)rawrec, dataoffset, 0);
+    *pMS3FSDH_CRC(rawrec) = HO4u (crc, swapflag);
+
+    if (verbose >= 1)
+      ms_log (1, "%s: Packed %d byte record with no payload\n", msr->sid, dataoffset);
+
+    /* Send record to handler */
+    record_handler (rawrec, dataoffset, handlerdata);
+
+    libmseed_memory.free (rawrec);
+
+    if (packedsamples)
+      *packedsamples = 0;
+
+    return 1;
+  }
+
+  samplesize = ms_samplesize (msr->sampletype);
+
+  if (!samplesize)
+  {
+    ms_log (2, "%s(%s): Unknown sample type '%c'\n", __func__, msr->sid, msr->sampletype);
     return -1;
   }
 
