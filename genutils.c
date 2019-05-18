@@ -108,7 +108,7 @@ static const int monthdays_leap[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30,
 /* Check that a nanosecond is in a valid range */
 #define VALIDNANOSEC(nanosec) (nanosec >= 0 && nanosec <= 999999999)
 
-/** @endcond End of UNDOCUMENTED */
+/** @endcond */
 
 
 /**********************************************************************/ /**

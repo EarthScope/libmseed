@@ -301,6 +301,8 @@ extern int msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
 
 extern int msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
 
+extern int msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
+
 extern int msr3_unpack_data (MS3Record *msr, int8_t verbose);
 
 extern int msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint16_t *datasize);
