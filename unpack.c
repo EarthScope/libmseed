@@ -411,7 +411,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   if (*pMS2FSDH_DQFLAGS (record) & 0x80) /* Bit 7 */
     msr->flags |= 0x02;
 
-  dval = (double) HO4u (*pMS2FSDH_TIMECORRECT (record), msr->swapflag);
+  dval = (double)HO4d (*pMS2FSDH_TIMECORRECT (record), msr->swapflag);
   if (dval != 0.0)
   {
     dval = dval / 10000.0;

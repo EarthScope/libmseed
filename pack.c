@@ -29,6 +29,7 @@
 #include "libmseed.h"
 #include "mseedformat.h"
 #include "packdata.h"
+#include "parson.h"
 
 /* Internal from another source file */
 extern double ms_nomsamprate (int factor, int multiplier);
@@ -813,9 +814,6 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   int written = 0;
   int8_t swapflag;
 
-  char header_string[64];
-  double header_number;
-
   char network[64];
   char station[64];
   char location[64];
@@ -835,6 +833,13 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   int16_t factor;
   int16_t multiplier;
   uint16_t *next_blockette = NULL;
+
+  JSON_Object *rootobject = NULL;
+  JSON_Value *rootvalue   = NULL;
+  JSON_Value *extravalue  = NULL;
+
+  const char *header_string;
+  double header_number;
 
   if (!msr || !record)
     return -1;
@@ -909,10 +914,34 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
     return -1;
   }
 
+  /* Parse extra headers if present */
+  if (msr->extra && msr->extralength > 0)
+  {
+    json_set_allocation_functions (libmseed_memory.malloc,
+                                   libmseed_memory.free);
+
+    /* Parse JSON extra headers */
+    rootvalue = json_parse_string (msr->extra);
+    if (!rootvalue)
+    {
+      ms_log (2, "%s(): Extra headers are not JSON\n", __func__);
+      return -1;
+    }
+
+    /* Get expected root object */
+    rootobject = json_value_get_object (rootvalue);
+    if (!rootobject)
+    {
+      ms_log (2, "%s(): Extra headers are not a JSON object\n", __func__);
+      json_value_free (rootvalue);
+      return -1;
+    }
+  }
+
   /* Build fixed header */
   memcpy (pMS2FSDH_SEQNUM (record), "000000", 6);
 
-  if (mseh_get_string (msr, "FDSN.DataQuality", header_string, sizeof (header_string)) == 0 &&
+  if ((header_string = json_object_dotget_string (rootobject, "FDSN.DataQuality")) &&
       MS2_ISDATAINDICATOR (header_string[0]))
     *pMS2FSDH_DATAQUALITY (record) = header_string[0];
   else
@@ -935,14 +964,72 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   *pMS2FSDH_SAMPLERATEFACT (record) = HO2d (factor, swapflag);
   *pMS2FSDH_SAMPLERATEMULT (record) = HO2d (multiplier, swapflag);
 
-  /* TODO, set these flags if needed
-  pMS2FSDH_ACTFLAGS(record)        ((uint8_t*)((uint8_t*)record+36))
-  pMS2FSDH_IOFLAGS(record)         ((uint8_t*)((uint8_t*)record+37))
-  pMS2FSDH_DQFLAGS(record)         ((uint8_t*)((uint8_t*)record+38))
-  */
+  /* Map activity bit flags */
+  *pMS2FSDH_ACTFLAGS (record) = 0;
+  if (msr->flags & 0x01) /* Bit 0 */
+    *pMS2FSDH_ACTFLAGS (record) |= 0x01;
+  if (json_object_dotget_boolean (rootobject, "FDSN.Event.Begin") == 1) /* Bit 2 */
+    *pMS2FSDH_ACTFLAGS (record) |= 0x04;
+  if (json_object_dotget_boolean (rootobject, "FDSN.Event.End") == 1) /* Bit 3 */
+    *pMS2FSDH_ACTFLAGS (record) |= 0x08;
+
+  if ((extravalue = json_object_dotget_value (rootobject, "FDSN.Time.LeapSecond")) &&
+      json_value_get_type (extravalue) == JSONNumber)
+  {
+    if (json_value_get_number (extravalue) > 0) /* Bit 4 */
+      *pMS2FSDH_ACTFLAGS (record) |= 0x10;
+    if (json_value_get_number (extravalue) < 0) /* Bit 5 */
+      *pMS2FSDH_ACTFLAGS (record) |= 0x20;
+  }
+
+  if (json_object_dotget_boolean (rootobject, "FDSN.Event.InProgress") == 1) /* Bit 6 */
+    *pMS2FSDH_ACTFLAGS (record) |= 0x40;
+
+  /* Map I/O and clock bit flags */
+  *pMS2FSDH_IOFLAGS (record) = 0;
+  if (json_object_dotget_boolean (rootobject, "FDSN.Flags.StationVolumeParityError") == 1) /* Bit 0 */
+    *pMS2FSDH_IOFLAGS (record) |= 0x01;
+  if (json_object_dotget_boolean (rootobject, "FDSN.Flags.LongRecordRead") == 1) /* Bit 1 */
+    *pMS2FSDH_IOFLAGS (record) |= 0x02;
+  if (json_object_dotget_boolean (rootobject, "FDSN.Flags.ShortRecordRead") == 1) /* Bit 2 */
+    *pMS2FSDH_IOFLAGS (record) |= 0x04;
+  if (json_object_dotget_boolean (rootobject, "FDSN.Flags.StartOfTimeSeries") == 1) /* Bit 3 */
+    *pMS2FSDH_IOFLAGS (record) |= 0x08;
+  if (json_object_dotget_boolean (rootobject, "FDSN.Flags.EndOfTimeSeries") == 1) /* Bit 4 */
+    *pMS2FSDH_IOFLAGS (record) |= 0x10;
+  if (msr->flags & 0x04) /* Bit 5 */
+    *pMS2FSDH_IOFLAGS (record) |= 0x20;
+
+  /* Map data quality bit flags */
+  *pMS2FSDH_DQFLAGS (record) = 0;
+  if (json_object_dotget_boolean (rootobject, "FDSN.Flags.AmplifierSaturation") == 1) /* Bit 0 */
+    *pMS2FSDH_DQFLAGS (record) |= 0x01;
+  if (json_object_dotget_boolean (rootobject, "FDSN.Flags.DigitizerClipping") == 1) /* Bit 1 */
+    *pMS2FSDH_DQFLAGS (record) |= 0x02;
+  if (json_object_dotget_boolean (rootobject, "FDSN.Flags.Spikes") == 1) /* Bit 2 */
+    *pMS2FSDH_DQFLAGS (record) |= 0x04;
+  if (json_object_dotget_boolean (rootobject, "FDSN.Flags.Glitches") == 1) /* Bit 3 */
+    *pMS2FSDH_DQFLAGS (record) |= 0x08;
+  if (json_object_dotget_boolean (rootobject, "FDSN.Flags.MissingData") == 1) /* Bit 4 */
+    *pMS2FSDH_DQFLAGS (record) |= 0x10;
+  if (json_object_dotget_boolean (rootobject, "FDSN.Flags.TelemetrySyncError") == 1) /* Bit 5 */
+    *pMS2FSDH_DQFLAGS (record) |= 0x20;
+  if (json_object_dotget_boolean (rootobject, "FDSN.Flags.FilterCharging") == 1) /* Bit 6 */
+    *pMS2FSDH_DQFLAGS (record) |= 0x40;
+  if (msr->flags & 0x02) /* Bit 7 */
+    *pMS2FSDH_DQFLAGS (record) |= 0x80;
+
+  if ((extravalue = json_object_dotget_value (rootobject, "FDSN.Time.Correction")) &&
+      json_value_get_type (extravalue) == JSONNumber)
+  {
+    *pMS2FSDH_TIMECORRECT (record) = HO4d (json_value_get_number (extravalue) * 10000, swapflag);
+  }
+  else
+  {
+    *pMS2FSDH_TIMECORRECT (record) = 0;
+  }
 
   *pMS2FSDH_NUMBLOCKETTES (record)   = 1;
-  *pMS2FSDH_TIMECORRECT (record)     = 0;
   *pMS2FSDH_DATAOFFSET (record)      = 0;
   *pMS2FSDH_BLOCKETTEOFFSET (record) = HO2u (48, swapflag);
 
@@ -998,7 +1085,14 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
     written += 12;
   }
 
-  //TODO add all other blockettes if needed
+  // FDSN.Time.Exception array B500
+
+  // FDSN.Event.Detection array B200, 201
+
+  // FDSN.Event.Calibration.Sequence array B300, 310, 320, 390
+
+  if (rootvalue)
+    json_value_free (rootvalue);
 
   return written;
 } /* End of msr3_pack_header2() */
