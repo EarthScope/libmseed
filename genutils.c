@@ -1078,7 +1078,7 @@ ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec)
  * @returns epoch time on success and ::NSTERROR on error.
  ***************************************************************************/
 nstime_t
-ms_timestr2nstime (char *timestr)
+ms_timestr2nstime (const char *timestr)
 {
   int fields;
   int year    = 0;
@@ -1177,7 +1177,7 @@ ms_timestr2nstime (char *timestr)
  * @returns epoch time on success and ::NSTERROR on error.
  ***************************************************************************/
 nstime_t
-ms_seedtimestr2nstime (char *seedtimestr)
+ms_seedtimestr2nstime (const char *seedtimestr)
 {
   int fields;
   int year    = 0;

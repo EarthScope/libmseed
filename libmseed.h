@@ -241,8 +241,8 @@ extern char *ms_nstime2timestr (nstime_t nstime, char *timestr,
 extern char *ms_nstime2timestrz (nstime_t nstime, char *timestr,
                                  ms_timeformat_t timeformat, ms_subseconds_t subsecond);
 extern nstime_t ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec);
-extern nstime_t ms_timestr2nstime (char *timestr);
-extern nstime_t ms_seedtimestr2nstime (char *seedtimestr);
+extern nstime_t ms_timestr2nstime (const char *timestr);
+extern nstime_t ms_seedtimestr2nstime (const char *seedtimestr);
 extern int ms_doy2md (int year, int yday, int *month, int *mday);
 extern int ms_md2doy (int year, int month, int mday, int *yday);
 
