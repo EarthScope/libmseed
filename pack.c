@@ -834,12 +834,14 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   int16_t multiplier;
   uint16_t *next_blockette = NULL;
 
-  JSON_Object *rootobject = NULL;
-  JSON_Value *rootvalue   = NULL;
-  JSON_Value *extravalue  = NULL;
-
+  JSON_Object *rootobject  = NULL;
+  JSON_Value *rootvalue    = NULL;
+  JSON_Value *extravalue   = NULL;
+  JSON_Array *extraarray   = NULL;
+  JSON_Object *extraobject = NULL;
   const char *header_string;
-  double header_number;
+  nstime_t header_time;
+  int idx;
 
   if (!msr || !record)
     return -1;
@@ -947,7 +949,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   else
     *pMS2FSDH_DATAQUALITY (record) = 'D';
 
-  *pMS2FSDH_RESERVED (record) = 0;
+  *pMS2FSDH_RESERVED (record) = ' ';
   ms_strncpopen (pMS2FSDH_STATION (record), station, 5);
   ms_strncpopen (pMS2FSDH_LOCATION (record), location, 2);
   ms_strncpopen (pMS2FSDH_CHANNEL (record), channel, 3);
@@ -1048,23 +1050,25 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   written += 8;
 
   /* Add Blockette 1001 if microsecond offset or timing quality is present */
-  if (msec_offset || mseh_exists (msr, "FDSN.Time.Quality"))
+  if (msec_offset ||
+      ((extravalue = json_object_dotget_value (rootobject, "FDSN.Time.Quality")) &&
+       json_value_get_type (extravalue) == JSONNumber))
   {
     *next_blockette = HO2u ((uint16_t)written, swapflag);
-    *pMS2FSDH_NUMBLOCKETTES (record) += 1;
     next_blockette = pMS2B1001_NEXT (record + written);
+    *pMS2FSDH_NUMBLOCKETTES (record) += 1;
 
-    *pMS2B1001_TYPE (record + written)          = HO2u (1001, swapflag);
-    *pMS2B1001_NEXT (record + written)          = 0;
+    *pMS2B1001_TYPE (record + written) = HO2u (1001, swapflag);
+    *pMS2B1001_NEXT (record + written) = 0;
 
-    if (mseh_get_number (msr, "FDSN.Time.Quality", &header_number) == 0)
-      *pMS2B1001_TIMINGQUALITY (record + written) = (uint8_t) (header_number + 0.5);
+    if (extravalue)
+      *pMS2B1001_TIMINGQUALITY (record + written) = (uint8_t) (json_value_get_number (extravalue) + 0.5);
     else
       *pMS2B1001_TIMINGQUALITY (record + written) = 0;
 
-    *pMS2B1001_MICROSECOND (record + written)   = msec_offset;
-    *pMS2B1001_RESERVED (record + written)      = 0;
-    *pMS2B1001_FRAMECOUNT (record + written)    = 0;
+    *pMS2B1001_MICROSECOND (record + written) = msec_offset;
+    *pMS2B1001_RESERVED (record + written)    = 0;
+    *pMS2B1001_FRAMECOUNT (record + written)  = 0;
 
     written += 8;
   }
@@ -1073,8 +1077,8 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   if (ms_dabs(msr3_sampratehz(msr) - ms_nomsamprate(factor, multiplier)) > 0.0001)
   {
     *next_blockette = HO2u ((uint16_t)written, swapflag);
-    *pMS2FSDH_NUMBLOCKETTES (record) += 1;
     next_blockette = pMS2B100_NEXT (record + written);
+    *pMS2FSDH_NUMBLOCKETTES (record) += 1;
 
     *pMS2B100_TYPE (record + written)     = HO2u (100, swapflag);
     *pMS2B100_NEXT (record + written)     = 0;
@@ -1085,7 +1089,85 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
     written += 12;
   }
 
-  // FDSN.Time.Exception array B500
+  /* Add Blockette 500s for timing execeptions */
+  if ((extraarray = json_object_dotget_array (rootobject, "FDSN.Time.Exception")))
+  {
+    for (idx = 0; idx < json_array_get_count(extraarray); idx++)
+    {
+      extraobject = json_array_get_object(extraarray, idx);
+
+      if (!extraobject)
+        continue;
+
+      if ((recbuflen - written) >= 200)
+      {
+        *next_blockette = HO2u ((uint16_t)written, swapflag);
+        next_blockette = pMS2B500_NEXT (record + written);
+        *pMS2FSDH_NUMBLOCKETTES (record) += 1;
+
+        memset (record + written, 0, 200);
+        *pMS2B500_TYPE (record + written) = HO2u (500, swapflag);
+        *pMS2B500_NEXT (record + written) = 0;
+
+        if ((extravalue = json_object_get_value (extraobject, "VCOCorrection")) &&
+            json_value_get_type (extravalue) == JSONNumber)
+          *pMS2B500_VCOCORRECTION(record + written) = HO4f (json_value_get_number (extravalue), swapflag);
+
+        if ((header_string = json_object_get_string (extraobject, "Time")))
+        {
+          if ((header_time = ms_timestr2nstime(header_string)) == NSTERROR)
+          {
+            ms_log (2, "%s(%s): Cannot parse B500 time: %s\n", __func__, msr->sid, header_time);
+            json_value_free (rootvalue);
+            return -1;
+          }
+
+          if (ms_nstime2time (header_time, &year, &day, &hour, &min, &sec, &nsec))
+          {
+            ms_log (2, "%s(%s): Cannot convert B500 time: %" PRId64 "\n", __func__, msr->sid, header_time);
+            json_value_free (rootvalue);
+            return -1;
+          }
+
+          *pMS2B500_YEAR (record + written) = HO2u (year, swapflag);
+          *pMS2B500_DAY (record + written)  = HO2u (day, swapflag);
+          *pMS2B500_HOUR (record + written) = hour;
+          *pMS2B500_MIN (record + written)  = min;
+          *pMS2B500_SEC (record + written)  = sec;
+          *pMS2B500_FSEC (record + written) = HO2u (nsec / 100000, swapflag);
+        }
+
+        *pMS2B500_MICROSECOND (record + written) = msec_offset;
+
+        if ((extravalue = json_object_get_value (extraobject, "ReceptionQuality")) &&
+            json_value_get_type (extravalue) == JSONNumber)
+          *pMS2B500_RECEPTIONQUALITY(record + written) = (uint8_t) json_value_get_number (extravalue);
+
+        if ((extravalue = json_object_get_value (extraobject, "Count")) &&
+            json_value_get_type (extravalue) == JSONNumber)
+          *pMS2B500_EXCEPTIONCOUNT(record + written) = HO4d (json_value_get_number (extravalue), swapflag);
+
+        if ((header_string = json_object_get_string (extraobject, "Type")))
+          ms_strncpopen (pMS2B500_EXCEPTIONTYPE (record + written), header_string, 16);
+
+        if ((header_string = json_object_dotget_string (rootobject, "FDSN.Clock.Model")))
+          ms_strncpopen (pMS2B500_CLOCKMODEL (record + written), header_string, 32);
+
+        if ((header_string = json_object_get_string (extraobject, "ClockStatus")))
+          ms_strncpopen (pMS2B500_CLOCKSTATUS (record + written), header_string, 128);
+
+        written += 200;
+      }
+      else
+      {
+        ms_log (2, "%s(): Record length not large enough for B500\n", __func__);
+        json_value_free (rootvalue);
+        return -1;
+      }
+    } /* End of exception array loop */
+  }
+
+  // TODO 
 
   // FDSN.Event.Detection array B200, 201
 
