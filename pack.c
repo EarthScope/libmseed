@@ -49,6 +49,8 @@ static int msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabyte
 
 static int ms_genfactmult (double samprate, int16_t *factor, int16_t *multiplier);
 
+static uint32_t ms_timestr2btime (const char *timestr, uint8_t *btime, char *sid, int8_t swapflag);
+
 
 /**********************************************************************/ /**
  * @brief Pack data into miniSEED records.
@@ -841,7 +843,6 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   JSON_Array *subarray     = NULL;
   JSON_Object *extraobject = NULL;
   const char *header_string;
-  nstime_t header_time;
   int blockette_type;
   int blockette_length;
   int idx;
@@ -958,6 +959,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   ms_strncpopen (pMS2FSDH_LOCATION (record), location, 2);
   ms_strncpopen (pMS2FSDH_CHANNEL (record), channel, 3);
   ms_strncpopen (pMS2FSDH_NETWORK (record), network, 2);
+
   *pMS2FSDH_YEAR (record)       = HO2u (year, swapflag);
   *pMS2FSDH_DAY (record)        = HO2u (day, swapflag);
   *pMS2FSDH_HOUR (record)       = hour;
@@ -1054,9 +1056,9 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   written += 8;
 
   /* Add Blockette 1001 if microsecond offset or timing quality is present */
-  if (msec_offset ||
-      ((extravalue = json_object_dotget_value (rootobject, "FDSN.Time.Quality")) &&
-       json_value_get_type (extravalue) == JSONNumber))
+  if (((extravalue = json_object_dotget_value (rootobject, "FDSN.Time.Quality")) &&
+       json_value_get_type (extravalue) == JSONNumber) ||
+      msec_offset)
   {
     *next_blockette = HO2u ((uint16_t)written, swapflag);
     next_blockette = pMS2B1001_NEXT (record + written);
@@ -1107,7 +1109,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
       if ((recbuflen - written) < blockette_length)
       {
-        ms_log (2, "%s(): Record length not large enough for B500\n", __func__);
+        ms_log (2, "%s(%s): Record length not large enough for B500\n", __func__, msr->sid);
         json_value_free (rootvalue);
         return -1;
       }
@@ -1126,28 +1128,13 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
       if ((header_string = json_object_get_string (extraobject, "Time")))
       {
-        if ((header_time = ms_timestr2nstime (header_string)) == NSTERROR)
+        if (ms_timestr2btime (header_string, (uint8_t *)pMS2B500_YEAR (record + written),
+                              msr->sid, swapflag) == -1)
         {
-          ms_log (2, "%s(%s): Cannot parse B500 time: %s\n",
-                  __func__, msr->sid, header_string);
+          ms_log (2, "%s(%s): Cannot convert B500 time: %s\n", __func__, msr->sid, header_string);
           json_value_free (rootvalue);
           return -1;
         }
-
-        if (ms_nstime2time (header_time, &year, &day, &hour, &min, &sec, &nsec))
-        {
-          ms_log (2, "%s(%s): Cannot convert B500 time: %" PRId64 "\n",
-                  __func__, msr->sid, header_string);
-          json_value_free (rootvalue);
-          return -1;
-        }
-
-        *pMS2B500_YEAR (record + written) = HO2u (year, swapflag);
-        *pMS2B500_DAY (record + written)  = HO2u (day, swapflag);
-        *pMS2B500_HOUR (record + written) = hour;
-        *pMS2B500_MIN (record + written)  = min;
-        *pMS2B500_SEC (record + written)  = sec;
-        *pMS2B500_FSEC (record + written) = HO2u (nsec / 100000, swapflag);
       }
 
       *pMS2B500_MICROSECOND (record + written) = msec_offset;
@@ -1196,7 +1183,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
       if ((recbuflen - written) < blockette_length )
       {
-        ms_log (2, "%s(): Record length not large enough for B%d\n", __func__, blockette_type);
+        ms_log (2, "%s(%s): Record length not large enough for B%d\n", __func__, msr->sid, blockette_type);
         json_value_free (rootvalue);
         return -1;
       }
@@ -1240,28 +1227,13 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
       if ((header_string = json_object_get_string (extraobject, "OnsetTime")))
       {
-        if ((header_time = ms_timestr2nstime (header_string)) == NSTERROR)
+        if (ms_timestr2btime (header_string, (uint8_t *)pMS2B200_YEAR (record + written),
+                              msr->sid, swapflag) == -1)
         {
-          ms_log (2, "%s(%s): Cannot parse B%d time: %s\n",
-                  __func__, msr->sid, blockette_type, header_string);
+          ms_log (2, "%s(%s): Cannot convert B%d time: %s\n", __func__, msr->sid, blockette_type, header_string);
           json_value_free (rootvalue);
           return -1;
         }
-
-        if (ms_nstime2time (header_time, &year, &day, &hour, &min, &sec, &nsec))
-        {
-          ms_log (2, "%s(%s): Cannot convert B%d time: %" PRId64 "\n",
-                  __func__, msr->sid, blockette_type, header_string);
-          json_value_free (rootvalue);
-          return -1;
-        }
-
-        *pMS2B200_YEAR (record + written) = HO2u (year, swapflag);
-        *pMS2B200_DAY (record + written)  = HO2u (day, swapflag);
-        *pMS2B200_HOUR (record + written) = hour;
-        *pMS2B200_MIN (record + written)  = min;
-        *pMS2B200_SEC (record + written)  = sec;
-        *pMS2B200_FSEC (record + written) = HO2u (nsec / 100000, swapflag);
       }
 
       if (blockette_type == 200)
@@ -1299,9 +1271,265 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
     }
   } /* End if FDSN.Event.Detection */
 
-  // TODO     
+  /* Add Blockette B300, 310, 320, 390, 395 for calibrations */
+  if ((extraarray = json_object_dotget_array (rootobject, "FDSN.Calibration.Sequence")))
+  {
+    for (idx = 0; idx < json_array_get_count(extraarray); idx++)
+    {
+      if (!(extraobject = json_array_get_object(extraarray, idx)))
+        continue;
 
-  // FDSN.Event.Calibration.Sequence array B300, 310, 320, 390
+      /* Determine which calibration type: STEP, SINE, PSEUDORANDOM, GENERIC */
+      blockette_type = 0;
+      blockette_length = 0;
+      if ((header_string = json_object_get_string (extraobject, "Type")))
+      {
+        if (strncasecmp (header_string, "STEP", 4) == 0)
+        {
+          blockette_type = 300;
+          blockette_length = 60;
+        }
+        else if (strncasecmp (header_string, "SINE", 4) == 0)
+        {
+          blockette_type = 310;
+          blockette_length = 60;
+        }
+        else if (strncasecmp (header_string, "PSEUDORANDOM", 12) == 0)
+        {
+          blockette_type = 320;
+          blockette_length = 64;
+        }
+        else if (strncasecmp (header_string, "GENERIC", 12) == 0)
+        {
+          blockette_type = 390;
+          blockette_length = 28;
+        }
+      }
+      else if ((header_string = json_object_get_string (extraobject, "EndTime")))
+      {
+        blockette_type = 395;
+        blockette_length = 16;
+      }
+
+      if (!blockette_type || !blockette_length)
+      {
+        ms_log (2, "%s(): Unknown or unset FDSN.Calibration.Sequence.Type or EndTime\n", __func__);
+        json_value_free (rootvalue);
+        return -1;
+      }
+
+      if ((recbuflen - written) < blockette_length )
+      {
+        ms_log (2, "%s(%s): Record length not large enough for B%d\n", __func__, msr->sid, blockette_type);
+        json_value_free (rootvalue);
+        return -1;
+      }
+
+      if (blockette_type == 300 || blockette_type == 310 ||
+          blockette_type == 320 || blockette_type == 390)
+      {
+        /* The initial fields of B300, 310, 320, 390 are the same */
+        *next_blockette = HO2u ((uint16_t)written, swapflag);
+        next_blockette  = pMS2B300_NEXT (record + written);
+        *pMS2FSDH_NUMBLOCKETTES (record) += 1;
+
+        memset (record + written, 0, blockette_length);
+        *pMS2B300_TYPE (record + written) = HO2u (blockette_type, swapflag);
+        *pMS2B300_NEXT (record + written) = 0;
+
+        if ((header_string = json_object_get_string (extraobject, "BeginTime")))
+        {
+          if (ms_timestr2btime (header_string, (uint8_t *)pMS2B300_YEAR (record + written),
+                                msr->sid, swapflag) == -1)
+          {
+            ms_log (2, "%s(%s): Cannot convert B%d time: %s\n", __func__, msr->sid, blockette_type, header_string);
+            json_value_free (rootvalue);
+            return -1;
+          }
+        }
+
+        if (blockette_type == 300)
+        {
+          if ((extravalue = json_object_get_value (extraobject, "Steps")) &&
+              json_value_get_type (extravalue) == JSONNumber)
+            *pMS2B300_NUMCALIBRATIONS (record + written) = (uint8_t)json_value_get_number (extravalue);
+
+          if (json_object_get_boolean (extraobject, "StepFirstPulsePositive") == 1)
+            *pMS2B300_FLAGS (record + written) |= 0x01;
+
+          if (json_object_get_boolean (extraobject, "StepAlternateSign") == 1)
+            *pMS2B300_FLAGS (record + written) |= 0x02;
+
+          if ((header_string = json_object_get_string (extraobject, "Trigger")) &&
+              strncasecmp (header_string, "AUTOMATIC", 9) == 0)
+            *pMS2B300_FLAGS (record + written) |= 0x04;
+
+          if (json_object_get_boolean (extraobject, "Continued") == 1)
+            *pMS2B300_FLAGS (record + written) |= 0x08;
+
+          if ((extravalue = json_object_get_value (extraobject, "Duration")) &&
+              json_value_get_type (extravalue) == JSONNumber)
+            *pMS2B300_STEPDURATION (record + written) = HO4u (json_value_get_number (extravalue) * 10000, swapflag);
+
+          if ((extravalue = json_object_get_value (extraobject, "StepBetween")) &&
+              json_value_get_type (extravalue) == JSONNumber)
+            *pMS2B300_INTERVALDURATION (record + written) = HO4u (json_value_get_number (extravalue) * 10000, swapflag);
+
+          if ((extravalue = json_object_get_value (extraobject, "Amplitude")) &&
+              json_value_get_type (extravalue) == JSONNumber)
+            *pMS2B300_AMPLITUDE (record + written) = HO4f (json_value_get_number (extravalue), swapflag);
+
+          if ((header_string = json_object_get_string (extraobject, "InputChannel")))
+            ms_strncpopen (pMS2B300_INPUTCHANNEL (record + written), header_string, 3);
+
+          if ((extravalue = json_object_get_value (extraobject, "ReferenceAmplitude")) &&
+              json_value_get_type (extravalue) == JSONNumber)
+            *pMS2B300_REFERENCEAMPLITUDE (record + written) = HO4u (json_value_get_number (extravalue), swapflag);
+
+          if ((header_string = json_object_get_string (extraobject, "Coupling")))
+            ms_strncpopen (pMS2B300_COUPLING (record + written), header_string, 12);
+
+          if ((header_string = json_object_get_string (extraobject, "Rolloff")))
+            ms_strncpopen (pMS2B300_ROLLOFF (record + written), header_string, 12);
+        }
+        else if (blockette_type == 310)
+        {
+          if ((header_string = json_object_get_string (extraobject, "Trigger")) &&
+              strncasecmp (header_string, "AUTOMATIC", 9) == 0)
+            *pMS2B310_FLAGS (record + written) |= 0x04;
+
+          if (json_object_get_boolean (extraobject, "Continued") == 1)
+            *pMS2B310_FLAGS (record + written) |= 0x08;
+
+          if ((header_string = json_object_get_string (extraobject, "AmplitudeRange")))
+          {
+            if (strncasecmp (header_string, "PEAKTOPEAK", 10) == 0)
+              *pMS2B310_FLAGS (record + written) |= 0x10;
+            if (strncasecmp (header_string, "ZEROTOPEAK", 10) == 0)
+              *pMS2B310_FLAGS (record + written) |= 0x20;
+            if (strncasecmp (header_string, "RMS", 3) == 0)
+              *pMS2B310_FLAGS (record + written) |= 0x40;
+          }
+
+          if ((extravalue = json_object_get_value (extraobject, "Duration")) &&
+              json_value_get_type (extravalue) == JSONNumber)
+            *pMS2B310_DURATION (record + written) = HO4u (json_value_get_number (extravalue) * 10000, swapflag);
+
+          if ((extravalue = json_object_get_value (extraobject, "SinePeriod")) &&
+              json_value_get_type (extravalue) == JSONNumber)
+            *pMS2B310_PERIOD (record + written) = HO4f (json_value_get_number (extravalue), swapflag);
+
+          if ((extravalue = json_object_get_value (extraobject, "Amplitude")) &&
+              json_value_get_type (extravalue) == JSONNumber)
+            *pMS2B310_AMPLITUDE (record + written) = HO4f (json_value_get_number (extravalue), swapflag);
+
+          if ((header_string = json_object_get_string (extraobject, "InputChannel")))
+            ms_strncpopen (pMS2B310_INPUTCHANNEL (record + written), header_string, 3);
+
+          if ((extravalue = json_object_get_value (extraobject, "ReferenceAmplitude")) &&
+              json_value_get_type (extravalue) == JSONNumber)
+            *pMS2B310_REFERENCEAMPLITUDE (record + written) = HO4u (json_value_get_number (extravalue), swapflag);
+
+          if ((header_string = json_object_get_string (extraobject, "Coupling")))
+            ms_strncpopen (pMS2B320_COUPLING (record + written), header_string, 12);
+
+          if ((header_string = json_object_get_string (extraobject, "Rolloff")))
+            ms_strncpopen (pMS2B320_ROLLOFF (record + written), header_string, 12);
+        }
+        else if (blockette_type == 320)
+        {
+          if ((header_string = json_object_get_string (extraobject, "Trigger")) &&
+              strncasecmp (header_string, "AUTOMATIC", 9) == 0)
+            *pMS2B320_FLAGS (record + written) |= 0x04;
+
+          if (json_object_get_boolean (extraobject, "Continued") == 1)
+            *pMS2B320_FLAGS (record + written) |= 0x08;
+
+          if ((header_string = json_object_get_string (extraobject, "AmplitudeRange")) &&
+              strncasecmp (header_string, "RANDOM", 6) == 0)
+            *pMS2B320_FLAGS (record + written) |= 0x10;
+
+          if ((extravalue = json_object_get_value (extraobject, "Duration")) &&
+              json_value_get_type (extravalue) == JSONNumber)
+            *pMS2B320_DURATION (record + written) = HO4u (json_value_get_number (extravalue) * 10000, swapflag);
+
+          if ((extravalue = json_object_get_value (extraobject, "Amplitude")) &&
+              json_value_get_type (extravalue) == JSONNumber)
+            *pMS2B320_PTPAMPLITUDE (record + written) = HO4f (json_value_get_number (extravalue), swapflag);
+
+          if ((header_string = json_object_get_string (extraobject, "InputChannel")))
+            ms_strncpopen (pMS2B320_INPUTCHANNEL (record + written), header_string, 3);
+
+          if ((extravalue = json_object_get_value (extraobject, "ReferenceAmplitude")) &&
+              json_value_get_type (extravalue) == JSONNumber)
+            *pMS2B320_REFERENCEAMPLITUDE (record + written) = HO4u (json_value_get_number (extravalue), swapflag);
+
+          if ((header_string = json_object_get_string (extraobject, "Coupling")))
+            ms_strncpopen (pMS2B320_COUPLING (record + written), header_string, 12);
+
+          if ((header_string = json_object_get_string (extraobject, "Rolloff")))
+            ms_strncpopen (pMS2B320_ROLLOFF (record + written), header_string, 12);
+
+          if ((header_string = json_object_get_string (extraobject, "Noise")))
+            ms_strncpopen (pMS2B320_NOISETYPE (record + written), header_string, 8);
+        }
+        else if (blockette_type == 390)
+        {
+          if ((header_string = json_object_get_string (extraobject, "Trigger")) &&
+              strncasecmp (header_string, "AUTOMATIC", 9) == 0)
+            *pMS2B390_FLAGS (record + written) |= 0x04;
+
+          if (json_object_get_boolean (extraobject, "Continued") == 1)
+            *pMS2B390_FLAGS (record + written) |= 0x08;
+
+          if ((extravalue = json_object_get_value (extraobject, "Duration")) &&
+              json_value_get_type (extravalue) == JSONNumber)
+            *pMS2B390_DURATION (record + written) = HO4u (json_value_get_number (extravalue) * 10000, swapflag);
+
+          if ((extravalue = json_object_get_value (extraobject, "Amplitude")) &&
+              json_value_get_type (extravalue) == JSONNumber)
+            *pMS2B390_AMPLITUDE (record + written) = HO4f (json_value_get_number (extravalue), swapflag);
+
+          if ((header_string = json_object_get_string (extraobject, "InputChannel")))
+            ms_strncpopen (pMS2B390_INPUTCHANNEL (record + written), header_string, 3);
+        }
+
+        written += blockette_length;
+      }
+
+      /* Add Blockette 395 if EndTime is included */
+      if ((header_string = json_object_get_string (extraobject, "EndTime")))
+      {
+        blockette_type  = 395;
+        blockette_length = 16;
+
+        if ((recbuflen - written) < blockette_length)
+        {
+          ms_log (2, "%s(%s): Record length not large enough for B%d\n", __func__, msr->sid, blockette_type);
+          json_value_free (rootvalue);
+          return -1;
+        }
+
+        *next_blockette = HO2u ((uint16_t)written, swapflag);
+        next_blockette  = pMS2B395_NEXT (record + written);
+        *pMS2FSDH_NUMBLOCKETTES (record) += 1;
+
+        memset (record + written, 0, blockette_length);
+        *pMS2B395_TYPE (record + written) = HO2u (blockette_type, swapflag);
+        *pMS2B395_NEXT (record + written) = 0;
+
+        if (ms_timestr2btime (header_string, (uint8_t *)pMS2B395_YEAR (record + written),
+                              msr->sid, swapflag) == -1)
+        {
+          ms_log (2, "%s(%s): Cannot convert B%d time: %s\n", __func__, msr->sid, blockette_type, header_string);
+          json_value_free (rootvalue);
+          return -1;
+        }
+
+        written += blockette_length;
+      }
+    }
+  } /* End if FDSN.Event.Detection */
 
   if (rootvalue)
     json_value_free (rootvalue);
@@ -1791,3 +2019,57 @@ ms_genfactmult (double samprate, int16_t *factor, int16_t *multiplier)
 
   return -1;
 } /* End of ms_genfactmult() */
+
+/***************************************************************************
+ * Convenience function to convert a month-day time string to a SEED
+ * 2.x "BTIME" structure.
+ *
+ * The 10-byte BTIME structure layout:
+ *
+ * Value  Type      Offset  Description
+ * year   uint16_t  0       Four digit year (e.g. 1987)
+ * day    uint16_t  2       Day of year (Jan 1st is 1)
+ * hour   uint8_t   4       Hour (0 - 23)
+ * min    uint8_t   5       Minute (0 - 59)
+ * sec    uint8_t   6       Second (0 - 59, 60 for leap seconds)
+ * unused uint8_t   7       Unused, included for alignment
+ * fract  uint16_t  8       0.0001 seconds, i.e. 1/10ths of milliseconds (0—9999)
+ *
+ * Return nanoseconds success and -1 on error.
+ ***************************************************************************/
+static inline uint32_t
+ms_timestr2btime (const char *timestr, uint8_t *btime, char *sid, int8_t swapflag)
+{
+  uint16_t year;
+  uint16_t day;
+  uint8_t hour;
+  uint8_t min;
+  uint8_t sec;
+  uint32_t nsec;
+  nstime_t nstime;
+
+  fprintf (stderr, "DEBUG, here 0\n");
+
+  if (!timestr || !btime)
+    return -1;
+  fprintf (stderr, "DEBUG, here 1\n");
+
+  if ((nstime = ms_timestr2nstime (timestr)) == NSTERROR)
+    return -1;
+
+  fprintf (stderr, "DEBUG, here 2\n");
+  if (ms_nstime2time (nstime, &year, &day, &hour, &min, &sec, &nsec))
+    return -1;
+
+  fprintf (stderr, "DEBUG, here 3\n");
+
+  *((uint16_t *)(btime))     = HO2u (year, swapflag);
+  *((uint16_t *)(btime + 2)) = HO2u (day, swapflag);
+  *((uint8_t *)(btime + 4))  = hour;
+  *((uint8_t *)(btime + 5))  = min;
+  *((uint8_t *)(btime + 6))  = sec;
+  *((uint8_t *)(btime + 7))  = 0;
+  *((uint16_t *)(btime + 8)) = HO2u (nsec / 100000, swapflag);
+
+  return nsec;
+} /* End of timestr2btime() */
