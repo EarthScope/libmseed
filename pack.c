@@ -83,7 +83,7 @@ static uint32_t ms_timestr2btime (const char *timestr, uint8_t *btime, char *sid
  *
  * If \a flags has ::MSF_FLUSHDATA set, all of the data will be packed
  * into data records even though the last one will probably be smaller
- * than requested or, in the case of miniSEED 2.X, unfilled.
+ * than requested or, in the case of miniSEED 2, unfilled.
  *
  * Default values are: record length = 4096, encoding = 11 (Steim2).
  * The defaults are triggered when \a msr.reclen and \a msr.encoding
@@ -93,9 +93,10 @@ static uint32_t ms_timestr2btime (const char *timestr, uint8_t *btime, char *sid
  * @param[in] record_handler() Callback function called for each record
  * @param[in] handlerdata A pointer that will be provided to the \a record_handler()
  * @param[out] packedsamples The number of samples packed, returned to caller
- * @param[in] flags Flags used to control the packing process:
+ * @param[in] flags Bit flags used to control the packing process:
  * @parblock
  *  - \c ::MSF_FLUSHDATA : Pack all data in the buffer
+ *  - \c ::MSF_PACKVER2 : Pack miniSEED version 2 regardless of ::MS3Record.formatversion
  * @endparblock
  * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
  *
@@ -129,12 +130,14 @@ msr3_pack (MS3Record *msr, void (*record_handler) (char *, int, void *),
     return -1;
   }
 
-  if (msr->formatversion == 2) /* Pack version 2 if requested */
+  /* Pack version 2 if requested */
+  if (msr->formatversion == 2 || flags & MSF_PACKVER2)
   {
     packedrecs = msr3_pack_mseed2 (msr, record_handler, handlerdata, packedsamples,
                                    flags, verbose);
   }
-  else /* Pack version 3 otherwise */
+  /* Pack version 3 otherwise */
+  else
   {
     packedrecs = msr3_pack_mseed3 (msr, record_handler, handlerdata, packedsamples,
                                    flags, verbose);
