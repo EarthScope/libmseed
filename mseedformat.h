@@ -640,52 +640,6 @@ HO8f (double value, int swapflag)
   return value;
 }
 
-
-/***************************************************************************
- * Static inline convenience function to convert a SEED 2.x "BTIME"
- * structure to an nstime_t value.
- *
- * The 10-byte BTIME structure layout:
- *
- * Value  Type      Offset  Description
- * year   uint16_t  0       Four digit year (e.g. 1987)
- * day    uint16_t  2       Day of year (Jan 1st is 1)
- * hour   uint8_t   4       Hour (0 - 23)
- * min    uint8_t   5       Minute (0 - 59)
- * sec    uint8_t   6       Second (0 - 59, 60 for leap seconds)
- * unused uint8_t   7       Unused, included for alignment
- * fract  uint16_t  8       0.0001 seconds, i.e. 1/10ths of milliseconds (0—9999)
- *
- * Return nstime_t value on success and NSTERROR on error.
- ***************************************************************************/
-static inline nstime_t
-ms_btime2nstime (uint8_t *btime, int8_t swapflag)
-{
-  nstime_t nstime;
-
-  nstime = ms_time2nstime (HO2u (*((uint16_t*)(btime)), swapflag),
-                           HO2u (*((uint16_t*)(btime+2)), swapflag),
-                           *(btime+4),
-                           *(btime+5),
-                           *(btime+6),
-                           (uint32_t)HO2u (*(uint16_t*)(btime+8), swapflag) * (NSTMODULUS / 10000));
-
-  if (nstime == NSTERROR)
-  {
-    ms_log (2, "btime2nstime: Cannot convert time values to internal time: %d,%d,%d,%d,%d,%d\n",
-            HO2u (*(uint16_t*)(btime), swapflag),
-            HO2u (*(uint16_t*)(btime+2), swapflag),
-            *(btime+4),
-            *(btime+5),
-            *(btime+6),
-            (uint32_t)HO2u (*(uint16_t*)(btime+8), swapflag));
-
-    return NSTERROR;
-  }
-
-  return nstime;
-}
-
 /* Macro to test for sane year and day values, used primarily to
  * determine if byte order swapping is needed for miniSEED 2.x.
  *

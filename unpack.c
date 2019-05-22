@@ -37,6 +37,9 @@
 #include "unpack.h"
 #include "unpackdata.h"
 
+/* Function(s) internal to this file */
+static nstime_t ms_btime2nstime (uint8_t *btime, int8_t swapflag);
+
 /* Test POINTER for alignment with BYTE_COUNT sized quantities */
 #define is_aligned(POINTER, BYTE_COUNT) \
   (((uintptr_t) (const void *)(POINTER)) % (BYTE_COUNT) == 0)
@@ -411,7 +414,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   if (*pMS2FSDH_DQFLAGS (record) & 0x80) /* Bit 7 */
     msr->flags |= 0x02;
 
-  dval = (double) HO4u (*pMS2FSDH_TIMECORRECT (record), msr->swapflag);
+  dval = (double)HO4d (*pMS2FSDH_TIMECORRECT (record), msr->swapflag);
   if (dval != 0.0)
   {
     dval = dval / 10000.0;
@@ -1601,3 +1604,49 @@ ms2_blktlen (uint16_t blkttype, const char *blkt, int8_t swapflag)
   return blktlen;
 
 } /* End of ms2_blktlen() */
+
+/***************************************************************************
+ * Static inline convenience function to convert a SEED 2.x "BTIME"
+ * structure to an nstime_t value.
+ *
+ * The 10-byte BTIME structure layout:
+ *
+ * Value  Type      Offset  Description
+ * year   uint16_t  0       Four digit year (e.g. 1987)
+ * day    uint16_t  2       Day of year (Jan 1st is 1)
+ * hour   uint8_t   4       Hour (0 - 23)
+ * min    uint8_t   5       Minute (0 - 59)
+ * sec    uint8_t   6       Second (0 - 59, 60 for leap seconds)
+ * unused uint8_t   7       Unused, included for alignment
+ * fract  uint16_t  8       0.0001 seconds, i.e. 1/10ths of milliseconds (0—9999)
+ *
+ * Return nstime_t value on success and NSTERROR on error.
+ ***************************************************************************/
+static inline nstime_t
+ms_btime2nstime (uint8_t *btime, int8_t swapflag)
+{
+  nstime_t nstime;
+
+  nstime = ms_time2nstime (HO2u (*((uint16_t*)(btime)), swapflag),
+                           HO2u (*((uint16_t*)(btime+2)), swapflag),
+                           *(btime+4),
+                           *(btime+5),
+                           *(btime+6),
+                           (uint32_t)HO2u (*(uint16_t*)(btime+8), swapflag) * (NSTMODULUS / 10000));
+
+  if (nstime == NSTERROR)
+  {
+    ms_log (2, "%s: Cannot convert time values to internal time: %d,%d,%d,%d,%d,%d\n",
+            __func__,
+            HO2u (*(uint16_t*)(btime), swapflag),
+            HO2u (*(uint16_t*)(btime+2), swapflag),
+            *(btime+4),
+            *(btime+5),
+            *(btime+6),
+            (uint32_t)HO2u (*(uint16_t*)(btime+8), swapflag));
+
+    return NSTERROR;
+  }
+
+  return nstime;
+} /* End of ms_btime2nstime() */

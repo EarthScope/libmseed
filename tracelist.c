@@ -1330,7 +1330,12 @@ mstl3_resize_buffers (MS3TraceList *mstl)
  * @param[in] reclen Maximum record length to produce
  * @param[in] encoding Encoding for data samples, see msr3_pack()
  * @param[out] packedsamples The number of samples packed, returned to caller
- * @param[in] flags Flags to control packing, ::MSF_MAINTAINMSTL or ::MSF_FLUSHDATA
+ * @param[in] flags Bit flags to control packing:
+ * @parblock
+ *  - \c ::MSF_FLUSHDATA : Pack all data in the buffer
+ *  - \c ::MSF_MAINTAINMSTL : Do not remove packe data from the buffer
+ *  - \c ::MSF_PACKVER2 : Pack miniSEED version 2 instead of default 3
+ * @endparblock
  * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
  * @param[in] extra If not NULL, add this buffer of extra headers to all records
  *

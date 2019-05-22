@@ -241,8 +241,8 @@ extern char *ms_nstime2timestr (nstime_t nstime, char *timestr,
 extern char *ms_nstime2timestrz (nstime_t nstime, char *timestr,
                                  ms_timeformat_t timeformat, ms_subseconds_t subsecond);
 extern nstime_t ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec);
-extern nstime_t ms_timestr2nstime (char *timestr);
-extern nstime_t ms_seedtimestr2nstime (char *seedtimestr);
+extern nstime_t ms_timestr2nstime (const char *timestr);
+extern nstime_t ms_seedtimestr2nstime (const char *seedtimestr);
 extern int ms_doy2md (int year, int yday, int *month, int *mday);
 extern int ms_md2doy (int year, int month, int mday, int *yday);
 
@@ -300,6 +300,8 @@ extern int msr3_pack (MS3Record *msr,
 extern int msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
 
 extern int msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
+
+extern int msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
 
 extern int msr3_unpack_data (MS3Record *msr, int8_t verbose);
 
@@ -1014,6 +1016,7 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
 #define MSF_ATENDOFFILE   0x0020  //!< [Parsing] reading routine is at the end of the file
 #define MSF_STOREMETADATA 0x0040  //!< [TraceList] store record-level metadata in trace lists
 #define MSF_MAINTAINMSTL  0x0080  //!< [TraceList] do not modify a trace list when packing
+#define MSF_PACKVER2      0x0200  //!< [Packing] Pack as miniSEED version 2 instead of 3
 /** @} */
 
 #ifdef __cplusplus
