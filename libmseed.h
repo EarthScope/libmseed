@@ -367,6 +367,33 @@ extern void ms3_freeselections (MS3Selections *selections);
 extern void ms3_printselections (MS3Selections *selections);
 /** @} */
 
+/** @addtogroup record-list
+    @{ */
+
+/** @brief miniSEED record pointer */
+typedef struct MS3RecordPtr
+{
+  int32_t reclen;            //!< Record length
+  char *bufferptr;           //!< Pointer in buffer to record, NULL if not used
+  FILE *fileptr;             //!< Pointer to open FILE containing record, NULL if not used
+  char *filename;            //!< Pointer to file name containing record, NULL if not used
+  uint64_t fileoffset;       //!< Offset into file to record for \a fileptr or \a filename
+  nstime_t starttime;        //!< Start time of record, time of first sample
+  nstime_t endtime;          //!< End time of record, time of last sample
+  void *prvtptr;             //!< Private pointer, will not be populated by library but will be free'd
+  struct MS3RecordPtr *next; //!< Pointer to next entry, NULL if the last
+} MS3RecordPtr;
+
+/** @brief Record list, holds RecordPtr entries that contribute to a given ::MS3TraceSeg */
+typedef struct MS3RecordList
+{
+  uint64_t recordcnt;  //!< Count of records in the list (for convenience)
+  MS3RecordPtr *first; //!< Pointer to first entry, NULL if the none
+  MS3RecordPtr *last;  //!< Pointer to last entry, NULL if the none
+} MS3RecordList;
+
+/** @} */
+
 /** @defgroup trace-list Trace List
     @brief A container for continuous data
 
@@ -432,6 +459,7 @@ typedef struct MS3TraceSeg {
   char            sampletype;        //!< Sample type code, see @ref sample-types
   void           *prvtptr;           //!< Private pointer for general use, unused by library
   struct MS3Metadata *metadata;      //!< List of flags and extra headers from records that contributed
+  struct MS3RecordList *recordlist;  //!< List of pointers to records that contributed
   struct MS3TraceSeg *prev;          //!< Pointer to previous segment
   struct MS3TraceSeg *next;          //!< Pointer to next segment, NULL if the last
 } MS3TraceSeg;
@@ -755,6 +783,26 @@ extern int mseh_add_recenter (MS3Record *msr, const char *path,
 extern int mseh_print (MS3Record *msr, int indent);
 /** @} */
 
+/** @defgroup record-list Record List
+    @brief functionality to build a list of records that contribute to a ::MS3TraceSeg
+
+    As a @ref trace-list is constructed from data records, a list of
+    the data records that contribute to each segments can be built by
+    using the ::MSF_RECORDLIST flag to @ref mstl3_addmsr().
+
+    Combined with the ability to construct @ref trace-list buffers
+    without data samples, this allows the reconstruction of contiguous
+    time series with the ability to later decompress the samples, or
+    do a deeper analysis of the records for each segment.
+
+    The @ref mstl3_unpacksegment() function allows for the unpacking
+    of data samples for a given ::MS3TraceSeg into a user-specified
+    buffer, or allocating the buffer if needed.
+
+    \sa mstl3_addmsr()
+    \sa mstl3_unpacksegment()
+*/
+
 /** @defgroup logging Central Logging
     @brief Central logging functions for the library and calling programs
 
@@ -1008,14 +1056,15 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
     aspects of the library's parsing, packing and trace managment routines.
 
     @{ */
-#define MSF_UNPACKDATA    0x0001  //!< [Parsing] unpack data samples
-#define MSF_SKIPNOTDATA   0x0002  //!< [Parsing] skip input that cannot be identified as miniSEED
-#define MSF_VALIDATECRC   0x0004  //!< [Parsing] validate CRC (if version 3)
+#define MSF_UNPACKDATA    0x0001  //!< [Parsing] Unpack data samples
+#define MSF_SKIPNOTDATA   0x0002  //!< [Parsing] Skip input that cannot be identified as miniSEED
+#define MSF_VALIDATECRC   0x0004  //!< [Parsing] Validate CRC (if version 3)
 #define MSF_SEQUENCE      0x0008  //!< [Packing] UNSUPPORTED: Maintain a record-level sequence number
-#define MSF_FLUSHDATA     0x0010  //!< [Packing] pack all available data even if final record would not be filled
-#define MSF_ATENDOFFILE   0x0020  //!< [Parsing] reading routine is at the end of the file
-#define MSF_STOREMETADATA 0x0040  //!< [TraceList] store record-level metadata in trace lists
-#define MSF_MAINTAINMSTL  0x0080  //!< [TraceList] do not modify a trace list when packing
+#define MSF_FLUSHDATA     0x0010  //!< [Packing] Pack all available data even if final record would not be filled
+#define MSF_ATENDOFFILE   0x0020  //!< [Parsing] Reading routine is at the end of the file
+#define MSF_STOREMETADATA 0x0040  //!< [TraceList] Store record-level metadata in trace lists
+#define MSF_MAINTAINMSTL  0x0080  //!< [TraceList] Do not modify a trace list when packing
+#define MSF_RECORDLIST    0x0100  //!< [TraceList] Build a ::RecordList for each ::MS3TraceSeg
 #define MSF_PACKVER2      0x0200  //!< [Packing] Pack as miniSEED version 2 instead of 3
 /** @} */
 

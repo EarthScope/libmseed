@@ -1,3 +1,8 @@
-* miniSEED 2.4 packing
-
 * Add some xSEED/mseed3 parsing tests, reference data.
+
+* Record lists:
+  - mstl3_free(), free list and private pointers
+  - mstl3_addmsr(), populate list, allocate as needed
+  - mstl3_unpacksegment() - new function to unpack to
+      user-specified buffer, or allocate buffer if not
+      supplied.
