@@ -353,7 +353,7 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
   if (*(X) != 'M' || *(X + 1) != 'S')
   {
     ms_log (2, "%.*s: Invalid miniSEED 3 record indicator: '%c%c'\n",
-            sidlength, sid, X, X + 1);
+            sidlength, sid, *(X), *(X + 1));
     retval++;
   }
 
@@ -398,8 +398,8 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
   }
   if (HO4u(*pMS3FSDH_NSEC (record), swapflag) > 999999999)
   {
-    ms_log (2, "%.*s: Invalid start nanoseconds (0-999999999): '%d'\n",
-            sidlength, sid, HO2u(*pMS3FSDH_NSEC (record), swapflag));
+    ms_log (2, "%.*s: Invalid start nanoseconds (0-999999999): '%"PRIu32"'\n",
+            sidlength, sid, HO4u(*pMS3FSDH_NSEC (record), swapflag));
     retval++;
   }
 
