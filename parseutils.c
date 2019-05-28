@@ -398,7 +398,7 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
   }
   if (HO4u(*pMS3FSDH_NSEC (record), swapflag) > 999999999)
   {
-    ms_log (2, "%.*s: Invalid start nanoseconds (0-999999999): '%"PRIu32"'\n",
+    ms_log (2, "%.*s: Invalid start nanoseconds (0-999999999): '%u'\n",
             sidlength, sid, HO4u(*pMS3FSDH_NSEC (record), swapflag));
     retval++;
   }
