@@ -346,6 +346,9 @@ msr3_resize_buffer (MS3Record *msr)
 inline double
 msr3_sampratehz (MS3Record *msr)
 {
+  if (!msr)
+    return 0.0;
+
   if (msr->samprate < 0.0)
     return (-1.0 / msr->samprate);
   else
