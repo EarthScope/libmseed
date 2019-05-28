@@ -797,9 +797,13 @@ typedef struct MSLogParam
   const char *errprefix;     //!< Message prefix for error messages
 } MSLogParam;
 
+#if defined(__GNUC__) || defined(__clang__)
 __attribute__((__format__ (__printf__, 2, 3)))
+#endif
 extern int ms_log (int level, const char *format, ...);
+#if defined(__GNUC__) || defined(__clang__)
 __attribute__ ((__format__ (__printf__, 3, 4)))
+#endif
 extern int ms_log_l (MSLogParam *logp, int level, const char *format, ...);
 extern void ms_loginit (void (*log_print)(char*), const char *logprefix,
                         void (*diag_print)(char*), const char *errprefix);
