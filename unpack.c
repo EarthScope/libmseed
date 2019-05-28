@@ -877,7 +877,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
     else
     { /* Unknown blockette type */
-      ms_log (1, "%s(%s): WARNING, unsupported blockette type %d, skipping\n", __func__, msr->sid);
+      ms_log (1, "%s(%s): WARNING, unsupported blockette type %d, skipping\n", __func__, msr->sid, blkt_type);
     }
 
     /* Check that the next blockette offset is beyond the current blockette */
@@ -1415,7 +1415,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
 
   if (nsamples >= 0 && nsamples != msr->samplecnt)
   {
-    ms_log (2, "%s(%s): only decoded %d samples of %d expected\n",
+    ms_log (2, "%s(%s): only decoded %d samples of %" PRId64 " expected\n",
             __func__, msr->sid, nsamples, msr->samplecnt);
     return MS_GENERROR;
   }

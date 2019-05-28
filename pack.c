@@ -353,7 +353,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   }
 
   if (verbose >= 2)
-    ms_log (1, "%s: Packed %d total samples\n", msr->sid, totalpackedsamples);
+    ms_log (1, "%s: Packed %" PRId64 " total samples\n", msr->sid, totalpackedsamples);
 
   if (encoded)
     libmseed_memory.free (encoded);
@@ -455,7 +455,7 @@ msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
   *pMS3FSDH_CRC(record) = HO4u (crc, swapflag);
 
   if (verbose >= 1)
-    ms_log (1, "%s: Repacked %d samples into a %d byte record\n",
+    ms_log (1, "%s: Repacked %" PRId64 " samples into a %d byte record\n",
             msr->sid, msr->samplecnt, reclen);
 
   return reclen;
@@ -789,7 +789,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   }
 
   if (verbose >= 2)
-    ms_log (1, "%s: Packed %d total samples\n", msr->sid, totalpackedsamples);
+    ms_log (1, "%s: Packed %" PRId64 " total samples\n", msr->sid, totalpackedsamples);
 
   if (encoded)
     libmseed_memory.free (encoded);
@@ -886,8 +886,8 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   /* Parse identifier codes from full identifier */
   if (ms_sid2nslc (msr->sid, network, station, location, channel))
   {
-    ms_log (2, "%s(%s): Cannot parse identifier codes from full identifier\n",
-            __func__, msr->sid, msr->reclen);
+    ms_log (2, "%s(%s): Cannot parse SEED identifier codes from full identifier\n",
+            __func__, msr->sid);
     return -1;
   }
 
@@ -1541,15 +1541,8 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 } /* End of msr3_pack_header2() */
 
 /************************************************************************
- *  Pack miniSEED data samples.  The input data samples specified as
- *  'src' will be packed with 'encoding' format and placed in 'dest'.
- *
- *  If a pointer to a 32-bit integer sample is provided in the
- *  argument 'lastintsample' and 'comphistory' is true the sample
- *  value will be used to seed the difference buffer for Steim1/2
- *  encoding and provide a compression history.  It will also be
- *  updated with the last sample packed in order to be used with a
- *  subsequent call to this routine.
+ *  Pack data samples.  The input data samples specified as 'src' will
+ *  be packed with 'encoding' format and placed in 'dest'.
  *
  *  Return number of samples packed on success and a negative on error.
  ************************************************************************/
@@ -1603,7 +1596,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
 
     if (maxdatabytes < sizeof(int16_t))
     {
-      ms_log (2, "%s: Not enough space in record (%d) for INT16 encoding, need at least %d bytes\n",
+      ms_log (2, "%s: Not enough space in record (%d) for INT16 encoding, need at least %zu bytes\n",
               sid, maxdatabytes, sizeof(int16_t));
       return -1;
     }
@@ -1628,7 +1621,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
 
     if (maxdatabytes < sizeof(int32_t))
     {
-      ms_log (2, "%s: Not enough space in record (%d) for INT32 encoding, need at least %d bytes\n",
+      ms_log (2, "%s: Not enough space in record (%d) for INT32 encoding, need at least %zu bytes\n",
               sid, maxdatabytes, sizeof(int32_t));
       return -1;
     }
@@ -1653,7 +1646,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
 
     if (maxdatabytes < sizeof(float))
     {
-      ms_log (2, "%s: Not enough space in record (%d) for FLOAT32 encoding, need at least %d bytes\n",
+      ms_log (2, "%s: Not enough space in record (%d) for FLOAT32 encoding, need at least %zu bytes\n",
               sid, maxdatabytes, sizeof(float));
       return -1;
     }
@@ -1678,7 +1671,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
 
     if (maxdatabytes < sizeof(double))
     {
-      ms_log (2, "%s: Not enough space in record (%d) for FLOAT64 encoding, need at least %d bytes\n",
+      ms_log (2, "%s: Not enough space in record (%d) for FLOAT64 encoding, need at least %zu bytes\n",
               sid, maxdatabytes, sizeof(double));
       return -1;
     }
