@@ -253,7 +253,7 @@ msr3_print (MS3Record *msr, int8_t details)
     if (details > 1)
     {
       b = msr->flags;
-      ms_log (0, "                  flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+      ms_log (0, "                  flags: [%d%d%d%d%d%d%d%d] 8 bits\n",
               bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
               bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
       if (b & 0x01)

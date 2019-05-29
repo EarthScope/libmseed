@@ -402,7 +402,7 @@ msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
 
   if (recbuflen < (uint32_t)(MS3FSDH_LENGTH + msr->extralength))
   {
-    ms_log (2, "%s(%s): Record buffer length (%d) is not large enough for header (%d) and extra (%d)\n",
+    ms_log (2, "%s(%s): Record buffer length (%u) is not large enough for header (%d) and extra (%d)\n",
             __func__, msr->sid, recbuflen, MS3FSDH_LENGTH, msr->extralength);
     return -1;
   }
@@ -432,7 +432,7 @@ msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
 
   if (recbuflen < (uint32_t)(MS3FSDH_LENGTH + msr->extralength + origdatasize))
   {
-    ms_log (2, "%s(%s): Destination record buffer length (%d) is not large enough for record (%d)\n",
+    ms_log (2, "%s(%s): Destination record buffer length (%u) is not large enough for record (%d)\n",
             __func__, msr->sid, recbuflen, (MS3FSDH_LENGTH + msr->extralength + origdatasize));
     return -1;
   }
@@ -455,7 +455,7 @@ msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
   *pMS3FSDH_CRC(record) = HO4u (crc, swapflag);
 
   if (verbose >= 1)
-    ms_log (1, "%s: Repacked %" PRId64 " samples into a %d byte record\n",
+    ms_log (1, "%s: Repacked %" PRId64 " samples into a %u byte record\n",
             msr->sid, msr->samplecnt, reclen);
 
   return reclen;

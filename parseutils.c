@@ -305,7 +305,7 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
 {
   MS3Record msr;
   char *X;
-  char b;
+  uint8_t b;
 
   int retval = 0;
   int8_t swapflag;
@@ -412,7 +412,7 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
             pMS3FSDH_INDICATOR (record)[0], pMS3FSDH_INDICATOR (record)[1]);
     /* Flags */
     b = *pMS3FSDH_FLAGS (record);
-    ms_log (0, "         activity flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+    ms_log (0, "         activity flags: [%d%d%d%d%d%d%d%d] 8 bits\n",
             bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
             bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
     if (details > 1)
@@ -507,7 +507,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
   double nomsamprate;
   char sid[21] = {0};
   char *X;
-  char b;
+  uint8_t b;
   int retval = 0;
   int b1000encoding = -1;
   int b1000reclen = -1;
@@ -696,7 +696,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
     {
       /* Activity flags */
       b = *pMS2FSDH_ACTFLAGS (record);
-      ms_log (0, "         activity flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+      ms_log (0, "         activity flags: [%d%d%d%d%d%d%d%d] 8 bits\n",
               bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
               bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
       if (b & 0x01)
@@ -718,7 +718,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
 
       /* I/O and clock flags */
       b = *pMS2FSDH_IOFLAGS (record);
-      ms_log (0, "    I/O and clock flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+      ms_log (0, "    I/O and clock flags: [%d%d%d%d%d%d%d%d] 8 bits\n",
               bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
               bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
       if (b & 0x01)
@@ -740,7 +740,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
 
       /* Data quality flags */
       b = *pMS2FSDH_DQFLAGS (record);
-      ms_log (0, "     data quality flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+      ms_log (0, "     data quality flags: [%d%d%d%d%d%d%d%d] 8 bits\n",
               bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
               bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
       if (b & 0x01)
@@ -828,7 +828,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
           if (details > 1)
           {
             b = *pMS2B100_FLAGS(record + blkt_offset);
-            ms_log (0, "             undefined flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+            ms_log (0, "             undefined flags: [%d%d%d%d%d%d%d%d] 8 bits\n",
                     bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
                     bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
 
@@ -851,7 +851,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
           if (details > 1)
           {
             b = *pMS2B200_FLAGS(record + blkt_offset);
-            ms_log (0, "       event detection flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+            ms_log (0, "       event detection flags: [%d%d%d%d%d%d%d%d] 8 bits\n",
                     bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
                     bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
             if (b & 0x01)
@@ -888,7 +888,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
           ms_log (0, "         background estimate: %g\n", HO4f(*pMS2B201_BACKGROUNDEST(record + blkt_offset), swapflag));
 
           b = *pMS2B201_FLAGS(record + blkt_offset);
-          ms_log (0, "       event detection flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+          ms_log (0, "       event detection flags: [%d%d%d%d%d%d%d%d] 8 bits\n",
                   bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
                   bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
           if (b & 0x01)
@@ -932,7 +932,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
           ms_log (0, "      number of calibrations: %u\n", *pMS2B300_NUMCALIBRATIONS (record + blkt_offset));
 
           b = *pMS2B300_FLAGS (record + blkt_offset);
-          ms_log (0, "           calibration flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+          ms_log (0, "           calibration flags: [%d%d%d%d%d%d%d%d] 8 bits\n",
                   bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
                   bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
           if (b & 0x01)
@@ -972,7 +972,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
             ms_log (0, "               reserved byte: %u\n", *pMS2B310_RESERVED1 (record + blkt_offset));
 
           b = *pMS2B310_FLAGS (record + blkt_offset);
-          ms_log (0, "           calibration flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+          ms_log (0, "           calibration flags: [%d%d%d%d%d%d%d%d] 8 bits\n",
                   bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
                   bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
           if (b & 0x04)
@@ -1014,7 +1014,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
             ms_log (0, "               reserved byte: %u\n", *pMS2B320_RESERVED1 (record + blkt_offset));
 
           b = *pMS2B320_FLAGS (record + blkt_offset);
-          ms_log (0, "           calibration flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+          ms_log (0, "           calibration flags: [%d%d%d%d%d%d%d%d] 8 bits\n",
                   bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
                   bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
           if (b & 0x04)
@@ -1052,7 +1052,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
             ms_log (0, "               reserved byte: %u\n", *pMS2B390_RESERVED1 (record + blkt_offset));
 
           b = *pMS2B390_FLAGS (record + blkt_offset);
-          ms_log (0, "           calibration flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+          ms_log (0, "           calibration flags: [%d%d%d%d%d%d%d%d] 8 bits\n",
                   bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
                   bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
           if (b & 0x04)
@@ -1212,7 +1212,7 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
           ms_log (0, "                  byte order: %s (val:%u)\n",
                   order, *pMS2B2000_BYTEORDER (record + blkt_offset));
           b = *pMS2B2000_FLAGS (record + blkt_offset);
-          ms_log (0, "                  data flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+          ms_log (0, "                  data flags: [%d%d%d%d%d%d%d%d] 8 bits\n",
                   bit (b, 0x01), bit (b, 0x02), bit (b, 0x04), bit (b, 0x08),
                   bit (b, 0x10), bit (b, 0x20), bit (b, 0x40), bit (b, 0x80));
 

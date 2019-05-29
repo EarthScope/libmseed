@@ -1172,7 +1172,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   /* Sanity check data offset before creating a pointer based on the value */
   if (dataoffset < MINRECLEN || dataoffset >= (uint32_t)msr->reclen)
   {
-    ms_log (2, "%s(%s): data offset value is not valid: %d\n", __func__, msr->sid, dataoffset);
+    ms_log (2, "%s(%s): data offset value is not valid: %u\n", __func__, msr->sid, dataoffset);
     return MS_GENERROR;
   }
 
@@ -1636,7 +1636,7 @@ ms_btime2nstime (uint8_t *btime, int8_t swapflag)
 
   if (nstime == NSTERROR)
   {
-    ms_log (2, "%s: Cannot convert time values to internal time: %d,%d,%d,%d,%d,%d\n",
+    ms_log (2, "%s: Cannot convert time values to internal time: %u,%u,%u,%u,%u,%u\n",
             __func__,
             HO2u (*(uint16_t*)(btime), swapflag),
             HO2u (*(uint16_t*)(btime+2), swapflag),

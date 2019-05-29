@@ -162,7 +162,7 @@ extern "C" {
     (uint8_t) (*((X) + 26)) >= 0 && (uint8_t) (*((X) + 26)) <= 60)
 
 /** A simple bitwise AND test to return 0 or 1 */
-#define bit(x,y) ((x)&(y))?1:0
+#define bit(x,y) ((x)&(y)) ? 1 : 0
 
 /** @defgroup time-related Time definitions and functions
     @brief Definitions and functions for related to library time values
