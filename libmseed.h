@@ -162,7 +162,7 @@ extern "C" {
     (uint8_t) (*((X) + 26)) >= 0 && (uint8_t) (*((X) + 26)) <= 60)
 
 /** A simple bitwise AND test to return 0 or 1 */
-#define bit(x,y) ((x)&(y))?1:0
+#define bit(x,y) ((x)&(y)) ? 1 : 0
 
 /** @defgroup time-related Time definitions and functions
     @brief Definitions and functions for related to library time values
@@ -845,8 +845,14 @@ typedef struct MSLogParam
   const char *errprefix;     //!< Message prefix for error messages
 } MSLogParam;
 
-extern int ms_log (int level, ...);
-extern int ms_log_l (MSLogParam *logp, int level, ...);
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((__format__ (__printf__, 2, 3)))
+#endif
+extern int ms_log (int level, const char *format, ...);
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__ ((__format__ (__printf__, 3, 4)))
+#endif
+extern int ms_log_l (MSLogParam *logp, int level, const char *format, ...);
 extern void ms_loginit (void (*log_print)(char*), const char *logprefix,
                         void (*diag_print)(char*), const char *errprefix);
 extern MSLogParam *ms_loginit_l (MSLogParam *logp,

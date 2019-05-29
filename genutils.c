@@ -924,7 +924,7 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
     ms_log (2, "%s(): Unhandled combination of timeformat and subseconds, please report!\n", __func__);
     ms_log (2, "%s():   nstime: %"PRId64", isec: %"PRId64", nanosec: %d, mirosec: %d, submicro: %d\n",
             __func__, nstime, isec, nanosec, microsec, submicro);
-    ms_log (2, "%s():   timeformat: %d, subseconds: %d\n", __func__, timeformat, subseconds);
+    ms_log (2, "%s():   timeformat: %d, subseconds: %d\n", __func__, (int)timeformat, (int)subseconds);
     return NULL;
   }
 
@@ -1051,7 +1051,7 @@ ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec)
 
   if (!VALIDNANOSEC (nsec))
   {
-    ms_log (2, "%s(): nanosecond (%d) is out of range\n", __func__, nsec);
+    ms_log (2, "%s(): nanosecond (%u) is out of range\n", __func__, nsec);
     return NSTERROR;
   }
 
