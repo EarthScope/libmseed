@@ -31,7 +31,7 @@ void ms_loginit_main (MSLogParam *logp,
                       void (*log_print) (char *), const char *logprefix,
                       void (*diag_print) (char *), const char *errprefix);
 
-int ms_log_main (MSLogParam *logp, int level, va_list *varlist);
+int ms_log_main (MSLogParam *logp, int level, const char *format, va_list *varlist);
 
 /* Initialize the global logging parameters */
 MSLogParam gMSLogParam = {NULL, NULL, NULL, NULL};
@@ -180,19 +180,20 @@ ms_loginit_main (MSLogParam *logp,
  * includes any prefix.
  *
  * @param[in] level Message level
- * @param[in] ... Message in printf() style
+ * @param[in] format Message format in printf() style
+ * @param[in] ... Message format variables
  *
  * @returns Return value of ms_log_main().
  ***************************************************************************/
 int
-ms_log (int level, ...)
+ms_log (int level, const char *format, ...)
 {
   int retval;
   va_list varlist;
 
-  va_start (varlist, level);
+  va_start (varlist, format);
 
-  retval = ms_log_main (&gMSLogParam, level, &varlist);
+  retval = ms_log_main (&gMSLogParam, level, format, &varlist);
 
   va_end (varlist);
 
@@ -223,13 +224,14 @@ ms_log (int level, ...)
  *
  * @param[in] logp Pointer to ::MSLogParam to use for this message
  * @param[in] level Message level
- * @param[in] ... Message in printf() style
+ * @param[in] format Message format in printf() style
+ * @param[in] ... Message format variables
  *
  * @returns The number of characters formatted on success, and a
  * negative value on error.
  ***************************************************************************/
 int
-ms_log_l (MSLogParam *logp, int level, ...)
+ms_log_l (MSLogParam *logp, int level, const char *format, ...)
 {
   int retval;
   va_list varlist;
@@ -240,9 +242,9 @@ ms_log_l (MSLogParam *logp, int level, ...)
   else
     llog = logp;
 
-  va_start (varlist, level);
+  va_start (varlist, format);
 
-  retval = ms_log_main (llog, level, &varlist);
+  retval = ms_log_main (llog, level, format, &varlist);
 
   va_end (varlist);
 
@@ -263,12 +265,11 @@ ms_log_l (MSLogParam *logp, int level, ...)
  * negative value on error.
  ***************************************************************************/
 int
-ms_log_main (MSLogParam *logp, int level, va_list *varlist)
+ms_log_main (MSLogParam *logp, int level, const char *format, va_list *varlist)
 {
   static char message[MAX_LOG_MSG_LENGTH];
   int retvalue = 0;
   int presize;
-  const char *format;
 
   if (!logp)
   {
@@ -277,8 +278,6 @@ ms_log_main (MSLogParam *logp, int level, va_list *varlist)
   }
 
   message[0] = '\0';
-
-  format = va_arg (*varlist, const char *);
 
   if (level >= 2) /* Error message */
   {

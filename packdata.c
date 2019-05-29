@@ -301,7 +301,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
       frameptr[1] = input[0];
 
       if (libmseed_encodedebug > 0)
-        ms_log (1, "Frame %d: X0=%d\n", frameidx, frameptr[1]);
+        ms_log (1, "Frame %d: X0=%d\n", frameidx, input[0]);
 
       if (swapflag)
         ms_gswap4a (&frameptr[1]);
@@ -491,7 +491,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
       frameptr[1] = input[0];
 
       if (libmseed_encodedebug > 0)
-        ms_log (1, "Frame %d: X0=%d\n", frameidx, frameptr[1]);
+        ms_log (1, "Frame %d: X0=%d\n", frameidx, input[0]);
 
       if (swapflag)
         ms_gswap4a (&frameptr[1]);
