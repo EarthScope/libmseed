@@ -661,8 +661,10 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
                              MS3Tolerance *tolerance, MS3Selections *selections,
                              int8_t splitversion, uint32_t flags, int8_t verbose)
 {
-  MS3Record *msr     = 0;
-  MS3FileParam *msfp = 0;
+  MS3Record *msr     = NULL;
+  MS3FileParam *msfp = NULL;
+  MS3TraceSeg *seg   = NULL;
+  int64_t fpos;
   int retcode;
 
   if (!ppmstl)
@@ -678,10 +680,30 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
   }
 
   /* Loop over the input file and add each record to trace list */
-  while ((retcode = ms3_readmsr_selection (&msfp, &msr, msfile, NULL, NULL,
+  while ((retcode = ms3_readmsr_selection (&msfp, &msr, msfile, &fpos, NULL,
                                            flags, selections, verbose)) == MS_NOERROR)
   {
-    mstl3_addmsr (*ppmstl, msr, splitversion, 1, flags, tolerance);
+    seg = mstl3_addmsr (*ppmstl, msr, splitversion, 1, flags, tolerance);
+
+    if (seg == NULL)
+    {
+      ms_log (2, "%s(%s) Cannot add record to trace list\n", __func__, msr->sid);
+
+      retcode = MS_GENERROR;
+      break;
+    }
+
+    /* Add record pointer to segment if requested */
+    if (flags & MSF_RECORDLIST)
+    {
+      if (!mstl3_add_recordptr(seg, msr, NULL, NULL, msfile, fpos))
+      {
+        ms_log (2, "%s(%s) Cannot add record to record list\n", __func__, msr->sid);
+
+        retcode = MS_GENERROR;
+        break;
+      }
+    }
   }
 
   /* Reset return code to MS_NOERROR on successful read by ms_readmsr_selection() */
@@ -695,7 +717,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
 
 /*********************************************************************
  *
- * A wrapper for fread that handles EOF and error conditions.
+ * A wrapper for fread() that handles EOF and error conditions.
  *
  * Returns the return value from fread.
  *********************************************************************/

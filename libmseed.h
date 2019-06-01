@@ -373,11 +373,11 @@ extern void ms3_printselections (MS3Selections *selections);
 /** @brief miniSEED record pointer */
 typedef struct MS3RecordPtr
 {
-  int32_t reclen;            //!< Record length
-  char *bufferptr;           //!< Pointer in buffer to record, NULL if not used
+  const char *bufferptr;     //!< Pointer in buffer to record, NULL if not used
   FILE *fileptr;             //!< Pointer to open FILE containing record, NULL if not used
-  char *filename;            //!< Pointer to file name containing record, NULL if not used
-  uint64_t fileoffset;       //!< Offset into file to record for \a fileptr or \a filename
+  const char *filename;      //!< Pointer to file name containing record, NULL if not used
+  int64_t fileoffset;        //!< Offset into file to record for \a fileptr or \a filename
+  int32_t reclen;            //!< Record length
   nstime_t starttime;        //!< Start time of record, time of first sample
   nstime_t endtime;          //!< End time of record, time of last sample
   void *prvtptr;             //!< Private pointer, will not be populated by library but will be free'd
@@ -526,6 +526,8 @@ extern int64_t       mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *bu
                                                  int8_t splitversion, uint32_t flags,
                                                  MS3Tolerance *tolerance, MS3Selections *selections,
                                                  int8_t verbose);
+extern MS3RecordPtr *mstl3_add_recordptr (MS3TraceSeg *seg, MS3Record *msr, char *bufferptr,
+                                          FILE *fileptr, const char *filename, int64_t fileoffset);
 extern int mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate);
 extern int mstl3_resize_buffers (MS3TraceList *mstl);
 extern int mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
@@ -1070,7 +1072,7 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
 #define MSF_ATENDOFFILE   0x0020  //!< [Parsing] Reading routine is at the end of the file
 #define MSF_STOREMETADATA 0x0040  //!< [TraceList] Store record-level metadata in trace lists
 #define MSF_MAINTAINMSTL  0x0080  //!< [TraceList] Do not modify a trace list when packing
-#define MSF_RECORDLIST    0x0100  //!< [TraceList] Build a ::RecordList for each ::MS3TraceSeg
+#define MSF_RECORDLIST    0x0100  //!< [TraceList] Build a ::MS3RecordList for each ::MS3TraceSeg
 #define MSF_PACKVER2      0x0200  //!< [Packing] Pack as miniSEED version 2 instead of 3
 /** @} */
 

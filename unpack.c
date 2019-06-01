@@ -1176,7 +1176,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
     return MS_GENERROR;
   }
 
-  /* Fallback encoding for when no blockette 1000 is present */
+  /* Fallback encoding for when encoding is unknown */
   if (msr->encoding < 0)
   {
     if (verbose > 2)
@@ -1425,6 +1425,231 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
 
   return nsamples;
 } /* End of msr3_unpack_data() */
+
+/*******************************************************************/ /**
+ * @brief Decode data samples to a user-supplied buffer
+ * TODO
+ * @param[in] msr Target ::MS3Record to unpack data samples
+ * @param[in] verbose Flag to control verbosity, 0 means no diagnostic output
+ *
+ * @return number of samples unpacked or negative libmseed error code.
+ ************************************************************************/
+int64_t
+ms_decode_data (void *input, int64_t inputsize, int8_t encoding,
+                int64_t samplecount, void *output, int64_t outputsize,
+                int8_t swapflag, char *sid, int8_t verbose)
+{
+  int64_t decodedsize; /* byte size of decodeded samples */
+  int32_t nsamples; /* number of samples unpacked */
+  int8_t samplesize = 0; /* size of the data samples in bytes */
+
+  if (!input || !output)
+    return MS_GENERROR;
+
+  if (samplecount <= 0)
+    return 0;
+
+  /* Check for decode debugging environment variable */
+  if (libmseed_decodedebug < 0)
+  {
+    if (getenv ("DECODE_DEBUG"))
+      libmseed_decodedebug = 1;
+    else
+      libmseed_decodedebug = 0;
+  }
+
+  switch (encoding)
+  {
+  case DE_ASCII:
+    samplesize = 1;
+    break;
+  case DE_INT16:
+  case DE_INT32:
+  case DE_FLOAT32:
+  case DE_STEIM1:
+  case DE_STEIM2:
+  case DE_GEOSCOPE24:
+  case DE_GEOSCOPE163:
+  case DE_GEOSCOPE164:
+  case DE_CDSN:
+  case DE_SRO:
+  case DE_DWWSSN:
+    samplesize = 4;
+    break;
+  case DE_FLOAT64:
+    samplesize = 8;
+    break;
+  default:
+    samplesize = 0;
+  }
+
+  /* Calculate buffer size needed for unpacked samples */
+  decodedsize = (size_t)samplecount * samplesize;
+
+  if (decodedsize > outputsize)
+  {
+    ms_log (2, "%s(%s): Output buffer (%" PRId64 " bytes) is not large enought for decoded data (%" PRId64 " bytes)\n",
+            __func__, sid, decodedsize, outputsize);
+    return MS_GENERROR;
+  }
+
+  /* Decode data samples according to encoding */
+  switch (encoding)
+  {
+  case DE_ASCII:
+    if (verbose > 1)
+      ms_log (1, "%s: Decoding ASCII data\n", sid);
+
+    nsamples = (int32_t)samplecount;
+    if (nsamples > 0)
+    {
+      memcpy (output, input, nsamples);
+    }
+    else
+    {
+      nsamples = 0;
+    }
+    *sampletype = 'a';
+    break;
+
+  case DE_INT16:
+    if (verbose > 1)
+      ms_log (1, "%s: Decoding INT16 data samples\n", sid);
+
+    nsamples = msr_decode_int16 ((int16_t *)input, samplecount,
+                                 (int32_t *)output, decodedsize, swapflag);
+
+    *sampletype = 'i';
+    break;
+
+  case DE_INT32:
+    if (verbose > 1)
+      ms_log (1, "%s: Decoding INT32 data samples\n", sid);
+
+    nsamples = msr_decode_int32 ((int32_t *)input, samplecount,
+                                 (int32_t *)output, decodedsize, swapflag);
+
+    *sampletype = 'i';
+    break;
+
+  case DE_FLOAT32:
+    if (verbose > 1)
+      ms_log (1, "%s: Decoding FLOAT32 data samples\n", sid);
+
+    nsamples = msr_decode_float32 ((float *)input, samplecount,
+                                   (float *)output, decodedsize, swapflag);
+
+    *sampletype = 'f';
+    break;
+
+  case DE_FLOAT64:
+    if (verbose > 1)
+      ms_log (1, "%s: Decoding FLOAT64 data samples\n", sid);
+
+    nsamples = msr_decode_float64 ((double *)input, samplecount,
+                                   (double *)output, decodedsize, swapflag);
+
+    *sampletype = 'd';
+    break;
+
+  case DE_STEIM1:
+    if (verbose > 1)
+      ms_log (1, "%s: Decoding Steim1 data frames\n", sid);
+
+    nsamples = msr_decode_steim1 ((int32_t *)input, inputsize, samplecount,
+                                  (int32_t *)output, decodedsize, sid, swapflag);
+
+    if (nsamples < 0)
+    {
+      nsamples = MS_GENERROR;
+      break;
+    }
+
+    *sampletype = 'i';
+    break;
+
+  case DE_STEIM2:
+    if (verbose > 1)
+      ms_log (1, "%s: Decoding Steim2 data frames\n", sid);
+
+    nsamples = msr_decode_steim2 ((int32_t *)input, inputsize, samplecount,
+                                  (int32_t *)output, decodedsize, sid, swapflag);
+
+    if (nsamples < 0)
+    {
+      nsamples = MS_GENERROR;
+      break;
+    }
+
+    *sampletype = 'i';
+    break;
+
+  case DE_GEOSCOPE24:
+  case DE_GEOSCOPE163:
+  case DE_GEOSCOPE164:
+    if (verbose > 1)
+    {
+      if (encoding == DE_GEOSCOPE24)
+        ms_log (1, "%s: Decoding GEOSCOPE 24bit integer data samples\n", sid);
+      if (encoding == DE_GEOSCOPE163)
+        ms_log (1, "%s: Decoding GEOSCOPE 16bit gain ranged/3bit exponent data samples\n", sid);
+      if (encoding == DE_GEOSCOPE164)
+        ms_log (1, "%s: Decoding GEOSCOPE 16bit gain ranged/4bit exponent data samples\n", sid);
+    }
+
+    nsamples = msr_decode_geoscope ((char *)input, samplecount, (float *)output,
+                                    decodedsize, encoding, sid, swapflag);
+
+    *sampletype = 'f';
+    break;
+
+  case DE_CDSN:
+    if (verbose > 1)
+      ms_log (1, "%s: Decoding CDSN encoded data samples\n", sid);
+
+    nsamples = msr_decode_cdsn ((int16_t *)input, samplecount, (int32_t *)output,
+                                decodedsize, swapflag);
+
+    *sampletype = 'i';
+    break;
+
+  case DE_SRO:
+    if (verbose > 1)
+      ms_log (1, "%s: Decoding SRO encoded data samples\n", sid);
+
+    nsamples = msr_decode_sro ((int16_t *)input, samplecount, (int32_t *)output,
+                               decodedsize, sid, swapflag);
+
+    *sampletype = 'i';
+    break;
+
+  case DE_DWWSSN:
+    if (verbose > 1)
+      ms_log (1, "%s: Decoding DWWSSN encoded data samples\n", sid);
+
+    nsamples = msr_decode_dwwssn ((int16_t *)input, samplecount, (int32_t *)output,
+                                  decodedsize, swapflag);
+
+    *sampletype = 'i';
+    break;
+
+  default:
+    ms_log (2, "%s: Unsupported encoding format %d (%s)\n",
+            sid, encoding, (char *)ms_encodingstr (encoding));
+
+    nsamples = MS_UNKNOWNFORMAT;
+    break;
+  }
+
+  if (nsamples >= 0 && nsamples != samplecount)
+  {
+    ms_log (2, "%s(%s): only decoded %d samples of %" PRId64 " expected\n",
+            __func__, sid, nsamples, samplecount);
+    return MS_GENERROR;
+  }
+
+  return nsamples;
+} /* End of ms_decode_data() */
 
 /***************************************************************************
  * Calculate a sample rate from SEED sample rate factor and multiplier

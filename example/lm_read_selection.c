@@ -99,7 +99,8 @@ main (int argc, char **argv)
       }
 
       ms_log (0, "  Segment %s - %s, samples: %" PRId64 ", sample rate: %g, sample type: %c\n",
-              starttimestr, endtimestr, seg->numsamples, seg->samprate, seg->sampletype);
+              starttimestr, endtimestr, seg->numsamples, seg->samprate,
+              (seg->sampletype) ? seg->sampletype : ' ');
 
       seg = seg->next;
     }

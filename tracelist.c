@@ -71,8 +71,9 @@ mstl3_init (MS3TraceList *mstl)
  * The pointer to the target ::MS3TraceList will be set to NULL.
  *
  * @param[in] ppmstl Pointer-to-pointer to the target ::MS3TraceList to free
- * @param[in] freeprvtptr If true, also free any data at the \a prvtptr
- * members of ::MS3TraceID.prvtptr and ::MS3TraceSeg.prvtptr
+ * @param[in] freeprvtptr If true, also free any data at the \a
+ * prvtptr members of ::MS3TraceID.prvtptr, ::MS3TraceSeg.prvtptr, and
+ * ::MS3TraceSeg.recordlist.prvtptr
  ***************************************************************************/
 void
 mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
@@ -83,6 +84,8 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
   MS3TraceSeg *nextseg = 0;
   MS3Metadata *metadata;
   MS3Metadata *nextmetadata;
+  MS3RecordPtr *recordptr;
+  MS3RecordPtr *nextrecordptr;
 
   if (!ppmstl)
     return;
@@ -123,11 +126,30 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
           metadata = nextmetadata;
         }
 
+        /* Free associated record list and related private pointers */
+        if (seg->recordlist)
+        {
+          recordptr = seg->recordlist->first;
+          while (recordptr)
+          {
+            nextrecordptr = recordptr->next;
+
+            if (freeprvtptr && recordptr->prvtptr)
+              libmseed_memory.free (recordptr->prvtptr);
+
+            libmseed_memory.free (recordptr);
+
+            recordptr = nextrecordptr;
+          }
+
+          libmseed_memory.free (seg->recordlist);
+        }
+
         libmseed_memory.free (seg);
         seg = nextseg;
       }
 
-      /* Free private pointer data if present and requested*/
+      /* Free private pointer data if present and requested */
       if (freeprvtptr && id->prvtptr)
         libmseed_memory.free (id->prvtptr);
 
@@ -184,7 +206,10 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
  * @param[in] msr ::MS3Record containing the data to add to list
  * @param[in] splitversion Flag to control splitting of version/quality
  * @param[in] autoheal Flag to control automatic merging of segments
- * @param[in] flags Flags to control optional functionality.
+ * @param[in] flags Flags to control optional functionality:
+ * @parblock
+ *  - \c ::MSF_STOREMETADATA : Store record-level metadata in trace lists
+ * @endparblock
  * @param[in] tolerance Tolerance function pointers as ::MS3Tolerance
  *
  * @returns a pointer to the ::MS3TraceSeg updated or NULL on error.
@@ -703,7 +728,12 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
  * @param[in] buffer Source buffer to read miniSEED records from
  * @param[in] bufferlength Maximum length of \a buffer
  * @param[in] splitversion Flag to control splitting of version/quality
- * @param[in] flags Flags to control parsing of miniSEED, see msr3_parse()
+ * @param[in] flags Flags to control parsing and optional functionality:
+ * @parblock
+ *  - \c ::MSF_RECORDLIST : Build a ::MS3RecordList for each ::MS3TraceSeg
+ *  - Flags supported by msr3_parse()
+ *  - Flags supported by mstl3_addmsr()
+ * @endparblock
  * @param[in] tolerance Tolerance function pointers as ::MS3Tolerance
  * @param[in] verbose Controls verbosity, 0 means no diagnostic output
  *
@@ -745,7 +775,12 @@ mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
  * @param[in] buffer Source buffer to read miniSEED records from
  * @param[in] bufferlength Maximum length of \a buffer
  * @param[in] splitversion Flag to control splitting of version/quality
- * @param[in] flags Flags to control parsing of miniSEED, see msr3_parse()
+ * @param[in] flags Flags to control parsing and optional functionality:
+ * @parblock
+ *  - \c ::MSF_RECORDLIST : Build a ::MS3RecordList for each ::MS3TraceSeg
+ *  - Flags supported by msr3_parse()
+ *  - Flags supported by mstl3_addmsr()
+ * @endparblock
  * @param[in] tolerance Tolerance function pointers as ::MS3Tolerance
  * @param[in] selections Specify limits to which data should be returned, see @ref data-selections
  * @param[in] verbose Controls verbosity, 0 means no diagnostic output
@@ -761,11 +796,12 @@ mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *buffer, uint64_t buffer
                             MS3Tolerance *tolerance, MS3Selections *selections,
                             int8_t verbose)
 {
-  MS3Record *msr  = NULL;
-  uint64_t offset = 0;
-  uint32_t pflags = flags;
-  int parsevalue;
+  MS3Record *msr   = NULL;
+  MS3TraceSeg *seg = NULL;
+  uint64_t offset  = 0;
+  uint32_t pflags  = flags;
   int64_t reccount = 0;
+  int parsevalue;
 
   if (!ppmstl)
     return MS_GENERROR;
@@ -827,12 +863,29 @@ mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *buffer, uint64_t buffer
       }
     }
 
-    if (mstl3_addmsr (*ppmstl, msr, splitversion, 1, flags, tolerance) == 0)
+    /* Add record to trace list */
+    seg = mstl3_addmsr (*ppmstl, msr, splitversion, 1, flags, tolerance);
+
+    if (seg == NULL)
     {
       if (msr)
         msr3_free (&msr);
 
       return MS_GENERROR;
+    }
+
+    /* Add record pointer to segment if requested */
+    if (flags & MSF_RECORDLIST)
+    {
+      if (!mstl3_add_recordptr(seg, msr, buffer + offset, NULL, NULL, 0))
+      {
+        ms_log (2, "%s(%s) Cannot add record to record list\n", __func__, msr->sid);
+
+        if (msr)
+          msr3_free (&msr);
+
+        return MS_GENERROR;
+      }
     }
 
     reccount += 1;
@@ -1290,6 +1343,231 @@ mstl3_resize_buffers (MS3TraceList *mstl)
   return 0;
 } /* End of mstl3_resize_buffers() */
 
+/**********************************************************************/ /**
+ * @brief Add a ::MS3RecordPtr to the ::MS3RecordList of a ::MS3TraceSeg
+ *
+ * Usually this routine would be called shortly after calling \ref
+ * mstl3_addmsr().
+ *
+ * The record list will be populated automatically, using this
+ * routine, by library functions that support the ::MSF_RECORDLIST flag.
+ *
+ * @param[in] seg ::MS3TraceSeg to add record to
+ * @param[in] msr ::MS3Record to be added, for record length and start/end times
+ * @param[in] bufferptr Pointer to buffer location of record
+ * @param[in] fileptr Pointer to open FILE containing record at \a fileoffset
+ * @param[in] filename Name of file containing record at \a fileoffset
+ * @param[in] fileoffset Offset into file to record location
+ *
+ * @returns Pointer to added ::MS3RecordPtr on success and NULL on error.
+ *
+ * \sa mstl3_unpack_recordlist()
+ * \sa mstl3_readbuffer()
+ * \sa mstl3_readbuffer_selection()
+ * \sa ms3_readtracelist()
+ * \sa ms3_readtracelist_timewin()
+ * \sa ms3_readtracelist_selection()
+ * \sa mstl3_addmsr()
+ ***************************************************************************/
+MS3RecordPtr *
+mstl3_add_recordptr (MS3TraceSeg *seg, MS3Record *msr, char *bufferptr,
+                     FILE *fileptr, const char *filename, int64_t fileoffset)
+{
+  MS3RecordPtr *recordptr = NULL;
+  nstime_t endtime;
+  uint8_t whence = 0;
+
+  if (!seg || !msr || (!bufferptr && !fileptr && !filename))
+    return NULL;
+
+  endtime = msr3_endtime (msr);
+
+  if (endtime == NSTERROR)
+  {
+    ms_log (2, "%s(): Cannot calculate record end time\n", __func__);
+    return NULL;
+  }
+
+  /* Determine where the record fit with this trace segment,
+   * whence:
+   *   1 = End of trace segment
+   *   2 = Beginning of trace segment
+   */
+  whence = 0;
+  if (seg->endtime == endtime)
+    whence = 1;
+  else if (seg->starttime == msr->starttime)
+    whence = 2;
+  else if (endtime == msr->starttime)
+  {
+    /* Determine best fit for records with no time coverage */
+    if (llabs (msr->starttime - seg->endtime) < llabs (msr->starttime - seg->starttime))
+      whence = 1;
+    else
+      whence = 2;
+  }
+  else
+  {
+    ms_log (2, "%s(%s): Cannot determine where record fit relative to trace segment\n",
+            __func__, msr->sid);
+    return NULL;
+  }
+
+  recordptr = (MS3RecordPtr *)libmseed_memory.malloc (sizeof (MS3RecordPtr));
+
+  if (recordptr == NULL)
+  {
+    ms_log (2, "%s(): Cannot allocate memory\n", __func__);
+    return NULL;
+  }
+
+  recordptr->bufferptr  = bufferptr;
+  recordptr->fileptr    = fileptr;
+  recordptr->filename   = filename;
+  recordptr->fileoffset = fileoffset;
+  recordptr->reclen     = msr->reclen;
+  recordptr->starttime  = msr->starttime;
+  recordptr->endtime    = endtime;
+  recordptr->prvtptr    = NULL;
+  recordptr->next       = NULL;
+
+  /* If no record list for the segment is present, allocate and add record pointer */
+  if (seg->recordlist == NULL)
+  {
+    seg->recordlist = (MS3RecordList *)libmseed_memory.malloc (sizeof (MS3RecordList));
+
+    if (seg->recordlist == NULL)
+    {
+      ms_log (2, "%s(): Cannot allocate memory\n", __func__);
+      libmseed_memory.free (recordptr);
+      return NULL;
+    }
+
+    seg->recordlist->recordcnt = 1;
+    seg->recordlist->first     = recordptr;
+    seg->recordlist->last      = recordptr;
+  }
+  /* Otherwise, add record pointer to existing list */
+  else
+  {
+    /* Beginning of list */
+    if (whence == 2)
+    {
+      recordptr->next = seg->recordlist->first;
+      seg->recordlist->first = recordptr;
+    }
+    /* End of list */
+    else
+    {
+      seg->recordlist->last->next = recordptr;
+      seg->recordlist->last = recordptr;
+    }
+
+    seg->recordlist->recordcnt += 1;
+  }
+
+  return recordptr;
+} /* End of mstl3_add_recordptr() */
+
+/**********************************************************************/ /**
+ * @brief Pack ::MS3TraceList data into miniSEED records
+ *
+TODO - rewrite
+ * The datasamples array, numsamples and starttime fields of each
+ * trace segment will be adjusted as data are packed unless the
+ * ::MSF_MAINTAINMSTL flag is specified in \a flags. If
+ * ::MSF_MAINTAINMSTL is specified a caller would also normally set
+ * the ::MSF_FLUSHDATA flag to pack all data in the trace list.
+ *
+ * <b>Use as a rolling buffer to generate data records:</b>
+ * The behavior of adjusting the trace list as data are packed is
+ * intended to allow using a ::MS3TraceList as an intermediate
+ * collection of data buffers to generate data records from an
+ * arbitrarily large data source, e.g. continuous data.  In this
+ * concept, data are added to a ::MS3TraceList and mstl3_pack() is
+ * called repeatedly.  Data records are only produced if a complete
+ * record can be generated, which often leaves small amounts of data
+ * in each segment buffer.  On completion or shutdown the caller
+ * usually makes a final call to mst3_pack() with the ::MSF_FLUSHDATA
+ * flag set to flush all data from the buffers.
+ *
+ * As each record is filled and finished they are passed to \a
+ * record_handler() which should expect 1) a \c char* to the record,
+ * 2) the length of the record and 3) a pointer supplied by the
+ * original caller containing optional private data (\a handlerdata).
+ * It is the responsibility of \a record_handler() to process the
+ * record, the memory will be re-used or freed when \a
+ * record_handler() returns.
+ *
+ * If \a extra is not NULL it is expected to contain extraheaders, a
+ * string containing (compact) JSON, that will be added to each output
+ * record.
+ *
+ * @param[in] mstl ::MS3TraceList containing data to pack
+ * @param[in] record_handler() Callback function called for each record
+ * @param[in] handlerdata A pointer that will be provided to the \a record_handler()
+ * @param[in] reclen Maximum record length to produce
+ * @param[in] encoding Encoding for data samples, see msr3_pack()
+ * @param[out] packedsamples The number of samples packed, returned to caller
+ * @param[in] flags Bit flags to control packing:
+ * @parblock
+ *  - \c ::MSF_FLUSHDATA : Pack all data in the buffer
+ *  - \c ::MSF_MAINTAINMSTL : Do not remove packe data from the buffer
+ *  - \c ::MSF_PACKVER2 : Pack miniSEED version 2 instead of default 3
+ * @endparblock
+ * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
+ * @param[in] extra If not NULL, add this buffer of extra headers to all records
+ *
+ * @returns the number of samples unpacked or -1 on error.
+ ***************************************************************************/
+int64_t
+mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void **ppbuffer)
+{
+  MS3Record *msr = NULL;
+  MS3RecordPtr *recordptr = NULL;
+  int32_t unpackedsamples = 0;
+  int64_t totalunpackedsamples = 0;
+  int8_t samplesize = 0;
+  char sampletype = 0;
+  
+  if (!id || !seg || !ppbuffer)
+    return -1;
+
+  if (!seg->recordlist)
+    return -1;
+
+  // Need to know sample type (and size)
+  //   Record this in RecPtr and track for mixed?
+  // Report sample type back to caller
+  // Allocate sample buffer if needed
+
+  // Need data unpacking direct to supplied buffer
+  
+  recordptr = seg->recordlist->first;
+
+  while (recordptr)
+  {
+    if (recordptr->bufferptr)
+    {
+
+    }
+    else if (recordptr->fileptr)
+    {
+      
+    }
+    else if (recordptr->filename)
+    {
+      
+    }
+    else
+    {
+      ms_log (2, "%s(): Error initializing msr, out of memory?\n", __func__);
+      return -1;
+    }
+  }
+  
+  return totalunpackedsamples;
+} /* End of mstl3_unpack_recordlist() */
 
 /**********************************************************************/ /**
  * @brief Pack ::MS3TraceList data into miniSEED records
