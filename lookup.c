@@ -59,6 +59,64 @@ ms_samplesize (const char sampletype)
 } /* End of ms_samplesize() */
 
 /**********************************************************************/ /**
+ * @brief Return sample size and/or type for given encoding value
+ *
+ * Determine the decoded sample size and/or type based on data
+ * encoding.  The \a samplesize and \a sampletype values will only be
+ * set if not NULL, allowing lookup of either value or both.
+ *
+ * @param[in] encoding Data sample encoding code
+ * @param[out] samplesize Size of sample, pointer that will be set
+ * @param[out] encoding Sample type, pointer to \c char that will be set
+ *
+ * @returns 0 on success, -1 on error
+ ***************************************************************************/
+int
+ms_encoding_sizetype (const uint8_t encoding, uint8_t *samplesize, char *sampletype)
+{
+  switch (encoding)
+  {
+  case DE_ASCII:
+    if (samplesize)
+      *samplesize = 1;
+    if (sampletype)
+      *sampletype = 'a';
+    break;
+  case DE_INT16:
+  case DE_INT32:
+  case DE_STEIM1:
+  case DE_STEIM2:
+  case DE_CDSN:
+  case DE_SRO:
+  case DE_DWWSSN:
+    if (samplesize)
+      *samplesize = 4;
+    if (sampletype)
+      *sampletype = 'i';
+    break;
+  case DE_FLOAT32:
+  case DE_GEOSCOPE24:
+  case DE_GEOSCOPE163:
+  case DE_GEOSCOPE164:
+    if (samplesize)
+      *samplesize = 4;
+    if (sampletype)
+      *sampletype = 'f';
+    break;
+  case DE_FLOAT64:
+    if (samplesize)
+      *samplesize = 8;
+    if (sampletype)
+      *sampletype = 'd';
+    break;
+  default:
+    return -1;
+  }
+
+  return 0;
+} /* End of ms_encodingstr_sizetype() */
+
+/**********************************************************************/ /**
  * @brief Descriptive string for data encodings
  *
  * @param[in] encoding Data sample encoding code

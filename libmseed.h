@@ -303,9 +303,13 @@ extern int msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, 
 
 extern int msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
 
-extern int msr3_unpack_data (MS3Record *msr, int8_t verbose);
+extern int64_t msr3_unpack_data (MS3Record *msr, int8_t verbose);
 
-extern int msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint16_t *datasize);
+extern int msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize);
+
+extern int64_t ms_decode_data (const void *input, size_t inputsize, uint8_t encoding,
+                               int64_t samplecount, void *output, size_t outputsize,
+                               char *sampletype, int8_t swapflag, char *sid, int8_t verbose);
 
 extern MS3Record* msr3_init (MS3Record *msr);
 extern void       msr3_free (MS3Record **ppmsr);
@@ -377,9 +381,12 @@ typedef struct MS3RecordPtr
   FILE *fileptr;             //!< Pointer to open FILE containing record, NULL if not used
   const char *filename;      //!< Pointer to file name containing record, NULL if not used
   int64_t fileoffset;        //!< Offset into file to record for \a fileptr or \a filename
-  int32_t reclen;            //!< Record length
+  int32_t reclen;            //!< Record length in bytes
   nstime_t starttime;        //!< Start time of record, time of first sample
   nstime_t endtime;          //!< End time of record, time of last sample
+  uint32_t dataoffset;       //!< Offset from start of record to encoded data
+  uint8_t swapflag;          //!< Byte swap indicator (bitmask), see @ref byte-swap-flags
+  uint8_t encoding;          //!< Data encoding format, see @ref encoding-values
   void *prvtptr;             //!< Private pointer, will not be populated by library but will be free'd
   struct MS3RecordPtr *next; //!< Pointer to next entry, NULL if the last
 } MS3RecordPtr;
@@ -908,6 +915,7 @@ extern int ms_readleapsecondfile (const char *filename);
     @{ */
 
 extern uint8_t  ms_samplesize (const char sampletype);
+extern int ms_encoding_sizetype (const uint8_t encoding, uint8_t *samplesize, char *sampletype);
 extern const char* ms_encodingstr (const uint8_t encoding);
 extern const char* ms_errorstr (int errorcode);
 

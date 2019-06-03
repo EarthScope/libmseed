@@ -1374,6 +1374,8 @@ mstl3_add_recordptr (MS3TraceSeg *seg, MS3Record *msr, char *bufferptr,
                      FILE *fileptr, const char *filename, int64_t fileoffset)
 {
   MS3RecordPtr *recordptr = NULL;
+  uint32_t dataoffset;
+  uint32_t datasize;
   nstime_t endtime;
   uint8_t whence = 0;
 
@@ -1387,6 +1389,10 @@ mstl3_add_recordptr (MS3TraceSeg *seg, MS3Record *msr, char *bufferptr,
     ms_log (2, "%s(): Cannot calculate record end time\n", __func__);
     return NULL;
   }
+
+  /* Determine offset to data and length of data payload */
+  if (msr3_data_bounds (msr, &dataoffset, &datasize))
+    return NULL;
 
   /* Determine where the record fit with this trace segment,
    * whence:
@@ -1428,6 +1434,9 @@ mstl3_add_recordptr (MS3TraceSeg *seg, MS3Record *msr, char *bufferptr,
   recordptr->reclen     = msr->reclen;
   recordptr->starttime  = msr->starttime;
   recordptr->endtime    = endtime;
+  recordptr->dataoffset = dataoffset;
+  recordptr->swapflag   = msr->swapflag;
+  recordptr->encoding   = msr->encoding;
   recordptr->prvtptr    = NULL;
   recordptr->next       = NULL;
 
@@ -1521,15 +1530,17 @@ TODO - rewrite
  * @returns the number of samples unpacked or -1 on error.
  ***************************************************************************/
 int64_t
-mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void **ppbuffer)
+mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void **ppbuffer,
+                         size_t buffersize, int8_t verbose)
 {
   MS3Record *msr = NULL;
   MS3RecordPtr *recordptr = NULL;
   int32_t unpackedsamples = 0;
   int64_t totalunpackedsamples = 0;
-  int8_t samplesize = 0;
+
+  uint8_t samplesize = 0;
   char sampletype = 0;
-  
+
   if (!id || !seg || !ppbuffer)
     return -1;
 
@@ -1538,12 +1549,21 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void **ppbuffer)
 
   // Need to know sample type (and size)
   //   Record this in RecPtr and track for mixed?
-  // Report sample type back to caller
-  // Allocate sample buffer if needed
+
+  // Report sample type back to caller OR use seg->sampletype
+
+  // Allocate sample buffer if needed, if allocating set seg->dataselect
 
   // Need data unpacking direct to supplied buffer
   
   recordptr = seg->recordlist->first;
+
+  if (ms_encoding_sizetype(recordptr->encoding, &samplesize, &sampletype))
+  {
+    ms_log (2, "%s(%s): Cannot determine sample size for encoding: %u\n",
+            __func__, id->sid, msr->encoding);
+    return MS_GENERROR;
+  }
 
   while (recordptr)
   {
@@ -1564,6 +1584,8 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void **ppbuffer)
       ms_log (2, "%s(): Error initializing msr, out of memory?\n", __func__);
       return -1;
     }
+
+    recordptr = recordptr->next;
   }
   
   return totalunpackedsamples;
