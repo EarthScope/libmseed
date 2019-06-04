@@ -113,7 +113,7 @@ main (int argc, char **argv)
                            NULL            // Extra headers to inject, none in this case
     );
 
-    ms_log (0, "mstl3_pack() created %d records containing %d samples\n",
+    ms_log (0, "mstl3_pack() created %d records containing %" PRId64 " samples\n",
             precords, psamples);
   }
 
@@ -134,7 +134,7 @@ main (int argc, char **argv)
                          NULL                     // Extra headers to inject, none in this case
   );
 
-  ms_log (0, "Final mstl3_pack() created %d records containing %d samples\n",
+  ms_log (0, "Final mstl3_pack() created %d records containing %" PRId64 " samples\n",
           precords, psamples);
 
   /* Make sure everything is cleaned up */

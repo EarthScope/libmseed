@@ -1435,6 +1435,7 @@ mstl3_add_recordptr (MS3TraceSeg *seg, MS3Record *msr, char *bufferptr,
   recordptr->starttime  = msr->starttime;
   recordptr->endtime    = endtime;
   recordptr->dataoffset = dataoffset;
+  recordptr->samplecnt  = msr->samplecnt;
   recordptr->swapflag   = msr->swapflag;
   recordptr->encoding   = msr->encoding;
   recordptr->prvtptr    = NULL;
@@ -1530,64 +1531,153 @@ TODO - rewrite
  * @returns the number of samples unpacked or -1 on error.
  ***************************************************************************/
 int64_t
-mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void **ppbuffer,
-                         size_t buffersize, int8_t verbose)
+mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
+                         size_t outputsize, int8_t verbose)
 {
-  MS3Record *msr = NULL;
   MS3RecordPtr *recordptr = NULL;
-  int32_t unpackedsamples = 0;
+  int64_t unpackedsamples = 0;
   int64_t totalunpackedsamples = 0;
 
+  const char *input = NULL;
+
+  size_t outputoffset = 0;
+  size_t decodedsize = 0;
   uint8_t samplesize = 0;
   char sampletype = 0;
+  char recsampletype = 0;
 
-  if (!id || !seg || !ppbuffer)
+  if (!id || !seg)
     return -1;
 
   if (!seg->recordlist)
     return -1;
 
-  // Need to know sample type (and size)
-  //   Record this in RecPtr and track for mixed?
-
-  // Report sample type back to caller OR use seg->sampletype
-
-  // Allocate sample buffer if needed, if allocating set seg->dataselect
-
-  // Need data unpacking direct to supplied buffer
-  
   recordptr = seg->recordlist->first;
 
   if (ms_encoding_sizetype(recordptr->encoding, &samplesize, &sampletype))
   {
-    ms_log (2, "%s(%s): Cannot determine sample size for encoding: %u\n",
-            __func__, id->sid, msr->encoding);
-    return MS_GENERROR;
+    ms_log (2, "%s(%s): Cannot determine sample size and type for encoding: %u\n",
+            __func__, id->sid, recordptr->encoding);
+    return -1;
   }
 
+  /* Calculate buffer size needed for unpacked samples */
+  decodedsize = (size_t)seg->samplecnt * samplesize;
+
+  /* If output buffer is supplied, check needed size */
+  if (output)
+  {
+    if (decodedsize > outputsize)
+    {
+      ms_log (2, "%s(%s): Output buffer (%zu bytes) is not large enought for decoded data (%zu bytes)\n",
+              __func__, id->sid, decodedsize, outputsize);
+      return -1;
+    }
+  }
+  /* Otherwise check that buffer is not already allocated  */
+  else if (seg->datasamples)
+  {
+    ms_log (2, "%s(%s): Segment data buffer is already allocated, cannot replace\n",
+            __func__, id->sid);
+    return -1;
+  }
+  /* Otherwise allocate new buffer */
+  else
+  {
+    if ((output = libmseed_memory.malloc (decodedsize)) == NULL)
+    {
+      ms_log (2, "%s(%s): Cannot allocate memory for segment data samples\n", __func__, id->sid);
+      return MS_GENERROR;
+    }
+
+    /* Associate allocated memory with segment */
+    seg->datasamples = output;
+    seg->datasize = decodedsize;
+  }
+
+  /* Iterate through record list and unpack data samples */
   while (recordptr)
   {
+    /* Skip records with no samples, implied by 0 data offset */
+    if (recordptr->dataoffset == 0)
+    {
+      recordptr = recordptr->next;
+      continue;
+    }
+
+    if (ms_encoding_sizetype(recordptr->encoding, NULL, &recsampletype))
+    {
+      ms_log (2, "%s(%s): Cannot determine sample type for encoding: %u\n",
+              __func__, id->sid, recordptr->encoding);
+
+      totalunpackedsamples = -1;
+      break;
+    }
+
+    if (recsampletype != sampletype)
+    {
+      ms_log (2, "%s(%s): Mixed sample types cannot be decoded together: %c versus %c\n",
+              __func__, id->sid, recsampletype, sampletype);
+
+      totalunpackedsamples = -1;
+      break;
+    }
+
+    /* Decode data from buffer */
     if (recordptr->bufferptr)
     {
-
+      input = recordptr->bufferptr + recordptr->dataoffset;
     }
+    /* Decode data from open file at position */
     else if (recordptr->fileptr)
     {
-      
+      //TODO get data to input buffer
     }
+    /* Decode data from file at position */
     else if (recordptr->filename)
     {
-      
+      //TODO get data to input buffer
     }
     else
     {
-      ms_log (2, "%s(): Error initializing msr, out of memory?\n", __func__);
+      ms_log (2, "%s(%s): No buffer or file pointer for record\n", __func__, id->sid);
       return -1;
     }
 
+    /* Decode data from buffer */
+    unpackedsamples = ms_decode_data (input, recordptr->reclen - recordptr->dataoffset,
+                                      recordptr->encoding, recordptr->samplecnt,
+                                      output + outputoffset, decodedsize - outputoffset,
+                                      &sampletype, recordptr->swapflag, id->sid, verbose);
+
+    if (unpackedsamples < 0)
+      break;
+
+    outputoffset += unpackedsamples * samplesize;
+    totalunpackedsamples += unpackedsamples;
+
     recordptr = recordptr->next;
   }
-  
+
+  /* If output buffer was allocated here, do some maintenance */
+  if (output == seg->datasamples)
+  {
+    /* Free allocated memory on error */
+    if (totalunpackedsamples < 0)
+    {
+      libmseed_memory.free(output);
+      seg->datasamples = NULL;
+      seg->datasize = 0;
+    }
+    else
+    {
+      seg->numsamples = totalunpackedsamples;
+    }
+  }
+
+  if (totalunpackedsamples > 0)
+    seg->sampletype = sampletype;
+
   return totalunpackedsamples;
 } /* End of mstl3_unpack_recordlist() */
 

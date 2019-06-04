@@ -385,6 +385,7 @@ typedef struct MS3RecordPtr
   nstime_t starttime;        //!< Start time of record, time of first sample
   nstime_t endtime;          //!< End time of record, time of last sample
   uint32_t dataoffset;       //!< Offset from start of record to encoded data
+  uint32_t samplecnt;        //!< Number of samples in record
   uint8_t swapflag;          //!< Byte swap indicator (bitmask), see @ref byte-swap-flags
   uint8_t encoding;          //!< Data encoding format, see @ref encoding-values
   void *prvtptr;             //!< Private pointer, will not be populated by library but will be free'd
@@ -535,6 +536,8 @@ extern int64_t       mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *bu
                                                  int8_t verbose);
 extern MS3RecordPtr *mstl3_add_recordptr (MS3TraceSeg *seg, MS3Record *msr, char *bufferptr,
                                           FILE *fileptr, const char *filename, int64_t fileoffset);
+extern int64_t mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
+                                        size_t outputsize, int8_t verbose);
 extern int mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate);
 extern int mstl3_resize_buffers (MS3TraceList *mstl);
 extern int mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
