@@ -400,7 +400,7 @@ typedef struct MS3RecordPtr
   const char *bufferptr;     //!< Pointer in buffer to record, NULL if not used
   FILE *fileptr;             //!< Pointer to open FILE containing record, NULL if not used
   const char *filename;      //!< Pointer to file name containing record, NULL if not used
-  int64_t fileoffset;        //!< Offset into file to record for \a fileptr or \a filenameq
+  int64_t fileoffset;        //!< Offset into file to record for \a fileptr or \a filename
   MS3Record *msr;            //!< Pointer to ::MS3Record for this record
   nstime_t endtime;          //!< End time of record, time of last sample
   uint32_t dataoffset;       //!< Offset from start of record to encoded data
@@ -800,12 +800,12 @@ extern int mseh_print (MS3Record *msr, int indent);
     time series with the ability to later decompress the samples, or
     do a deeper analysis of the records for each segment.
 
-    The @ref mstl3_unpacksegment() function allows for the unpacking
-    of data samples for a given ::MS3TraceSeg into a user-specified
-    buffer, or allocating the buffer if needed.
+    The @ref mstl3_unpack_recordlist() function allows for the
+    unpacking of data samples for a given ::MS3TraceSeg into a
+    user-specified buffer, or allocating the buffer if needed.
 
     \sa mstl3_addmsr()
-    \sa mstl3_unpacksegment()
+    \sa mstl3_unpack_recordlist()
 */
 
 /** @defgroup logging Central Logging

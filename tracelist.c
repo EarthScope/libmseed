@@ -179,7 +179,8 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
  * If the \a autoheal flag is true, extra processing is invoked to
  * conjoin trace segments that fit together after the ::MS3Record
  * coverage is added.  For segments that are removed, any memory at
- * the ::MS3TraceSeg.prvtptr will be freed.
+ * the ::MS3TraceSeg.prvtptr will be freed.  @note Merging (healing)
+ * of segments is incompatible with @ref record-list functionality.
  *
  * The lists are always maintained in a sorted order.  An
  * ::MS3TraceList is maintained with the ::MS3TraceID entries in
@@ -518,8 +519,8 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
         else
           segafter = searchseg;
 
-        /* Done searching if not autohealing */
-        if (!autoheal)
+        /* Done searching if not autohealing or building record list */
+        if (!autoheal || (flags & MSF_RECORDLIST))
           break;
 
         /* Done searching if both before and after segments are found */
@@ -537,8 +538,8 @@ mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
           return NULL;
         }
 
-        /* Merge two segments that now fit if autohealing */
-        if (autoheal && segafter && segbefore != segafter)
+        /* Merge two segments that now fit if autohealing (and not building record list) */
+        if (autoheal && !(flags & MSF_RECORDLIST) && segafter && segbefore != segafter)
         {
           /* Add segafter coverage to segbefore */
           if (!mstl3_addsegtoseg (segbefore, segafter))
@@ -835,8 +836,9 @@ mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *buffer, uint64_t buffer
       }
     }
 
-    /* Add record to trace list */
-    seg = mstl3_addmsr (*ppmstl, msr, splitversion, 1, flags, tolerance);
+    /* Add record to trace list.
+     * Auto-healing of segments is disabled if a record list is being constructed. */
+    seg = mstl3_addmsr (*ppmstl, msr, splitversion, (flags & MSF_RECORDLIST) ? 0 : 1, flags, tolerance);
 
     if (seg == NULL)
     {
@@ -1321,6 +1323,11 @@ mstl3_resize_buffers (MS3TraceList *mstl)
  * Usually this routine would be called shortly after calling \ref
  * mstl3_addmsr().
  *
+ * @note Record lists and auto-segment merging (healing) are
+ * incompatible.  When using this routine the \a autoheal flag of \ref
+ * mstl3_addmsr() should be turned off as the merging of trace
+ * segments cannot merge record lists.
+ *
  * The record list will be populated automatically, using this
  * routine, by library functions that support the ::MSF_RECORDLIST flag.
  *
@@ -1513,13 +1520,16 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
   int64_t unpackedsamples = 0;
   int64_t totalunpackedsamples = 0;
 
-  const char *input = NULL;
+  char *filebuffer = NULL;
+  size_t filebuffersize = 0;
 
   size_t outputoffset = 0;
   size_t decodedsize = 0;
   uint8_t samplesize = 0;
   char sampletype = 0;
   char recsampletype = 0;
+
+  const char *input = NULL;
 
   if (!id || !seg)
     return -1;
@@ -1626,7 +1636,10 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
                                       &sampletype, recordptr->msr->swapflag, id->sid, verbose);
 
     if (unpackedsamples < 0)
+    {
+      totalunpackedsamples = -1;
       break;
+    }
 
     outputoffset += unpackedsamples * samplesize;
     totalunpackedsamples += unpackedsamples;

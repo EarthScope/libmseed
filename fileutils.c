@@ -682,7 +682,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
   while ((retcode = ms3_readmsr_selection (&msfp, &msr, msfile, &fpos, NULL,
                                            flags, selections, verbose)) == MS_NOERROR)
   {
-    seg = mstl3_addmsr (*ppmstl, msr, splitversion, 1, flags, tolerance);
+    seg = mstl3_addmsr (*ppmstl, msr, splitversion, (flags & MSF_RECORDLIST) ? 0 : 1, flags, tolerance);
 
     if (seg == NULL)
     {
