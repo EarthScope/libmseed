@@ -374,25 +374,41 @@ extern void ms3_printselections (MS3Selections *selections);
 /** @addtogroup record-list
     @{ */
 
-/** @brief miniSEED record pointer */
+/** @brief miniSEED record pointer and metadata
+ *
+ * A list of data records that contributed to a trace segment.
+ *
+ * The location of the record is identified at a memory address (\a
+ * bufferptr), the location in an open file (\a fileptr and \a
+ * fileoffset), or the location in a file (\a filename and \a
+ * fileoffset).
+ *
+ * A ::MS3Record is stored with and contains the bit flags, extra
+ * headers, etc. for the record.
+ *
+ * The \a dataoffset to the encoded data is stored to enable direct
+ * decoding of data samples.
+ *
+ * Note: the list is stored in the time order that the entries
+ * contributed to the segment.
+ *
+ * @see mstl3_add_recordptr()
+ * @see mstl3_unpack_recordlist()
+ */
 typedef struct MS3RecordPtr
 {
   const char *bufferptr;     //!< Pointer in buffer to record, NULL if not used
   FILE *fileptr;             //!< Pointer to open FILE containing record, NULL if not used
   const char *filename;      //!< Pointer to file name containing record, NULL if not used
-  int64_t fileoffset;        //!< Offset into file to record for \a fileptr or \a filename
-  int32_t reclen;            //!< Record length in bytes
-  nstime_t starttime;        //!< Start time of record, time of first sample
+  int64_t fileoffset;        //!< Offset into file to record for \a fileptr or \a filenameq
+  MS3Record *msr;            //!< Pointer to ::MS3Record for this record
   nstime_t endtime;          //!< End time of record, time of last sample
   uint32_t dataoffset;       //!< Offset from start of record to encoded data
-  uint32_t samplecnt;        //!< Number of samples in record
-  uint8_t swapflag;          //!< Byte swap indicator (bitmask), see @ref byte-swap-flags
-  uint8_t encoding;          //!< Data encoding format, see @ref encoding-values
   void *prvtptr;             //!< Private pointer, will not be populated by library but will be free'd
   struct MS3RecordPtr *next; //!< Pointer to next entry, NULL if the last
 } MS3RecordPtr;
 
-/** @brief Record list, holds RecordPtr entries that contribute to a given ::MS3TraceSeg */
+/** @brief Record list, holds ::MS3RecordPtr entries that contribute to a given ::MS3TraceSeg */
 typedef struct MS3RecordList
 {
   uint64_t recordcnt;  //!< Count of records in the list (for convenience)
@@ -433,28 +449,6 @@ typedef struct MS3RecordList
     \sa mstl3_writemseed()
     @{ */
 
-/**
- * @brief Container for a list of raw flags and extra headers
- *
- * A list of bit flags and extra headers with a time range of the
- * record they came from.  In @ref trace-list functionality, this
- * container is used to retain flags and extra headers that
- * contributed to each entry.
- *
- * Note: the list is stored in the reverse order that they entries
- * were added.
- *
- * @see mstl3_add_metadata()
- */
-typedef struct MS3Metadata
-{
-  nstime_t starttime;       //!< Start time for record containing metadata
-  nstime_t endtime;         //!< End time for record containing metadata
-  uint8_t flags;            //!< Record-level bit flags
-  char *extra;              //!< Record-level extra headers, NULL-terminated if existing
-  struct MS3Metadata *next; //!< Pointer to next entry, NULL if the last
-} MS3Metadata;
-
 /** @brief Container for a continuous trace segment, linkable */
 typedef struct MS3TraceSeg {
   nstime_t        starttime;         //!< Time of first sample
@@ -466,7 +460,6 @@ typedef struct MS3TraceSeg {
   int64_t         numsamples;        //!< Number of data samples in datasamples
   char            sampletype;        //!< Sample type code, see @ref sample-types
   void           *prvtptr;           //!< Private pointer for general use, unused by library
-  struct MS3Metadata *metadata;      //!< List of flags and extra headers from records that contributed
   struct MS3RecordList *recordlist;  //!< List of pointers to records that contributed
   struct MS3TraceSeg *prev;          //!< Pointer to previous segment
   struct MS3TraceSeg *next;          //!< Pointer to next segment, NULL if the last
@@ -1081,10 +1074,9 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
 #define MSF_SEQUENCE      0x0008  //!< [Packing] UNSUPPORTED: Maintain a record-level sequence number
 #define MSF_FLUSHDATA     0x0010  //!< [Packing] Pack all available data even if final record would not be filled
 #define MSF_ATENDOFFILE   0x0020  //!< [Parsing] Reading routine is at the end of the file
-#define MSF_STOREMETADATA 0x0040  //!< [TraceList] Store record-level metadata in trace lists
+#define MSF_RECORDLIST    0x0040  //!< [TraceList] Build a ::MS3RecordList for each ::MS3TraceSeg
 #define MSF_MAINTAINMSTL  0x0080  //!< [TraceList] Do not modify a trace list when packing
-#define MSF_RECORDLIST    0x0100  //!< [TraceList] Build a ::MS3RecordList for each ::MS3TraceSeg
-#define MSF_PACKVER2      0x0200  //!< [Packing] Pack as miniSEED version 2 instead of 3
+#define MSF_PACKVER2      0x0100  //!< [Packing] Pack as miniSEED version 2 instead of 3
 /** @} */
 
 #ifdef __cplusplus

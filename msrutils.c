@@ -181,7 +181,7 @@ msr3_duplicate (MS3Record *msr, int8_t datadup)
   {
     dupmsr->datasamples = NULL;
     dupmsr->datasize = 0;
-    dupmsr->numsamples  = 0;
+    dupmsr->numsamples = 0;
   }
 
   return dupmsr;
