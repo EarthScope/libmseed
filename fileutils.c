@@ -637,10 +637,9 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
  * according to data publication version (or quality for miniSEED
  * 2.x).  See mstl3_addmsr() for full details.
  *
- * If the ::MSF_STOREMETADATA flag is set in \a flags, the raw bit
- * flags and extra headers for record will be stored in a list of
- * ::MS3Metadata structures associated with the appropriate
- * ::MS3TraceSeg.
+ * If the ::MSF_RECORDLIST flag is set in \a flags, a ::MS3RecordList
+ * will be built for each ::MS3TraceSeg.  The ::MS3RecordPtr entries
+ * contain the location of the data record, bit flags, extra headers, etc.
  *
  * @param[out] ppmstl Pointer-to-pointer to a ::MS3TraceList to populate
  * @param[in] msfile File to read

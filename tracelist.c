@@ -72,7 +72,7 @@ mstl3_init (MS3TraceList *mstl)
  * @param[in] ppmstl Pointer-to-pointer to the target ::MS3TraceList to free
  * @param[in] freeprvtptr If true, also free any data at the \a
  * prvtptr members of ::MS3TraceID.prvtptr, ::MS3TraceSeg.prvtptr, and
- * ::MS3TraceSeg.recordlist.prvtptr
+ * ::MS3RecordPtr.prvtptr (in ::MS3TraceSeg.recordlist)
  ***************************************************************************/
 void
 mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
