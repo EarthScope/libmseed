@@ -1,3 +1,6 @@
+2019.142:
+	- Add ability to pack miniSEED version 2 records.
+
 2019.137:
 	- Allow packing records with no payload, i.e. header-only.
 
