@@ -663,6 +663,9 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
   MS3Record *msr     = NULL;
   MS3FileParam *msfp = NULL;
   MS3TraceSeg *seg   = NULL;
+  MS3RecordPtr *recordptr = NULL;
+  uint32_t dataoffset;
+  uint32_t datasize;
   int64_t fpos;
   int retcode;
 
@@ -682,7 +685,8 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
   while ((retcode = ms3_readmsr_selection (&msfp, &msr, msfile, &fpos, NULL,
                                            flags, selections, verbose)) == MS_NOERROR)
   {
-    seg = mstl3_addmsr (*ppmstl, msr, splitversion, (flags & MSF_RECORDLIST) ? 0 : 1, flags, tolerance);
+    seg = mstl3_addmsr_recordptr (*ppmstl, msr, (flags & MSF_RECORDLIST) ? &recordptr : NULL,
+                                  splitversion, 1, flags, tolerance);
 
     if (seg == NULL)
     {
@@ -692,16 +696,22 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
       break;
     }
 
-    /* Add record pointer to segment if requested */
-    if (flags & MSF_RECORDLIST)
+    /* Populate remaining fields of record pointer */
+    if (recordptr)
     {
-      if (!mstl3_add_recordptr(seg, msr, NULL, NULL, msfile, fpos))
+      /* Determine offset to data and length of data payload */
+      if (msr3_data_bounds (msr, &dataoffset, &datasize))
       {
-        ms_log (2, "%s(%s) Cannot add record to record list\n", __func__, msr->sid);
-
         retcode = MS_GENERROR;
         break;
       }
+
+      recordptr->bufferptr  = NULL;
+      recordptr->fileptr    = NULL;
+      recordptr->filename   = msfile;
+      recordptr->fileoffset = fpos;
+      recordptr->dataoffset = dataoffset;
+      recordptr->prvtptr    = NULL;
     }
   }
 

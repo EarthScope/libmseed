@@ -54,7 +54,10 @@ libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsize)
   if (!currentsize)
     return NULL;
 
-  /* No new memory needed if request already satisfied */
+  if (libmseed_prealloc_block_size == 0)
+    return NULL;
+
+  /* No additional memory needed if request already satisfied */
   if (size < *currentsize)
     return ptr;
 

@@ -518,8 +518,15 @@ typedef struct MS3Tolerance
 
 extern MS3TraceList* mstl3_init (MS3TraceList *mstl);
 extern void          mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr);
-extern MS3TraceSeg*  mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
-                                   int8_t autoheal, uint32_t flags, MS3Tolerance *tolerance);
+
+/** @def mstl3_addmsr
+    @brief Add a ::MS3Record to a ::MS3TraceList @see mstl3_addmsr_recptr() */
+#define mstl3_addmsr(mstl, msr, splitversion, autoheal, flags, tolerance) \
+  mstl3_addmsr_recptr (mstl, msr, NULL, splitversion, autoheal, flags, tolerance)
+
+extern MS3TraceSeg*  mstl3_addmsr_recordptr (MS3TraceList *mstl, MS3Record *msr, MS3RecordPtr **pprecptr,
+                                             int8_t splitversion, int8_t autoheal, uint32_t flags,
+                                             MS3Tolerance *tolerance);
 extern int64_t       mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
                                        int8_t splitversion, uint32_t flags,
                                        MS3Tolerance *tolerance, int8_t verbose);
@@ -527,16 +534,13 @@ extern int64_t       mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *bu
                                                  int8_t splitversion, uint32_t flags,
                                                  MS3Tolerance *tolerance, MS3Selections *selections,
                                                  int8_t verbose);
-extern MS3RecordPtr *mstl3_add_recordptr (MS3TraceSeg *seg, MS3Record *msr, char *bufferptr,
-                                          FILE *fileptr, const char *filename, int64_t fileoffset);
 extern int64_t mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
                                         size_t outputsize, int8_t verbose);
 extern int mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate);
 extern int mstl3_resize_buffers (MS3TraceList *mstl);
 extern int mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
                        void *handlerdata, int reclen, int8_t encoding,
-                       int64_t *packedsamples, uint32_t flags, int8_t verbose,
-                       char *extra);
+                       int64_t *packedsamples, uint32_t flags, int8_t verbose, char *extra);
 extern void mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
                                   int8_t details, int8_t gaps);
 extern void mstl3_printsynclist (MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds);
