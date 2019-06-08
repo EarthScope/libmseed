@@ -520,9 +520,9 @@ extern MS3TraceList* mstl3_init (MS3TraceList *mstl);
 extern void          mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr);
 
 /** @def mstl3_addmsr
-    @brief Add a ::MS3Record to a ::MS3TraceList @see mstl3_addmsr_recptr() */
+    @brief Add a ::MS3Record to a ::MS3TraceList @see mstl3_addmsr_recordptr() */
 #define mstl3_addmsr(mstl, msr, splitversion, autoheal, flags, tolerance) \
-  mstl3_addmsr_recptr (mstl, msr, NULL, splitversion, autoheal, flags, tolerance)
+  mstl3_addmsr_recordptr (mstl, msr, NULL, splitversion, autoheal, flags, tolerance)
 
 extern MS3TraceSeg*  mstl3_addmsr_recordptr (MS3TraceList *mstl, MS3Record *msr, MS3RecordPtr **pprecptr,
                                              int8_t splitversion, int8_t autoheal, uint32_t flags,
