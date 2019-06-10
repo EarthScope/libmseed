@@ -1567,8 +1567,9 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
   FILE *fileptr = NULL;
   const char *input = NULL;
 
+  /* Linked list of open file pointers */
   struct filelist_s {
-    char *filename;
+    const char *filename;
     FILE *fileptr;
     struct filelist_s *next;
   };
@@ -1627,8 +1628,8 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
   /* Iterate through record list and unpack data samples */
   while (recordptr)
   {
-    /* Skip records with no samples, implied by 0 data offset */
-    if (recordptr->dataoffset == 0)
+    /* Skip records with no samples */
+    if (recordptr->msr->samplecnt == 0)
     {
       recordptr = recordptr->next;
       continue;
@@ -1670,9 +1671,6 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
         filelistptr = filelist;
         while (filelistptr)
         {
-          //TODO, DEBUG
-          fprintf (stderr, "DB: matching %s with %s\n", filelistptr->filename, recordptr->filename);
-
           if (filelistptr->filename == recordptr->filename)
             break;
 
@@ -1691,12 +1689,6 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
             break;
           }
 
-          filelistptr->next = filelist;
-          filelist = filelistptr;
-
-          //TODO, DEBUG
-          fprintf (stderr, "DB: opening %s\n", recordptr->filename);
-
           if ((filelistptr->fileptr = fopen (recordptr->filename, "r")) == NULL)
           {
             ms_log (2, "%s(%s): Cannot open file (%s): %s\n",
@@ -1705,12 +1697,17 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
             totalunpackedsamples = -1;
             break;
           }
+
+          filelistptr->filename = recordptr->filename;
+          filelistptr->next = filelist;
+
+          filelist = filelistptr;
         }
 
         fileptr = filelistptr->fileptr;
       }
 
-      /* Allocate memory if needed, over-allocating to minimize reallocation */
+      /* Allocate memory if needed, over-allocating (x2) to minimize reallocation */
       if (recordptr->msr->reclen > filebuffersize)
       {
         if ((filebuffer = libmseed_memory.realloc (filebuffer, recordptr->msr->reclen * 2)) == NULL)
@@ -1747,10 +1744,6 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
       }
 
       input = filebuffer + recordptr->dataoffset;
-
-      if (recordptr->fileptr != fileptr)
-        fclose (fileptr);
-
     } /* Done reading from file */
     else
     {
