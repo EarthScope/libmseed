@@ -374,9 +374,10 @@ extern void ms3_printselections (MS3Selections *selections);
 /** @addtogroup record-list
     @{ */
 
-/** @brief miniSEED record pointer and metadata
+/** @brief A miniSEED record pointer and metadata
  *
- * A list of data records that contributed to a trace segment.
+ * Used to construct a list of data records that contributed to a
+ * trace segment.
  *
  * The location of the record is identified at a memory address (\a
  * bufferptr), the location in an open file (\a fileptr and \a
@@ -387,7 +388,8 @@ extern void ms3_printselections (MS3Selections *selections);
  * headers, etc. for the record.
  *
  * The \a dataoffset to the encoded data is stored to enable direct
- * decoding of data samples.
+ * decoding of data samples without re-parsing the header, used by
+ * mstl3_unpack_recordlist().
  *
  * Note: the list is stored in the time order that the entries
  * contributed to the segment.
@@ -792,23 +794,30 @@ extern int mseh_print (MS3Record *msr, int indent);
 /** @} */
 
 /** @defgroup record-list Record List
-    @brief functionality to build a list of records that contribute to a ::MS3TraceSeg
+    @brief Functionality to build a list of records that contribute to a ::MS3TraceSeg
 
     As a @ref trace-list is constructed from data records, a list of
-    the data records that contribute to each segments can be built by
-    using the ::MSF_RECORDLIST flag to @ref mstl3_addmsr().
+    the records that contribute to each segment can be built by using
+    the ::MSF_RECORDLIST flag to @ref mstl3_readbuffer() and @ref
+    ms3_readtracelist().  Alternatively, a record list can be built by
+    adding records to a @ref trace-list using mstl3_addmsr_recordptr().
 
-    Combined with the ability to construct @ref trace-list buffers
-    without data samples, this allows the reconstruction of contiguous
-    time series with the ability to later decompress the samples, or
-    do a deeper analysis of the records for each segment.
+    The main purpose of this functionality is to support an efficient,
+    2-pass pattern of first reading a summary of data followed by
+    unpacking the samples.  The unpacking can be performed selectively
+    on desired segments and optionally placed in a caller-supplied
+    buffer.
 
     The @ref mstl3_unpack_recordlist() function allows for the
     unpacking of data samples for a given ::MS3TraceSeg into a
-    user-specified buffer, or allocating the buffer if needed.
+    caller-specified buffer, or allocating the buffer if needed.
 
-    \sa mstl3_addmsr()
+    \sa mstl3_readbuffer()
+    \sa mstl3_readbuffer_selection()
+    \sa ms3_readtracelist()
+    \sa ms3_readtracelist_selection()
     \sa mstl3_unpack_recordlist()
+    \sa mstl3_addmsr_recordptr()
 */
 
 /** @defgroup logging Central Logging

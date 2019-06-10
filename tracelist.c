@@ -207,6 +207,9 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
  * @param[in] tolerance Tolerance function pointers as ::MS3Tolerance
  *
  * @returns a pointer to the ::MS3TraceSeg updated or NULL on error.
+ *
+ * \sa mstl3_readbuffer()
+ * \sa ms3_readtracelist()
  ***************************************************************************/
 MS3TraceSeg *
 mstl3_addmsr_recordptr (MS3TraceList *mstl, MS3Record *msr, MS3RecordPtr **pprecptr,
@@ -1488,64 +1491,43 @@ mstl3_resize_buffers (MS3TraceList *mstl)
 } /* End of mstl3_resize_buffers() */
 
 /**********************************************************************/ /**
- * @brief Pack ::MS3TraceList data into miniSEED records
+ * @brief Unpack data samples in a @ref record-list associated with a ::MS3TraceList
  *
-TODO - rewrite
-
-record list is assumed to be in the correct order, as would be construted by the library.
-
-sample type will be at seg->sampletype.
-
-If buffer is not provided, one will be allocate and assigned to seg->datasamples (updating seg->datasize)
-
-reading from file names is least efficient, opening closing.
-
- * The datasamples array, numsamples and starttime fields of each
- * trace segment will be adjusted as data are packed unless the
- * ::MSF_MAINTAINMSTL flag is specified in \a flags. If
- * ::MSF_MAINTAINMSTL is specified a caller would also normally set
- * the ::MSF_FLUSHDATA flag to pack all data in the trace list.
+ * Normally a record list is created calling by ms3_readtracelist() or
+ * mstl3_readbuffer() with the ::MSF_RECORDLIST flag.
  *
- * <b>Use as a rolling buffer to generate data records:</b>
- * The behavior of adjusting the trace list as data are packed is
- * intended to allow using a ::MS3TraceList as an intermediate
- * collection of data buffers to generate data records from an
- * arbitrarily large data source, e.g. continuous data.  In this
- * concept, data are added to a ::MS3TraceList and mstl3_pack() is
- * called repeatedly.  Data records are only produced if a complete
- * record can be generated, which often leaves small amounts of data
- * in each segment buffer.  On completion or shutdown the caller
- * usually makes a final call to mst3_pack() with the ::MSF_FLUSHDATA
- * flag set to flush all data from the buffers.
+ * Unpacked data samples are written to the provided \a output buffer
+ * (up to \a outputsize bytes).  If \a output is NULL, a buffer will
+ * be allocated and associated with the ::MS3TraceSeg, just as if the
+ * data were unpacked while constructing the @ref trace-list.
  *
- * As each record is filled and finished they are passed to \a
- * record_handler() which should expect 1) a \c char* to the record,
- * 2) the length of the record and 3) a pointer supplied by the
- * original caller containing optional private data (\a handlerdata).
- * It is the responsibility of \a record_handler() to process the
- * record, the memory will be re-used or freed when \a
- * record_handler() returns.
+ * The sample type of the decoded data is stored at
+ * ::MS3TraceSeg.sampletype (i.e. \c seg->sampletype).
  *
- * If \a extra is not NULL it is expected to contain extraheaders, a
- * string containing (compact) JSON, that will be added to each output
- * record.
+ * A record pointer entry has multiple ways to identify the location
+ * of a record: memory buffer, open file (FILE *) or file name.  This
+ * routine uses the first populated record location in the following
+ * order:
+ *   -# Buffer pointer (::MS3RecordPtr.bufferptr)
+ *   -# Open file and offset (::MS3RecordPtr.fileptr and ::MS3RecordPtr.fileoffset)
+ *   -# File name and offset (::MS3RecordPtr.filename and ::MS3RecordPtr.fileoffset)
  *
- * @param[in] mstl ::MS3TraceList containing data to pack
- * @param[in] record_handler() Callback function called for each record
- * @param[in] handlerdata A pointer that will be provided to the \a record_handler()
- * @param[in] reclen Maximum record length to produce
- * @param[in] encoding Encoding for data samples, see msr3_pack()
- * @param[out] packedsamples The number of samples packed, returned to caller
- * @param[in] flags Bit flags to control packing:
- * @parblock
- *  - \c ::MSF_FLUSHDATA : Pack all data in the buffer
- *  - \c ::MSF_MAINTAINMSTL : Do not remove packe data from the buffer
- *  - \c ::MSF_PACKVER2 : Pack miniSEED version 2 instead of default 3
- * @endparblock
+ * It would be unusual to build a record list outside of the library,
+ * but should that ever occur note that the record list is assumed to
+ * be in correct time order and represent a contiguous time series.
+ *
+ * @param[in] id ::MS3TraceID for relevant ::MS3TraceSeg
+ * @param[in] seg ::MS3TraceSeg with associated @ref record-list to unpack
+ * @param[out] output Output buffer for data samples, can be NULL
+ * @param[in] outputsize Size of \a output buffer
  * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
- * @param[in] extra If not NULL, add this buffer of extra headers to all records
  *
  * @returns the number of samples unpacked or -1 on error.
+ *
+ * \sa mstl3_readbuffer()
+ * \sa mstl3_readbuffer_selection()
+ * \sa ms3_readtracelist()
+ * \sa ms3_readtracelist_selection()
  ***************************************************************************/
 int64_t
 mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,

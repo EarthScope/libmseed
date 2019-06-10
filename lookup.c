@@ -67,7 +67,7 @@ ms_samplesize (const char sampletype)
  *
  * @param[in] encoding Data sample encoding code
  * @param[out] samplesize Size of sample, pointer that will be set
- * @param[out] encoding Sample type, pointer to \c char that will be set
+ * @param[out] sampletype Sample type, pointer to \c char that will be set
  *
  * @returns 0 on success, -1 on error
  ***************************************************************************/
