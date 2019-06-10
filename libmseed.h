@@ -34,6 +34,31 @@ extern "C" {
 #define LIBMSEED_VERSION "3.0.3"    //!< Library version
 #define LIBMSEED_RELEASE "2019.124" //!< Library release date
 
+/** @defgroup io-functions File I/O */
+/** @defgroup miniseed-record Record Handling */
+/** @defgroup trace-list Trace List */
+/** @defgroup data-selections Data Selections */
+/** @defgroup string-functions Source Identifiers */
+/** @defgroup extra-headers Extra Headers */
+/** @defgroup record-list Record List */
+/** @defgroup time-related Time definitions and functions */
+/** @defgroup logging Central Logging */
+/** @defgroup utility-functions General Utility Functions */
+/** @defgroup leapsecond Leap Second Handling */
+
+/** @defgroup low-level Low level definitions
+    @brief The low-down, the nitty gritty, the basics */
+/** @defgroup memory-allocators Memory Allocators
+    @ingroup low-level */
+/** @defgroup encoding-values Data Encodings
+    @ingroup low-level */
+/** @defgroup byte-swap-flags Byte swap flags
+    @ingroup low-level */
+/** @defgroup return-values Return codes
+    @ingroup low-level */
+/** @defgroup control-flags Control flags
+    @ingroup low-level */
+
 /* C99 standard headers */
 #include <stdlib.h>
 #include <stdio.h>
@@ -164,8 +189,12 @@ extern "C" {
 /** A simple bitwise AND test to return 0 or 1 */
 #define bit(x,y) ((x)&(y)) ? 1 : 0
 
-/** @defgroup time-related Time definitions and functions
+/** @addtogroup time-related
     @brief Definitions and functions for related to library time values
+
+    Internally the library uses an integer value to represent time as
+    the number of nanoseconds since the Unix/POSIX epoch (Jan 1 1970).
+
     @{ */
 
 /** @brief libmseed time type, integer nanoseconds since the Unix/POSIX epoch (00:00:00 Thursday, 1 January 1970)
@@ -258,7 +287,7 @@ extern int ms_md2doy (int year, int month, int mday, int *yday);
     - \c 'd' - 64-bit float (IEEE) data samples
 */
 
-/** @defgroup miniseed-record Record Handling
+/** @addtogroup miniseed-record
     @brief Definitions and functions related to individual miniSEED records
     @{ */
 
@@ -325,7 +354,7 @@ extern int ms_parse_raw3 (char *record, int maxreclen, int8_t details);
 extern int ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag);
 /** @} */
 
-/** @defgroup data-selections Data Selections
+/** @addtogroup data-selections
     @brief Data selections to be used as filters
 
     Selections are the identification of data, by source identifier
@@ -419,7 +448,7 @@ typedef struct MS3RecordList
 
 /** @} */
 
-/** @defgroup trace-list Trace List
+/** @addtogroup trace-list
     @brief A container for continuous data
 
     Trace lists are a container to organize continuous segments of
@@ -549,7 +578,7 @@ extern void mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
                                 double *mingap, double *maxgap);
 /** @} */
 
-/** @defgroup io-functions File I/O
+/** @addtogroup io-functions
     @brief Reading and writing interfaces for miniSEED records in files
     @{ */
 
@@ -588,7 +617,7 @@ extern int64_t mstl3_writemseed (MS3TraceList *mst, const char *msfile, int8_t o
                                  int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose);
 /** @} */
 
-/** @defgroup string-functions Source Identifiers
+/** @addtogroup string-functions
     @brief Source identifier (SID) and string manipulation functions
 
     A source identifier uniquely identifies the generator of data in a
@@ -607,7 +636,7 @@ extern int ms_strncpcleantail (char *dest, const char *source, int length);
 extern int ms_strncpopen (char *dest, const char *source, int length);
 /** @} */
 
-/** @defgroup extra-headers Extra Headers
+/** @addtogroup extra-headers
     @brief Structures and funtions to support extra headers
 
     Extra headers are stored as JSON within a data record header using
@@ -793,7 +822,7 @@ extern int mseh_add_recenter (MS3Record *msr, const char *path,
 extern int mseh_print (MS3Record *msr, int indent);
 /** @} */
 
-/** @defgroup record-list Record List
+/** @addtogroup record-list
     @brief Functionality to build a list of records that contribute to a ::MS3TraceSeg
 
     As a @ref trace-list is constructed from data records, a list of
@@ -820,7 +849,7 @@ extern int mseh_print (MS3Record *msr, int indent);
     \sa mstl3_addmsr_recordptr()
 */
 
-/** @defgroup logging Central Logging
+/** @addtogroup logging
     @brief Central logging functions for the library and calling programs
 
     This central logging facility is used for all logging performed by
@@ -877,7 +906,7 @@ extern MSLogParam *ms_loginit_l (MSLogParam *logp,
                                  void (*diag_print)(char*), const char *errprefix);
 /** @} */
 
-/** @defgroup leapsecond Leap Second Handling
+/** @addtogroup leapsecond
     @brief Utilities for handling leap seconds
 
     The library contains functionality to load a list of leap seconds
@@ -918,7 +947,7 @@ extern int ms_readleapseconds (const char *envvarname);
 extern int ms_readleapsecondfile (const char *filename);
 /** @} */
 
-/** @defgroup utility-functions General Utility Functions
+/** @addtogroup utility-functions
     @brief General utilities
     @{ */
 
@@ -958,12 +987,7 @@ extern void ms_gswap8a ( void *data8 );
 /** Single byte flag type, for legacy use */
 typedef int8_t flag;
 
-/** @defgroup low-level Low level definitions
-    @brief The low-down, the nitty gritty, the basics
-*/
-
-/** @defgroup memory-allocators Memory Allocators
-    @ingroup low-level
+/** @addtogroup memory-allocators
     @brief User-definable memory allocators used by library
 
     The global structure \b libmseed_memory contains three function
@@ -1020,8 +1044,7 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
 
 /** @} */
 
-/** @defgroup encoding-values Data Encodings
-    @ingroup low-level
+/** @addtogroup encoding-values
     @brief Data encoding type defines
 
     These are FDSN-defined miniSEED data encoding values.  The value
@@ -1044,8 +1067,7 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
 #define DE_DWWSSN      32           //!< [Legacy] DWWSSN 16-bit gain ranged
 /** @} */
 
-/** @defgroup byte-swap-flags Byte swap flags
-    @ingroup low-level
+/** @addtogroup byte-swap-flags
     @brief Flags indicating whether the header or payload needed byte swapping
 
     These are bit flags normally used to set/test the ::MS3Record.swapflag value.
@@ -1055,8 +1077,7 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
 #define MSSWAP_PAYLOAD  0x02    //!< Data payload needed byte swapping
 /** @} */
 
-/** @defgroup return-values Return codes
-    @ingroup low-level
+/** @addtogroup return-values
     @brief Common error codes returned by library functions.  Error values will always be negative.
 
     \sa ms_errorstr()
@@ -1072,8 +1093,7 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
 #define MS_INVALIDCRC      -7        //!< Invalid CRC
 /** @} */
 
-/** @defgroup control-flags Control flags
-    @ingroup low-level
+/** @addtogroup control-flags
     @brief Parsing, packing and trace construction control flags
 
     These are bit flags that can be combined into a bitmask to control
