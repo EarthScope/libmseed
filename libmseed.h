@@ -392,7 +392,6 @@ extern void ms3_printselections (MS3Selections *selections);
  * Note: the list is stored in the time order that the entries
  * contributed to the segment.
  *
- * @see mstl3_add_recordptr()
  * @see mstl3_unpack_recordlist()
  */
 typedef struct MS3RecordPtr

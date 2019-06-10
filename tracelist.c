@@ -1498,6 +1498,8 @@ sample type will be at seg->sampletype.
 
 If buffer is not provided, one will be allocate and assigned to seg->datasamples (updating seg->datasize)
 
+reading from file names is least efficient, opening closing.
+
  * The datasamples array, numsamples and starttime fields of each
  * trace segment will be adjusted as data are packed unless the
  * ::MSF_MAINTAINMSTL flag is specified in \a flags. If
@@ -1550,7 +1552,6 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
                          size_t outputsize, int8_t verbose)
 {
   MS3RecordPtr *recordptr = NULL;
-  FILE *fileptr = NULL;
   int64_t unpackedsamples = 0;
   int64_t totalunpackedsamples = 0;
 
@@ -1563,7 +1564,16 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
   char sampletype = 0;
   char recsampletype = 0;
 
+  FILE *fileptr = NULL;
   const char *input = NULL;
+
+  struct filelist_s {
+    char *filename;
+    FILE *fileptr;
+    struct filelist_s *next;
+  };
+  struct filelist_s *filelist = NULL;
+  struct filelist_s *filelistptr = NULL;
 
   if (!id || !seg)
     return -1;
@@ -1656,7 +1666,48 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
       }
       else
       {
-        // TODO, open recordptr->filename and set to fileptr
+        /* Search file list for matching entry */
+        filelistptr = filelist;
+        while (filelistptr)
+        {
+          //TODO, DEBUG
+          fprintf (stderr, "DB: matching %s with %s\n", filelistptr->filename, recordptr->filename);
+
+          if (filelistptr->filename == recordptr->filename)
+            break;
+
+          filelistptr = filelistptr->next;
+        }
+
+        /* Add new entry to list and open file if needed */
+        if (filelistptr == NULL)
+        {
+          if ((filelistptr = libmseed_memory.malloc (sizeof (struct filelist_s))) == NULL)
+          {
+            ms_log (2, "%s(%s): Cannot allocate memory for file list entry for %s\n",
+                    __func__, id->sid, recordptr->filename);
+
+            totalunpackedsamples = -1;
+            break;
+          }
+
+          filelistptr->next = filelist;
+          filelist = filelistptr;
+
+          //TODO, DEBUG
+          fprintf (stderr, "DB: opening %s\n", recordptr->filename);
+
+          if ((filelistptr->fileptr = fopen (recordptr->filename, "r")) == NULL)
+          {
+            ms_log (2, "%s(%s): Cannot open file (%s): %s\n",
+                    __func__, id->sid, recordptr->filename, strerror(errno));
+
+            totalunpackedsamples = -1;
+            break;
+          }
+        }
+
+        fileptr = filelistptr->fileptr;
       }
 
       /* Allocate memory if needed, over-allocating to minimize reallocation */
@@ -1704,7 +1755,9 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
     else
     {
       ms_log (2, "%s(%s): No buffer or file pointer for record\n", __func__, id->sid);
-      return -1;
+
+      totalunpackedsamples = -1;
+      break;
     }
 
     /* Decode data from buffer */
@@ -1723,11 +1776,20 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
     totalunpackedsamples += unpackedsamples;
 
     recordptr = recordptr->next;
-  }
+  } /* Done with record list entries */
 
   /* Free file read buffer if used */
   if (filebuffer)
     libmseed_memory.free (filebuffer);
+
+  /* Close and free file list if used */
+  while (filelist)
+  {
+    filelistptr = filelist->next;
+    fclose (filelist->fileptr);
+    libmseed_memory.free (filelist);
+    filelist = filelistptr;
+  }
 
   /* If output buffer was allocated here, do some maintenance */
   if (output == seg->datasamples)
