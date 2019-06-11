@@ -29,10 +29,10 @@ extern "C" {
 
 #include "libmseed.h"
 
-extern int msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
-                               uint32_t flags, int8_t verbose);
-extern int msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
-                               uint32_t flags, int8_t verbose);
+extern int64_t msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
+                                   uint32_t flags, int8_t verbose);
+extern int64_t msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
+                                   uint32_t flags, int8_t verbose);
 
 extern double ms_nomsamprate (int factor, int multiplier);
 extern char *ms2_recordsid (char *record, char *sid, int sidlen);

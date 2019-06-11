@@ -637,10 +637,9 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
  * according to data publication version (or quality for miniSEED
  * 2.x).  See mstl3_addmsr() for full details.
  *
- * If the ::MSF_STOREMETADATA flag is set in \a flags, the raw bit
- * flags and extra headers for record will be stored in a list of
- * ::MS3Metadata structures associated with the appropriate
- * ::MS3TraceSeg.
+ * If the ::MSF_RECORDLIST flag is set in \a flags, a ::MS3RecordList
+ * will be built for each ::MS3TraceSeg.  The ::MS3RecordPtr entries
+ * contain the location of the data record, bit flags, extra headers, etc.
  *
  * @param[out] ppmstl Pointer-to-pointer to a ::MS3TraceList to populate
  * @param[in] msfile File to read
@@ -661,8 +660,13 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
                              MS3Tolerance *tolerance, MS3Selections *selections,
                              int8_t splitversion, uint32_t flags, int8_t verbose)
 {
-  MS3Record *msr     = 0;
-  MS3FileParam *msfp = 0;
+  MS3Record *msr     = NULL;
+  MS3FileParam *msfp = NULL;
+  MS3TraceSeg *seg   = NULL;
+  MS3RecordPtr *recordptr = NULL;
+  uint32_t dataoffset;
+  uint32_t datasize;
+  int64_t fpos;
   int retcode;
 
   if (!ppmstl)
@@ -678,10 +682,37 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
   }
 
   /* Loop over the input file and add each record to trace list */
-  while ((retcode = ms3_readmsr_selection (&msfp, &msr, msfile, NULL, NULL,
+  while ((retcode = ms3_readmsr_selection (&msfp, &msr, msfile, &fpos, NULL,
                                            flags, selections, verbose)) == MS_NOERROR)
   {
-    mstl3_addmsr (*ppmstl, msr, splitversion, 1, flags, tolerance);
+    seg = mstl3_addmsr_recordptr (*ppmstl, msr, (flags & MSF_RECORDLIST) ? &recordptr : NULL,
+                                  splitversion, 1, flags, tolerance);
+
+    if (seg == NULL)
+    {
+      ms_log (2, "%s(%s) Cannot add record to trace list\n", __func__, msr->sid);
+
+      retcode = MS_GENERROR;
+      break;
+    }
+
+    /* Populate remaining fields of record pointer */
+    if (recordptr)
+    {
+      /* Determine offset to data and length of data payload */
+      if (msr3_data_bounds (msr, &dataoffset, &datasize))
+      {
+        retcode = MS_GENERROR;
+        break;
+      }
+
+      recordptr->bufferptr  = NULL;
+      recordptr->fileptr    = NULL;
+      recordptr->filename   = msfile;
+      recordptr->fileoffset = fpos;
+      recordptr->dataoffset = dataoffset;
+      recordptr->prvtptr    = NULL;
+    }
   }
 
   /* Reset return code to MS_NOERROR on successful read by ms_readmsr_selection() */
@@ -695,7 +726,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
 
 /*********************************************************************
  *
- * A wrapper for fread that handles EOF and error conditions.
+ * A wrapper for fread() that handles EOF and error conditions.
  *
  * Returns the return value from fread.
  *********************************************************************/

@@ -386,7 +386,7 @@ msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
 {
   int dataoffset;
   uint32_t origdataoffset;
-  uint16_t origdatasize;
+  uint32_t origdatasize;
   uint32_t crc;
   uint32_t reclen;
   int8_t swapflag;

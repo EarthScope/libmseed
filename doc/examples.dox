@@ -29,6 +29,27 @@ illustrates traversing the entries.
 
 @include lm_read_selection.c
 
+@section example-lm_read_recordlist Reading with record lists
+
+Read miniSEED a file in 2 passes:
+-# Read the file and construct a @ref trace-list without unpacking the
+   data samples and constructing a @ref record-list
+-# Unpack the data samples for each segment individually.
+
+This pattern allows the caller to selectively unpack the data by
+segment if desired.
+
+While this example unpacks the data into a buffer allocated by the
+library, the unpacking routine mstl3_unpack_recordlist() also allows
+data samples to be placed directly into caller-specified memory
+buffers.
+
+While this example uses ms3_readtracelist() for reading data from a
+file, the same functionality exists in mstl3_readbuffer() for reading
+data from a memory buffer.
+
+@include lm_read_recordlist.c
+
 @section example-lm_read_buffer Reading from memory buffers
 
 Read miniSEED from memory buffers.  In this case a file is read into a

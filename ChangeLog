@@ -1,8 +1,22 @@
+2019.161:
+	- Add record record list capability, replacing segment-level record metadata.
+
+2019.142:
+	- Add ability to pack miniSEED version 2 records.
+
 2019.137:
 	- Allow packing records with no payload, i.e. header-only.
 
 2019.135:
 	- Add pre-allocation of data buffers, enable on Windows and disable otherwise.
+
+2019.123: 3.0.3
+	- Fix version splitting, clarify behavior
+	- Fix publication version filtering, thanks @krischer
+	- Allow selections without time ranges, thanks @krischer
+	- Normalize encoding string lookups, the SEED manual values are messy no need to perpetuate them
+	- Add option to build PDF manual and clarifications in documentation
+	- Remove steps in install target of Makefile that no longer function, thanks @senshu
 
 2019.103: 3.0.2
 	- mstl3_pack() can be called without modifying the Trace List with MSF_MAINTAINMSTL flag.

@@ -34,6 +34,31 @@ extern "C" {
 #define LIBMSEED_VERSION "3.0.3"    //!< Library version
 #define LIBMSEED_RELEASE "2019.124" //!< Library release date
 
+/** @defgroup io-functions File I/O */
+/** @defgroup miniseed-record Record Handling */
+/** @defgroup trace-list Trace List */
+/** @defgroup data-selections Data Selections */
+/** @defgroup string-functions Source Identifiers */
+/** @defgroup extra-headers Extra Headers */
+/** @defgroup record-list Record List */
+/** @defgroup time-related Time definitions and functions */
+/** @defgroup logging Central Logging */
+/** @defgroup utility-functions General Utility Functions */
+/** @defgroup leapsecond Leap Second Handling */
+
+/** @defgroup low-level Low level definitions
+    @brief The low-down, the nitty gritty, the basics */
+/** @defgroup memory-allocators Memory Allocators
+    @ingroup low-level */
+/** @defgroup encoding-values Data Encodings
+    @ingroup low-level */
+/** @defgroup byte-swap-flags Byte swap flags
+    @ingroup low-level */
+/** @defgroup return-values Return codes
+    @ingroup low-level */
+/** @defgroup control-flags Control flags
+    @ingroup low-level */
+
 /* C99 standard headers */
 #include <stdlib.h>
 #include <stdio.h>
@@ -164,8 +189,12 @@ extern "C" {
 /** A simple bitwise AND test to return 0 or 1 */
 #define bit(x,y) ((x)&(y)) ? 1 : 0
 
-/** @defgroup time-related Time definitions and functions
+/** @addtogroup time-related
     @brief Definitions and functions for related to library time values
+
+    Internally the library uses an integer value to represent time as
+    the number of nanoseconds since the Unix/POSIX epoch (Jan 1 1970).
+
     @{ */
 
 /** @brief libmseed time type, integer nanoseconds since the Unix/POSIX epoch (00:00:00 Thursday, 1 January 1970)
@@ -258,7 +287,7 @@ extern int ms_md2doy (int year, int month, int mday, int *yday);
     - \c 'd' - 64-bit float (IEEE) data samples
 */
 
-/** @defgroup miniseed-record Record Handling
+/** @addtogroup miniseed-record
     @brief Definitions and functions related to individual miniSEED records
     @{ */
 
@@ -303,9 +332,13 @@ extern int msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, 
 
 extern int msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
 
-extern int msr3_unpack_data (MS3Record *msr, int8_t verbose);
+extern int64_t msr3_unpack_data (MS3Record *msr, int8_t verbose);
 
-extern int msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint16_t *datasize);
+extern int msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize);
+
+extern int64_t ms_decode_data (const void *input, size_t inputsize, uint8_t encoding,
+                               int64_t samplecount, void *output, size_t outputsize,
+                               char *sampletype, int8_t swapflag, char *sid, int8_t verbose);
 
 extern MS3Record* msr3_init (MS3Record *msr);
 extern void       msr3_free (MS3Record **ppmsr);
@@ -321,7 +354,7 @@ extern int ms_parse_raw3 (char *record, int maxreclen, int8_t details);
 extern int ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag);
 /** @} */
 
-/** @defgroup data-selections Data Selections
+/** @addtogroup data-selections
     @brief Data selections to be used as filters
 
     Selections are the identification of data, by source identifier
@@ -367,7 +400,55 @@ extern void ms3_freeselections (MS3Selections *selections);
 extern void ms3_printselections (MS3Selections *selections);
 /** @} */
 
-/** @defgroup trace-list Trace List
+/** @addtogroup record-list
+    @{ */
+
+/** @brief A miniSEED record pointer and metadata
+ *
+ * Used to construct a list of data records that contributed to a
+ * trace segment.
+ *
+ * The location of the record is identified at a memory address (\a
+ * bufferptr), the location in an open file (\a fileptr and \a
+ * fileoffset), or the location in a file (\a filename and \a
+ * fileoffset).
+ *
+ * A ::MS3Record is stored with and contains the bit flags, extra
+ * headers, etc. for the record.
+ *
+ * The \a dataoffset to the encoded data is stored to enable direct
+ * decoding of data samples without re-parsing the header, used by
+ * mstl3_unpack_recordlist().
+ *
+ * Note: the list is stored in the time order that the entries
+ * contributed to the segment.
+ *
+ * @see mstl3_unpack_recordlist()
+ */
+typedef struct MS3RecordPtr
+{
+  const char *bufferptr;     //!< Pointer in buffer to record, NULL if not used
+  FILE *fileptr;             //!< Pointer to open FILE containing record, NULL if not used
+  const char *filename;      //!< Pointer to file name containing record, NULL if not used
+  int64_t fileoffset;        //!< Offset into file to record for \a fileptr or \a filename
+  MS3Record *msr;            //!< Pointer to ::MS3Record for this record
+  nstime_t endtime;          //!< End time of record, time of last sample
+  uint32_t dataoffset;       //!< Offset from start of record to encoded data
+  void *prvtptr;             //!< Private pointer, will not be populated by library but will be free'd
+  struct MS3RecordPtr *next; //!< Pointer to next entry, NULL if the last
+} MS3RecordPtr;
+
+/** @brief Record list, holds ::MS3RecordPtr entries that contribute to a given ::MS3TraceSeg */
+typedef struct MS3RecordList
+{
+  uint64_t recordcnt;  //!< Count of records in the list (for convenience)
+  MS3RecordPtr *first; //!< Pointer to first entry, NULL if the none
+  MS3RecordPtr *last;  //!< Pointer to last entry, NULL if the none
+} MS3RecordList;
+
+/** @} */
+
+/** @addtogroup trace-list
     @brief A container for continuous data
 
     Trace lists are a container to organize continuous segments of
@@ -398,28 +479,6 @@ extern void ms3_printselections (MS3Selections *selections);
     \sa mstl3_writemseed()
     @{ */
 
-/**
- * @brief Container for a list of raw flags and extra headers
- *
- * A list of bit flags and extra headers with a time range of the
- * record they came from.  In @ref trace-list functionality, this
- * container is used to retain flags and extra headers that
- * contributed to each entry.
- *
- * Note: the list is stored in the reverse order that they entries
- * were added.
- *
- * @see mstl3_add_metadata()
- */
-typedef struct MS3Metadata
-{
-  nstime_t starttime;       //!< Start time for record containing metadata
-  nstime_t endtime;         //!< End time for record containing metadata
-  uint8_t flags;            //!< Record-level bit flags
-  char *extra;              //!< Record-level extra headers, NULL-terminated if existing
-  struct MS3Metadata *next; //!< Pointer to next entry, NULL if the last
-} MS3Metadata;
-
 /** @brief Container for a continuous trace segment, linkable */
 typedef struct MS3TraceSeg {
   nstime_t        starttime;         //!< Time of first sample
@@ -431,7 +490,7 @@ typedef struct MS3TraceSeg {
   int64_t         numsamples;        //!< Number of data samples in datasamples
   char            sampletype;        //!< Sample type code, see @ref sample-types
   void           *prvtptr;           //!< Private pointer for general use, unused by library
-  struct MS3Metadata *metadata;      //!< List of flags and extra headers from records that contributed
+  struct MS3RecordList *recordlist;  //!< List of pointers to records that contributed
   struct MS3TraceSeg *prev;          //!< Pointer to previous segment
   struct MS3TraceSeg *next;          //!< Pointer to next segment, NULL if the last
 } MS3TraceSeg;
@@ -489,8 +548,15 @@ typedef struct MS3Tolerance
 
 extern MS3TraceList* mstl3_init (MS3TraceList *mstl);
 extern void          mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr);
-extern MS3TraceSeg*  mstl3_addmsr (MS3TraceList *mstl, MS3Record *msr, int8_t splitversion,
-                                   int8_t autoheal, uint32_t flags, MS3Tolerance *tolerance);
+
+/** @def mstl3_addmsr
+    @brief Add a ::MS3Record to a ::MS3TraceList @see mstl3_addmsr_recordptr() */
+#define mstl3_addmsr(mstl, msr, splitversion, autoheal, flags, tolerance) \
+  mstl3_addmsr_recordptr (mstl, msr, NULL, splitversion, autoheal, flags, tolerance)
+
+extern MS3TraceSeg*  mstl3_addmsr_recordptr (MS3TraceList *mstl, MS3Record *msr, MS3RecordPtr **pprecptr,
+                                             int8_t splitversion, int8_t autoheal, uint32_t flags,
+                                             MS3Tolerance *tolerance);
 extern int64_t       mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
                                        int8_t splitversion, uint32_t flags,
                                        MS3Tolerance *tolerance, int8_t verbose);
@@ -498,12 +564,13 @@ extern int64_t       mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *bu
                                                  int8_t splitversion, uint32_t flags,
                                                  MS3Tolerance *tolerance, MS3Selections *selections,
                                                  int8_t verbose);
+extern int64_t mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
+                                        size_t outputsize, int8_t verbose);
 extern int mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate);
 extern int mstl3_resize_buffers (MS3TraceList *mstl);
 extern int mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
                        void *handlerdata, int reclen, int8_t encoding,
-                       int64_t *packedsamples, uint32_t flags, int8_t verbose,
-                       char *extra);
+                       int64_t *packedsamples, uint32_t flags, int8_t verbose, char *extra);
 extern void mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
                                   int8_t details, int8_t gaps);
 extern void mstl3_printsynclist (MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds);
@@ -511,7 +578,7 @@ extern void mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
                                 double *mingap, double *maxgap);
 /** @} */
 
-/** @defgroup io-functions File I/O
+/** @addtogroup io-functions
     @brief Reading and writing interfaces for miniSEED records in files
     @{ */
 
@@ -550,7 +617,7 @@ extern int64_t mstl3_writemseed (MS3TraceList *mst, const char *msfile, int8_t o
                                  int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose);
 /** @} */
 
-/** @defgroup string-functions Source Identifiers
+/** @addtogroup string-functions
     @brief Source identifier (SID) and string manipulation functions
 
     A source identifier uniquely identifies the generator of data in a
@@ -569,7 +636,7 @@ extern int ms_strncpcleantail (char *dest, const char *source, int length);
 extern int ms_strncpopen (char *dest, const char *source, int length);
 /** @} */
 
-/** @defgroup extra-headers Extra Headers
+/** @addtogroup extra-headers
     @brief Structures and funtions to support extra headers
 
     Extra headers are stored as JSON within a data record header using
@@ -755,7 +822,34 @@ extern int mseh_add_recenter (MS3Record *msr, const char *path,
 extern int mseh_print (MS3Record *msr, int indent);
 /** @} */
 
-/** @defgroup logging Central Logging
+/** @addtogroup record-list
+    @brief Functionality to build a list of records that contribute to a ::MS3TraceSeg
+
+    As a @ref trace-list is constructed from data records, a list of
+    the records that contribute to each segment can be built by using
+    the ::MSF_RECORDLIST flag to @ref mstl3_readbuffer() and @ref
+    ms3_readtracelist().  Alternatively, a record list can be built by
+    adding records to a @ref trace-list using mstl3_addmsr_recordptr().
+
+    The main purpose of this functionality is to support an efficient,
+    2-pass pattern of first reading a summary of data followed by
+    unpacking the samples.  The unpacking can be performed selectively
+    on desired segments and optionally placed in a caller-supplied
+    buffer.
+
+    The @ref mstl3_unpack_recordlist() function allows for the
+    unpacking of data samples for a given ::MS3TraceSeg into a
+    caller-specified buffer, or allocating the buffer if needed.
+
+    \sa mstl3_readbuffer()
+    \sa mstl3_readbuffer_selection()
+    \sa ms3_readtracelist()
+    \sa ms3_readtracelist_selection()
+    \sa mstl3_unpack_recordlist()
+    \sa mstl3_addmsr_recordptr()
+*/
+
+/** @addtogroup logging
     @brief Central logging functions for the library and calling programs
 
     This central logging facility is used for all logging performed by
@@ -812,7 +906,7 @@ extern MSLogParam *ms_loginit_l (MSLogParam *logp,
                                  void (*diag_print)(char*), const char *errprefix);
 /** @} */
 
-/** @defgroup leapsecond Leap Second Handling
+/** @addtogroup leapsecond
     @brief Utilities for handling leap seconds
 
     The library contains functionality to load a list of leap seconds
@@ -853,11 +947,12 @@ extern int ms_readleapseconds (const char *envvarname);
 extern int ms_readleapsecondfile (const char *filename);
 /** @} */
 
-/** @defgroup utility-functions General Utility Functions
+/** @addtogroup utility-functions
     @brief General utilities
     @{ */
 
 extern uint8_t  ms_samplesize (const char sampletype);
+extern int ms_encoding_sizetype (const uint8_t encoding, uint8_t *samplesize, char *sampletype);
 extern const char* ms_encodingstr (const uint8_t encoding);
 extern const char* ms_errorstr (int errorcode);
 
@@ -892,12 +987,7 @@ extern void ms_gswap8a ( void *data8 );
 /** Single byte flag type, for legacy use */
 typedef int8_t flag;
 
-/** @defgroup low-level Low level definitions
-    @brief The low-down, the nitty gritty, the basics
-*/
-
-/** @defgroup memory-allocators Memory Allocators
-    @ingroup low-level
+/** @addtogroup memory-allocators
     @brief User-definable memory allocators used by library
 
     The global structure \b libmseed_memory contains three function
@@ -954,8 +1044,7 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
 
 /** @} */
 
-/** @defgroup encoding-values Data Encodings
-    @ingroup low-level
+/** @addtogroup encoding-values
     @brief Data encoding type defines
 
     These are FDSN-defined miniSEED data encoding values.  The value
@@ -978,8 +1067,7 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
 #define DE_DWWSSN      32           //!< [Legacy] DWWSSN 16-bit gain ranged
 /** @} */
 
-/** @defgroup byte-swap-flags Byte swap flags
-    @ingroup low-level
+/** @addtogroup byte-swap-flags
     @brief Flags indicating whether the header or payload needed byte swapping
 
     These are bit flags normally used to set/test the ::MS3Record.swapflag value.
@@ -989,8 +1077,7 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
 #define MSSWAP_PAYLOAD  0x02    //!< Data payload needed byte swapping
 /** @} */
 
-/** @defgroup return-values Return codes
-    @ingroup low-level
+/** @addtogroup return-values
     @brief Common error codes returned by library functions.  Error values will always be negative.
 
     \sa ms_errorstr()
@@ -1006,23 +1093,22 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
 #define MS_INVALIDCRC      -7        //!< Invalid CRC
 /** @} */
 
-/** @defgroup control-flags Control flags
-    @ingroup low-level
+/** @addtogroup control-flags
     @brief Parsing, packing and trace construction control flags
 
     These are bit flags that can be combined into a bitmask to control
     aspects of the library's parsing, packing and trace managment routines.
 
     @{ */
-#define MSF_UNPACKDATA    0x0001  //!< [Parsing] unpack data samples
-#define MSF_SKIPNOTDATA   0x0002  //!< [Parsing] skip input that cannot be identified as miniSEED
-#define MSF_VALIDATECRC   0x0004  //!< [Parsing] validate CRC (if version 3)
+#define MSF_UNPACKDATA    0x0001  //!< [Parsing] Unpack data samples
+#define MSF_SKIPNOTDATA   0x0002  //!< [Parsing] Skip input that cannot be identified as miniSEED
+#define MSF_VALIDATECRC   0x0004  //!< [Parsing] Validate CRC (if version 3)
 #define MSF_SEQUENCE      0x0008  //!< [Packing] UNSUPPORTED: Maintain a record-level sequence number
-#define MSF_FLUSHDATA     0x0010  //!< [Packing] pack all available data even if final record would not be filled
-#define MSF_ATENDOFFILE   0x0020  //!< [Parsing] reading routine is at the end of the file
-#define MSF_STOREMETADATA 0x0040  //!< [TraceList] store record-level metadata in trace lists
-#define MSF_MAINTAINMSTL  0x0080  //!< [TraceList] do not modify a trace list when packing
-#define MSF_PACKVER2      0x0200  //!< [Packing] Pack as miniSEED version 2 instead of 3
+#define MSF_FLUSHDATA     0x0010  //!< [Packing] Pack all available data even if final record would not be filled
+#define MSF_ATENDOFFILE   0x0020  //!< [Parsing] Reading routine is at the end of the file
+#define MSF_RECORDLIST    0x0040  //!< [TraceList] Build a ::MS3RecordList for each ::MS3TraceSeg
+#define MSF_MAINTAINMSTL  0x0080  //!< [TraceList] Do not modify a trace list when packing
+#define MSF_PACKVER2      0x0100  //!< [Packing] Pack as miniSEED version 2 instead of 3
 /** @} */
 
 #ifdef __cplusplus

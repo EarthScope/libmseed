@@ -1,3 +1,1 @@
-* miniSEED 2.4 packing
-
 * Add some xSEED/mseed3 parsing tests, reference data.
