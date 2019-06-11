@@ -1,4 +1,4 @@
-2019.161:
+2019.161: 3.0.4
 	- Add record record list capability, replacing segment-level record metadata.
 
 2019.142:
