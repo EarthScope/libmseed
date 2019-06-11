@@ -148,7 +148,7 @@ main (int argc, char **argv)
           {
             printf ("%*s",
                     (seg->numsamples > INT_MAX) ? INT_MAX : (int)seg->numsamples,
-                    seg->datasamples);
+                    (char *)seg->datasamples);
           }
           else
           {
