@@ -1,3 +1,6 @@
+2019.162:
+	- Re-license all libmseed code under the Apache License V2.0.
+
 2019.161: 3.0.4
 	- Add record record list capability, replacing segment-level record metadata.
 
