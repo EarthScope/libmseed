@@ -57,7 +57,7 @@ main (int argc, char **argv)
   }
   if (!(buffer = (char *)malloc(sb.st_size)))
   {
-    ms_log (2, "Error allocating buffer of %lld bytes\n", (long long int)sb.st_size);
+    ms_log (2, "Error allocating buffer of %" PRIsize_t " bytes\n", sb.st_size);
     return -1;
   }
   if (fread(buffer, sb.st_size, 1, fh) != 1)
