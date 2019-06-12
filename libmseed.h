@@ -65,6 +65,9 @@ extern "C" {
 #include <string.h>
 #include <ctype.h>
 
+/* Print conversion for size_t values */
+#define PRIsize_t "zu"
+
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
   #define LMP_WIN 1
 #endif
@@ -73,6 +76,14 @@ extern "C" {
 #if defined(LMP_WIN)
   #include <windows.h>
   #include <sys/types.h>
+
+  /* Re-define print conversion for size_t values */
+  #undef PRIsize_t
+  #if defined(WIN64) || defined(_WIN64)
+    #define PRIsize_t "I64u"
+  #else
+    #define PRIsize_t "I32u"
+  #endif
 
   /* For MSVC 2012 and earlier define standard int types, otherwise use inttypes.h */
   #if defined(_MSC_VER) && _MSC_VER <= 1700
@@ -88,7 +99,7 @@ extern "C" {
     #include <inttypes.h>
   #endif
 
-  /* For MSVC define PRId64 and SCNd64 if needed */
+  /* For MSVC define PRId64 and SCNd64 and alternate functions */
   #if defined(_MSC_VER)
     #if !defined(PRId64)
       #define PRId64 "I64d"

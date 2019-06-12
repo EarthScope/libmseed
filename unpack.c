@@ -1294,7 +1294,7 @@ ms_decode_data (const void *input, size_t inputsize, uint8_t encoding,
 
   if (decodedsize > outputsize)
   {
-    ms_log (2, "%s(%s): Output buffer (%zu bytes) is not large enought for decoded data (%zu bytes)\n",
+    ms_log (2, "%s(%s): Output buffer (%"PRIsize_t" bytes) is not large enought for decoded data (%"PRIsize_t" bytes)\n",
             __func__, (sid) ? sid : "", decodedsize, outputsize);
     return MS_GENERROR;
   }

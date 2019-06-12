@@ -1579,7 +1579,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
   {
     if (decodedsize > outputsize)
     {
-      ms_log (2, "%s(%s): Output buffer (%zu bytes) is not large enought for decoded data (%zu bytes)\n",
+      ms_log (2, "%s(%s): Output buffer (%"PRIsize_t" bytes) is not large enought for decoded data (%"PRIsize_t" bytes)\n",
               __func__, id->sid, decodedsize, outputsize);
       return -1;
     }
@@ -1882,7 +1882,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
 
     if (extralength > UINT16_MAX)
     {
-      ms_log (2, "%s(): Extra headers are too long: %zu\n",
+      ms_log (2, "%s(): Extra headers are too long: %"PRIsize_t"\n",
               __func__, extralength);
       return -1;
     }
