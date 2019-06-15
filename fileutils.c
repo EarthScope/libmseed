@@ -826,7 +826,7 @@ msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
  * @brief Write miniSEED from an ::MS3TraceList container to a file
  *
  * Pack ::MS3TraceList data into miniSEED record(s) by calling
- * msr3_pack() and write to a specified file.
+ * mstl3_pack() and write to a specified file.
  *
  * The \a overwrite flag controls whether a existing file is
  * overwritten or not.  If true (non-zero) any existing file will be
@@ -838,25 +838,22 @@ msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
  * @param[in] msfile File for output records
  * @param[in] overwrite Flag to control overwriting versus appending
  * @param[in] maxreclen The maximum record length to create
- * @param[in] encoding The data encoding to use
- * @param[in] flags Flags controlling data packing, see msr3_pack()
+ * @param[in] encoding encoding Encoding for data samples, see msr3_pack()
+ * @param[in] flags Flags controlling data packing, see mstl3_pack() and msr3_pack()
  * @param[in] verbose Controls verbosity, 0 means no diagnostic output
  *
  * @returns the number of records written on success and -1 on error.
  *
+ * \sa mstl3_pack()
  * \sa msr3_pack()
  ***************************************************************************/
 int64_t
 mstl3_writemseed (MS3TraceList *mstl, const char *msfile, int8_t overwrite,
                   int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose)
 {
-  MS3TraceID *tid = NULL;
-  MS3TraceSeg *seg = NULL;
-  MS3Record msr;
   FILE *ofp;
-  const char *perms        = (overwrite) ? "wb" : "ab";
-  int64_t segpackedrecords = 0;
-  int64_t packedrecords    = 0;
+  const char *perms     = (overwrite) ? "wb" : "ab";
+  int64_t packedrecords = 0;
 
   if (!mstl || !msfile)
     return -1;
@@ -873,56 +870,22 @@ mstl3_writemseed (MS3TraceList *mstl, const char *msfile, int8_t overwrite,
     return -1;
   }
 
-  /* Pack each MS3TraceSeg in the group */
-  tid = mstl->traces;
-  while (tid)
+  /* Do not modify the trace list during packing */
+  flags |= MSF_MAINTAINMSTL;
+
+  /* Pack all data */
+  flags |= MSF_FLUSHDATA;
+
+  packedrecords = mstl3_pack (mstl, &ms_record_handler_int, ofp, maxreclen,
+                              encoding, NULL, flags, verbose, NULL);
+
+  if (packedrecords < 0)
   {
-    memset (&msr, 0, sizeof (MS3Record));
-    msr.reclen = maxreclen;
-    strcpy (msr.sid, tid->sid);
-    msr.formatversion = 3;
-    msr.encoding      = encoding;
-    msr.pubversion    = tid->pubversion;
-    msr.extralength   = 0;
-    msr.extra         = NULL;
-
-    seg = tid->first;
-    while (seg)
-    {
-      if (seg->numsamples <= 0)
-      {
-        seg = seg->next;
-        continue;
-      }
-
-      msr.starttime   = seg->starttime;
-      msr.samprate    = seg->samprate;
-      msr.samplecnt   = seg->samplecnt;
-      msr.crc         = 0;
-      msr.datalength  = 0;
-      msr.datasamples = seg->datasamples;
-      msr.numsamples  = seg->numsamples;
-      msr.sampletype  = seg->sampletype;
-
-      segpackedrecords = msr3_pack (&msr, &ms_record_handler_int, ofp, NULL, flags, verbose - 1);
-
-      if (segpackedrecords < 0)
-      {
-        ms_log (1, "Cannot write miniSEED for %s\n", tid->sid);
-      }
-      else
-      {
-        packedrecords += segpackedrecords;
-      }
-
-      seg = seg->next;
-    }
-
-    tid = tid->next;
+    ms_log (1, "Cannot write miniSEED for trace list\n");
   }
 
   /* Close file and return record count */
   fclose (ofp);
 
-  return packedrecords;
+  return (packedrecords >= 0) ? packedrecords : -1;
 } /* End of mstl3_writemseed() */
