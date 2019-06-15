@@ -1800,7 +1800,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
  * intended to allow using a ::MS3TraceList as an intermediate
  * collection of data buffers to generate data records from an
  * arbitrarily large data source, e.g. continuous data.  In this
- * concept, data are added to a ::MS3TraceList and mstl3_pack() is
+ * pattern, data are added to a ::MS3TraceList and mstl3_pack() is
  * called repeatedly.  Data records are only produced if a complete
  * record can be generated, which often leaves small amounts of data
  * in each segment buffer.  On completion or shutdown the caller
@@ -1815,6 +1815,11 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
  * record, the memory will be re-used or freed when \a
  * record_handler() returns.
  *
+ * The requested \a encoding value is currently only used for integer
+ * data samples. The encoding is set automatially for text (ASCII) and
+ * floating point data samples as there is only a single encoding for
+ * them.  A value of \c -1 can be used to request the default.
+ *
  * If \a extra is not NULL it is expected to contain extraheaders, a
  * string containing (compact) JSON, that will be added to each output
  * record.
@@ -1822,7 +1827,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
  * @param[in] mstl ::MS3TraceList containing data to pack
  * @param[in] record_handler() Callback function called for each record
  * @param[in] handlerdata A pointer that will be provided to the \a record_handler()
- * @param[in] reclen Maximum record length to produce
+ * @param[in] reclen Maximum record length to create
  * @param[in] encoding Encoding for data samples, see msr3_pack()
  * @param[out] packedsamples The number of samples packed, returned to caller
  * @param[in] flags Bit flags to control packing:
@@ -1838,7 +1843,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
  *
  * \sa msr3_pack()
  ***************************************************************************/
-int
+int64_t
 mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
             void *handlerdata, int reclen, int8_t encoding,
             int64_t *packedsamples, uint32_t flags, int8_t verbose,
@@ -1848,7 +1853,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
   MS3TraceID *id = NULL;
   MS3TraceSeg *seg = NULL;
 
-  int totalpackedrecords = 0;
+  int64_t totalpackedrecords = 0;
   int64_t totalpackedsamples = 0;
   int segpackedrecords = 0;
   int64_t segpackedsamples = 0;
@@ -1907,6 +1912,22 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
       msr->datasamples = seg->datasamples;
       msr->numsamples = seg->numsamples;
       msr->sampletype = seg->sampletype;
+
+      /* Set encoding for data types with only one encoding, otherwise requested */
+      switch (seg->sampletype)
+      {
+      case 'a':
+        msr->encoding = DE_ASCII;
+        break;
+      case 'f':
+        msr->encoding = DE_FLOAT32;
+        break;
+      case 'd':
+        msr->encoding = DE_FLOAT64;
+        break;
+      default:
+        msr->encoding = encoding;
+      }
 
       segpackedsamples = 0;
       segpackedrecords = msr3_pack (msr, record_handler, handlerdata, &segpackedsamples, flags, verbose);

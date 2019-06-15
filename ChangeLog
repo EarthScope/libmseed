@@ -1,3 +1,6 @@
+2019.166:
+	- Allow trace list packing with multiple data sample types.
+
 2019.162:
 	- Re-license all libmseed code under the Apache License V2.0.
 
