@@ -3,6 +3,7 @@
 	- Rename old ms_timestr2nstime() to ms_mdtimestr2nstime().
 	- Change minimum valid year from 1000 to 1678 to avoid wrap-around.
 	- ms_nstime2timestr(): fix printing of pre-epoch values for UNIXEPOCH.
+	- Add test for time string parsing and conversion.
 
 2019.166: 3.0.5
 	- Allow trace list packing with multiple data sample types.
