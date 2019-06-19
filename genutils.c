@@ -86,7 +86,7 @@ static const int monthdays_leap[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30,
 #define LEAPYEAR(year) (((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0))
 
 /* Check that a year is in a valid range */
-#define VALIDYEAR(year) (year >= 1000 && year <= 2262)
+#define VALIDYEAR(year) (year >= 1678 && year <= 2262)
 
 /* Check that a month is in a valid range */
 #define VALIDMONTH(month) (month >= 1 && month <= 12)
