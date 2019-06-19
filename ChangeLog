@@ -1,3 +1,7 @@
+2019.170:
+	- Generalize ms_timestr2nstime() to detect all supported time formats.
+	- Rename old ms_timestr2nstime() to ms_mdtimestr2nstime().
+
 2019.166: 3.0.5
 	- Allow trace list packing with multiple data sample types.
 

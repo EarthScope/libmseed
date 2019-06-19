@@ -65,7 +65,8 @@ extern "C" {
 #include <string.h>
 #include <ctype.h>
 
-/* Print conversion for size_t values */
+/** @def PRIsize_t
+    @brief A printf() macro for portably printing size_t values */
 #define PRIsize_t "zu"
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
@@ -280,6 +281,7 @@ extern char *ms_nstime2timestrz (nstime_t nstime, char *timestr,
                                  ms_timeformat_t timeformat, ms_subseconds_t subsecond);
 extern nstime_t ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec);
 extern nstime_t ms_timestr2nstime (const char *timestr);
+extern nstime_t ms_mdtimestr2nstime (const char *timestr);
 extern nstime_t ms_seedtimestr2nstime (const char *seedtimestr);
 extern int ms_doy2md (int year, int yday, int *month, int *mday);
 extern int ms_md2doy (int year, int month, int mday, int *yday);

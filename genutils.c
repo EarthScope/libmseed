@@ -1059,8 +1059,102 @@ ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec)
   return ms_time2nstime_int (year, yday, hour, min, sec, nsec);
 } /* End of ms_time2nstime() */
 
+
 /**********************************************************************/ /**
  * @brief Convert a time string to a high precision epoch time.
+ *
+ * Detected time formats:
+ *   -# ISO month-day as \c "YYYY-MM-DD[THH:MM:SS.FFFFFFFFF]"
+ *   -# ISO ordinal as \c "YYYY-DDD[THH:MM:SS.FFFFFFFFF]"
+ *   -# SEED ordinal as \c "YYYY,DDD[,HH,MM,SS,FFFFFFFFF]"
+ *   -# Year as \c "YYYY"
+ *
+ * Following determination of the format, conversion is performed by
+ * the ms_mdtimestr2nstime() and ms_seedtimestr2nstime() routines.
+ *
+ * Note that this routine does some sanity checking of the time string
+ * contents, but does not perform robust date-time validation.
+ *
+ * @param[in] timestr Time string to convert
+ *
+ * @returns epoch time on success and ::NSTERROR on error.
+ *
+ * @see ms_mdtimestr2nstime()
+ * @see ms_seedtimestr2nstime()
+ ***************************************************************************/
+nstime_t
+ms_timestr2nstime (const char *timestr)
+{
+  const char *cp;
+  const char *firstdelimiter = NULL;
+  const char *separator = NULL;
+  int delimiters = 0;
+  int length;
+
+  if (!timestr)
+    return NSTERROR;
+
+  /* Determine first delimiter and delimiter count before date-time separator */
+  for (cp = timestr; *cp; cp++)
+  {
+    if (*cp == '-' || *cp == '/' || *cp == ',' || *cp == ':' || *cp == '.')
+    {
+      if (!firstdelimiter)
+        firstdelimiter = cp;
+
+      if (!separator)
+        delimiters++;
+    }
+    /* Date-time separator, there can only be one */
+    else if (!separator && (*cp == 'T' || *cp == ' '))
+    {
+      separator = cp;
+    }
+    /* Any non-delimiter or secondary separator that is a non-digit is an error */
+    else if (!(*cp >= '0' && *cp <= '9'))
+    {
+      firstdelimiter = NULL;
+      break;
+    }
+  }
+
+  length = cp - timestr;
+
+  if (length >= 4 && length <= 32)
+  {
+    if (firstdelimiter)
+    {
+      /* ISO month-day "YYYY-MM-DD[THH:MM:SS.FFFFFFFFF]", allow for a colloquial forward-slash flavor */
+      if ((*firstdelimiter == '-' || *firstdelimiter == '/') && delimiters == 2)
+      {
+        return ms_mdtimestr2nstime (timestr);
+      }
+      /* ISO ordinal "YYYY-DDD[THH:MM:SS.FFFFFFFFF]" */
+      else if (*firstdelimiter == '-' && delimiters == 1)
+      {
+        return ms_seedtimestr2nstime (timestr);
+      }
+      /* SEED ordinal "YYYY,DDD[,HH,MM,SS,FFFFFFFFF]" */
+      else if (*firstdelimiter == ',')
+      {
+        return ms_seedtimestr2nstime (timestr);
+      }
+    }
+    /* 4-digit year "YYYY" */
+    else if (length == 4 && !separator)
+    {
+      return ms_seedtimestr2nstime (timestr);
+    }
+  }
+
+  ms_log (2, "%s(): Unrecognized time string: '%s'\n", __func__, timestr);
+  return NSTERROR;
+} /* End of ms_timestr2nstime() */
+
+
+/**********************************************************************/ /**
+ * @brief Convert a time string (year-month-day) to a high precision
+ * epoch time.
  *
  * The time format expected is "YYYY[-MM-DD HH:MM:SS.FFFFFFFFF]", the
  * delimiter can be a dash [-], comma[,], slash [/], colon [:], or
@@ -1079,7 +1173,7 @@ ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec)
  * @returns epoch time on success and ::NSTERROR on error.
  ***************************************************************************/
 nstime_t
-ms_timestr2nstime (const char *timestr)
+ms_mdtimestr2nstime (const char *timestr)
 {
   int fields;
   int year    = 0;
@@ -1156,11 +1250,11 @@ ms_timestr2nstime (const char *timestr)
   }
 
   return ms_time2nstime_int (year, yday, hour, min, sec, nsec);
-} /* End of ms_timestr2nstime() */
+} /* End of ms_mdtimestr2nstime() */
 
 /**********************************************************************/ /**
- * @brief Convert a SEED time string (day-of-year style) to a high precision
- * epoch time.
+ * @brief Convert an SEED-style (ordinate date, i.e. day-of-year) time
+ * string to a high precision epoch time.
  *
  * The time format expected is "YYYY[,DDD,HH,MM,SS.FFFFFFFFF]", the
  * delimiter can be a dash [-], comma [,], colon [:] or period [.].
@@ -1173,7 +1267,7 @@ ms_timestr2nstime (const char *timestr)
  * be 1): "YYYY,DDD,HH" assumes MM, SS and FFFFFFFF are 0.  The year
  * is required, otherwise there wouldn't be much for a date.
  *
- * @param[in] seedtimestr Time string in SEED-style, ordinal format
+ * @param[in] seedtimestr Time string in SEED-style, ordinal date format
  *
  * @returns epoch time on success and ::NSTERROR on error.
  ***************************************************************************/

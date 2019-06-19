@@ -394,6 +394,10 @@ ms3_addselect_comp (MS3Selections **ppselections, char *network, char *station,
  *   Network  Station  Location  Channel  [Pubversion  [Starttime  [Endtime]]]
  * @endcode
  *
+ * The \c Starttime and \c Endtime values must be in a form recognized
+ * by ms_timestr2nstime() and include a full date (i.e. just a year is
+ * not allowed).
+ *
  * In the latter version, if the "Channel" field is a SEED 2.x channel
  * (3-characters) it will automatically be converted into extended
  * channel form (band_source_position).
@@ -528,7 +532,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
       cp = fields[5];
     if (cp)
     {
-      starttime = ms_seedtimestr2nstime (cp);
+      starttime = ms_timestr2nstime (cp);
       if (starttime == NSTERROR)
       {
         ms_log (2, "%s(): Cannot convert data selection start time (line %d): %s\n", __func__, linecount, cp);
@@ -545,7 +549,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
       cp = fields[6];
     if (cp)
     {
-      endtime = ms_seedtimestr2nstime (cp);
+      endtime = ms_timestr2nstime (cp);
       if (endtime == NSTERROR)
       {
         ms_log (2, "%s(): Cannot convert data selection end time (line %d): %s\n", __func__, linecount, cp);
