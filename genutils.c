@@ -789,6 +789,8 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
                    ms_timeformat_t timeformat, ms_subseconds_t subseconds)
 {
   struct tm tms = {0};
+  int64_t rawisec;
+  int rawnanosec;
   int64_t isec;
   int nanosec;
   int microsec;
@@ -800,14 +802,15 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
     return NULL;
 
   /* Reduce to Unix/POSIX epoch time and fractional nanoseconds */
-  isec    = MS_NSTIME2EPOCH (nstime);
-  nanosec = (int)(nstime - (isec * NSTMODULUS));
+  isec = rawisec = MS_NSTIME2EPOCH (nstime);
+  nanosec = rawnanosec = (int)(nstime - (isec * NSTMODULUS));
 
   /* Adjust for negative epoch times */
   if (nstime < 0 && nanosec != 0)
   {
     isec -= 1;
     nanosec = NSTMODULUS - (-nanosec);
+    rawnanosec *= -1;
   }
 
   /* Determine microsecond and sub-microsecond values */
@@ -847,7 +850,7 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
       break;
     case UNIXEPOCH:
       expected = -1;
-      printed  = snprintf (timestr, 22, "%"PRId64, isec);
+      printed  = snprintf (timestr, 22, "%"PRId64, rawisec);
       break;
     case NANOSECONDEPOCH:
       expected = -1;
@@ -879,7 +882,7 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
       break;
     case UNIXEPOCH:
       expected = -1;
-      printed  = snprintf (timestr, 22, "%"PRId64".%06d", isec, microsec);
+      printed  = snprintf (timestr, 22, "%"PRId64".%06d", rawisec, rawnanosec / 1000);
       break;
     case NANOSECONDEPOCH:
       expected = -1;
@@ -911,7 +914,7 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
       break;
     case UNIXEPOCH:
       expected = -1;
-      printed  = snprintf (timestr, 22, "%"PRId64".%09d", isec, nanosec);
+      printed  = snprintf (timestr, 22, "%"PRId64".%09d", rawisec, rawnanosec);
       break;
     case NANOSECONDEPOCH:
       expected = -1;
