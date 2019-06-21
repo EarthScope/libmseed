@@ -1071,12 +1071,19 @@ ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec)
  *   -# ISO ordinal as \c "YYYY-DDD[THH:MM:SS.FFFFFFFFF]"
  *   -# SEED ordinal as \c "YYYY,DDD[,HH,MM,SS,FFFFFFFFF]"
  *   -# Year as \c "YYYY"
+ *   -# Unix/POSIX epoch time value as \c "[+-]#########.#########"
  *
- * Following determination of the format, conversion is performed by
- * the ms_mdtimestr2nstime() and ms_seedtimestr2nstime() routines.
+ * Following determination of the format, non-epoch value conversion
+ * is performed by the ms_mdtimestr2nstime() and
+ * ms_seedtimestr2nstime() routines.
+ *
+ * Four-digit values are treated as a year, unless a sign [+-] is
+ * specified and then they are treated as epoch values.  For
+ * consistency, a caller is recommened to always include a sign with
+ * epoch values.
  *
  * Note that this routine does some sanity checking of the time string
- * contents, but does not perform robust date-time validation.
+ * contents, but does _not_ perform robust date-time validation.
  *
  * @param[in] timestr Time string to convert
  *
@@ -1092,12 +1099,20 @@ ms_timestr2nstime (const char *timestr)
   const char *firstdelimiter = NULL;
   const char *separator = NULL;
   int delimiters = 0;
+  int numberlike = 0;
   int length;
+  int fields;
+  int64_t sec = 0;
+  double fsec = 0.0;
+  nstime_t nstime;
 
   if (!timestr)
     return NSTERROR;
 
-  /* Determine first delimiter and delimiter count before date-time separator */
+  /* Determine first delimiter,
+   * delimiter count before date-time separator,
+   * number-like character count,
+   * while checking for allowed characters */
   for (cp = timestr; *cp; cp++)
   {
     if (*cp == '-' || *cp == '/' || *cp == ',' || *cp == ':' || *cp == '.')
@@ -1105,16 +1120,31 @@ ms_timestr2nstime (const char *timestr)
       if (!firstdelimiter)
         firstdelimiter = cp;
 
+      /* Count delimiters before the first date-time separator */
       if (!separator)
         delimiters++;
+
+      /* If minus (and first character) or period, it is number-like */
+      if ((*cp == '-' && cp == timestr) || *cp == '.')
+        numberlike++;
+    }
+    /* If plus (and first character) it is number-like */
+    else if (*cp == '+' && cp == timestr)
+    {
+      numberlike++;
     }
     /* Date-time separator, there can only be one */
     else if (!separator && (*cp == 'T' || *cp == ' '))
     {
       separator = cp;
     }
-    /* Any non-delimiter or secondary separator that is a non-digit is an error */
-    else if (!(*cp >= '0' && *cp <= '9'))
+    /* Accumulate digits as number-like */
+    else if (*cp >= '0' && *cp <= '9')
+    {
+      numberlike++;
+    }
+    /* Anything else is an error */
+    else
     {
       firstdelimiter = NULL;
       break;
@@ -1123,7 +1153,34 @@ ms_timestr2nstime (const char *timestr)
 
   length = cp - timestr;
 
-  if (length >= 4 && length <= 32)
+  /* If the time string is all number-like characters assume it is an epoch time.
+   * Unless it is 4 characters, which could be a year, unless it starts with a sign. */
+  if (length == numberlike &&
+      (length != 4 || (length == 4 && (timestr[0] == '-' || timestr[0] == '+'))))
+  {
+    fields = sscanf (timestr, "%" SCNd64 "%lf", &sec, &fsec);
+
+    if (fields < 1)
+    {
+      ms_log (2, "%s(): Could not convert epoch value: '%s'\n", __func__, cp);
+      return NSTERROR;
+    }
+
+    /* Convert seconds and fractional seconds to nanoseconds, return combination */
+    nstime = MS_EPOCH2NSTIME (sec);
+
+    if (fsec != 0.0)
+    {
+      if (nstime >= 0)
+        nstime += (int)(fsec * 1000000000.0 + 0.5);
+      else
+        nstime -= (int)(fsec * 1000000000.0 + 0.5);
+    }
+
+    return nstime;
+  }
+  /* Otherwise, a non-epoch value time string */
+  else if (length >= 4 && length <= 32)
   {
     if (firstdelimiter)
     {
