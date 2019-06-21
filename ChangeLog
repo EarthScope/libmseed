@@ -1,4 +1,4 @@
-2018.172:
+2018.172: 3.0.7
 	- Add conversion of epoch values via ms_timestr2nstime().
 	- Allow trailing 'Z' in date-times in ms_timestr2nstime().
 
