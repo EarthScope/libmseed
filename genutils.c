@@ -1100,6 +1100,7 @@ ms_timestr2nstime (const char *timestr)
   const char *separator = NULL;
   int delimiters = 0;
   int numberlike = 0;
+  int error = 0;
   int length;
   int fields;
   int64_t sec = 0;
@@ -1143,10 +1144,17 @@ ms_timestr2nstime (const char *timestr)
     {
       numberlike++;
     }
+    /* Done if at trailing 'Z' designator */
+    else if ((*cp == 'Z' || *cp == 'z') && *(cp+1) == '\0')
+    {
+      cp++;
+      break;
+    }
     /* Anything else is an error */
     else
     {
-      firstdelimiter = NULL;
+      cp++;
+      error = 1;
       break;
     }
   }
@@ -1155,7 +1163,7 @@ ms_timestr2nstime (const char *timestr)
 
   /* If the time string is all number-like characters assume it is an epoch time.
    * Unless it is 4 characters, which could be a year, unless it starts with a sign. */
-  if (length == numberlike &&
+  if (!error && length == numberlike &&
       (length != 4 || (length == 4 && (timestr[0] == '-' || timestr[0] == '+'))))
   {
     fields = sscanf (timestr, "%" SCNd64 "%lf", &sec, &fsec);
@@ -1180,7 +1188,7 @@ ms_timestr2nstime (const char *timestr)
     return nstime;
   }
   /* Otherwise, a non-epoch value time string */
-  else if (length >= 4 && length <= 32)
+  else if (!error && length >= 4 && length <= 32)
   {
     if (firstdelimiter)
     {

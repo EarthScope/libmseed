@@ -1,5 +1,6 @@
 2018.172:
 	- Add conversion of epoch values to ms_timestr2nstime().
+	- Allow trailing 'Z' in date-times in ms_timestr2nstime().
 
 2019.170: 3.0.6
 	- Generalize ms_timestr2nstime() to detect all supported time formats.
