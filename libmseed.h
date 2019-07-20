@@ -19,7 +19,6 @@
  *
  * Copyright (C) 2019:
  * @author Chad Trabant, IRIS Data Management Center
- * @copyright GNU Public License
  ***************************************************************************/
 
 #ifndef LIBMSEED_H
