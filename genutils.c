@@ -449,12 +449,71 @@ ms_xchan2seedchan (char *seedchan, const char *xchan)
   return -1;
 }  /* End of ms_xchan2seedchan() */
 
+// For utf8d table and utf8length() basics:
+// Copyright (c) 2008-2009 Bjoern Hoehrmann <bjoern@hoehrmann.de>
+// See http://bjoern.hoehrmann.de/utf-8/decoder/dfa/ for details.
+
+static const uint8_t utf8d[] = {
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 00..1f
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 20..3f
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 40..5f
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 60..7f
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, // 80..9f
+  7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7, // a0..bf
+  8,8,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, // c0..df
+  0xa,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x4,0x3,0x3, // e0..ef
+  0xb,0x6,0x6,0x6,0x5,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8, // f0..ff
+  0x0,0x1,0x2,0x3,0x5,0x8,0x7,0x1,0x1,0x1,0x4,0x6,0x1,0x1,0x1,0x1, // s0..s0
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,1, // s1..s2
+  1,2,1,1,1,1,1,2,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,1,1,1,1,1,1,1, // s3..s4
+  1,2,1,1,1,1,1,1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,3,1,3,1,1,1,1,1,1, // s5..s6
+  1,3,1,1,1,1,1,3,1,3,1,1,1,1,1,1,1,3,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // s7..s8
+};
+
+/***************************************************************************
+ * Determine length of UTF-8 bytes in string.
+ *
+ * Calculate the length of the string until either the maximum length,
+ * terminating NULL, or an invalid UTF-8 codepoint are reached.
+ *
+ * To determine if the length calculated stopped due to invalid UTF-8
+ * codepoint, the return value can be tested for maximum length and
+ * used to test for a terminating NULL, ala:
+ *
+ *   length = utf8length (str, maxlength);
+ *
+ *   if (length < maxlength && str[length])
+ *     String contains invalid UTF-8 within maxlength bytes
+ *
+ * Returns the number of UTF-8 codepoint bytes (not including the null terminator).
+ ***************************************************************************/
+static int
+utf8length (const char *str, int maxlength)
+{
+  uint32_t state = 0;
+  uint32_t type;
+  int count = 0;
+  int offset;
+
+  for (offset = 0; str[offset] && offset < maxlength; offset++)
+  {
+    type = utf8d[(uint8_t)str[offset]];
+    state = utf8d[256 + state * 16 + type];
+
+    /* A valid codepoint was found, update count */
+    if (state == 0)
+      count = offset;
+  }
+
+  return count + 1;
+}  /* End of utf8length() */
+
 /**********************************************************************/ /**
  * @brief Copy string, removing spaces, always terminated
  *
- * Copy up to \a length characters from \a source to \a dest while
- * removing all spaces.  The result is left justified and always null
- * terminated.
+ * Copy up to \a length bytes of UTF-8 characters from \a source to \a
+ * dest while removing all spaces.  The result is left justified and
+ * always null terminated.
  *
  * The destination string must have enough room needed for the
  * non-space characters within \a length and the null terminator, a
@@ -470,7 +529,8 @@ ms_xchan2seedchan (char *seedchan, const char *xchan)
 int
 ms_strncpclean (char *dest, const char *source, int length)
 {
-  int sidx, didx;
+  int sidx;
+  int didx;
 
   if (!dest)
     return 0;
@@ -480,6 +540,8 @@ ms_strncpclean (char *dest, const char *source, int length)
     *dest = '\0';
     return 0;
   }
+
+  length = utf8length (source, length);
 
   for (sidx = 0, didx = 0; sidx < length; sidx++)
   {
@@ -503,9 +565,9 @@ ms_strncpclean (char *dest, const char *source, int length)
 /**********************************************************************/ /**
  * @brief Copy string, removing trailing spaces, always terminated
  *
- * Copy up to \a length characters from \a source to \a dest without any
- * trailing spaces.  The result is left justified and always null
- * terminated.
+ * Copy up to \a length bytes of UTF-8 characters from \a source to \a
+ * dest without any trailing spaces.  The result is left justified and
+ * always null terminated.
  *
  * The destination string must have enough room needed for the
  * characters within \a length and the null terminator, a maximum of
@@ -521,7 +583,8 @@ ms_strncpclean (char *dest, const char *source, int length)
 int
 ms_strncpcleantail (char *dest, const char *source, int length)
 {
-  int idx, pretail;
+  int idx;
+  int pretail;
 
   if (!dest)
     return 0;
@@ -531,6 +594,8 @@ ms_strncpcleantail (char *dest, const char *source, int length)
     *dest = '\0';
     return 0;
   }
+
+  length = utf8length (source, length);
 
   *(dest + length) = '\0';
 
@@ -554,9 +619,10 @@ ms_strncpcleantail (char *dest, const char *source, int length)
 /**********************************************************************/ /**
  * @brief Copy fixed number of characters into unterminated string
  *
- * Copy \a length characters from \a source to \a dest, padding the right
- * side with spaces and leave open-ended, aka un-terminated.  The
- * result is left justified and \e never null terminated.
+ * Copy \a length bytes of UTF-8 characters from \a source to \a dest,
+ * padding the right side with spaces and leave open-ended, aka
+ * un-terminated.  The result is left justified and \e never null
+ * terminated.
  *
  * The destination string must have enough room for \a length characters.
  *
@@ -571,7 +637,7 @@ ms_strncpopen (char *dest, const char *source, int length)
 {
   int didx;
   int dcnt = 0;
-  int term = 0;
+  int utf8max;
 
   if (!dest)
     return 0;
@@ -586,13 +652,11 @@ ms_strncpopen (char *dest, const char *source, int length)
     return 0;
   }
 
+  utf8max = utf8length (source, length);
+
   for (didx = 0; didx < length; didx++)
   {
-    if (!term)
-      if (*(source + didx) == '\0')
-        term = 1;
-
-    if (!term)
+    if (didx < utf8max)
     {
       *(dest + didx) = *(source + didx);
       dcnt++;

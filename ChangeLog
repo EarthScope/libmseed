@@ -1,4 +1,8 @@
-2018.172: 3.0.7
+2019.216:
+	- Copy only UTF-8 characters in ms_strncpclean(), ms_strncpcleantail(),
+	and ms_strncpopen().
+
+2019.172: 3.0.7
 	- Add conversion of epoch values via ms_timestr2nstime().
 	- Allow trailing 'Z' in date-times in ms_timestr2nstime().
 
