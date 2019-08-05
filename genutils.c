@@ -449,7 +449,7 @@ ms_xchan2seedchan (char *seedchan, const char *xchan)
   return -1;
 }  /* End of ms_xchan2seedchan() */
 
-// For utf8d table and utf8length() basics:
+// For utf8d table and utf8length_int() basics:
 // Copyright (c) 2008-2009 Bjoern Hoehrmann <bjoern@hoehrmann.de>
 // See http://bjoern.hoehrmann.de/utf-8/decoder/dfa/ for details.
 
@@ -480,7 +480,7 @@ static const uint8_t utf8d[] = {
  * codepoint, the return value can be tested for maximum length and
  * used to test for a terminating NULL, ala:
  *
- *   length = utf8length (str, maxlength);
+ *   length = utf8length_int (str, maxlength);
  *
  *   if (length < maxlength && str[length])
  *     String contains invalid UTF-8 within maxlength bytes
@@ -488,11 +488,11 @@ static const uint8_t utf8d[] = {
  * Returns the number of UTF-8 codepoint bytes (not including the null terminator).
  ***************************************************************************/
 static int
-utf8length (const char *str, int maxlength)
+utf8length_int (const char *str, int maxlength)
 {
   uint32_t state = 0;
   uint32_t type;
-  int count = 0;
+  int length = 0;
   int offset;
 
   for (offset = 0; str[offset] && offset < maxlength; offset++)
@@ -500,13 +500,13 @@ utf8length (const char *str, int maxlength)
     type = utf8d[(uint8_t)str[offset]];
     state = utf8d[256 + state * 16 + type];
 
-    /* A valid codepoint was found, update count */
+    /* A valid codepoint was found, update length */
     if (state == 0)
-      count = offset;
+      length = offset + 1;
   }
 
-  return count + 1;
-}  /* End of utf8length() */
+  return length;
+}  /* End of utf8length_int() */
 
 /**********************************************************************/ /**
  * @brief Copy string, removing spaces, always terminated
@@ -541,7 +541,7 @@ ms_strncpclean (char *dest, const char *source, int length)
     return 0;
   }
 
-  length = utf8length (source, length);
+  length = utf8length_int (source, length);
 
   for (sidx = 0, didx = 0; sidx < length; sidx++)
   {
@@ -595,7 +595,7 @@ ms_strncpcleantail (char *dest, const char *source, int length)
     return 0;
   }
 
-  length = utf8length (source, length);
+  length = utf8length_int (source, length);
 
   *(dest + length) = '\0';
 
@@ -652,7 +652,7 @@ ms_strncpopen (char *dest, const char *source, int length)
     return 0;
   }
 
-  utf8max = utf8length (source, length);
+  utf8max = utf8length_int (source, length);
 
   for (didx = 0; didx < length; didx++)
   {
