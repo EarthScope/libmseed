@@ -1,19 +1,19 @@
 TraceID for XFDSN:XX_TEST_00_L_H_Z (1), segments: 1
   Segment 2010-02-27T06:50:00.069539000 - 2010-02-27T07:55:51.069539000, samples: 3952, sample rate: 1
   Record list:
-    RECORD: bufferptr: 0x0, fileptr: 0x0, filename: data/Int32-oneseries-mixedlengths-mixedorder.mseed, fileoffset: 0
+    RECORD: bufferptr: NULL, fileptr: NULL, filename: data/Int32-oneseries-mixedlengths-mixedorder.mseed, fileoffset: 0
     Start: 2010-02-27T06:50:00.069539000Z, End: 2010-02-27T06:50:15.069539000Z
-    RECORD: bufferptr: 0x0, fileptr: 0x0, filename: data/Int32-oneseries-mixedlengths-mixedorder.mseed, fileoffset: 13952
+    RECORD: bufferptr: NULL, fileptr: NULL, filename: data/Int32-oneseries-mixedlengths-mixedorder.mseed, fileoffset: 13952
     Start: 2010-02-27T06:50:16.069539000Z, End: 2010-02-27T06:51:03.069539000Z
-    RECORD: bufferptr: 0x0, fileptr: 0x0, filename: data/Int32-oneseries-mixedlengths-mixedorder.mseed, fileoffset: 9344
+    RECORD: bufferptr: NULL, fileptr: NULL, filename: data/Int32-oneseries-mixedlengths-mixedorder.mseed, fileoffset: 9344
     Start: 2010-02-27T06:51:04.069539000Z, End: 2010-02-27T06:52:55.069539000Z
-    RECORD: bufferptr: 0x0, fileptr: 0x0, filename: data/Int32-oneseries-mixedlengths-mixedorder.mseed, fileoffset: 128
+    RECORD: bufferptr: NULL, fileptr: NULL, filename: data/Int32-oneseries-mixedlengths-mixedorder.mseed, fileoffset: 128
     Start: 2010-02-27T06:52:56.069539000Z, End: 2010-02-27T06:56:55.069539000Z
-    RECORD: bufferptr: 0x0, fileptr: 0x0, filename: data/Int32-oneseries-mixedlengths-mixedorder.mseed, fileoffset: 14208
+    RECORD: bufferptr: NULL, fileptr: NULL, filename: data/Int32-oneseries-mixedlengths-mixedorder.mseed, fileoffset: 14208
     Start: 2010-02-27T06:56:56.069539000Z, End: 2010-02-27T07:05:11.069539000Z
-    RECORD: bufferptr: 0x0, fileptr: 0x0, filename: data/Int32-oneseries-mixedlengths-mixedorder.mseed, fileoffset: 9856
+    RECORD: bufferptr: NULL, fileptr: NULL, filename: data/Int32-oneseries-mixedlengths-mixedorder.mseed, fileoffset: 9856
     Start: 2010-02-27T07:05:12.069539000Z, End: 2010-02-27T07:21:59.069539000Z
-    RECORD: bufferptr: 0x0, fileptr: 0x0, filename: data/Int32-oneseries-mixedlengths-mixedorder.mseed, fileoffset: 1152
+    RECORD: bufferptr: NULL, fileptr: NULL, filename: data/Int32-oneseries-mixedlengths-mixedorder.mseed, fileoffset: 1152
     Start: 2010-02-27T07:22:00.069539000Z, End: 2010-02-27T07:55:51.069539000Z
 DATA (3952 samples) of type 'i':
    -231946     -228438     -223155     -221231     -225429     -230129  

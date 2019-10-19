@@ -37,6 +37,8 @@ main (int argc, char **argv)
   char *mseedfile = NULL;
   char starttimestr[30];
   char endtimestr[30];
+  char bufferptrstr[30];
+  char fileptrstr[30];
   uint32_t flags = 0;
   int8_t verbose = 0;
   size_t idx;
@@ -113,8 +115,18 @@ main (int argc, char **argv)
         recptr = seg->recordlist->first;
         while (recptr)
         {
-          ms_log (0, "    RECORD: bufferptr: %p, fileptr: %p, filename: %s, fileoffset: %"PRId64"\n",
-                  recptr->bufferptr, recptr->fileptr, recptr->filename, recptr->fileoffset);
+          if (recptr->bufferptr == NULL)
+            strcpy (bufferptrstr, "NULL");
+          else
+            snprintf (bufferptrstr, sizeof(bufferptrstr), "%" PRIu64, (uint64_t)recptr->bufferptr);
+
+          if (recptr->fileptr == NULL)
+            strcpy (fileptrstr, "NULL");
+          else
+            snprintf (fileptrstr, sizeof(fileptrstr), "%" PRIu64, (uint64_t)recptr->fileptr);
+
+          ms_log (0, "    RECORD: bufferptr: %s, fileptr: %s, filename: %s, fileoffset: %"PRId64"\n",
+                  bufferptrstr, fileptrstr, recptr->filename, recptr->fileoffset);
           ms_nstime2timestrz (recptr->msr->starttime, starttimestr, ISOMONTHDAY, NANO);
           ms_nstime2timestrz (recptr->endtime, endtimestr, ISOMONTHDAY, NANO);
           ms_log (0, "    Start: %s, End: %s\n", starttimestr, endtimestr);
