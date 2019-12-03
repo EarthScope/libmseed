@@ -171,7 +171,7 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
  * In recommended usage, the \a splitversion flag is \b 0 and
  * different publication versions of otherwise matching data are
  * merged.  If more than one version contributes to a given source
- * identifer's segments, its ::MS3TraceID.pubversion will be the set to
+ * identifier's segments, its ::MS3TraceID.pubversion will be the set to
  * the largest contributing version.  If the \a splitversion flag is
  * \b 1 the publication versions will be kept separate with each
  * version isolated in separate ::MS3TraceID entries.
@@ -1579,7 +1579,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
   {
     if (decodedsize > outputsize)
     {
-      ms_log (2, "%s(%s): Output buffer (%"PRIsize_t" bytes) is not large enought for decoded data (%"PRIsize_t" bytes)\n",
+      ms_log (2, "%s(%s): Output buffer (%"PRIsize_t" bytes) is not large enough for decoded data (%"PRIsize_t" bytes)\n",
               __func__, id->sid, decodedsize, outputsize);
       return -1;
     }

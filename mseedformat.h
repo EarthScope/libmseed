@@ -50,7 +50,7 @@ extern "C" {
  * 7  number of samples       uint32_t     24
  * 8  CRC of record           uint32_t     28
  * 9  publication version     uint8_t      32
- * 10 length of identifer     uint8_t      33
+ * 10 length of identifier    uint8_t      33
  * 11 length of extra headers uint16_t     34
  * 12 length of data payload  uint32_t     36
  * 13 source identifier       char         40

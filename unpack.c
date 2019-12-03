@@ -301,7 +301,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   if (reclen < 64 || reclen > MAXRECLEN)
   {
     ms2_recordsid (record, errorsid, sizeof (errorsid));
-    ms_log (2, "%s(%s): Record length is out of allowd range: %d\n",
+    ms_log (2, "%s(%s): Record length is out of allowed range: %d\n",
             __func__, errorsid, reclen);
 
     return MS_OUTOFRANGE;
@@ -1294,7 +1294,7 @@ ms_decode_data (const void *input, size_t inputsize, uint8_t encoding,
 
   if (decodedsize > outputsize)
   {
-    ms_log (2, "%s(%s): Output buffer (%"PRIsize_t" bytes) is not large enought for decoded data (%"PRIsize_t" bytes)\n",
+    ms_log (2, "%s(%s): Output buffer (%"PRIsize_t" bytes) is not large enough for decoded data (%"PRIsize_t" bytes)\n",
             __func__, (sid) ? sid : "", decodedsize, outputsize);
     return MS_GENERROR;
   }

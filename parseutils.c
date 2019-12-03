@@ -338,7 +338,7 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
   /* Make sure buffer contains the identifier */
   if ((MS3FSDH_LENGTH + sidlength) > maxreclen)
   {
-    ms_log (2, "Not enough buffer contain the identifer: '%d'\n", maxreclen);
+    ms_log (2, "Not enough buffer contain the identifier: '%d'\n", maxreclen);
     return 1;
   }
 
