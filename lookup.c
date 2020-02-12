@@ -23,18 +23,18 @@
 #include "libmseed.h"
 
 /**********************************************************************/ /**
- * @brief Determine data sample size for each type
- *
- * @param[in] sampletype Library sample type code:
- * @parblock
- *   - \c 'a' - Text/ASCII data type
- *   - \c 'i' - 32-bit integer data type
- *   - \c 'f' - 32-bit float data type
- *   - \c 'd' - 64-bit float (double) data type
- * @endparblock
- *
- * @returns The sample size based on type code or 0 for unknown.
- ***************************************************************************/
+                                                                          * @brief Determine data sample size for each type
+                                                                          *
+                                                                          * @param[in] sampletype Library sample type code:
+                                                                          * @parblock
+                                                                          *   - \c 'a' - Text/ASCII data type
+                                                                          *   - \c 'i' - 32-bit integer data type
+                                                                          *   - \c 'f' - 32-bit float data type
+                                                                          *   - \c 'd' - 64-bit float (double) data type
+                                                                          * @endparblock
+                                                                          *
+                                                                          * @returns The sample size based on type code or 0 for unknown.
+                                                                          ***************************************************************************/
 uint8_t
 ms_samplesize (const char sampletype)
 {
@@ -57,18 +57,18 @@ ms_samplesize (const char sampletype)
 } /* End of ms_samplesize() */
 
 /**********************************************************************/ /**
- * @brief Return sample size and/or type for given encoding value
- *
- * Determine the decoded sample size and/or type based on data
- * encoding.  The \a samplesize and \a sampletype values will only be
- * set if not NULL, allowing lookup of either value or both.
- *
- * @param[in] encoding Data sample encoding code
- * @param[out] samplesize Size of sample, pointer that will be set
- * @param[out] sampletype Sample type, pointer to \c char that will be set
- *
- * @returns 0 on success, -1 on error
- ***************************************************************************/
+                                                                          * @brief Return sample size and/or type for given encoding value
+                                                                          *
+                                                                          * Determine the decoded sample size and/or type based on data
+                                                                          * encoding.  The \a samplesize and \a sampletype values will only be
+                                                                          * set if not NULL, allowing lookup of either value or both.
+                                                                          *
+                                                                          * @param[in] encoding Data sample encoding code
+                                                                          * @param[out] samplesize Size of sample, pointer that will be set
+                                                                          * @param[out] sampletype Sample type, pointer to \c char that will be set
+                                                                          *
+                                                                          * @returns 0 on success, -1 on error
+                                                                          ***************************************************************************/
 int
 ms_encoding_sizetype (const uint8_t encoding, uint8_t *samplesize, char *sampletype)
 {
@@ -115,12 +115,12 @@ ms_encoding_sizetype (const uint8_t encoding, uint8_t *samplesize, char *samplet
 } /* End of ms_encodingstr_sizetype() */
 
 /**********************************************************************/ /**
- * @brief Descriptive string for data encodings
- *
- * @param[in] encoding Data sample encoding code
- *
- * @returns a string describing a data encoding format
- ***************************************************************************/
+                                                                          * @brief Descriptive string for data encodings
+                                                                          *
+                                                                          * @param[in] encoding Data sample encoding code
+                                                                          *
+                                                                          * @returns a string describing a data encoding format
+                                                                          ***************************************************************************/
 const char *
 ms_encodingstr (const uint8_t encoding)
 {
@@ -193,13 +193,13 @@ ms_encodingstr (const uint8_t encoding)
 } /* End of ms_encodingstr() */
 
 /**********************************************************************/ /**
- * @brief Descriptive string for library @ref return-values
- *
- * @param[in] errorcode Library error code
- *
- * @returns a string describing the library error code or NULL if the
- * code is unknown.
- ***************************************************************************/
+                                                                          * @brief Descriptive string for library @ref return-values
+                                                                          *
+                                                                          * @param[in] errorcode Library error code
+                                                                          *
+                                                                          * @returns a string describing the library error code or NULL if the
+                                                                          * code is unknown.
+                                                                          ***************************************************************************/
 const char *
 ms_errorstr (int errorcode)
 {

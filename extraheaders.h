@@ -22,7 +22,8 @@
 #define EXTRAHEADERS_H 1
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "libmseed.h"
@@ -31,17 +32,17 @@ extern "C" {
 /* Avoid unused parameter warnings in known cases */
 #define UNUSED(x) (void)(x)
 
-/* Private allocation wrappers for yyjson's allocator definition */
-void *_priv_malloc(void *ctx, size_t size);
-void *_priv_realloc(void *ctx, void *ptr, size_t oldsize, size_t size);
-void _priv_free(void *ctx, void *ptr);
+  /* Private allocation wrappers for yyjson's allocator definition */
+  void *_priv_malloc (void *ctx, size_t size);
+  void *_priv_realloc (void *ctx, void *ptr, size_t oldsize, size_t size);
+  void _priv_free (void *ctx, void *ptr);
 
-/* Internal structure for holding parsed JSON extra headers */
-typedef struct LM_PARSED_JSON
-{
-  yyjson_doc *doc;
-  yyjson_mut_doc *mut_doc;
-} LM_PARSED_JSON;
+  /* Internal structure for holding parsed JSON extra headers */
+  typedef struct LM_PARSED_JSON
+  {
+    yyjson_doc *doc;
+    yyjson_mut_doc *mut_doc;
+  } LM_PARSED_JSON;
 
 #ifdef __cplusplus
 }

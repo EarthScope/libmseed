@@ -30,36 +30,36 @@ static int ms_isinteger (const char *string);
 static int ms_globmatch (const char *string, const char *pattern);
 
 /**********************************************************************/ /**
- * @brief Test the specified parameters for a matching selection entry
- *
- * Search the ::MS3Selections for an entry matching the provided
- * parameters.  The ::MS3Selections.sidpattern may contain globbing
- * characters.  The ::MS3Selections.timewindows many contain start and
- * end times set to ::NSTUNSET to denote "open" times.
- *
- * Positive matching requires:
- * @parblock
- *  -# glob match of sid against sidpattern in selection
- *  -# time window intersection with range in selection
- *  -# equal pubversion if selection pubversion > 0
- * @endparblock
- *
- * @param[in] selections ::MS3Selections to search
- * @param[in] sid Source ID to match
- * @param[in] starttime Start time to match
- * @param[in] endtime End time to match
- * @param[in] pubversion Publication version to match
- * @param[out] ppselecttime Pointer-to-pointer to return the matching ::MS3SelectTime entry
- *
- * @returns A pointer to matching ::MS3Selections entry successful
- * match and NULL for no match or error.
- ***************************************************************************/
+                                                                          * @brief Test the specified parameters for a matching selection entry
+                                                                          *
+                                                                          * Search the ::MS3Selections for an entry matching the provided
+                                                                          * parameters.  The ::MS3Selections.sidpattern may contain globbing
+                                                                          * characters.  The ::MS3Selections.timewindows many contain start and
+                                                                          * end times set to ::NSTUNSET to denote "open" times.
+                                                                          *
+                                                                          * Positive matching requires:
+                                                                          * @parblock
+                                                                          *  -# glob match of sid against sidpattern in selection
+                                                                          *  -# time window intersection with range in selection
+                                                                          *  -# equal pubversion if selection pubversion > 0
+                                                                          * @endparblock
+                                                                          *
+                                                                          * @param[in] selections ::MS3Selections to search
+                                                                          * @param[in] sid Source ID to match
+                                                                          * @param[in] starttime Start time to match
+                                                                          * @param[in] endtime End time to match
+                                                                          * @param[in] pubversion Publication version to match
+                                                                          * @param[out] ppselecttime Pointer-to-pointer to return the matching ::MS3SelectTime entry
+                                                                          *
+                                                                          * @returns A pointer to matching ::MS3Selections entry successful
+                                                                          * match and NULL for no match or error.
+                                                                          ***************************************************************************/
 MS3Selections *
 ms3_matchselect (MS3Selections *selections, char *sid, nstime_t starttime,
                  nstime_t endtime, int pubversion, MS3SelectTime **ppselecttime)
 {
-  MS3Selections *findsl = NULL;
-  MS3SelectTime *findst = NULL;
+  MS3Selections *findsl  = NULL;
+  MS3SelectTime *findst  = NULL;
   MS3SelectTime *matchst = NULL;
 
   if (selections)
@@ -122,25 +122,25 @@ ms3_matchselect (MS3Selections *selections, char *sid, nstime_t starttime,
 } /* End of ms3_matchselect() */
 
 /**********************************************************************/ /**
- * @brief Test the ::MS3Record for a matching selection entry
- *
- * Search the ::MS3Selections for an entry matching the provided
- * parameters.
- *
- * Positive matching requires:
- * @parblock
- *  -# glob match of sid against sidpattern in selection
- *  -# time window intersection with range in selection
- *  -# equal pubversion if selection pubversion > 0
- * @endparblock
- *
- * @param[in] selections ::MS3Selections to search
- * @param[in] msr ::MS3Record to match against selections
- * @param[out] ppselecttime Pointer-to-pointer to return the matching ::MS3SelectTime entry
- *
- * @returns A pointer to matching ::MS3Selections entry successful
- * match and NULL for no match or error.
- ***************************************************************************/
+                                                                          * @brief Test the ::MS3Record for a matching selection entry
+                                                                          *
+                                                                          * Search the ::MS3Selections for an entry matching the provided
+                                                                          * parameters.
+                                                                          *
+                                                                          * Positive matching requires:
+                                                                          * @parblock
+                                                                          *  -# glob match of sid against sidpattern in selection
+                                                                          *  -# time window intersection with range in selection
+                                                                          *  -# equal pubversion if selection pubversion > 0
+                                                                          * @endparblock
+                                                                          *
+                                                                          * @param[in] selections ::MS3Selections to search
+                                                                          * @param[in] msr ::MS3Record to match against selections
+                                                                          * @param[out] ppselecttime Pointer-to-pointer to return the matching ::MS3SelectTime entry
+                                                                          *
+                                                                          * @returns A pointer to matching ::MS3Selections entry successful
+                                                                          * match and NULL for no match or error.
+                                                                          ***************************************************************************/
 MS3Selections *
 msr3_matchselect (MS3Selections *selections, MS3Record *msr, MS3SelectTime **ppselecttime)
 {
@@ -156,26 +156,26 @@ msr3_matchselect (MS3Selections *selections, MS3Record *msr, MS3SelectTime **pps
 } /* End of msr3_matchselect() */
 
 /**********************************************************************/ /**
- * @brief Add selection parameters to selection list.
- *
- * The \a sidpattern may contain globbing characters.
- *
- * The \a starttime and \a endtime may be set to ::NSTUNSET to denote
- * "open" times.
- *
- * The \a pubversion may be set to 0 to match any publication
- * version.
- *
- * @param[in] ppselections ::MS3Selections to add new selection to
- * @param[in] sidpattern Source ID pattern, may contain globbing characters
- * @param[in] starttime Start time for selection, ::NSTUNSET for open
- * @param[in] endtime End time for selection, ::NSTUNSET for open
- * @param[in] pubversion Publication version for selection, 0 for any
- *
- * @returns 0 on success and -1 on error.
- *
- * \ref MessageOnError - this function logs a message on error
- ***************************************************************************/
+                                                                          * @brief Add selection parameters to selection list.
+                                                                          *
+                                                                          * The \a sidpattern may contain globbing characters.
+                                                                          *
+                                                                          * The \a starttime and \a endtime may be set to ::NSTUNSET to denote
+                                                                          * "open" times.
+                                                                          *
+                                                                          * The \a pubversion may be set to 0 to match any publication
+                                                                          * version.
+                                                                          *
+                                                                          * @param[in] ppselections ::MS3Selections to add new selection to
+                                                                          * @param[in] sidpattern Source ID pattern, may contain globbing characters
+                                                                          * @param[in] starttime Start time for selection, ::NSTUNSET for open
+                                                                          * @param[in] endtime End time for selection, ::NSTUNSET for open
+                                                                          * @param[in] pubversion Publication version for selection, 0 for any
+                                                                          *
+                                                                          * @returns 0 on success and -1 on error.
+                                                                          *
+                                                                          * \ref MessageOnError - this function logs a message on error
+                                                                          ***************************************************************************/
 int
 ms3_addselect (MS3Selections **ppselections, char *sidpattern,
                nstime_t starttime, nstime_t endtime, uint8_t pubversion)
@@ -198,7 +198,7 @@ ms3_addselect (MS3Selections **ppselections, char *sidpattern,
   memset (newst, 0, sizeof (MS3SelectTime));
 
   newst->starttime = starttime;
-  newst->endtime = endtime;
+  newst->endtime   = endtime;
 
   /* Add new Selections struct to begining of list */
   if (!*ppselections)
@@ -213,15 +213,15 @@ ms3_addselect (MS3Selections **ppselections, char *sidpattern,
 
     strncpy (newsl->sidpattern, sidpattern, sizeof (newsl->sidpattern));
     newsl->sidpattern[sizeof (newsl->sidpattern) - 1] = '\0';
-    newsl->pubversion = pubversion;
+    newsl->pubversion                                 = pubversion;
 
     /* Add new MS3SelectTime struct as first in list */
-    *ppselections = newsl;
+    *ppselections      = newsl;
     newsl->timewindows = newst;
   }
   else
   {
-    MS3Selections *findsl = *ppselections;
+    MS3Selections *findsl  = *ppselections;
     MS3Selections *matchsl = 0;
 
     /* Search for matching MS3Selections entry */
@@ -239,7 +239,7 @@ ms3_addselect (MS3Selections **ppselections, char *sidpattern,
     if (matchsl)
     {
       /* Add time window selection to beginning of window list */
-      newst->next = matchsl->timewindows;
+      newst->next          = matchsl->timewindows;
       matchsl->timewindows = newst;
     }
     else
@@ -254,11 +254,11 @@ ms3_addselect (MS3Selections **ppselections, char *sidpattern,
 
       strncpy (newsl->sidpattern, sidpattern, sizeof (newsl->sidpattern));
       newsl->sidpattern[sizeof (newsl->sidpattern) - 1] = '\0';
-      newsl->pubversion = pubversion;
+      newsl->pubversion                                 = pubversion;
 
       /* Add new MS3Selections to beginning of list */
-      newsl->next = *ppselections;
-      *ppselections = newsl;
+      newsl->next        = *ppselections;
+      *ppselections      = newsl;
       newsl->timewindows = newst;
     }
   }
@@ -387,41 +387,41 @@ ms3_addselect_comp (MS3Selections **ppselections, char *network, char *station,
 #define MAX_SELECTION_FIELDS 8
 
 /**********************************************************************/ /**
- * @brief Read data selections from a file
- *
- * Selections from a file are added to the specified selections list.
- * On errors this routine will leave allocated memory unreachable
- * (leaked), it is expected that this is a program failing condition.
- *
- * As a special case if the filename is "-", selection lines will be
- * read from stdin.
- *
- * Each line of the file contains a single selection and may be one of
- * these two line formats:
- * @code
- *   SourceID  [Starttime  [Endtime  [Pubversion]]]
- * @endcode
- *  or
- * @code
- *   Network  Station  Location  Channel  [Pubversion  [Starttime  [Endtime]]]
- * @endcode
- *
- * The \c Starttime and \c Endtime values must be in a form recognized
- * by ms_timestr2nstime() and include a full date (i.e. just a year is
- * not allowed).
- *
- * In the latter version, if the "Channel" field is a SEED 2.x channel
- * (3-characters) it will automatically be converted into extended
- * channel form (band_source_position).
- *
- * In the latter version, the "Pubversion" field, which was "Quality"
- * in the previous version of the library, is assumed to be a
- * publication version if it is an integer, otherwise it is ignored.
- *
- * @returns Count of selections added on success and -1 on error.
- *
- * \ref MessageOnError - this function logs a message on error
- ***************************************************************************/
+                                                                          * @brief Read data selections from a file
+                                                                          *
+                                                                          * Selections from a file are added to the specified selections list.
+                                                                          * On errors this routine will leave allocated memory unreachable
+                                                                          * (leaked), it is expected that this is a program failing condition.
+                                                                          *
+                                                                          * As a special case if the filename is "-", selection lines will be
+                                                                          * read from stdin.
+                                                                          *
+                                                                          * Each line of the file contains a single selection and may be one of
+                                                                          * these two line formats:
+                                                                          * @code
+                                                                          *   SourceID  [Starttime  [Endtime  [Pubversion]]]
+                                                                          * @endcode
+                                                                          *  or
+                                                                          * @code
+                                                                          *   Network  Station  Location  Channel  [Pubversion  [Starttime  [Endtime]]]
+                                                                          * @endcode
+                                                                          *
+                                                                          * The \c Starttime and \c Endtime values must be in a form recognized
+                                                                          * by ms_timestr2nstime() and include a full date (i.e. just a year is
+                                                                          * not allowed).
+                                                                          *
+                                                                          * In the latter version, if the "Channel" field is a SEED 2.x channel
+                                                                          * (3-characters) it will automatically be converted into extended
+                                                                          * channel form (band_source_position).
+                                                                          *
+                                                                          * In the latter version, the "Pubversion" field, which was "Quality"
+                                                                          * in the previous version of the library, is assumed to be a
+                                                                          * publication version if it is an integer, otherwise it is ignored.
+                                                                          *
+                                                                          * @returns Count of selections added on success and -1 on error.
+                                                                          *
+                                                                          * \ref MessageOnError - this function logs a message on error
+                                                                          ***************************************************************************/
 int
 ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
 {
@@ -435,7 +435,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
   char *cp;
   char next;
   int selectcount = 0;
-  int linecount = 0;
+  int linecount   = 0;
   int fieldidx;
   uint8_t isstart2;
   uint8_t isend3;
@@ -482,7 +482,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
       cp++;
     }
     cp--;
-    while (cp >= line && isspace((int)(*cp)))
+    while (cp >= line && isspace ((int)(*cp)))
     {
       *cp = '\0';
       cp--;
@@ -490,9 +490,9 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
 
     /* Trim leading whitespace if any */
     cp = line;
-    while (isspace((int)(*cp)))
+    while (isspace ((int)(*cp)))
     {
-      line = cp = cp+1;
+      line = cp = cp + 1;
     }
 
     /* Skip empty lines */
@@ -504,8 +504,8 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
       continue;
 
     /* Set fields array to whitespace delimited fields */
-    cp = line;
-    next = 0;  /* For this loop: 0 = whitespace, 1 = non-whitespace */
+    cp       = line;
+    next     = 0; /* For this loop: 0 = whitespace, 1 = non-whitespace */
     fieldidx = 0;
     while (*cp && fieldidx < MAX_SELECTION_FIELDS)
     {
@@ -536,13 +536,13 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
 #define INITDATEGLOB "[0-9][0-9][0-9][0-9][-/,][0-9]*"
 
     isstart2 = (fields[1]) ? ms_globmatch (fields[1], INITDATEGLOB) : 0;
-    isend3 = (fields[2]) ? ms_globmatch (fields[2], INITDATEGLOB) : 0;
+    isend3   = (fields[2]) ? ms_globmatch (fields[2], INITDATEGLOB) : 0;
     isstart6 = (fields[5]) ? ms_globmatch (fields[5], INITDATEGLOB) : 0;
-    isend7 = (fields[6]) ? ms_globmatch (fields[6], INITDATEGLOB) : 0;
+    isend7   = (fields[6]) ? ms_globmatch (fields[6], INITDATEGLOB) : 0;
 
     /* Convert starttime to nstime_t */
     starttime = NSTUNSET;
-    cp = NULL;
+    cp        = NULL;
     if (isstart2)
       cp = fields[1];
     else if (isstart6)
@@ -559,7 +559,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
 
     /* Convert endtime to nstime_t */
     endtime = NSTUNSET;
-    cp = NULL;
+    cp      = NULL;
     if (isend3)
       cp = fields[2];
     else if (isend7)
@@ -578,7 +578,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
     if (fieldidx == 1 ||
         (fieldidx == 2 && isstart2) ||
         (fieldidx == 3 && isstart2 && isend3) ||
-        (fieldidx == 4 && isstart2 && isend3 && ms_isinteger(fields[3])))
+        (fieldidx == 4 && isstart2 && isend3 && ms_isinteger (fields[3])))
     {
       /* Convert publication version to integer */
       pubversion = 0;
@@ -588,14 +588,14 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
 
         longpver = strtol (fields[3], NULL, 10);
 
-        if (longpver < 0 || longpver > 255 )
+        if (longpver < 0 || longpver > 255)
         {
           ms_log (2, "Cannot convert publication version (line %d): %s\n", linecount, fields[3]);
           return -1;
         }
         else
         {
-          pubversion = (uint8_t) longpver;
+          pubversion = (uint8_t)longpver;
         }
       }
 
@@ -613,20 +613,20 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
     {
       /* Convert quality field to publication version if integer */
       pubversion = 0;
-      if (fields[4] && ms_isinteger(fields[4]))
+      if (fields[4] && ms_isinteger (fields[4]))
       {
         long int longpver;
 
         longpver = strtol (fields[4], NULL, 10);
 
-        if (longpver < 0 || longpver > 255 )
+        if (longpver < 0 || longpver > 255)
         {
           ms_log (2, "Cannot convert publication version (line %d): %s\n", linecount, fields[4]);
           return -1;
         }
         else
         {
-          pubversion = (uint8_t) longpver;
+          pubversion = (uint8_t)longpver;
         }
       }
 
@@ -652,12 +652,12 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
 } /* End of ms_readselectionsfile() */
 
 /**********************************************************************/ /**
- * @brief Free all memory associated with a ::MS3Selections
- *
- * All memory from one or more ::MS3Selections (in a linked list) are freed.
- *
- * @param[in] selections Start of ::MS3Selections to free
- ***************************************************************************/
+                                                                          * @brief Free all memory associated with a ::MS3Selections
+                                                                          *
+                                                                          * All memory from one or more ::MS3Selections (in a linked list) are freed.
+                                                                          *
+                                                                          * @param[in] selections Start of ::MS3Selections to free
+                                                                          ***************************************************************************/
 void
 ms3_freeselections (MS3Selections *selections)
 {
@@ -694,12 +694,12 @@ ms3_freeselections (MS3Selections *selections)
 } /* End of ms3_freeselections() */
 
 /**********************************************************************/ /**
- * @brief Print the selections list using the ms_log() facility.
- *
- * All selections are printed with simple formatting.
- *
- * @param[in] selections Start of ::MS3Selections to print
- ***************************************************************************/
+                                                                          * @brief Print the selections list using the ms_log() facility.
+                                                                          *
+                                                                          * All selections are printed with simple formatting.
+                                                                          *
+                                                                          * @param[in] selections Start of ::MS3Selections to print
+                                                                          ***************************************************************************/
 void
 ms3_printselections (MS3Selections *selections)
 {
@@ -751,7 +751,7 @@ ms_isinteger (const char *string)
 {
   while (*string)
   {
-    if (!isdigit((int)(*string)))
+    if (!isdigit ((int)(*string)))
       return 0;
     string++;
   }

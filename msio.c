@@ -148,17 +148,16 @@ header_callback (char *buffer, size_t size, size_t num, void *userdata)
 
     /* Convert start and end values to numbers if non-zero length */
     if (hcp->startoffset && startdigits)
-      *hcp->startoffset = (int64_t) strtoull (startstr, NULL, 10);
+      *hcp->startoffset = (int64_t)strtoull (startstr, NULL, 10);
 
     if (hcp->endoffset && enddigits)
-      *hcp->endoffset = (int64_t) strtoull (endstr, NULL, 10);
+      *hcp->endoffset = (int64_t)strtoull (endstr, NULL, 10);
   }
 
   return size;
 }
 
 #endif /* defined(LIBMSEED_URL) */
-
 
 /***************************************************************************
  * msio_fopen:
@@ -181,7 +180,7 @@ header_callback (char *buffer, size_t size, size_t num, void *userdata)
  ***************************************************************************/
 int
 msio_fopen (LMIO *io, const char *path, const char *mode,
-          int64_t *startoffset, int64_t *endoffset)
+            int64_t *startoffset, int64_t *endoffset)
 {
   int knownfile = 0;
 
@@ -339,7 +338,7 @@ msio_fopen (LMIO *io, const char *path, const char *mode,
     if (startoffset || endoffset)
     {
       hcp.startoffset = startoffset;
-      hcp.endoffset = endoffset;
+      hcp.endoffset   = endoffset;
 
       /* Configure header callback */
       if (curl_easy_setopt (io->handle, CURLOPT_HEADERFUNCTION, header_callback) != CURLE_OK)
@@ -388,7 +387,7 @@ msio_fopen (LMIO *io, const char *path, const char *mode,
 
     if ((io->handle = fopen (path, mode)) == NULL)
     {
-      ms_log (2, "Cannot open: %s (%s)\n", path, strerror(errno));
+      ms_log (2, "Cannot open: %s (%s)\n", path, strerror (errno));
       return -1;
     }
 
@@ -404,7 +403,7 @@ msio_fopen (LMIO *io, const char *path, const char *mode,
   }
 
   return 0;
-}  /* End of msio_fopen() */
+} /* End of msio_fopen() */
 
 /*********************************************************************
  * msio_fclose:
@@ -435,7 +434,7 @@ msio_fclose (LMIO *io)
 
     if (rv)
     {
-      ms_log (2, "Error closing file (%s)\n", strerror(errno));
+      ms_log (2, "Error closing file (%s)\n", strerror (errno));
       return -1;
     }
   }
@@ -451,13 +450,12 @@ msio_fclose (LMIO *io)
 #endif
   }
 
-  io->type = LMIO_NULL;
-  io->handle = NULL;
+  io->type    = LMIO_NULL;
+  io->handle  = NULL;
   io->handle2 = NULL;
 
   return 0;
 } /* End of msio_fclose() */
-
 
 /*********************************************************************
  * msio_fread:
@@ -776,7 +774,6 @@ lmp_ftell64 (FILE *stream)
 #endif
 } /* End of lmp_ftell64() */
 
-
 /***************************************************************************
  * lmp_fseek64:
  *
@@ -792,7 +789,6 @@ lmp_fseek64 (FILE *stream, int64_t offset, int whence)
   return (int)fseeko (stream, offset, whence);
 #endif
 } /* End of lmp_fseeko() */
-
 
 /***************************************************************************
  * @brief Sleep for a specified number of nanoseconds
@@ -812,14 +808,14 @@ lmp_nanosleep (uint64_t nanoseconds)
 #if defined(LMP_WIN)
 
   /* SleepEx is limited to milliseconds */
-  SleepEx ((DWORD) (nanoseconds / 1e6), 1);
+  SleepEx ((DWORD)(nanoseconds / 1e6), 1);
 
   return 0;
 #else
 
   struct timespec treq, trem;
 
-  treq.tv_sec  = (time_t) (nanoseconds / 1e9);
+  treq.tv_sec = (time_t)(nanoseconds / 1e9);
   treq.tv_nsec = (long)(nanoseconds - (uint64_t)treq.tv_sec * 1e9);
 
   nanosleep (&treq, &trem);

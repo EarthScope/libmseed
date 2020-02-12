@@ -24,10 +24,10 @@
 #include <string.h>
 #include <time.h>
 
+#include "extraheaders.h"
 #include "libmseed.h"
 #include "mseedformat.h"
 #include "packdata.h"
-#include "extraheaders.h"
 
 /* Internal from another source file */
 extern double ms_nomsamprate (int factor, int multiplier);
@@ -49,59 +49,58 @@ static int ms_genfactmult (double samprate, int16_t *factor, int16_t *multiplier
 
 static uint32_t ms_timestr2btime (const char *timestr, uint8_t *btime, char *sid, int8_t swapflag);
 
-
 /**********************************************************************/ /**
- * @brief Pack data into miniSEED records.
- *
- * Packing is performed according to the version at
- * @ref MS3Record.formatversion.
- *
- * The @ref MS3Record.datasamples array and @ref MS3Record.numsamples
- * value will __not__ be changed by this routine.  It is the
- * responsibility of the calling routine to adjust the data buffer if
- * desired.
- *
- * As each record is filled and finished they are passed to \a
- * record_handler() which should expect 1) a \c char* to the record,
- * 2) the length of the record and 3) a pointer supplied by the
- * original caller containing optional private data (\a handlerdata).
- * It is the responsibility of \a record_handler() to process the
- * record, the memory will be re-used or freed when \a
- * record_handler() returns.
- *
- * The following data encodings and expected @ref MS3Record.sampletype
- * are supported:
- *   - ::DE_ASCII (0), text (ASCII), expects type \c 'a'
- *   - ::DE_INT16 (1), 16-bit integer, expects type \c 'i'
- *   - ::DE_INT32 (3), 32-bit integer, expects type \c 'i'
- *   - ::DE_FLOAT32 (4), 32-bit float (IEEE), expects type \c 'f'
- *   - ::DE_FLOAT64 (5), 64-bit float (IEEE), expects type \c 'd'
- *   - ::DE_STEIM1 (10), Stiem-1 compressed integers, expects type \c 'i'
- *   - ::DE_STEIM2 (11), Stiem-2 compressed integers, expects type \c 'i'
- *
- * If \a flags has ::MSF_FLUSHDATA set, all of the data will be packed
- * into data records even though the last one will probably be smaller
- * than requested or, in the case of miniSEED 2, unfilled.
- *
- * Default values are: record length = 4096, encoding = 11 (Steim2).
- * The defaults are triggered when \a msr.reclen and \a msr.encoding
- * are set to -1.
- *
- * @param[in] msr ::MS3Record containing data to pack
- * @param[in] record_handler() Callback function called for each record
- * @param[in] handlerdata A pointer that will be provided to the \a record_handler()
- * @param[out] packedsamples The number of samples packed, returned to caller
- * @param[in] flags Bit flags used to control the packing process:
- * @parblock
- *  - \c ::MSF_FLUSHDATA : Pack all data in the buffer
- *  - \c ::MSF_PACKVER2 : Pack miniSEED version 2 regardless of ::MS3Record.formatversion
- * @endparblock
- * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
- *
- * @returns the number of records created on success and -1 on error.
- *
- * \ref MessageOnError - this function logs a message on error
- ***************************************************************************/
+                                                                          * @brief Pack data into miniSEED records.
+                                                                          *
+                                                                          * Packing is performed according to the version at
+                                                                          * @ref MS3Record.formatversion.
+                                                                          *
+                                                                          * The @ref MS3Record.datasamples array and @ref MS3Record.numsamples
+                                                                          * value will __not__ be changed by this routine.  It is the
+                                                                          * responsibility of the calling routine to adjust the data buffer if
+                                                                          * desired.
+                                                                          *
+                                                                          * As each record is filled and finished they are passed to \a
+                                                                          * record_handler() which should expect 1) a \c char* to the record,
+                                                                          * 2) the length of the record and 3) a pointer supplied by the
+                                                                          * original caller containing optional private data (\a handlerdata).
+                                                                          * It is the responsibility of \a record_handler() to process the
+                                                                          * record, the memory will be re-used or freed when \a
+                                                                          * record_handler() returns.
+                                                                          *
+                                                                          * The following data encodings and expected @ref MS3Record.sampletype
+                                                                          * are supported:
+                                                                          *   - ::DE_ASCII (0), text (ASCII), expects type \c 'a'
+                                                                          *   - ::DE_INT16 (1), 16-bit integer, expects type \c 'i'
+                                                                          *   - ::DE_INT32 (3), 32-bit integer, expects type \c 'i'
+                                                                          *   - ::DE_FLOAT32 (4), 32-bit float (IEEE), expects type \c 'f'
+                                                                          *   - ::DE_FLOAT64 (5), 64-bit float (IEEE), expects type \c 'd'
+                                                                          *   - ::DE_STEIM1 (10), Stiem-1 compressed integers, expects type \c 'i'
+                                                                          *   - ::DE_STEIM2 (11), Stiem-2 compressed integers, expects type \c 'i'
+                                                                          *
+                                                                          * If \a flags has ::MSF_FLUSHDATA set, all of the data will be packed
+                                                                          * into data records even though the last one will probably be smaller
+                                                                          * than requested or, in the case of miniSEED 2, unfilled.
+                                                                          *
+                                                                          * Default values are: record length = 4096, encoding = 11 (Steim2).
+                                                                          * The defaults are triggered when \a msr.reclen and \a msr.encoding
+                                                                          * are set to -1.
+                                                                          *
+                                                                          * @param[in] msr ::MS3Record containing data to pack
+                                                                          * @param[in] record_handler() Callback function called for each record
+                                                                          * @param[in] handlerdata A pointer that will be provided to the \a record_handler()
+                                                                          * @param[out] packedsamples The number of samples packed, returned to caller
+                                                                          * @param[in] flags Bit flags used to control the packing process:
+                                                                          * @parblock
+                                                                          *  - \c ::MSF_FLUSHDATA : Pack all data in the buffer
+                                                                          *  - \c ::MSF_PACKVER2 : Pack miniSEED version 2 regardless of ::MS3Record.formatversion
+                                                                          * @endparblock
+                                                                          * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
+                                                                          *
+                                                                          * @returns the number of records created on success and -1 on error.
+                                                                          *
+                                                                          * \ref MessageOnError - this function logs a message on error
+                                                                          ***************************************************************************/
 int
 msr3_pack (MS3Record *msr, void (*record_handler) (char *, int, void *),
            void *handlerdata, int64_t *packedsamples, uint32_t flags, int8_t verbose)
@@ -162,8 +161,8 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
                   void *handlerdata, int64_t *packedsamples,
                   uint32_t flags, int8_t verbose)
 {
-  char *rawrec = NULL;
-  char *encoded = NULL;  /* Separate encoded data buffer for alignment */
+  char *rawrec  = NULL;
+  char *encoded = NULL; /* Separate encoded data buffer for alignment */
   int8_t swapflag;
   int dataoffset = 0;
 
@@ -198,10 +197,10 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     return -1;
   }
 
-  if (msr->reclen < (MS3FSDH_LENGTH + strlen(msr->sid) + msr->extralength))
+  if (msr->reclen < (MS3FSDH_LENGTH + strlen (msr->sid) + msr->extralength))
   {
-    ms_log (2, "%s: Record length (%d) is not large enough for header (%d), SID (%"PRIsize_t"), and extra (%d)\n",
-            msr->sid, msr->reclen, MS3FSDH_LENGTH, strlen(msr->sid), msr->extralength);
+    ms_log (2, "%s: Record length (%d) is not large enough for header (%d), SID (%" PRIsize_t "), and extra (%d)\n",
+            msr->sid, msr->reclen, MS3FSDH_LENGTH, strlen (msr->sid), msr->extralength);
     return -1;
   }
 
@@ -230,12 +229,12 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   if (msr->numsamples <= 0)
   {
     /* Set encoding to ASCII for consistency and to reduce expectations */
-    *pMS3FSDH_ENCODING(rawrec) = DE_ASCII;
+    *pMS3FSDH_ENCODING (rawrec) = DE_ASCII;
 
     /* Calculate CRC (with CRC field set to 0) and set */
-    memset (pMS3FSDH_CRC(rawrec), 0, sizeof(uint32_t));
-    crc = ms_crc32c ((const uint8_t*)rawrec, dataoffset, 0);
-    *pMS3FSDH_CRC(rawrec) = HO4u (crc, swapflag);
+    memset (pMS3FSDH_CRC (rawrec), 0, sizeof (uint32_t));
+    crc                    = ms_crc32c ((const uint8_t *)rawrec, dataoffset, 0);
+    *pMS3FSDH_CRC (rawrec) = HO4u (crc, swapflag);
 
     if (verbose >= 1)
       ms_log (0, "%s: Packed %d byte record with no payload\n", msr->sid, dataoffset);
@@ -290,7 +289,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
   /* Pack samples into records */
   totalpackedsamples = 0;
-  packoffset = 0;
+  packoffset         = 0;
   if (packedsamples)
     *packedsamples = 0;
 
@@ -317,13 +316,13 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     memcpy (rawrec + dataoffset, encoded, datalength);
 
     /* Update number of samples and data length */
-    *pMS3FSDH_NUMSAMPLES(rawrec) = HO4u (packsamples, swapflag);
-    *pMS3FSDH_DATALENGTH(rawrec) = HO2u (datalength, swapflag);
+    *pMS3FSDH_NUMSAMPLES (rawrec) = HO4u (packsamples, swapflag);
+    *pMS3FSDH_DATALENGTH (rawrec) = HO2u (datalength, swapflag);
 
     /* Calculate CRC (with CRC field set to 0) and set */
-    memset (pMS3FSDH_CRC(rawrec), 0, sizeof(uint32_t));
-    crc = ms_crc32c ((const uint8_t*)rawrec, reclen, 0);
-    *pMS3FSDH_CRC(rawrec) = HO4u (crc, swapflag);
+    memset (pMS3FSDH_CRC (rawrec), 0, sizeof (uint32_t));
+    crc                    = ms_crc32c ((const uint8_t *)rawrec, reclen, 0);
+    *pMS3FSDH_CRC (rawrec) = HO4u (crc, swapflag);
 
     if (verbose >= 1)
       ms_log (0, "%s: Packed %d samples into %d byte record\n", msr->sid, packsamples, reclen);
@@ -352,10 +351,10 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
     *pMS3FSDH_NSEC (rawrec) = HO4u (nsec, swapflag);
     *pMS3FSDH_YEAR (rawrec) = HO2u (year, swapflag);
-    *pMS3FSDH_DAY (rawrec) = HO2u (day, swapflag);
+    *pMS3FSDH_DAY (rawrec)  = HO2u (day, swapflag);
     *pMS3FSDH_HOUR (rawrec) = hour;
-    *pMS3FSDH_MIN (rawrec) = min;
-    *pMS3FSDH_SEC (rawrec) = sec;
+    *pMS3FSDH_MIN (rawrec)  = min;
+    *pMS3FSDH_SEC (rawrec)  = sec;
   }
 
   if (verbose >= 2)
@@ -370,24 +369,24 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 } /* End of msr3_pack_mseed3() */
 
 /**********************************************************************/ /**
- * @brief Repack a parsed miniSEED record into a version 3 record.
- *
- * Pack the parsed header into a version 3 header and copy the raw
- * encoded data from the original record.  The original record must be
- * available at the ::MS3Record.record pointer.
- *
- * This can be used to efficiently convert format versions or modify
- * header values without unpacking the data samples.
- *
- * @param[in] msr ::MS3Record containing record to repack
- * @param[out] record Destination buffer for repacked record
- * @param[in] recbuflen Length of destination buffer
- * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
- *
- * @returns record length on success and -1 on error.
- *
- * \ref MessageOnError - this function logs a message on error
- ***************************************************************************/
+                                                                          * @brief Repack a parsed miniSEED record into a version 3 record.
+                                                                          *
+                                                                          * Pack the parsed header into a version 3 header and copy the raw
+                                                                          * encoded data from the original record.  The original record must be
+                                                                          * available at the ::MS3Record.record pointer.
+                                                                          *
+                                                                          * This can be used to efficiently convert format versions or modify
+                                                                          * header values without unpacking the data samples.
+                                                                          *
+                                                                          * @param[in] msr ::MS3Record containing record to repack
+                                                                          * @param[out] record Destination buffer for repacked record
+                                                                          * @param[in] recbuflen Length of destination buffer
+                                                                          * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
+                                                                          *
+                                                                          * @returns record length on success and -1 on error.
+                                                                          *
+                                                                          * \ref MessageOnError - this function logs a message on error
+                                                                          ***************************************************************************/
 int
 msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
                     int8_t verbose)
@@ -399,7 +398,7 @@ msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
   uint32_t reclen;
   int8_t swapflag;
 
-  if (!msr || ! record)
+  if (!msr || !record)
   {
     ms_log (2, "Required argument not defined: 'msr' or 'record'\n");
     return -1;
@@ -451,13 +450,13 @@ msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
   swapflag = (ms_bigendianhost ()) ? 1 : 0;
 
   /* Update number of samples and data length */
-  *pMS3FSDH_NUMSAMPLES(record) = HO4u ((uint32_t)msr->samplecnt, swapflag);
-  *pMS3FSDH_DATALENGTH(record) = HO2u (origdatasize, swapflag);
+  *pMS3FSDH_NUMSAMPLES (record) = HO4u ((uint32_t)msr->samplecnt, swapflag);
+  *pMS3FSDH_DATALENGTH (record) = HO2u (origdatasize, swapflag);
 
   /* Calculate CRC (with CRC field set to 0) and set */
-  memset (pMS3FSDH_CRC(record), 0, sizeof(uint32_t));
-  crc = ms_crc32c ((const uint8_t*)record, reclen, 0);
-  *pMS3FSDH_CRC(record) = HO4u (crc, swapflag);
+  memset (pMS3FSDH_CRC (record), 0, sizeof (uint32_t));
+  crc                    = ms_crc32c ((const uint8_t *)record, reclen, 0);
+  *pMS3FSDH_CRC (record) = HO4u (crc, swapflag);
 
   if (verbose >= 1)
     ms_log (0, "%s: Repacked %" PRId64 " samples into a %u byte record\n",
@@ -467,21 +466,21 @@ msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
 } /* End of msr3_repack_mseed3() */
 
 /**********************************************************************/ /**
- * @brief Pack a miniSEED version 3 header into the specified buffer.
- *
- * Default values are: record length = 4096, encoding = 11 (Steim2).
- * The defaults are triggered when \a msr.reclen and \a msr.encoding
- * are set to -1.
- *
- * @param[in] msr ::MS3Record to pack
- * @param[out] record Destination for packed header
- * @param[in] recbuflen Length of destination buffer
- * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
- *
- * @returns the size of the header (fixed and extra) on success, otherwise -1.
- *
- * \ref MessageOnError - this function logs a message on error
- ***************************************************************************/
+                                                                          * @brief Pack a miniSEED version 3 header into the specified buffer.
+                                                                          *
+                                                                          * Default values are: record length = 4096, encoding = 11 (Steim2).
+                                                                          * The defaults are triggered when \a msr.reclen and \a msr.encoding
+                                                                          * are set to -1.
+                                                                          *
+                                                                          * @param[in] msr ::MS3Record to pack
+                                                                          * @param[out] record Destination for packed header
+                                                                          * @param[in] recbuflen Length of destination buffer
+                                                                          * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
+                                                                          *
+                                                                          * @returns the size of the header (fixed and extra) on success, otherwise -1.
+                                                                          *
+                                                                          * \ref MessageOnError - this function logs a message on error
+                                                                          ***************************************************************************/
 int
 msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose)
 {
@@ -518,7 +517,7 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
   if (recbuflen < (uint32_t)(MS3FSDH_LENGTH + sidlength + msr->extralength))
   {
-    ms_log (2, "%s: Buffer length (%d) is not large enough for fixed header (%d), SID (%"PRIsize_t"), and extra (%d)\n",
+    ms_log (2, "%s: Buffer length (%d) is not large enough for fixed header (%d), SID (%" PRIsize_t "), and extra (%d)\n",
             msr->sid, msr->reclen, MS3FSDH_LENGTH, sidlength, msr->extralength);
     return -1;
   }
@@ -539,35 +538,35 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   /* Ensure that SID length fits in format, which uses data type uint8_t */
   if (sidlength > 255)
   {
-    ms_log (2, "%s: Source ID too long: %"PRIsize_t" bytes\n", msr->sid, sidlength);
+    ms_log (2, "%s: Source ID too long: %" PRIsize_t " bytes\n", msr->sid, sidlength);
     return -1;
   }
 
   extraoffset = MS3FSDH_LENGTH + sidlength;
 
   /* Build fixed header */
-  record[0] = 'M';
-  record[1] = 'S';
+  record[0]                        = 'M';
+  record[1]                        = 'S';
   *pMS3FSDH_FORMATVERSION (record) = 3;
-  *pMS3FSDH_FLAGS (record) = msr->flags;
-  *pMS3FSDH_NSEC (record) = HO4u (nsec, swapflag);
-  *pMS3FSDH_YEAR (record) = HO2u (year, swapflag);
-  *pMS3FSDH_DAY (record) = HO2u (day, swapflag);
-  *pMS3FSDH_HOUR (record) = hour;
-  *pMS3FSDH_MIN (record) = min;
-  *pMS3FSDH_SEC (record) = sec;
-  *pMS3FSDH_ENCODING (record) = msr->encoding;
+  *pMS3FSDH_FLAGS (record)         = msr->flags;
+  *pMS3FSDH_NSEC (record)          = HO4u (nsec, swapflag);
+  *pMS3FSDH_YEAR (record)          = HO2u (year, swapflag);
+  *pMS3FSDH_DAY (record)           = HO2u (day, swapflag);
+  *pMS3FSDH_HOUR (record)          = hour;
+  *pMS3FSDH_MIN (record)           = min;
+  *pMS3FSDH_SEC (record)           = sec;
+  *pMS3FSDH_ENCODING (record)      = msr->encoding;
 
   /* If rate positive and less than one, convert to period notation */
   if (msr->samprate != 0.0 && msr->samprate > 0 && msr->samprate < 1.0)
-    *pMS3FSDH_SAMPLERATE(record) = HO8f((-1.0 / msr->samprate), swapflag);
+    *pMS3FSDH_SAMPLERATE (record) = HO8f ((-1.0 / msr->samprate), swapflag);
   else
-    *pMS3FSDH_SAMPLERATE(record) = HO8f(msr->samprate, swapflag);
+    *pMS3FSDH_SAMPLERATE (record) = HO8f (msr->samprate, swapflag);
 
-  *pMS3FSDH_PUBVERSION(record) = msr->pubversion;
-  *pMS3FSDH_SIDLENGTH(record) = (uint8_t)sidlength;
-  *pMS3FSDH_EXTRALENGTH(record) = HO2u(msr->extralength, swapflag);
-  memcpy (pMS3FSDH_SID(record), msr->sid, sidlength);
+  *pMS3FSDH_PUBVERSION (record)  = msr->pubversion;
+  *pMS3FSDH_SIDLENGTH (record)   = (uint8_t)sidlength;
+  *pMS3FSDH_EXTRALENGTH (record) = HO2u (msr->extralength, swapflag);
+  memcpy (pMS3FSDH_SID (record), msr->sid, sidlength);
 
   if (msr->extralength > 0)
     memcpy (record + extraoffset, msr->extra, msr->extralength);
@@ -589,8 +588,8 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
                   void *handlerdata, int64_t *packedsamples,
                   uint32_t flags, int8_t verbose)
 {
-  char *rawrec = NULL;
-  char *encoded = NULL;  /* Separate encoded data buffer for alignment */
+  char *rawrec  = NULL;
+  char *encoded = NULL; /* Separate encoded data buffer for alignment */
   int8_t swapflag;
   int dataoffset = 0;
   int headerlen;
@@ -705,7 +704,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   }
 
   /* Set data offset in header */
-  *pMS2FSDH_DATAOFFSET(rawrec) = HO2u (dataoffset, swapflag);
+  *pMS2FSDH_DATAOFFSET (rawrec) = HO2u (dataoffset, swapflag);
 
   /* Determine the max data bytes and sample count */
   maxdatabytes = msr->reclen - dataoffset;
@@ -738,7 +737,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
   /* Pack samples into records */
   totalpackedsamples = 0;
-  packoffset = 0;
+  packoffset         = 0;
   if (packedsamples)
     *packedsamples = 0;
 
@@ -764,7 +763,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     memcpy (rawrec + dataoffset, encoded, datalength);
 
     /* Update number of samples */
-    *pMS2FSDH_NUMSAMPLES(rawrec) = HO2u (packsamples, swapflag);
+    *pMS2FSDH_NUMSAMPLES (rawrec) = HO2u (packsamples, swapflag);
 
     if (verbose >= 1)
       ms_log (0, "%s: Packed %d samples into %d byte record\n", msr->sid, packsamples, msr->reclen);
@@ -812,21 +811,21 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 } /* End of msr3_pack_mseed2() */
 
 /**********************************************************************/ /**
- * @brief Pack a miniSEED version 2 header into the specified buffer.
- *
- * Default values are: record length = 4096, encoding = 11 (Steim2).
- * The defaults are triggered when \a msr.reclen and \a msr.encoding
- * are set to -1.
- *
- * @param[in] msr ::MS3Record to pack
- * @param[out] record Destination for packed header
- * @param[in] recbuflen Length of destination buffer
- * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
- *
- * @returns the size of the header (fixed and blockettes) on success, otherwise -1.
- *
- * \ref MessageOnError - this function logs a message on error
- ***************************************************************************/
+                                                                          * @brief Pack a miniSEED version 2 header into the specified buffer.
+                                                                          *
+                                                                          * Default values are: record length = 4096, encoding = 11 (Steim2).
+                                                                          * The defaults are triggered when \a msr.reclen and \a msr.encoding
+                                                                          * are set to -1.
+                                                                          *
+                                                                          * @param[in] msr ::MS3Record to pack
+                                                                          * @param[out] record Destination for packed header
+                                                                          * @param[in] recbuflen Length of destination buffer
+                                                                          * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
+                                                                          *
+                                                                          * @returns the size of the header (fixed and blockettes) on success, otherwise -1.
+                                                                          *
+                                                                          * \ref MessageOnError - this function logs a message on error
+                                                                          ***************************************************************************/
 int
 msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose)
 {
@@ -933,11 +932,11 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   }
 
   /* Calculate time at fractional 100usec resolution and microsecond offset */
-  fsec = nsec / 100000;
+  fsec        = nsec / 100000;
   msec_offset = ((nsec / 1000) - (fsec * 100));
 
   /* Generate factor & multipler representation of sample rate */
-  if (ms_genfactmult (msr3_sampratehz(msr), &factor, &multiplier))
+  if (ms_genfactmult (msr3_sampratehz (msr), &factor, &multiplier))
   {
     ms_log (2, "%s: Cannot convert sample rate (%g) to factor and multiplier\n", msr->sid, msr->samprate);
     return -1;
@@ -1076,14 +1075,14 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   if (yyjson_get_num_pointer (ehroot, "/FDSN/Time/Quality", &header_number) || msec_offset)
   {
     *next_blockette = HO2u ((uint16_t)written, swapflag);
-    next_blockette = pMS2B1001_NEXT (record + written);
+    next_blockette  = pMS2B1001_NEXT (record + written);
     *pMS2FSDH_NUMBLOCKETTES (record) += 1;
 
     *pMS2B1001_TYPE (record + written) = HO2u (1001, swapflag);
     *pMS2B1001_NEXT (record + written) = 0;
 
     if (yyjson_get_num_pointer (ehroot, "/FDSN/Time/Quality", &header_number))
-      *pMS2B1001_TIMINGQUALITY (record + written) = (uint8_t) (header_number + 0.5);
+      *pMS2B1001_TIMINGQUALITY (record + written) = (uint8_t)(header_number + 0.5);
     else
       *pMS2B1001_TIMINGQUALITY (record + written) = 0;
 
@@ -1095,10 +1094,10 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   }
 
   /* Add Blockette 100 if sample rate is not well represented by factor/multiplier */
-  if (ms_dabs(msr3_sampratehz(msr) - ms_nomsamprate(factor, multiplier)) > 0.0001)
+  if (ms_dabs (msr3_sampratehz (msr) - ms_nomsamprate (factor, multiplier)) > 0.0001)
   {
     *next_blockette = HO2u ((uint16_t)written, swapflag);
-    next_blockette = pMS2B100_NEXT (record + written);
+    next_blockette  = pMS2B100_NEXT (record + written);
     *pMS2FSDH_NUMBLOCKETTES (record) += 1;
 
     *pMS2B100_TYPE (record + written)     = HO2u (100, swapflag);
@@ -1186,16 +1185,16 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
       if ((ehval = yyjson_get_pointer (ehiterval, "/Type")) && yyjson_is_str (ehval) &&
           strncasecmp (yyjson_get_str (ehval), "MURDOCK", 6) == 0)
       {
-        blockette_type = 201;
+        blockette_type   = 201;
         blockette_length = 60;
       }
       else
       {
-        blockette_type = 200;
+        blockette_type   = 200;
         blockette_length = 52;
       }
 
-      if ((recbuflen - written) < blockette_length )
+      if ((recbuflen - written) < blockette_length)
       {
         ms_log (2, "%s: Record length not large enough for B%d\n", msr->sid, blockette_type);
         yyjson_doc_free (ehdoc);
@@ -1204,7 +1203,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
       /* The initial fields of B200 and B201 are the same */
       *next_blockette = HO2u ((uint16_t)written, swapflag);
-      next_blockette = pMS2B200_NEXT (record + written);
+      next_blockette  = pMS2B200_NEXT (record + written);
       *pMS2FSDH_NUMBLOCKETTES (record) += 1;
 
       memset (record + written, 0, blockette_length);
@@ -1325,7 +1324,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
       }
       else if ((ehval = yyjson_get_pointer (ehiterval, "/EndTime")))
       {
-        blockette_type = 395;
+        blockette_type   = 395;
         blockette_length = 16;
       }
 
@@ -1336,7 +1335,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
         return -1;
       }
 
-      if ((recbuflen - written) < blockette_length )
+      if ((recbuflen - written) < blockette_length)
       {
         ms_log (2, "%s: Record length not large enough for B%d\n", msr->sid, blockette_type);
         yyjson_doc_free (ehdoc);
@@ -1504,7 +1503,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
       /* Add Blockette 395 if EndTime is included */
       if ((ehval = yyjson_get_pointer (ehiterval, "/EndTime")) && yyjson_is_str (ehval))
       {
-        blockette_type  = 395;
+        blockette_type   = 395;
         blockette_length = 16;
 
         if ((recbuflen - written) < blockette_length)
@@ -1599,10 +1598,10 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
       return -1;
     }
 
-    if (maxdatabytes < sizeof(int16_t))
+    if (maxdatabytes < sizeof (int16_t))
     {
-      ms_log (2, "%s: Not enough space in record (%d) for INT16 encoding, need at least %"PRIsize_t" bytes\n",
-              sid, maxdatabytes, sizeof(int16_t));
+      ms_log (2, "%s: Not enough space in record (%d) for INT16 encoding, need at least %" PRIsize_t " bytes\n",
+              sid, maxdatabytes, sizeof (int16_t));
       return -1;
     }
 
@@ -1624,10 +1623,10 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
       return -1;
     }
 
-    if (maxdatabytes < sizeof(int32_t))
+    if (maxdatabytes < sizeof (int32_t))
     {
-      ms_log (2, "%s: Not enough space in record (%d) for INT32 encoding, need at least %"PRIsize_t" bytes\n",
-              sid, maxdatabytes, sizeof(int32_t));
+      ms_log (2, "%s: Not enough space in record (%d) for INT32 encoding, need at least %" PRIsize_t " bytes\n",
+              sid, maxdatabytes, sizeof (int32_t));
       return -1;
     }
 
@@ -1649,10 +1648,10 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
       return -1;
     }
 
-    if (maxdatabytes < sizeof(float))
+    if (maxdatabytes < sizeof (float))
     {
-      ms_log (2, "%s: Not enough space in record (%d) for FLOAT32 encoding, need at least %"PRIsize_t" bytes\n",
-              sid, maxdatabytes, sizeof(float));
+      ms_log (2, "%s: Not enough space in record (%d) for FLOAT32 encoding, need at least %" PRIsize_t " bytes\n",
+              sid, maxdatabytes, sizeof (float));
       return -1;
     }
 
@@ -1674,10 +1673,10 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
       return -1;
     }
 
-    if (maxdatabytes < sizeof(double))
+    if (maxdatabytes < sizeof (double))
     {
-      ms_log (2, "%s: Not enough space in record (%d) for FLOAT64 encoding, need at least %"PRIsize_t" bytes\n",
-              sid, maxdatabytes, sizeof(double));
+      ms_log (2, "%s: Not enough space in record (%d) for FLOAT64 encoding, need at least %" PRIsize_t " bytes\n",
+              sid, maxdatabytes, sizeof (double));
       return -1;
     }
 
@@ -1710,7 +1709,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
       ms_log (0, "%s: Packing Steim1 data frames\n", sid);
 
     /* Always big endian Steim1 */
-    swapflag = (ms_bigendianhost()) ? 0 : 1;
+    swapflag = (ms_bigendianhost ()) ? 0 : 1;
 
     nsamples = msr_encode_steim1 ((int32_t *)src, maxsamples, (int32_t *)dest, maxdatabytes, 0, byteswritten, swapflag);
 
@@ -1735,7 +1734,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
       ms_log (0, "%s: Packing Steim2 data frames\n", sid);
 
     /* Always big endian Steim2 */
-    swapflag = (ms_bigendianhost()) ? 0 : 1;
+    swapflag = (ms_bigendianhost ()) ? 0 : 1;
 
     nsamples = msr_encode_steim2 ((int32_t *)src, maxsamples, (int32_t *)dest, maxdatabytes, 0, byteswritten, sid, swapflag);
 
@@ -1888,7 +1887,7 @@ ms_reduce_rate (double samprate, int16_t *factor1, int16_t *factor2)
 {
   int num;
   int den;
-  int32_t intsamprate = (int32_t) (samprate + 0.5);
+  int32_t intsamprate = (int32_t)(samprate + 0.5);
 
   int32_t searchfactor1;
   int32_t searchfactor2;

@@ -8,12 +8,13 @@
 #define GMTIME64_H 1
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "libmseed.h"
 
-extern struct tm * ms_gmtime64_r (const int64_t *in_time, struct tm *p);
+  extern struct tm *ms_gmtime64_r (const int64_t *in_time, struct tm *p);
 
 #ifdef __cplusplus
 }

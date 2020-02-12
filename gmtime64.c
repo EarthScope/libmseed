@@ -34,8 +34,8 @@ THE SOFTWARE.
 
 */
 
-#include <stdlib.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <time.h>
 
 static const char days_in_month[2][12] = {
@@ -76,7 +76,7 @@ ms_gmtime64_r (const int64_t *in_time, struct tm *p)
   int leap;
   int64_t m;
   int64_t time;
-  int64_t year = 70;
+  int64_t year   = 70;
   int64_t cycles = 0;
 
   if (!in_time || !p)
@@ -175,10 +175,10 @@ ms_gmtime64_r (const int64_t *in_time, struct tm *p)
   /* At this point m is less than a year so casting to an int is safe */
   p->tm_mday = (int)m + 1;
   p->tm_yday = julian_days_by_month[leap][v_tm_mon] + (int)m;
-  p->tm_sec = v_tm_sec;
-  p->tm_min = v_tm_min;
+  p->tm_sec  = v_tm_sec;
+  p->tm_min  = v_tm_min;
   p->tm_hour = v_tm_hour;
-  p->tm_mon = v_tm_mon;
+  p->tm_mon  = v_tm_mon;
   p->tm_wday = v_tm_wday;
 
   return p;

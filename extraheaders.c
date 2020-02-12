@@ -18,24 +18,30 @@
  * limitations under the License.
  ***************************************************************************/
 
-#include "libmseed.h"
 #include "extraheaders.h"
+#include "libmseed.h"
 
 /* Private allocation wrappers for yyjson's allocator definition */
-void *_priv_malloc(void *ctx, size_t size) {
-    UNUSED(ctx);
-    return libmseed_memory.malloc(size);
+void *
+_priv_malloc (void *ctx, size_t size)
+{
+  UNUSED (ctx);
+  return libmseed_memory.malloc (size);
 }
 
-void *_priv_realloc(void *ctx, void *ptr, size_t oldsize, size_t size) {
-    UNUSED(ctx);
-    UNUSED(oldsize);
-    return libmseed_memory.realloc(ptr, size);
+void *
+_priv_realloc (void *ctx, void *ptr, size_t oldsize, size_t size)
+{
+  UNUSED (ctx);
+  UNUSED (oldsize);
+  return libmseed_memory.realloc (ptr, size);
 }
 
-void _priv_free(void *ctx, void *ptr) {
-    UNUSED(ctx);
-    libmseed_memory.free(ptr);
+void
+_priv_free (void *ctx, void *ptr)
+{
+  UNUSED (ctx);
+  libmseed_memory.free (ptr);
 }
 
 /***************************************************************************
@@ -50,7 +56,7 @@ void _priv_free(void *ctx, void *ptr) {
  *
  * \sa mseh_free_parsestate()
  ***************************************************************************/
-static LM_PARSED_JSON*
+static LM_PARSED_JSON *
 parse_json (char *jsonstring, size_t length, LM_PARSED_JSON *parsed)
 {
   yyjson_read_flag flg = YYJSON_READ_NOFLAG;
@@ -82,7 +88,7 @@ parse_json (char *jsonstring, size_t length, LM_PARSED_JSON *parsed)
   if (parsed->doc)
   {
     yyjson_doc_free (parsed->doc);
-    parsed->doc     = NULL;
+    parsed->doc = NULL;
   }
 
   /* Free existing mutable document */
@@ -104,54 +110,54 @@ parse_json (char *jsonstring, size_t length, LM_PARSED_JSON *parsed)
 }
 
 /**********************************************************************/ /**
- * @brief Search for and return an extra header value.
- *
- * The extra header value is specified as a JSON Pointer (RFC 6901), e.g.
- * \c '/objectA/objectB/header'.
- *
- * This routine can get used to test for the existence of a value
- * without returning the value by setting \a value to NULL.
- *
- * If the target item is found (and \a value parameter is set) the
- * value will be copied into the memory specified by \c value.  The
- * \a type value specifies the data type expected.
- *
- * If a \a parsestate pointer is supplied, the parsed (deserialized) JSON
- * data are stored here.  This value may be used in subsequent calls to
- * avoid re-parsing the JSON.  The data must be freed with
- * mseh_free_parsestate() when done reading the JSON.  If this value
- * is NULL the parse state will be created and destroyed on each call.
- *
- * @param[in] msr Parsed miniSEED record to query
- * @param[in] path Header value desired, specified in dot notation
- * @param[out] value Buffer for value, of type \c type
- * @param[in] type Type of value expected, one of:
- * @parblock
- * - \c 'n' - \a value is type \a double
- * - \c 'i' - \a value is type \a int64_t
- * - \c 's' - \a value is type \a char* (maximum length is: \c maxlength - 1)
- * - \c 'b' - \a value of type \a int (boolean value of 0 or 1)
- * @endparblock
- * @param[in] maxlength Maximum length of string value
- * @param[in] parsed Parsed state for multiple operations, can be NULL
- *
- * @retval 0 on success
- * @retval 1 when the value was not found
- * @retval 2 when the value is of a different type
- * @returns A (negative) libmseed error code on error
- *
- * \ref MessageOnError - this function logs a message on error
- *
- * \sa mseh_free_parsestate()
- ***************************************************************************/
+                                                                          * @brief Search for and return an extra header value.
+                                                                          *
+                                                                          * The extra header value is specified as a JSON Pointer (RFC 6901), e.g.
+                                                                          * \c '/objectA/objectB/header'.
+                                                                          *
+                                                                          * This routine can get used to test for the existence of a value
+                                                                          * without returning the value by setting \a value to NULL.
+                                                                          *
+                                                                          * If the target item is found (and \a value parameter is set) the
+                                                                          * value will be copied into the memory specified by \c value.  The
+                                                                          * \a type value specifies the data type expected.
+                                                                          *
+                                                                          * If a \a parsestate pointer is supplied, the parsed (deserialized) JSON
+                                                                          * data are stored here.  This value may be used in subsequent calls to
+                                                                          * avoid re-parsing the JSON.  The data must be freed with
+                                                                          * mseh_free_parsestate() when done reading the JSON.  If this value
+                                                                          * is NULL the parse state will be created and destroyed on each call.
+                                                                          *
+                                                                          * @param[in] msr Parsed miniSEED record to query
+                                                                          * @param[in] path Header value desired, specified in dot notation
+                                                                          * @param[out] value Buffer for value, of type \c type
+                                                                          * @param[in] type Type of value expected, one of:
+                                                                          * @parblock
+                                                                          * - \c 'n' - \a value is type \a double
+                                                                          * - \c 'i' - \a value is type \a int64_t
+                                                                          * - \c 's' - \a value is type \a char* (maximum length is: \c maxlength - 1)
+                                                                          * - \c 'b' - \a value of type \a int (boolean value of 0 or 1)
+                                                                          * @endparblock
+                                                                          * @param[in] maxlength Maximum length of string value
+                                                                          * @param[in] parsed Parsed state for multiple operations, can be NULL
+                                                                          *
+                                                                          * @retval 0 on success
+                                                                          * @retval 1 when the value was not found
+                                                                          * @retval 2 when the value is of a different type
+                                                                          * @returns A (negative) libmseed error code on error
+                                                                          *
+                                                                          * \ref MessageOnError - this function logs a message on error
+                                                                          *
+                                                                          * \sa mseh_free_parsestate()
+                                                                          ***************************************************************************/
 int
 mseh_get_path_r (MS3Record *msr, const char *path,
                  void *value, char type, size_t maxlength,
                  LM_PARSED_JSON **parsestate)
 {
-  LM_PARSED_JSON *parsed  = (parsestate) ? *parsestate : NULL;
+  LM_PARSED_JSON *parsed = (parsestate) ? *parsestate : NULL;
 
-  yyjson_alc alc = {_priv_malloc, _priv_realloc, _priv_free, NULL};
+  yyjson_alc alc          = {_priv_malloc, _priv_realloc, _priv_free, NULL};
   yyjson_val *extravalue  = NULL;
   const char *stringvalue = NULL;
 
@@ -186,7 +192,7 @@ mseh_get_path_r (MS3Record *msr, const char *path,
   if (parsed == NULL)
   {
     /* Parse to immutable state */
-    parsed = parse_json(msr->extra, msr->extralength, parsed);
+    parsed = parse_json (msr->extra, msr->extralength, parsed);
 
     if (parsed == NULL)
     {
@@ -217,7 +223,7 @@ mseh_get_path_r (MS3Record *msr, const char *path,
   }
 
   /* Get target value */
-  extravalue = yyjson_doc_get_pointer(parsed->doc, path);
+  extravalue = yyjson_doc_get_pointer (parsed->doc, path);
 
   if (extravalue == NULL)
   {
@@ -242,7 +248,7 @@ mseh_get_path_r (MS3Record *msr, const char *path,
       ((char *)value)[maxlength - 1] = '\0';
     }
   }
-  else if (type == 'b' && yyjson_is_bool(extravalue))
+  else if (type == 'b' && yyjson_is_bool (extravalue))
   {
     if (value)
       *((int *)value) = (unsafe_yyjson_get_bool (extravalue)) ? 1 : 0;
@@ -263,45 +269,45 @@ mseh_get_path_r (MS3Record *msr, const char *path,
 } /* End of mseh_get_path_r() */
 
 /**********************************************************************/ /**
- * @brief Set the value of a single extra header value
- *
- * The extra header value is specified as a JSON Pointer (RFC 6901), e.g.
- * \c '/objectA/objectB/header'.
- *
- * If the \a path or final header values do not exist they will be
- * created.  If the header value exists it will be replaced.
- *
- * The \a type value specifies the data type expected for \c value.
- *
- * If a \a parsestate pointer is supplied, the parsed (deserialized) JSON
- * data are stored here.  This value may be used in subsequent calls to
- * avoid re-parsing the JSON.  When done setting headers using this
- * functionality the following \a must be done:
- * 1. call mseh_serialize() to create the JSON headers before writing the record
- * 2. free the \a parsestate data with mseh_free_parsestate()
- * If this value is NULL the parse state will be created and destroyed
- * on each call.
- *
- * @param[in] msr Parsed miniSEED record to query
- * @param[in] path Header value desired, specified in dot notation
- * @param[in] value Buffer for value, of type \c type
- * @param[in] type Type of value expected, one of:
- * @parblock
- * - \c 'n' - \a value is type \a double
- * - \c 'i' - \a value is type \a int64_t
- * - \c 's' - \a value is type \a char*
- * - \c 'b' - \a value is type \a int (boolean value of 0 or 1)
- * - \c 'A' - \a value is an Array element to append, as yyjson_mut_val* (internal use)
- * @endparblock
- * @param[in] parsed Parsed state for multiple operations, can be NULL
- *
- * @retval 0 on success, otherwise a (negative) libmseed error code.
- *
- * \ref MessageOnError - this function logs a message on error
- *
- * \sa mseh_free_parsestate()
- * \sa mseh_serialize()
- ***************************************************************************/
+                                                                          * @brief Set the value of a single extra header value
+                                                                          *
+                                                                          * The extra header value is specified as a JSON Pointer (RFC 6901), e.g.
+                                                                          * \c '/objectA/objectB/header'.
+                                                                          *
+                                                                          * If the \a path or final header values do not exist they will be
+                                                                          * created.  If the header value exists it will be replaced.
+                                                                          *
+                                                                          * The \a type value specifies the data type expected for \c value.
+                                                                          *
+                                                                          * If a \a parsestate pointer is supplied, the parsed (deserialized) JSON
+                                                                          * data are stored here.  This value may be used in subsequent calls to
+                                                                          * avoid re-parsing the JSON.  When done setting headers using this
+                                                                          * functionality the following \a must be done:
+                                                                          * 1. call mseh_serialize() to create the JSON headers before writing the record
+                                                                          * 2. free the \a parsestate data with mseh_free_parsestate()
+                                                                          * If this value is NULL the parse state will be created and destroyed
+                                                                          * on each call.
+                                                                          *
+                                                                          * @param[in] msr Parsed miniSEED record to query
+                                                                          * @param[in] path Header value desired, specified in dot notation
+                                                                          * @param[in] value Buffer for value, of type \c type
+                                                                          * @param[in] type Type of value expected, one of:
+                                                                          * @parblock
+                                                                          * - \c 'n' - \a value is type \a double
+                                                                          * - \c 'i' - \a value is type \a int64_t
+                                                                          * - \c 's' - \a value is type \a char*
+                                                                          * - \c 'b' - \a value is type \a int (boolean value of 0 or 1)
+                                                                          * - \c 'A' - \a value is an Array element to append, as yyjson_mut_val* (internal use)
+                                                                          * @endparblock
+                                                                          * @param[in] parsed Parsed state for multiple operations, can be NULL
+                                                                          *
+                                                                          * @retval 0 on success, otherwise a (negative) libmseed error code.
+                                                                          *
+                                                                          * \ref MessageOnError - this function logs a message on error
+                                                                          *
+                                                                          * \sa mseh_free_parsestate()
+                                                                          * \sa mseh_serialize()
+                                                                          ***************************************************************************/
 int
 mseh_set_path_r (MS3Record *msr, const char *path,
                  void *value, char type,
@@ -310,7 +316,7 @@ mseh_set_path_r (MS3Record *msr, const char *path,
 #define MAXPATHDEPTH 8
   LM_PARSED_JSON *parsed = (parsestate) ? *parsestate : NULL;
 
-  yyjson_alc alc = {_priv_malloc, _priv_realloc, _priv_free, NULL};
+  yyjson_alc alc           = {_priv_malloc, _priv_realloc, _priv_free, NULL};
   yyjson_mut_doc *new_doc  = NULL;
   yyjson_mut_val *new_root = NULL;
   yyjson_mut_val patch;
@@ -520,19 +526,19 @@ mseh_set_path_r (MS3Record *msr, const char *path,
 } /* End of mseh_set_path_r() */
 
 /**********************************************************************/ /**
- * @brief Add event detection to the extra headers of the given record.
- *
- * If \a path is NULL, the default is \c '/FDSN/Event/Detection'.
- *
- * @param[in] msr Parsed miniSEED record to query
- * @param[in] path Header value desired, specified in dot notation
- * @param[in] eventdetection Structure with event detection values
- * @param[in] parsed Parsed state for multiple operations, can be NULL
- *
- * @returns 0 on success, otherwise a (negative) libmseed error code.
- *
- * \ref MessageOnError - this function logs a message on error
- ***************************************************************************/
+                                                                          * @brief Add event detection to the extra headers of the given record.
+                                                                          *
+                                                                          * If \a path is NULL, the default is \c '/FDSN/Event/Detection'.
+                                                                          *
+                                                                          * @param[in] msr Parsed miniSEED record to query
+                                                                          * @param[in] path Header value desired, specified in dot notation
+                                                                          * @param[in] eventdetection Structure with event detection values
+                                                                          * @param[in] parsed Parsed state for multiple operations, can be NULL
+                                                                          *
+                                                                          * @returns 0 on success, otherwise a (negative) libmseed error code.
+                                                                          *
+                                                                          * \ref MessageOnError - this function logs a message on error
+                                                                          ***************************************************************************/
 int
 mseh_add_event_detection_r (MS3Record *msr, const char *path,
                             MSEHEventDetection *eventdetection,
@@ -610,7 +616,7 @@ mseh_add_event_detection_r (MS3Record *msr, const char *path,
     }
     else
     {
-      ms_log (2, "%s() Cannot create time string for %"PRId64"\n", __func__, eventdetection->onsettime);
+      ms_log (2, "%s() Cannot create time string for %" PRId64 "\n", __func__, eventdetection->onsettime);
       return MS_GENERROR;
     }
   }
@@ -656,19 +662,19 @@ mseh_add_event_detection_r (MS3Record *msr, const char *path,
 } /* End of mseh_add_event_detection_r() */
 
 /**********************************************************************/ /**
- * @brief Add calibration to the extra headers of the given record.
- *
- * If \a path is NULL, the default is \c '/FDSN/Calibration/Sequence'.
- *
- * @param[in] msr Parsed miniSEED record to query
- * @param[in] path Header value desired, specified in dot notation
- * @param[in] calibration Structure with calibration values
- * @param[in] parsed Parsed state for multiple operations, can be NULL
- *
- * @returns 0 on success, otherwise a (negative) libmseed error code.
- *
- * \ref MessageOnError - this function logs a message on error
- ***************************************************************************/
+                                                                          * @brief Add calibration to the extra headers of the given record.
+                                                                          *
+                                                                          * If \a path is NULL, the default is \c '/FDSN/Calibration/Sequence'.
+                                                                          *
+                                                                          * @param[in] msr Parsed miniSEED record to query
+                                                                          * @param[in] path Header value desired, specified in dot notation
+                                                                          * @param[in] calibration Structure with calibration values
+                                                                          * @param[in] parsed Parsed state for multiple operations, can be NULL
+                                                                          *
+                                                                          * @returns 0 on success, otherwise a (negative) libmseed error code.
+                                                                          *
+                                                                          * \ref MessageOnError - this function logs a message on error
+                                                                          ***************************************************************************/
 int
 mseh_add_calibration_r (MS3Record *msr, const char *path,
                         MSEHCalibration *calibration,
@@ -817,7 +823,8 @@ mseh_add_calibration_r (MS3Record *msr, const char *path,
   {
     yyjson_mut_set_str (&refamp_key, "ReferenceAmplitude");
     yyjson_mut_set_real (&refamp, calibration->refamplitude);
-    yyjson_mut_obj_add (&entry, &refamp_key, &refamp);;
+    yyjson_mut_obj_add (&entry, &refamp_key, &refamp);
+    ;
   }
   if (calibration->coupling[0])
   {
@@ -848,19 +855,19 @@ mseh_add_calibration_r (MS3Record *msr, const char *path,
 } /* End of mseh_add_calibration_r() */
 
 /**********************************************************************/ /**
- * @brief Add timing exception to the extra headers of the given record.
- *
- * If \a path is NULL, the default is \c '/FDSN/Time/Exception'.
- *
- * @param[in] msr Parsed miniSEED record to query
- * @param[in] path Header value desired, specified in dot notation
- * @param[in] exception Structure with timing exception values
- * @param[in] parsed Parsed state for multiple operations, can be NULL
- *
- * @returns 0 on success, otherwise a (negative) libmseed error code.
- *
- * \ref MessageOnError - this function logs a message on error
- ***************************************************************************/
+                                                                          * @brief Add timing exception to the extra headers of the given record.
+                                                                          *
+                                                                          * If \a path is NULL, the default is \c '/FDSN/Time/Exception'.
+                                                                          *
+                                                                          * @param[in] msr Parsed miniSEED record to query
+                                                                          * @param[in] path Header value desired, specified in dot notation
+                                                                          * @param[in] exception Structure with timing exception values
+                                                                          * @param[in] parsed Parsed state for multiple operations, can be NULL
+                                                                          *
+                                                                          * @returns 0 on success, otherwise a (negative) libmseed error code.
+                                                                          *
+                                                                          * \ref MessageOnError - this function logs a message on error
+                                                                          ***************************************************************************/
 int
 mseh_add_timing_exception_r (MS3Record *msr, const char *path,
                              MSEHTimingException *exception,
@@ -940,19 +947,19 @@ mseh_add_timing_exception_r (MS3Record *msr, const char *path,
 } /* End of mseh_add_timing_exception_r() */
 
 /**********************************************************************/ /**
- * @brief Add recenter event to the extra headers of the given record.
- *
- * If \a path is NULL, the default is \c '/FDSN/Recenter/Sequence'.
- *
- * @param[in] msr Parsed miniSEED record to query
- * @param[in] path Header value desired, specified in dot notation
- * @param[in] recenter Structure with recenter values
- * @param[in] parsed Parsed state for multiple operations, can be NULL
- *
- * @returns 0 on success, otherwise a (negative) libmseed error code.
- *
- * \ref MessageOnError - this function logs a message on error
- ***************************************************************************/
+                                                                          * @brief Add recenter event to the extra headers of the given record.
+                                                                          *
+                                                                          * If \a path is NULL, the default is \c '/FDSN/Recenter/Sequence'.
+                                                                          *
+                                                                          * @param[in] msr Parsed miniSEED record to query
+                                                                          * @param[in] path Header value desired, specified in dot notation
+                                                                          * @param[in] recenter Structure with recenter values
+                                                                          * @param[in] parsed Parsed state for multiple operations, can be NULL
+                                                                          *
+                                                                          * @returns 0 on success, otherwise a (negative) libmseed error code.
+                                                                          *
+                                                                          * \ref MessageOnError - this function logs a message on error
+                                                                          ***************************************************************************/
 int
 mseh_add_recenter_r (MS3Record *msr, const char *path, MSEHRecenter *recenter,
                      LM_PARSED_JSON **parsestate)
@@ -1025,18 +1032,18 @@ mseh_add_recenter_r (MS3Record *msr, const char *path, MSEHRecenter *recenter,
 } /* End of mseh_add_recenter_r() */
 
 /**********************************************************************/ /**
- * @brief Generate extra headers string (serialize) from internal state
- *
- * Generate the extra headers JSON string from the internal parse state
- * created by mseh_set_path_r().
- *
- * @param[in] msr ::MS3Record to generate extra headers for
- * @param[in] parsed Internal parsed state associated with \a msr
- *
- * @returns Length of extra headers on success, otherwise a (negative) libmseed error code
- *
- * \sa mseh_set_path_r()
- ***************************************************************************/
+                                                                          * @brief Generate extra headers string (serialize) from internal state
+                                                                          *
+                                                                          * Generate the extra headers JSON string from the internal parse state
+                                                                          * created by mseh_set_path_r().
+                                                                          *
+                                                                          * @param[in] msr ::MS3Record to generate extra headers for
+                                                                          * @param[in] parsed Internal parsed state associated with \a msr
+                                                                          *
+                                                                          * @returns Length of extra headers on success, otherwise a (negative) libmseed error code
+                                                                          *
+                                                                          * \sa mseh_set_path_r()
+                                                                          ***************************************************************************/
 int
 mseh_serialize (MS3Record *msr, LM_PARSED_JSON **parsestate)
 {
@@ -1045,8 +1052,8 @@ mseh_serialize (MS3Record *msr, LM_PARSED_JSON **parsestate)
   yyjson_alc alc = {_priv_malloc, _priv_realloc, _priv_free, NULL};
 
   LM_PARSED_JSON *parsed = NULL;
-  char *serialized    = NULL;
-  size_t serialsize   = 0;
+  char *serialized       = NULL;
+  size_t serialsize      = 0;
 
   if (!msr || !parsestate)
     return MS_GENERROR;
@@ -1070,7 +1077,7 @@ mseh_serialize (MS3Record *msr, LM_PARSED_JSON **parsestate)
   {
     ms_log (2, "%s() New serialization size exceeds limit of %d bytes: %" PRIu64 "\n",
             __func__, UINT16_MAX, (uint64_t)serialsize);
-    libmseed_memory.free(serialized);
+    libmseed_memory.free (serialized);
     return MS_GENERROR;
   }
 
@@ -1084,14 +1091,14 @@ mseh_serialize (MS3Record *msr, LM_PARSED_JSON **parsestate)
 }
 
 /**********************************************************************/ /**
- * @brief Free internally parsed (deserialized) JSON data
- *
- * Free the memory associated with JSON data parsed by mseh_get_path_r()
- * or mseh_set_path_r(), specifically the data at the \a parsestate pointer.
- *
- * \sa mseh_get_path_r()
- * \sa mseh_set_path_r()
- ***************************************************************************/
+                                                                          * @brief Free internally parsed (deserialized) JSON data
+                                                                          *
+                                                                          * Free the memory associated with JSON data parsed by mseh_get_path_r()
+                                                                          * or mseh_set_path_r(), specifically the data at the \a parsestate pointer.
+                                                                          *
+                                                                          * \sa mseh_get_path_r()
+                                                                          * \sa mseh_set_path_r()
+                                                                          ***************************************************************************/
 void
 mseh_free_parsestate (LM_PARSED_JSON **parsestate)
 {
@@ -1108,19 +1115,19 @@ mseh_free_parsestate (LM_PARSED_JSON **parsestate)
   if (parsed->mut_doc)
     yyjson_mut_doc_free (parsed->mut_doc);
 
-  libmseed_memory.free(parsed);
+  libmseed_memory.free (parsed);
 
   *parsestate = NULL;
 }
 
 /**********************************************************************/ /**
- * @brief Print the extra header structure for the specified MS3Record.
- *
- * Output is printed in a pretty, formatted form for readability and
- * the anonymous, root object container (the outer {}) is not printed.
- *
- * @returns 0 on success and a (negative) libmseed error code on error.
- ***************************************************************************/
+                                                                          * @brief Print the extra header structure for the specified MS3Record.
+                                                                          *
+                                                                          * Output is printed in a pretty, formatted form for readability and
+                                                                          * the anonymous, root object container (the outer {}) is not printed.
+                                                                          *
+                                                                          * @returns 0 on success and a (negative) libmseed error code on error.
+                                                                          ***************************************************************************/
 int
 mseh_print (MS3Record *msr, int indent)
 {

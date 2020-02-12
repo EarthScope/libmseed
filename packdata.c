@@ -266,7 +266,8 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
   int widx;
   int idx;
 
-  union dword {
+  union dword
+  {
     int8_t d8[4];
     int16_t d16[2];
     int32_t d32;
@@ -461,7 +462,8 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
   int widx;
   int idx;
 
-  union dword {
+  union dword
+  {
     int8_t d8[4];
     int16_t d16[2];
     int32_t d32;
