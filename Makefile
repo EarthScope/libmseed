@@ -63,6 +63,8 @@ $(LIB_SO): $(LIB_LOBJS)
 	@echo "Building shared library $(LIB_SO)"
 	$(RM) -f $(LIB_SO) $(LIB_SO_MAJOR) $(LIB_SO_BASE)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(LIB_OPTS) -o $(LIB_SO) $(LIB_LOBJS)
+	ln -s $(LIB_SO) $(LIB_SO_BASE)
+	ln -s $(LIB_SO) $(LIB_SO_MAJOR)
 
 test check: static FORCE
 	@$(MAKE) -C test test
@@ -86,8 +88,6 @@ install: shared
 	     mseed.pc.in > $(DESTDIR)$(LIBDIR)/pkgconfig/mseed.pc
 	@mkdir -p $(DESTDIR)$(DOCDIR)/example
 	@cp -r example $(DESTDIR)$(DOCDIR)/
-	ln -s $(LIB_SO) $(LIB_SO_BASE)
-	ln -s $(LIB_SO) $(LIB_SO_MAJOR)
 
 .SUFFIXES: .c .o .lo
 
