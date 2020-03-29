@@ -78,7 +78,7 @@ msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
 
      Power of two if (X & (X - 1)) == 0 */
   if (formatversion == 2 &&
-      reclen < 0 &&
+      reclen == 0 &&
       flags & MSF_ATENDOFFILE &&
       (recbuflen & (recbuflen - 1)) == 0 &&
       recbuflen <= MAXRECLEN)
