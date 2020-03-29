@@ -231,7 +231,7 @@ ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion)
 
         /* Field 3 of B1000 is a uint8_t value describing the record
          * length as 2^(value).  Calculate 2-raised with a shift. */
-        reclen = (unsigned int)1 << *pMS2B1000_RECLEN(record+blkt_offset);
+        reclen = (unsigned int)1 << *pMS2B1000_RECLEN (record + blkt_offset);
 
         break;
       }
@@ -268,8 +268,8 @@ ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion)
     }
   } /* End of miniSEED 2.x detection */
 
-  if (!foundlen)
-    return -1;
+  if (*formatversion && !foundlen)
+    return 0;
   else
     return reclen;
 } /* End of ms3_detect() */
