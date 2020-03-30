@@ -36,11 +36,11 @@
 MS3FileParam gMS3FileParam = MS3FileParam_INITIALIZER;
 
 /*****************************************************************/ /**
- * @brief Read miniSEED records from a file
+ * @brief Read miniSEED records from a file or URL
  *
  * This routine is a wrapper for ms3_readmsr_selection() that uses the
  * global file reading parameters.  This routine is _not_ thread safe
- * and cannot be used to read more than one file at a time.
+ * and cannot be used to read more than one stream at a time.
  *
  * See ms3_readmsr_selection() for a further description of arguments.
  *
@@ -57,12 +57,12 @@ ms3_readmsr (MS3Record **ppmsr, const char *mspath, int64_t *fpos,
 } /* End of ms3_readmsr() */
 
 /*****************************************************************/ /**
- * @brief Read miniSEED records from a file in a thread-safe way
+ * @brief Read miniSEED records from a file or URL in a thread-safe way
  *
  * This routine is a wrapper for ms3_readmsr_selection() that uses the
  * re-entrant capabilities.  This routine is thread safe and can be
- * used to read more than one file at a time as long as separate
- * MS3FileParam containers are used for each file.
+ * used to read more than one stream at a time as long as separate
+ * MS3FileParam containers are used for each stream.
  *
  * A ::MS3FileParam container will be allocated if \c *ppmsfp is \c
  * NULL.
@@ -82,8 +82,8 @@ ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
 /**********************************************************************
  *
  * A helper routine to shift (remove bytes from the beginning of) the
- * file reading buffer for a MSFP.  The buffer length, reading offset
- * and file position indicators are all updated as necessary.
+ * stream reading buffer for a MSFP.  The buffer length, reading offset
+ * and stream position indicators are all updated as necessary.
  *
  *********************************************************************/
 static void
@@ -122,19 +122,19 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
 #define MSFPREADPTR(MSFP) (MSFP->readbuffer + MSFP->readoffset)
 
 /*****************************************************************/ /**
- * @brief Read miniSEED records from a file with optional selection
+ * @brief Read miniSEED records from a file or URL with optional selection
  *
  * This routine will open and read, with subsequent calls, all
- * miniSEED records in specified file.
+ * miniSEED records in specified stream (file or URL).
  *
- * All file reading parameters are stored in a ::MS3FileParam
+ * All stream reading parameters are stored in a ::MS3FileParam
  * container and returned (via a pointer to a pointer) for the calling
  * routine to use in subsequent calls.  A ::MS3FileParam container
  * will be allocated if \c *ppmsfp is \c NULL.  This routine is thread
- * safe and can be used to read multiple files in parallel as long as
- * the file reading parameters are managed appropriately.
+ * safe and can be used to read multiple streams in parallel as long as
+ * the stream reading parameters are managed appropriately.
  *
- * If \a *fpos is not NULL it will be updated to reflect the file
+ * If \a *fpos is not NULL it will be updated to reflect the stream
  * position (offset from the beginning in bytes) from where the
  * returned record was read.  As a special case, if \a *fpos is not
  * NULL and the value it points to is less than 0 this will be
@@ -142,7 +142,7 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  * reading data allowing the caller to specify an initial read offset.
  *
  * If \a *last is not NULL it will be set to 1 when the last record in
- * the file is being returned, otherwise it will be 0.
+ * the stream is being returned, otherwise it will be 0.
  *
  * The \a flags argument are bit flags used to control the reading
  * process.  The following flags are supported:
@@ -155,12 +155,12 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  * limit what is returned to the caller.  Any data not matching the
  * selections will be skipped.
  *
- * After reading all the records in a file the calling program should
+ * After reading all the records in a stream the calling program should
  * call this routine one last time with \a mspath set to NULL.  This
- * will close the file and free allocated memory.
+ * will close the stream and free allocated memory.
  *
  * @param[out] ppmsfp Pointer-to-pointer of an ::MS3FileParam, which
- * contains the state of file reading across iterative calls of this
+ * contains the state of stream reading across iterative calls of this
  * function.
  *
  * @param[out] ppmsr Pointer-to-pointer of an ::MS3Record, which will
@@ -168,12 +168,12 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  *
  * @param[in] mspath File or URL to read
  *
- * @param[in,out] fpos Position in file of last returned record as a
+ * @param[in,out] fpos Position in stream of last returned record as a
  * byte offset.  On initial call, if the referenced value is negative
  * it will be used as a starting position.
  *
  * @param[out] last Flag to indicate when the returned record is the
- * last one in the file.
+ * last one in the stream.
  *
  * @param[in] flags Flags used to control parsing, see @ref
  * control-flags
@@ -186,7 +186,7 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  * @returns ::MS_NOERROR and populates an ::MS3Record struct, at \a
  * *ppmsr, on successful read.  On error, a (negative) libmseed error
  * code is returned and *ppmsr is set to NULL.
- * @retval ::MS_ENDOFFILE on End-Of-File
+ * @retval ::MS_ENDOFFILE on reaching the end of a stream
  *
  * \sa @ref data-selections
  *********************************************************************/
@@ -211,7 +211,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
 
   msfp = *ppmsfp;
 
-  /* Initialize the file read parameters if needed */
+  /* Initialize the read parameters if needed */
   if (!msfp)
   {
     msfp = (MS3FileParam *)libmseed_memory.malloc (sizeof (MS3FileParam));
@@ -239,7 +239,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
     if (msfp->readbuffer != NULL)
       libmseed_memory.free (msfp->readbuffer);
 
-    /* If the file parameters are the global parameters reset them */
+    /* If the parameters are the global parameters reset them */
     if (*ppmsfp == &gMS3FileParam)
     {
       gMS3FileParam = (struct MS3FileParam) MS3FileParam_INITIALIZER;
@@ -254,7 +254,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
     return MS_NOERROR;
   }
 
-  /* Sanity check: reading the same file */
+  /* Sanity check: reading the same stream */
   if (msfp->input.handle && strncmp (mspath, msfp->path, sizeof (msfp->path)))
   {
     ms_log (2, "%s() called with a different path without being reset, cannot continue\n", __func__);
@@ -272,7 +272,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
     }
   }
 
-  /* Open the file if needed, use stdin if path is "-" */
+  /* Open the stream if needed, use stdin if path is "-" */
   if (msfp->input.handle == NULL)
   {
     /* Store the path for tracking */
@@ -427,7 +427,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
           if (fpos)
             *fpos = msfp->streampos;
 
-          /* Update reading offset, file position and record count */
+          /* Update reading offset, stream position and record count */
           msfp->readoffset += (*ppmsr)->reclen;
           msfp->streampos += (*ppmsr)->reclen;
           msfp->recordcount++;

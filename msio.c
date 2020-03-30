@@ -199,7 +199,7 @@ ms_fclose (LMIO *io)
   else if (io->type == LMIO_URL)
   {
 #if !defined(LIBMSEED_URL)
-    ms_log (2, "%s(): URL support not included in library for %s\n", __func__, path);
+    ms_log (2, "%s(): URL support not included in library\n", __func__);
     return -1;
 #else
     curl_multi_remove_handle (io->handle2, io->handle);
@@ -260,7 +260,7 @@ ms_fread (LMIO *io, void *buffer, size_t size)
   else if (io->type == LMIO_URL)
   {
 #if !defined(LIBMSEED_URL)
-    ms_log (2, "%s(): URL support not included in library for %s\n", __func__, path);
+    ms_log (2, "%s(): URL support not included in library\n", __func__);
     return -1;
 #else
     struct callback_parameters cbp;
@@ -312,7 +312,7 @@ ms_fread (LMIO *io, void *buffer, size_t size)
       /* Extract descriptors from the multi-handle */
       if (curl_multi_fdset (io->handle2, &fdread, &fdwrite, &fdexcep, &maxfd) != CURLM_OK)
       {
-        ms_log (2, "%s(): Error \n", __func__);
+        ms_log (2, "%s(): Error with curl_multi_fdset()\n", __func__);
         return -1;
       }
 
@@ -366,7 +366,7 @@ ms_feof (LMIO *io)
   else if (io->type == LMIO_URL)
   {
 #if !defined(LIBMSEED_URL)
-    ms_log (2, "%s(): URL support not included in library for %s\n", __func__, path);
+    ms_log (2, "%s(): URL support not included in library\n", __func__);
     return -1;
 #else
     /* The still_running flag is only changed by curl_multi_perform()
@@ -410,7 +410,7 @@ ms_fseek (LMIO *io, int64_t startoffset, int64_t endoffset)
   else if (io->type == LMIO_URL)
   {
 #if !defined(LIBMSEED_URL)
-    ms_log (2, "%s(): URL support not included in library for %s\n", __func__, path);
+    ms_log (2, "%s(): URL support not included in library\n", __func__);
     return -1;
 #else
     char startstr[21] = {0};
@@ -419,7 +419,7 @@ ms_fseek (LMIO *io, int64_t startoffset, int64_t endoffset)
 
     if (io->still_running > 0)
     {
-      ms_log (2, "%s(): Cannot set URL byte ranging on connection still running\n", __func__);
+      ms_log (2, "%s(): Cannot set URL byte ranging on running connection\n", __func__);
       return -1;
     }
 

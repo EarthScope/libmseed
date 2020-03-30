@@ -620,7 +620,7 @@ typedef struct MS3FileParam
   char path[512];      //!< INPUT: File name or URL
   int64_t startoffset; //!< INPUT: Start position in input stream
   int64_t endoffset;   //!< INPUT: End position in input stream, 0 == unknown (e.g. pipe)
-  int64_t streampos;   //!< OUTPUT: Input stream position corresponding to record (at start of buffer)
+  int64_t streampos;   //!< OUTPUT: Read position of input stream
   int64_t recordcount; //!< OUTPUT: Count of records read from this file so far
 
   char *readbuffer;    //!< INTERNAL: Read buffer, allocated internally
