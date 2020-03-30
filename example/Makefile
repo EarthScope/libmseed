@@ -7,8 +7,8 @@
 # Required compiler parameters
 CFLAGS += -I..
 
-LDFLAGS = -L..
-LDLIBS = -lmseed
+LDFLAGS += -L..
+LDLIBS += -lmseed
 
 # Build all *.c source as independent programs
 SRCS := $(sort $(wildcard *.c))

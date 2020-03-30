@@ -27,14 +27,13 @@
 #include <time.h>
 
 #include "libmseed.h"
-
-static int ms_fread (char *buf, int size, int num, FILE *stream);
+#include "msio.h"
 
 /* Skip length in bytes when skipping non-data */
 #define SKIPLEN 1
 
 /* Initialize the global file reading parameters */
-MS3FileParam gMS3FileParam = {NULL, "", NULL, 0, 0, 0, 0, 0};
+MS3FileParam gMS3FileParam = MS3FileParam_INITIALIZER;
 
 /*****************************************************************/ /**
  * @brief Read miniSEED records from a file
@@ -48,12 +47,12 @@ MS3FileParam gMS3FileParam = {NULL, "", NULL, 0, 0, 0, 0, 0};
  * @returns Return value from ms3_readmsr_selection()
  *********************************************************************/
 int
-ms3_readmsr (MS3Record **ppmsr, const char *msfile, int64_t *fpos,
+ms3_readmsr (MS3Record **ppmsr, const char *mspath, int64_t *fpos,
              int8_t *last, uint32_t flags, int8_t verbose)
 {
   MS3FileParam *msfp = &gMS3FileParam;
 
-  return ms3_readmsr_selection (&msfp, ppmsr, msfile, fpos, last,
+  return ms3_readmsr_selection (&msfp, ppmsr, mspath, fpos, last,
                                 flags, NULL, verbose);
 } /* End of ms3_readmsr() */
 
@@ -73,10 +72,10 @@ ms3_readmsr (MS3Record **ppmsr, const char *msfile, int64_t *fpos,
  * @returns Return value from ms3_readmsr_selection()
  *********************************************************************/
 int
-ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
+ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
                int64_t *fpos, int8_t *last, uint32_t flags, int8_t verbose)
 {
-  return ms3_readmsr_selection (ppmsfp, ppmsr, msfile, fpos, last,
+  return ms3_readmsr_selection (ppmsfp, ppmsr, mspath, fpos, last,
                                 flags, NULL, verbose);
 } /* End of ms_readmsr_r() */
 
@@ -109,7 +108,7 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
   }
   else
   {
-    msfp->filepos += (shift - msfp->readoffset);
+    msfp->streampos += (shift - msfp->readoffset);
     msfp->readoffset = 0;
   }
 
@@ -157,7 +156,7 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  * selections will be skipped.
  *
  * After reading all the records in a file the calling program should
- * call this routine one last time with \a msfile set to NULL.  This
+ * call this routine one last time with \a mspath set to NULL.  This
  * will close the file and free allocated memory.
  *
  * @param[out] ppmsfp Pointer-to-pointer of an ::MS3FileParam, which
@@ -167,7 +166,7 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  * @param[out] ppmsr Pointer-to-pointer of an ::MS3Record, which will
  * contain a parsed record on success.
  *
- * @param[in] msfile File to read
+ * @param[in] mspath File or URL to read
  *
  * @param[in,out] fpos Position in file of last returned record as a
  * byte offset.  On initial call, if the referenced value is negative
@@ -192,7 +191,7 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  * \sa @ref data-selections
  *********************************************************************/
 int
-ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
+ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
                        int64_t *fpos, int8_t *last, uint32_t flags,
                        MS3Selections *selections, int8_t verbose)
 {
@@ -223,26 +222,19 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
       return MS_GENERROR;
     }
 
+    *msfp = (MS3FileParam) MS3FileParam_INITIALIZER;
+
     /* Redirect the supplied pointer to the allocated params */
     *ppmsfp = msfp;
-
-    msfp->fp          = NULL;
-    msfp->filename[0] = '\0';
-    msfp->readbuffer  = NULL;
-    msfp->readlength  = 0;
-    msfp->readoffset  = 0;
-    msfp->filepos     = 0;
-    msfp->filesize    = 0;
-    msfp->recordcount = 0;
   }
 
   /* When cleanup is requested */
-  if (msfile == NULL)
+  if (mspath == NULL)
   {
     msr3_free (ppmsr);
 
-    if (msfp->fp != NULL)
-      fclose (msfp->fp);
+    if (msfp->input.handle != NULL)
+      ms_fclose (&msfp->input);
 
     if (msfp->readbuffer != NULL)
       libmseed_memory.free (msfp->readbuffer);
@@ -250,14 +242,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
     /* If the file parameters are the global parameters reset them */
     if (*ppmsfp == &gMS3FileParam)
     {
-      gMS3FileParam.fp          = NULL;
-      gMS3FileParam.filename[0] = '\0';
-      gMS3FileParam.readbuffer  = NULL;
-      gMS3FileParam.readlength  = 0;
-      gMS3FileParam.readoffset  = 0;
-      gMS3FileParam.filepos     = 0;
-      gMS3FileParam.filesize    = 0;
-      gMS3FileParam.recordcount = 0;
+      gMS3FileParam = (struct MS3FileParam) MS3FileParam_INITIALIZER;
     }
     /* Otherwise free the MS3FileParam */
     else
@@ -267,6 +252,14 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
     }
 
     return MS_NOERROR;
+  }
+
+  /* Sanity check: reading the same file */
+  if (msfp->input.handle && strncmp (mspath, msfp->path, sizeof (msfp->path)))
+  {
+    ms_log (2, "%s() called with a different path without being reset, cannot continue\n", __func__);
+
+    return MS_GENERROR;
   }
 
   /* Allocate reading buffer */
@@ -279,78 +272,58 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
     }
   }
 
-  /* Sanity check: track if we are reading the same file */
-  if (msfp->fp && strncmp (msfile, msfp->filename, sizeof (msfp->filename)))
+  /* Open the file if needed, use stdin if path is "-" */
+  if (msfp->input.handle == NULL)
   {
-    ms_log (2, "%s() called with a different file name without being reset\n", __func__);
+    /* Store the path for tracking */
+    strncpy (msfp->path, mspath, sizeof (msfp->path) - 1);
+    msfp->path[sizeof (msfp->path) - 1] = '\0';
 
-    /* Close previous file and reset needed variables */
-    if (msfp->fp != NULL)
-      fclose (msfp->fp);
-
-    msfp->fp          = NULL;
-    msfp->readlength  = 0;
-    msfp->readoffset  = 0;
-    msfp->filepos     = 0;
-    msfp->filesize    = 0;
-    msfp->recordcount = 0;
-  }
-
-  /* Open the file if needed, redirect to stdin if file is "-" */
-  if (msfp->fp == NULL)
-  {
-    /* Store the filename for tracking */
-    strncpy (msfp->filename, msfile, sizeof (msfp->filename) - 1);
-    msfp->filename[sizeof (msfp->filename) - 1] = '\0';
-
-    if (strcmp (msfile, "-") == 0)
+    if (strcmp (mspath, "-") == 0)
     {
-      msfp->fp = stdin;
+      msfp->input.type = LMIO_FILE;
+      msfp->input.handle = stdin;
     }
     else
     {
-      if ((msfp->fp = fopen (msfile, "rb")) == NULL)
+      if (ms_fopen(&msfp->input, mspath, "rb"))
       {
-        ms_log (2, "Cannot open file: %s (%s)\n", msfile, strerror (errno));
+        ms_log (2, "Cannot open: %s\n", mspath);
         msr3_free (ppmsr);
 
         return MS_GENERROR;
       }
-      else
-      {
-        /* Determine file size */
-        struct stat sbuf;
-
-        if (fstat (fileno (msfp->fp), &sbuf))
-        {
-          ms_log (2, "Cannot open file: %s (%s)\n", msfile, strerror (errno));
-          msr3_free (ppmsr);
-
-          return MS_GENERROR;
-        }
-
-        msfp->filesize = (int64_t)sbuf.st_size;
-      }
     }
   }
 
-  /* Seek to a specified offset if requested */
-  if (fpos != NULL && *fpos < 0)
+  /* Translate negative fpos to start offset if not otherwise set */
+  if (fpos != NULL && *fpos < 0 && msfp->startoffset == 0)
+    msfp->startoffset = *fpos;
+
+  /* Setup byte ranging, triggered with negative values */
+  if (msfp->startoffset < 0 || msfp->endoffset < 0 )
   {
-    /* Only try to seek in real files, not stdin */
-    if (msfp->fp != stdin)
+    /* Configure byte ranging if not operating on stdin */
+    if (!(msfp->input.type == LMIO_FILE && msfp->input.handle == stdin))
     {
-      if (lmp_fseek64 (msfp->fp, *fpos * -1, SEEK_SET))
+      if (ms_fseek (&msfp->input, msfp->startoffset * -1, msfp->endoffset * -1))
       {
-        ms_log (2, "Cannot seek in file: %s (%s)\n", msfile, strerror (errno));
+        ms_log (2, "Cannot seek in path: %s\n", mspath);
 
         return MS_GENERROR;
       }
 
-      msfp->filepos    = *fpos * -1;
+      if (msfp->startoffset < 0)
+        msfp->streampos  = msfp->startoffset * -1;
       msfp->readlength = 0;
       msfp->readoffset = 0;
     }
+
+    /* De-trigger offset range values after setting them */
+    if (msfp->startoffset < 0)
+      msfp->startoffset *= -1;
+    if (msfp->endoffset < 0)
+      msfp->endoffset *= -1;
   }
 
   /* Zero the last record indicator */
@@ -361,12 +334,12 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
   if ((flags & MSF_UNPACKDATA) && selections)
     pflags &= ~(MSF_UNPACKDATA);
 
-  /* Read data and search for records */
+  /* Read data and search for records until input stream ends or end offset is reached */
   for (;;)
   {
     /* Read more data into buffer if not at EOF and buffer has less than MINRECLEN
      * or more data is needed for the current record detected in buffer. */
-    if (!feof (msfp->fp) && (MSFPBUFLEN (msfp) < MINRECLEN || parseval > 0))
+    if (!ms_feof (&msfp->input) && (MSFPBUFLEN (msfp) < MINRECLEN || parseval > 0))
     {
       /* Reset offsets if no unprocessed data in buffer */
       if (MSFPBUFLEN (msfp) <= 0)
@@ -384,14 +357,13 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
       readsize = (MAXRECLEN - msfp->readlength);
 
       /* Read data into record buffer */
-      readcount = ms_fread (msfp->readbuffer + msfp->readlength, 1, readsize, msfp->fp);
+      readcount = (int)ms_fread (&msfp->input, msfp->readbuffer + msfp->readlength, readsize);
 
-      if (readcount != readsize)
+      if (readcount <= 0)
       {
-        if (!feof (msfp->fp))
+        if (!ms_feof (&msfp->input))
         {
-          ms_log (2, "Short read of %d bytes starting from %" PRId64 "\n",
-                  readsize, msfp->filepos);
+          ms_log (2, "Error reading at offset %" PRId64 "\n", msfp->streampos);
           retcode = MS_GENERROR;
           break;
         }
@@ -399,17 +371,13 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
 
       /* Update read buffer length */
       msfp->readlength += readcount;
-
-      /* File position corresponding to start of buffer */
-      if (msfp->fp != stdin)
-        msfp->filepos = lmp_ftell64 (msfp->fp) - msfp->readlength;
     }
 
     /* Attempt to parse record from buffer */
     if (MSFPBUFLEN (msfp) >= MINRECLEN)
     {
       /* Set end of file flag if at EOF */
-      if (feof (msfp->fp))
+      if (ms_feof (&msfp->input))
         pflags |= MSF_ATENDOFFILE;
 
       parseval = msr3_parse (MSFPREADPTR (msfp), MSFPBUFLEN (msfp), ppmsr, pflags, verbose);
@@ -425,12 +393,12 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
           if (verbose > 1)
           {
             ms_log (1, "Skipping (selection) record for %s (%d bytes) starting at offset %" PRId64 "\n",
-                    (*ppmsr)->sid, (*ppmsr)->reclen, msfp->filepos);
+                    (*ppmsr)->sid, (*ppmsr)->reclen, msfp->streampos);
           }
 
           /* Skip record length bytes, update reading offset and file position */
           msfp->readoffset += (*ppmsr)->reclen;
-          msfp->filepos += (*ppmsr)->reclen;
+          msfp->streampos += (*ppmsr)->reclen;
         }
         else
         {
@@ -440,7 +408,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
             if (msr3_unpack_data ((*ppmsr), verbose) != (*ppmsr)->samplecnt)
             {
               ms_log (2, "Cannot unpack data samples for record at byte offset %" PRId64 ": %s\n",
-                      msfp->filepos, msfile);
+                      msfp->streampos, mspath);
 
               retcode = MS_NOERROR;
               break;
@@ -450,18 +418,18 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
           if (verbose > 1)
             ms_log (1, "Read record length of %d bytes\n", (*ppmsr)->reclen);
 
-          /* Test if this is the last record if file size is known (not a pipe) */
-          if (last && msfp->filesize)
-            if ((msfp->filesize - (msfp->filepos + (*ppmsr)->reclen)) < MINRECLEN)
+          /* Test if this is the last record if end offset is known */
+          if (last && msfp->endoffset)
+            if (((msfp->endoffset + 1) - (msfp->streampos + (*ppmsr)->reclen)) < MINRECLEN)
               *last = 1;
 
           /* Return file position for this record */
           if (fpos)
-            *fpos = msfp->filepos;
+            *fpos = msfp->streampos;
 
           /* Update reading offset, file position and record count */
           msfp->readoffset += (*ppmsr)->reclen;
-          msfp->filepos += (*ppmsr)->reclen;
+          msfp->streampos += (*ppmsr)->reclen;
           msfp->recordcount++;
 
           retcode = MS_NOERROR;
@@ -476,18 +444,18 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
           if (verbose > 1)
           {
             ms_log (1, "Skipped %d bytes of non-data record at byte offset %" PRId64 "\n",
-                    SKIPLEN, msfp->filepos);
+                    SKIPLEN, msfp->streampos);
           }
 
           /* Skip SKIPLEN bytes, update reading offset and file position */
           msfp->readoffset += SKIPLEN;
-          msfp->filepos += SKIPLEN;
+          msfp->streampos += SKIPLEN;
         }
         /* Parsing errors */
         else
         {
           ms_log (2, "Cannot detect record at byte offset %" PRId64 ": %s\n",
-                  msfp->filepos, msfile);
+                  msfp->streampos, mspath);
 
           retcode = parseval;
           break;
@@ -502,7 +470,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
           {
             /* Skip SKIPLEN bytes, update reading offset and file position */
             msfp->readoffset += SKIPLEN;
-            msfp->filepos += SKIPLEN;
+            msfp->streampos += SKIPLEN;
           }
           else
           {
@@ -511,17 +479,11 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
           }
         }
         /* End of file check */
-        else if (feof (msfp->fp))
+        else if (ms_feof (&msfp->input))
         {
           if (verbose)
-          {
-            if (msfp->filesize)
-              ms_log (1, "Truncated record at byte offset %" PRId64 ", filesize %" PRId64 ": %s\n",
-                      msfp->filepos, msfp->filesize, msfile);
-            else
-              ms_log (1, "Truncated record at byte offset %" PRId64 "\n",
-                      msfp->filepos);
-          }
+            ms_log (1, "Truncated record at byte offset %" PRId64 ", end offset %" PRId64 ": %s\n",
+                    msfp->streampos, msfp->endoffset, mspath);
 
           retcode = MS_ENDOFFILE;
           break;
@@ -529,13 +491,17 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
       }
     } /* End of record detection */
 
-    /* Finished when within MINRECLEN from EOF and buffer less than MINRECLEN */
-    if ((msfp->filesize - msfp->filepos) < MINRECLEN && MSFPBUFLEN (msfp) < MINRECLEN)
+    /* Finished when:
+     * a) within MINRECLEN from known end offset in stream
+     * OR
+     * b) at end-of-stream and buffer contains than MINRECLEN */
+    if ((msfp->endoffset && (msfp->endoffset + 1 - msfp->streampos) < MINRECLEN) ||
+        (ms_feof(&msfp->input) && MSFPBUFLEN (msfp) < MINRECLEN))
     {
       if (msfp->recordcount == 0)
       {
         if (verbose > 0)
-          ms_log (2, "%s: No data records read, not SEED?\n", msfile);
+          ms_log (2, "%s: No data records read, not SEED?\n", mspath);
         retcode = MS_NOTSEED;
       }
       else
@@ -570,11 +536,11 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msf
  * \sa @ref trace-list
  *********************************************************************/
 int
-ms3_readtracelist (MS3TraceList **ppmstl, const char *msfile,
+ms3_readtracelist (MS3TraceList **ppmstl, const char *mspath,
                    MS3Tolerance *tolerance, int8_t splitversion,
                    uint32_t flags, int8_t verbose)
 {
-  return ms3_readtracelist_selection (ppmstl, msfile, tolerance, NULL,
+  return ms3_readtracelist_selection (ppmstl, mspath, tolerance, NULL,
                                       splitversion, flags, verbose);
 } /* End of ms3_readtracelist() */
 
@@ -593,7 +559,7 @@ ms3_readtracelist (MS3TraceList **ppmstl, const char *msfile,
  * \sa @ref trace-list
  *********************************************************************/
 int
-ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
+ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath,
                            MS3Tolerance *tolerance,
                            nstime_t starttime, nstime_t endtime,
                            int8_t splitversion, uint32_t flags, int8_t verbose)
@@ -610,7 +576,7 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
   selecttime.endtime   = endtime;
   selecttime.next      = NULL;
 
-  return ms3_readtracelist_selection (ppmstl, msfile, tolerance,
+  return ms3_readtracelist_selection (ppmstl, mspath, tolerance,
                                       &selection, splitversion, flags,
                                       verbose);
 } /* End of ms3_readtracelist_timewin() */
@@ -640,7 +606,7 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
  * contain the location of the data record, bit flags, extra headers, etc.
  *
  * @param[out] ppmstl Pointer-to-pointer to a ::MS3TraceList to populate
- * @param[in] msfile File to read
+ * @param[in] mspath File to read
  * @param[in] tolerance Tolerance function pointers as ::MS3Tolerance
  * @param[in] selections Pointer to ::MS3Selections for limiting data
  * @param[in] splitversion Flag to control splitting of version/quality
@@ -654,7 +620,7 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile,
  * \sa @ref data-selections
  *********************************************************************/
 int
-ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
+ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath,
                              MS3Tolerance *tolerance, MS3Selections *selections,
                              int8_t splitversion, uint32_t flags, int8_t verbose)
 {
@@ -680,7 +646,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
   }
 
   /* Loop over the input file and add each record to trace list */
-  while ((retcode = ms3_readmsr_selection (&msfp, &msr, msfile, &fpos, NULL,
+  while ((retcode = ms3_readmsr_selection (&msfp, &msr, mspath, &fpos, NULL,
                                            flags, selections, verbose)) == MS_NOERROR)
   {
     seg = mstl3_addmsr_recordptr (*ppmstl, msr, (flags & MSF_RECORDLIST) ? &recordptr : NULL,
@@ -706,7 +672,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
 
       recordptr->bufferptr  = NULL;
       recordptr->fileptr    = NULL;
-      recordptr->filename   = msfile;
+      recordptr->filename   = mspath;
       recordptr->fileoffset = fpos;
       recordptr->dataoffset = dataoffset;
       recordptr->prvtptr    = NULL;
@@ -722,30 +688,6 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile,
   return retcode;
 } /* End of ms3_readtracelist_selection() */
 
-/*********************************************************************
- *
- * A wrapper for fread() that handles EOF and error conditions.
- *
- * Returns the return value from fread.
- *********************************************************************/
-static int
-ms_fread (char *buf, int size, int num, FILE *stream)
-{
-  int read = 0;
-
-  read = (int)fread (buf, size, num, stream);
-
-  if (read <= 0 && size && num)
-  {
-    if (ferror (stream))
-      ms_log (2, "%s(): Cannot read input file\n", __func__);
-
-    else if (!feof (stream))
-      ms_log (2, "%s(): Unknown return from fread()\n", __func__);
-  }
-
-  return read;
-} /* End of ms_fread() */
 
 /***************************************************************************
  *
@@ -776,7 +718,7 @@ ms_record_handler_int (char *record, int reclen, void *ofp)
  * do not yet exist.
  *
  * @param[in,out] msr ::MS3Record containing data to write
- * @param[in] msfile File for output records
+ * @param[in] mspath File for output records
  * @param[in] overwrite Flag to control overwriting versus appending
  * @param[in] flags Flags controlling data packing, see msr3_pack()
  * @param[in] verbose Controls verbosity, 0 means no diagnostic output
@@ -786,24 +728,24 @@ ms_record_handler_int (char *record, int reclen, void *ofp)
  * \sa msr3_pack()
  ***************************************************************************/
 int64_t
-msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
+msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite,
                  uint32_t flags, int8_t verbose)
 {
   FILE *ofp;
   const char *perms     = (overwrite) ? "wb" : "ab";
   int64_t packedrecords = 0;
 
-  if (!msr || !msfile)
+  if (!msr || !mspath)
     return -1;
 
   /* Open output file or use stdout */
-  if (strcmp (msfile, "-") == 0)
+  if (strcmp (mspath, "-") == 0)
   {
     ofp = stdout;
   }
-  else if ((ofp = fopen (msfile, perms)) == NULL)
+  else if ((ofp = fopen (mspath, perms)) == NULL)
   {
-    ms_log (1, "Cannot open output file %s: %s\n", msfile, strerror (errno));
+    ms_log (1, "Cannot open output file %s: %s\n", mspath, strerror (errno));
 
     return -1;
   }
@@ -835,7 +777,7 @@ msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
  * do not yet exist.
  *
  * @param[in,out] mstl ::MS3TraceList containing data to write
- * @param[in] msfile File for output records
+ * @param[in] mspath File for output records
  * @param[in] overwrite Flag to control overwriting versus appending
  * @param[in] maxreclen The maximum record length to create
  * @param[in] encoding encoding Encoding for data samples, see msr3_pack()
@@ -848,24 +790,24 @@ msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
  * \sa msr3_pack()
  ***************************************************************************/
 int64_t
-mstl3_writemseed (MS3TraceList *mstl, const char *msfile, int8_t overwrite,
+mstl3_writemseed (MS3TraceList *mstl, const char *mspath, int8_t overwrite,
                   int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose)
 {
   FILE *ofp;
   const char *perms     = (overwrite) ? "wb" : "ab";
   int64_t packedrecords = 0;
 
-  if (!mstl || !msfile)
+  if (!mstl || !mspath)
     return -1;
 
   /* Open output file or use stdout */
-  if (strcmp (msfile, "-") == 0)
+  if (strcmp (mspath, "-") == 0)
   {
     ofp = stdout;
   }
-  else if ((ofp = fopen (msfile, perms)) == NULL)
+  else if ((ofp = fopen (mspath, perms)) == NULL)
   {
-    ms_log (1, "Cannot open output file %s: %s\n", msfile, strerror (errno));
+    ms_log (1, "Cannot open output file %s: %s\n", mspath, strerror (errno));
 
     return -1;
   }

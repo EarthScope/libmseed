@@ -28,8 +28,8 @@
 extern "C" {
 #endif
 
-#define LIBMSEED_VERSION "3.0.7"    //!< Library version
-#define LIBMSEED_RELEASE "2019.172" //!< Library release date
+#define LIBMSEED_VERSION "3.0.8"    //!< Library version
+#define LIBMSEED_RELEASE "2020.086" //!< Library release date
 
 /** @defgroup io-functions File I/O */
 /** @defgroup miniseed-record Record Handling */
@@ -592,38 +592,67 @@ extern void mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
     @brief Reading and writing interfaces for miniSEED records in files
     @{ */
 
-/** @brief State container for reading miniSEED records from files.
-    __Callers should not modify these values directly and generally
-    should not need to access them.__ */
+/** @brief Type definition for data source I/O: file-system versus URL */
+typedef struct LMIO
+{
+  enum
+  {
+    LMIO_NULL, //!< IO handle type is undefined
+    LMIO_FILE, //!< IO handle is FILE-type
+    LMIO_URL   //!< IO handle is URL-type
+  } type;
+  void *handle;
+  void *handle2;
+  int still_running;
+} LMIO;
+
+#define LMIO_INITIALIZER                                                   \
+  {                                                                        \
+    .type = LMIO_NULL, .handle = NULL, .handle2 = NULL, .still_running = 0 \
+  }
+
+/** @brief State container for reading miniSEED records from files or URLs.
+    __TODO: document use of this for advanced features.
+      Callers should not modify these values directly and generally
+      should not need to access them.__ */
 typedef struct MS3FileParam
 {
-  FILE *fp;            //!< File handle
-  char filename[512];  //!< File name
-  char *readbuffer;    //!< Read buffer
-  int readlength;      //!< Length of data in read buffer
-  int readoffset;      //!< Read offset in read buffer
-  int64_t filepos;     //!< File position corresponding to start of buffer
-  int64_t filesize;    //!< File size
-  int64_t recordcount; //!< Count of records read from this file
+  char path[512];      //!< INPUT: File name or URL
+  int64_t startoffset; //!< INPUT: Start position in input stream
+  int64_t endoffset;   //!< INPUT: End position in input stream, 0 == unknown (e.g. pipe)
+  int64_t streampos;   //!< OUTPUT: Input stream position corresponding to record (at start of buffer)
+  int64_t recordcount; //!< OUTPUT: Count of records read from this file so far
+
+  char *readbuffer;    //!< INTERNAL: Read buffer, allocated internally
+  int readlength;      //!< INTERNAL: Length of data in read buffer
+  int readoffset;      //!< INTERNAL: Read offset in read buffer
+  LMIO input;          //!< INTERNAL: IO handle, file or URL
 } MS3FileParam;
 
-extern int ms3_readmsr (MS3Record **ppmsr, const char *msfile, int64_t *fpos, int8_t *last,
+#define MS3FileParam_INITIALIZER                                  \
+  {                                                               \
+    .path = "", .startoffset = 0, .endoffset = 0, .streampos = 0, \
+    .recordcount = 0, .readbuffer = NULL, .readlength = 0,        \
+    .readoffset = 0, .input = LMIO_INITIALIZER                    \
+  }
+
+extern int ms3_readmsr (MS3Record **ppmsr, const char *mspath, int64_t *fpos, int8_t *last,
                         uint32_t flags, int8_t verbose);
-extern int ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
+extern int ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
                           int64_t *fpos, int8_t *last, uint32_t flags, int8_t verbose);
-extern int ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
+extern int ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
                                   int64_t *fpos, int8_t *last, uint32_t flags,
                                   MS3Selections *selections, int8_t verbose);
-extern int ms3_readtracelist (MS3TraceList **ppmstl, const char *msfile, MS3Tolerance *tolerance,
+extern int ms3_readtracelist (MS3TraceList **ppmstl, const char *mspath, MS3Tolerance *tolerance,
                               int8_t splitversion, uint32_t flags, int8_t verbose);
-extern int ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile, MS3Tolerance *tolerance,
+extern int ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath, MS3Tolerance *tolerance,
                                       nstime_t starttime, nstime_t endtime, int8_t splitversion, uint32_t flags,
                                       int8_t verbose);
-extern int ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile, MS3Tolerance *tolerance,
+extern int ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath, MS3Tolerance *tolerance,
                                         MS3Selections *selections, int8_t splitversion, uint32_t flags, int8_t verbose);
-extern int64_t msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
+extern int64_t msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite,
                                 uint32_t flags, int8_t verbose);
-extern int64_t mstl3_writemseed (MS3TraceList *mst, const char *msfile, int8_t overwrite,
+extern int64_t mstl3_writemseed (MS3TraceList *mst, const char *mspath, int8_t overwrite,
                                  int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose);
 /** @} */
 
@@ -974,6 +1003,8 @@ extern int ms_bigendianhost (void);
 extern int64_t lmp_ftell64 (FILE *stream);
 /** Portable version of POSIX fseeko() to set position in large files */
 extern int lmp_fseek64 (FILE *stream, int64_t offset, int whence);
+/** Portable version of POSIX nanosleep() to sleep for nanoseconds */
+extern uint64_t lmp_nanosleep (uint64_t nanoseconds);
 
 /** Return CRC32C value of supplied buffer, with optional starting CRC32C value */
 extern uint32_t ms_crc32c (const uint8_t* input, int length, uint32_t previousCRC32C);
