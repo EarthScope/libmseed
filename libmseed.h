@@ -626,6 +626,7 @@ typedef struct MS3FileParam
   char *readbuffer;    //!< INTERNAL: Read buffer, allocated internally
   int readlength;      //!< INTERNAL: Length of data in read buffer
   int readoffset;      //!< INTERNAL: Read offset in read buffer
+  uint32_t flags;      //!< INTERNAL: Stream reading state flags
   LMIO input;          //!< INTERNAL: IO handle, file or URL
 } MS3FileParam;
 
@@ -633,7 +634,7 @@ typedef struct MS3FileParam
   {                                                               \
     .path = "", .startoffset = 0, .endoffset = 0, .streampos = 0, \
     .recordcount = 0, .readbuffer = NULL, .readlength = 0,        \
-    .readoffset = 0, .input = LMIO_INITIALIZER                    \
+    .readoffset = 0, .flags = 0, .input = LMIO_INITIALIZER        \
   }
 
 extern int ms3_readmsr (MS3Record **ppmsr, const char *mspath, int64_t *fpos, int8_t *last,
@@ -1144,12 +1145,13 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
 #define MSF_UNPACKDATA    0x0001  //!< [Parsing] Unpack data samples
 #define MSF_SKIPNOTDATA   0x0002  //!< [Parsing] Skip input that cannot be identified as miniSEED
 #define MSF_VALIDATECRC   0x0004  //!< [Parsing] Validate CRC (if version 3)
-#define MSF_SEQUENCE      0x0008  //!< [Packing] UNSUPPORTED: Maintain a record-level sequence number
-#define MSF_FLUSHDATA     0x0010  //!< [Packing] Pack all available data even if final record would not be filled
-#define MSF_ATENDOFFILE   0x0020  //!< [Parsing] Reading routine is at the end of the file
-#define MSF_RECORDLIST    0x0040  //!< [TraceList] Build a ::MS3RecordList for each ::MS3TraceSeg
-#define MSF_MAINTAINMSTL  0x0080  //!< [TraceList] Do not modify a trace list when packing
-#define MSF_PACKVER2      0x0100  //!< [Packing] Pack as miniSEED version 2 instead of 3
+#define MSF_PNAMERANGE    0x0008  //!< [Parsing] Parse and utilize byte range from path name suffix
+#define MSF_ATENDOFFILE   0x0010  //!< [Parsing] Reading routine is at the end of the file
+#define MSF_SEQUENCE      0x0020  //!< [Packing] UNSUPPORTED: Maintain a record-level sequence number
+#define MSF_FLUSHDATA     0x0040  //!< [Packing] Pack all available data even if final record would not be filled
+#define MSF_PACKVER2      0x0080  //!< [Packing] Pack as miniSEED version 2 instead of 3
+#define MSF_RECORDLIST    0x0100  //!< [TraceList] Build a ::MS3RecordList for each ::MS3TraceSeg
+#define MSF_MAINTAINMSTL  0x0200  //!< [TraceList] Do not modify a trace list when packing
 /** @} */
 
 #ifdef __cplusplus

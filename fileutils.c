@@ -35,6 +35,11 @@
 /* Initialize the global file reading parameters */
 MS3FileParam gMS3FileParam = MS3FileParam_INITIALIZER;
 
+/* Stream state flags */
+#define MSFP_RANGEAPPLIED 0x0001  //!< Byte ranging has been applied
+
+static char *parse_pathname_range (const char *string, int64_t *start, int64_t *end);
+
 /*****************************************************************/ /**
  * @brief Read miniSEED records from a file or URL
  *
@@ -197,6 +202,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
 {
   MS3FileParam *msfp;
   uint32_t pflags = flags;
+  char *pathname_range = NULL;
 
   int parseval  = 0;
   int readsize  = 0;
@@ -254,14 +260,6 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
     return MS_NOERROR;
   }
 
-  /* Sanity check: reading the same stream */
-  if (msfp->input.handle && strncmp (mspath, msfp->path, sizeof (msfp->path)))
-  {
-    ms_log (2, "%s() called with a different path without being reset, cannot continue\n", __func__);
-
-    return MS_GENERROR;
-  }
-
   /* Allocate reading buffer */
   if (msfp->readbuffer == NULL)
   {
@@ -275,9 +273,24 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
   /* Open the stream if needed, use stdin if path is "-" */
   if (msfp->input.handle == NULL)
   {
-    /* Store the path for tracking */
+    /* Parse and set byte range from path name suffix */
+    if (flags & MSF_PNAMERANGE)
+    {
+      pathname_range = parse_pathname_range (mspath, &msfp->startoffset, &msfp->endoffset);
+    }
+
+    /* Store the path */
     strncpy (msfp->path, mspath, sizeof (msfp->path) - 1);
-    msfp->path[sizeof (msfp->path) - 1] = '\0';
+
+    /* Truncate to remove byte range suffix if present or maximum range */
+    if (pathname_range)
+    {
+      msfp->path[pathname_range - mspath] = '\0';
+    }
+    else
+    {
+      msfp->path[sizeof (msfp->path) - 1] = '\0';
+    }
 
     if (strcmp (mspath, "-") == 0)
     {
@@ -286,9 +299,9 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
     }
     else
     {
-      if (ms_fopen(&msfp->input, mspath, "rb"))
+      if (ms_fopen(&msfp->input, msfp->path, "rb"))
       {
-        ms_log (2, "Cannot open: %s\n", mspath);
+        ms_log (2, "Cannot open: %s\n", msfp->path);
         msr3_free (ppmsr);
 
         return MS_GENERROR;
@@ -296,34 +309,30 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
     }
   }
 
-  /* Translate negative fpos to start offset if not otherwise set */
+  /* Translate negative fpos (legacy behavior) to start offset if not otherwise set */
   if (fpos != NULL && *fpos < 0 && msfp->startoffset == 0)
-    msfp->startoffset = *fpos;
+    msfp->startoffset = *fpos * -1;
 
-  /* Setup byte ranging, triggered with negative values */
-  if (msfp->startoffset < 0 || msfp->endoffset < 0 )
+  /* Set up byte ranging */
+  if (!(msfp->flags & MSFP_RANGEAPPLIED) && (msfp->startoffset > 0 || msfp->endoffset > 0))
   {
     /* Configure byte ranging if not operating on stdin */
     if (!(msfp->input.type == LMIO_FILE && msfp->input.handle == stdin))
     {
-      if (ms_fseek (&msfp->input, msfp->startoffset * -1, msfp->endoffset * -1))
+      if (ms_fseek (&msfp->input, msfp->startoffset, msfp->endoffset))
       {
-        ms_log (2, "Cannot seek in path: %s\n", mspath);
+        ms_log (2, "Cannot seek in path: %s\n", msfp->path);
 
         return MS_GENERROR;
       }
 
-      if (msfp->startoffset < 0)
-        msfp->streampos  = msfp->startoffset * -1;
+      msfp->streampos  = msfp->startoffset;
       msfp->readlength = 0;
       msfp->readoffset = 0;
     }
 
-    /* De-trigger offset range values after setting them */
-    if (msfp->startoffset < 0)
-      msfp->startoffset *= -1;
-    if (msfp->endoffset < 0)
-      msfp->endoffset *= -1;
+    /* Flag to indicate that range has been set */
+    msfp->flags |= MSFP_RANGEAPPLIED;
   }
 
   /* Zero the last record indicator */
@@ -337,6 +346,13 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
   /* Read data and search for records until input stream ends or end offset is reached */
   for (;;)
   {
+    /* Finished when within MINRECLEN from known end offset in stream */
+    if (msfp->endoffset && (msfp->endoffset + 1 - msfp->streampos) < MINRECLEN)
+    {
+      retcode = MS_ENDOFFILE;
+      break;
+    }
+
     /* Read more data into buffer if not at EOF and buffer has less than MINRECLEN
      * or more data is needed for the current record detected in buffer. */
     if (!ms_feof (&msfp->input) && (MSFPBUFLEN (msfp) < MINRECLEN || parseval > 0))
@@ -408,7 +424,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
             if (msr3_unpack_data ((*ppmsr), verbose) != (*ppmsr)->samplecnt)
             {
               ms_log (2, "Cannot unpack data samples for record at byte offset %" PRId64 ": %s\n",
-                      msfp->streampos, mspath);
+                      msfp->streampos, msfp->path);
 
               retcode = MS_NOERROR;
               break;
@@ -455,7 +471,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
         else
         {
           ms_log (2, "Cannot detect record at byte offset %" PRId64 ": %s\n",
-                  msfp->streampos, mspath);
+                  msfp->streampos, msfp->path);
 
           retcode = parseval;
           break;
@@ -483,7 +499,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
         {
           if (verbose)
             ms_log (1, "Truncated record at byte offset %" PRId64 ", end offset %" PRId64 ": %s\n",
-                    msfp->streampos, msfp->endoffset, mspath);
+                    msfp->streampos, msfp->endoffset, msfp->path);
 
           retcode = MS_ENDOFFILE;
           break;
@@ -491,17 +507,13 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
       }
     } /* End of record detection */
 
-    /* Finished when:
-     * a) within MINRECLEN from known end offset in stream
-     * OR
-     * b) at end-of-stream and buffer contains than MINRECLEN */
-    if ((msfp->endoffset && (msfp->endoffset + 1 - msfp->streampos) < MINRECLEN) ||
-        (ms_feof(&msfp->input) && MSFPBUFLEN (msfp) < MINRECLEN))
+    /* Finished when at end-of-stream and buffer contains less than MINRECLEN */
+    if (ms_feof (&msfp->input) && MSFPBUFLEN (msfp) < MINRECLEN)
     {
       if (msfp->recordcount == 0)
       {
         if (verbose > 0)
-          ms_log (2, "%s: No data records read, not SEED?\n", mspath);
+          ms_log (2, "%s: No data records read, not SEED?\n", msfp->path);
         retcode = MS_NOTSEED;
       }
       else
@@ -831,3 +843,69 @@ mstl3_writemseed (MS3TraceList *mstl, const char *mspath, int8_t overwrite,
 
   return (packedrecords >= 0) ? packedrecords : -1;
 } /* End of mstl3_writemseed() */
+
+/*****************************************************************/ /**
+ * Parse a range from the end of a string.
+ *
+ * Expected format is: 'PATH@START-END'
+ * where START and END are optional but the dash must be included
+ * for an END to be present.  The START and END values must contain
+ * 20 or fewer digits (0-9).
+ *
+ * Expected variations: '@START', '@START-END', '@-END'
+ *
+ * @returns Pointer to '@' starting valid range on success, otherwise NULL.
+ *********************************************************************/
+char *
+parse_pathname_range (const char *string, int64_t *start, int64_t *end)
+{
+  char startstr[21] = {0}; /* Maximum of 20 digit value */
+  char endstr[21]   = {0}; /* Maximum of 20 digit value */
+  char *dash        = NULL;
+  char *at          = NULL;
+  char *ptr;
+  int startdigits = 0;
+  int enddigits   = 0;
+
+  if (!string || (!start || !end))
+    return NULL;
+
+  /* Find last '@' */
+  if ((at = strrchr (string, '@')) != NULL)
+  {
+    /* Walk the characters in the string following '@'.
+     * Fail as soon as a non-conforming pattern is determined. */
+    ptr = at;
+    while (*(++ptr) != '\0')
+    {
+      /* If a digit before dash, part of start */
+      if (isdigit(*ptr) && dash == NULL)
+        startstr[startdigits++] = *ptr;
+      /* If a digit after dash, part of end */
+      else if (isdigit(*ptr) && dash != NULL)
+        endstr[enddigits++] = *ptr;
+      /* If a dash after a dash, not a valid range */
+      else if (*ptr == '-' && dash != NULL)
+        return NULL;
+      /* If first dash found, store pointer */
+      else if (*ptr == '-' && dash == NULL)
+        dash = ptr;
+      /* Nothing else is acceptable, not a valid range */
+      else
+        return NULL;
+
+      /* If digit sequences have exceeded limits, not a valid range */
+      if (startdigits >= sizeof(startstr) || enddigits >= sizeof(endstr))
+        return NULL;
+    }
+
+    /* Convert start and end values to numbers if non-zero length */
+    if (start && startdigits)
+      *start = (int64_t) strtoull (startstr, NULL, 10);
+
+    if (end && enddigits)
+      *end = (int64_t) strtoull (endstr, NULL, 10);
+  }
+
+  return at;
+} /* End of parse_pathname_range() */
