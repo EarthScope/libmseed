@@ -21,6 +21,8 @@
 /* Define _LARGEFILE_SOURCE to get ftello/fseeko on some systems (Linux) */
 #define _LARGEFILE_SOURCE 1
 
+#include <errno.h>
+
 #include "msio.h"
 
 /* Include libcurl library header if URL supported is requested */
@@ -72,6 +74,7 @@ recv_callback (char *buffer, size_t size, size_t num, void *userdata)
 
   return size;
 }
+
 #endif /* defined(LIBMSEED_URL) */
 
 
@@ -84,10 +87,19 @@ recv_callback (char *buffer, size_t size, size_t num, void *userdata)
  * The 'mode' argument is only for file-system paths and ignored for
  * URLs.  If 'mode' is set to NULL, use default 'rb' mode.
  *
- * Return 0 on success and non-zero on error.
+ * If 'startoffset' or 'endoffset' are non-zero they will be used to
+ * position the stream for reading, either setting the read position
+ * of a file or requesting a range via HTTP.  These will be set to the
+ * actual range if reported via HTTP, which may be different than
+ * requested.
+ *
+ * Return 0 on success and non-zero on error as follows:
+ *  -1 General error
+ *  -2 Path not found
  ***************************************************************************/
 int
-ms_fopen (LMIO *io, const char *path, const char *mode)
+ms_fopen (LMIO *io, const char *path, const char *mode,
+          int64_t *startoffset, int64_t *endoffset)
 {
   int knownfile = 0;
 
@@ -111,6 +123,10 @@ ms_fopen (LMIO *io, const char *path, const char *mode)
     ms_log (2, "%s(): URL support not included in library for %s\n", __func__, path);
     return -1;
 #else
+    long response_code;
+
+    io->type = LMIO_URL;
+
     /* Check for debugging environment variable */
     if (libmseed_urldebug < 0)
     {
@@ -127,7 +143,7 @@ ms_fopen (LMIO *io, const char *path, const char *mode)
       return -1;
 
     /* Debug/development */
-    if (libmseed_urldebug && curl_easy_setopt (io->handle, CURLOPT_VERBOSE, 1) != CURLE_OK)
+    if (libmseed_urldebug && curl_easy_setopt (io->handle, CURLOPT_VERBOSE, 1L) != CURLE_OK)
       return -1;
 
     /* Set URL */
@@ -140,7 +156,15 @@ ms_fopen (LMIO *io, const char *path, const char *mode)
       return -1;
 
     /* Disable signals */
-    if (curl_easy_setopt (io->handle, CURLOPT_NOSIGNAL, 1) != CURLE_OK)
+    if (curl_easy_setopt (io->handle, CURLOPT_NOSIGNAL, 1L) != CURLE_OK)
+      return -1;
+
+    /* Return failure codes on errors */
+    if (curl_easy_setopt (io->handle, CURLOPT_FAILONERROR, 1L) != CURLE_OK)
+      return -1;
+
+    /* Follow HTTP redirects */
+    if (curl_easy_setopt (io->handle, CURLOPT_FOLLOWLOCATION, 1L) != CURLE_OK)
       return -1;
 
     /* Configure write callback for recv'ed data */
@@ -154,22 +178,70 @@ ms_fopen (LMIO *io, const char *path, const char *mode)
     if (curl_multi_add_handle (io->handle2, io->handle) != CURLM_OK)
       return -1;
 
-    io->still_running = -1; /* -1 == opened but not yet started */
-    io->type          = LMIO_URL;
+    /* Set byte ranging */
+    if ((startoffset && *startoffset > 0) || (endoffset && *endoffset > 0))
+    {
+      char startstr[21] = {0};
+      char endstr[21]   = {0};
+      char rangestr[42];
+
+      /* Build Range header value, either of the range ends are optional */
+      if (*startoffset > 0)
+        snprintf (startstr, sizeof (startstr), "%" PRId64, *startoffset);
+      if (*endoffset > 0)
+        snprintf (endstr, sizeof (endstr), "%" PRId64, *endoffset);
+
+      snprintf (rangestr, sizeof (rangestr), "%s-%s", startstr, endstr);
+
+      /* Set Range header */
+      if (curl_easy_setopt (io->handle, CURLOPT_RANGE, rangestr) != CURLE_OK)
+      {
+        return -1;
+      }
+    }
+
+    /* Set connection as still running */
+    io->still_running = 1;
+
+    /* Start connection, get status & headers, without consuming any data */
+    ms_fread (io, NULL, 0);
+
+    curl_easy_getinfo (io->handle, CURLINFO_RESPONSE_CODE, &response_code);
+
+    if (response_code == 404)
+    {
+      errno = ENOENT;
+      return -1;
+    }
+    else if (response_code >= 400 && response_code < 600)
+    {
+      return -1;
+    }
+
 #endif /* defined(LIBMSEED_URL) */
   }
   else
   {
+    io->type = LMIO_FILE;
+
     if ((io->handle = fopen (path, mode)) == NULL)
     {
       return -1;
     }
 
-    io->type = LMIO_FILE;
+    /* Seek to position if start offset is provided,  */
+    if (startoffset && *startoffset > 0)
+    {
+      if (lmp_fseek64 (io->handle, *startoffset, SEEK_SET))
+      {
+        return -1;
+      }
+    }
   }
 
   return 0;
 }  /* End of ms_fopen() */
+
 
 /*********************************************************************
  * ms_fclose:
@@ -215,6 +287,7 @@ ms_fclose (LMIO *io)
   return 0;
 } /* End of ms_fclose() */
 
+
 /*********************************************************************
  * ms_fread:
  *
@@ -235,11 +308,11 @@ ms_fread (LMIO *io, void *buffer, size_t size)
 {
   size_t read = 0;
 
-  if (!io || !buffer)
+  if (!io)
     return -1;
 
-  if (size == 0)
-    return 0;
+  if (!buffer && size > 0)
+    return -1;
 
   /* Read from regular file stream */
   if (io->type == LMIO_FILE)
@@ -268,8 +341,8 @@ ms_fread (LMIO *io, void *buffer, size_t size)
     fd_set fdread;
     fd_set fdwrite;
     fd_set fdexcep;
-    int maxfd       = -1;
     long curl_timeo = -1;
+    int maxfd       = -1;
     int rc;
 
     if (!io->still_running)
@@ -332,7 +405,7 @@ ms_fread (LMIO *io, void *buffer, size_t size)
       {
         curl_multi_perform (io->handle2, &io->still_running);
       }
-    } while (io->still_running > 0 && cbp.size && !cbp.is_paused);
+    } while (io->still_running > 0 && !cbp.is_paused && (cbp.size > 0 || cbp.buffer == NULL));
 
     read = size - cbp.size;
 
@@ -341,6 +414,7 @@ ms_fread (LMIO *io, void *buffer, size_t size)
 
   return read;
 } /* End of ms_fread() */
+
 
 /*********************************************************************
  * ms_feof:
@@ -379,68 +453,6 @@ ms_feof (LMIO *io)
 
   return 0;
 } /* End of ms_feof() */
-
-/*********************************************************************
- * ms_fseek:
- *
- * Set start, and potentially end, position in stream.
- *
- * Returns 0 on success and non-zero otherwise.
- *********************************************************************/
-int
-ms_fseek (LMIO *io, int64_t startoffset, int64_t endoffset)
-{
-  if (!io)
-    return 0;
-
-  if (io->handle == NULL || io->type == LMIO_NULL)
-    return 0;
-
-  /* If neither offset is set, nothing to do */
-  if (startoffset <= 0 && endoffset <= 0)
-    return 0;
-
-  if (io->type == LMIO_FILE)
-  {
-    if (startoffset > 0)
-    {
-      return lmp_fseek64 (io->handle, startoffset, SEEK_SET);
-    }
-  }
-  else if (io->type == LMIO_URL)
-  {
-#if !defined(LIBMSEED_URL)
-    ms_log (2, "%s(): URL support not included in library\n", __func__);
-    return -1;
-#else
-    char startstr[21] = {0};
-    char endstr[21] = {0};
-    char rangestr[42];
-
-    if (io->still_running > 0)
-    {
-      ms_log (2, "%s(): Cannot set URL byte ranging on running connection\n", __func__);
-      return -1;
-    }
-
-    /* Build Range header value, either of the range ends are optional */
-    if (startoffset > 0)
-      snprintf (startstr, sizeof(startstr), "%" PRId64, startoffset);
-    if (endoffset > 0)
-      snprintf (endstr, sizeof(endstr), "%" PRId64, endoffset);
-
-    snprintf (rangestr, sizeof(rangestr), "%s-%s", startstr, endstr);
-
-    /* Set Range header */
-    if (curl_easy_setopt(io->handle, CURLOPT_RANGE, rangestr) != CURLE_OK)
-    {
-      return -1;
-    }
-#endif
-  }
-
-  return 0;
-} /* End of ms_fseek() */
 
 
 /***************************************************************************

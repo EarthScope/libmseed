@@ -270,6 +270,10 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
     }
   }
 
+  /* Translate negative fpos (legacy behavior) to start offset if not otherwise set */
+  if (fpos != NULL && *fpos < 0 && msfp->startoffset == 0)
+    msfp->startoffset = *fpos * -1;
+
   /* Open the stream if needed, use stdin if path is "-" */
   if (msfp->input.handle == NULL)
   {
@@ -299,40 +303,26 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
     }
     else
     {
-      if (ms_fopen(&msfp->input, msfp->path, "rb"))
+      if (ms_fopen(&msfp->input, msfp->path, "rb", &msfp->startoffset, &msfp->endoffset))
       {
-        ms_log (2, "Cannot open: %s\n", msfp->path);
+        if (msfp->input.type == LMIO_FILE)
+          ms_log (2, "Cannot open: %s (%s)\n", msfp->path, strerror(errno));
+        else if (errno == ENOENT)
+          ms_log (2, "Cannot open: %s (No such path)\n", msfp->path);
+        else
+          ms_log (2, "Cannot open: %s\n", msfp->path);
+
         msr3_free (ppmsr);
 
         return MS_GENERROR;
       }
-    }
-  }
 
-  /* Translate negative fpos (legacy behavior) to start offset if not otherwise set */
-  if (fpos != NULL && *fpos < 0 && msfp->startoffset == 0)
-    msfp->startoffset = *fpos * -1;
-
-  /* Set up byte ranging */
-  if (!(msfp->flags & MSFP_RANGEAPPLIED) && (msfp->startoffset > 0 || msfp->endoffset > 0))
-  {
-    /* Configure byte ranging if not operating on stdin */
-    if (!(msfp->input.type == LMIO_FILE && msfp->input.handle == stdin))
-    {
-      if (ms_fseek (&msfp->input, msfp->startoffset, msfp->endoffset))
+      /* Set stream position to start offset */
+      if (msfp->startoffset > 0)
       {
-        ms_log (2, "Cannot seek in path: %s\n", msfp->path);
-
-        return MS_GENERROR;
+        msfp->streampos = msfp->startoffset;
       }
-
-      msfp->streampos  = msfp->startoffset;
-      msfp->readlength = 0;
-      msfp->readoffset = 0;
     }
-
-    /* Flag to indicate that range has been set */
-    msfp->flags |= MSFP_RANGEAPPLIED;
   }
 
   /* Zero the last record indicator */
