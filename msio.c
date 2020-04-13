@@ -35,12 +35,19 @@ int libmseed_urldebug = -1;
 /* A global libcurl easy handle for configuration options */
 CURL *gCURLeasy = NULL;
 
-/* Callback parameters */
-struct callback_parameters
+/* Receving callback parameters */
+struct recv_callback_parameters
 {
   char *buffer;
   size_t size;
   int is_paused;
+};
+
+/* Header callback parameters */
+struct header_callback_parameters
+{
+  int64_t *startoffset;
+  int64_t *endoffset;
 };
 
 /*********************************************************************
@@ -54,22 +61,90 @@ struct callback_parameters
 static size_t
 recv_callback (char *buffer, size_t size, size_t num, void *userdata)
 {
-  struct callback_parameters *db = (struct callback_parameters *)userdata;
+  struct recv_callback_parameters *rcp = (struct recv_callback_parameters *)userdata;
+
+  if (!buffer || !userdata)
+    return 0;
 
   size *= num;
 
   /* Pause connection if passed data does not fit into destination buffer */
-  if (size > db->size)
+  if (size > rcp->size)
   {
-    db->is_paused = 1;
+    rcp->is_paused = 1;
     return CURL_WRITEFUNC_PAUSE;
   }
   /* Otherwise, copy data to destination buffer */
   else
   {
-    memcpy (db->buffer, buffer, size);
-    db->buffer += size;
-    db->size -= size;
+    memcpy (rcp->buffer, buffer, size);
+    rcp->buffer += size;
+    rcp->size -= size;
+  }
+
+  return size;
+}
+
+/*********************************************************************
+ * Callback fired when receiving headers using libcurl.
+ *
+ * Returns number of bytes processed for success.
+ *********************************************************************/
+static size_t
+header_callback (char *buffer, size_t size, size_t num, void *userdata)
+{
+  struct header_callback_parameters *hcp = (struct header_callback_parameters *)userdata;
+
+  char startstr[21] = {0}; /* Maximum of 20 digit value */
+  char endstr[21]   = {0}; /* Maximum of 20 digit value */
+  int startdigits   = 0;
+  int enddigits     = 0;
+  char *dash        = NULL;
+  char *ptr;
+
+  if (!buffer || !userdata)
+    return 0;
+
+  size *= num;
+
+  /* Parse and store: "Content-Range: bytes START-END/TOTAL"
+   * e.g. Content-Range: bytes 512-1023/4096 */
+  if (size > 22 && strncasecmp (buffer, "Content-Range: bytes", 20) == 0)
+  {
+    /* Process each character, starting just afer "bytes" unit */
+    for (ptr = buffer + 20; *ptr != '\0' && (ptr - buffer) < size; ptr++)
+    {
+      /* Skip spaces before start of range */
+      if (*ptr == ' ' && startdigits == 0)
+        continue;
+      /* Digits before dash, part of start */
+      else if (isdigit (*ptr) && dash == NULL)
+        startstr[startdigits++] = *ptr;
+      /* Digits after dash, part of end */
+      else if (isdigit (*ptr) && dash != NULL)
+        endstr[enddigits++] = *ptr;
+      /* If first dash found, store pointer */
+      else if (*ptr == '-' && dash == NULL)
+        dash = ptr;
+      /* Nothing else is part of the range */
+      else
+        break;
+
+      /* If digit sequences have exceeded limits, not a valid range */
+      if (startdigits >= sizeof (startstr) || enddigits >= sizeof (endstr))
+      {
+        startdigits = 0;
+        enddigits   = 0;
+        break;
+      }
+    }
+
+    /* Convert start and end values to numbers if non-zero length */
+    if (hcp->startoffset && startdigits)
+      *hcp->startoffset = (int64_t) strtoull (startstr, NULL, 10);
+
+    if (hcp->endoffset && enddigits)
+      *hcp->endoffset = (int64_t) strtoull (endstr, NULL, 10);
   }
 
   return size;
@@ -124,6 +199,7 @@ ms_fopen (LMIO *io, const char *path, const char *mode,
     return -1;
 #else
     long response_code;
+    struct header_callback_parameters *hcp;
 
     io->type = LMIO_URL;
 
@@ -200,6 +276,20 @@ ms_fopen (LMIO *io, const char *path, const char *mode,
       }
     }
 
+    /* Set up header callback */
+    if (startoffset || endoffset)
+    {
+      hcp->startoffset = startoffset;
+      hcp->endoffset = endoffset;
+
+      /* Configure header callback */
+      if (curl_easy_setopt (io->handle, CURLOPT_HEADERFUNCTION, header_callback) != CURLE_OK)
+        return -1;
+
+      if (curl_easy_setopt (io->handle, CURLOPT_HEADERDATA, (void *)&hcp) != CURLE_OK)
+        return -1;
+    }
+
     /* Set connection as still running */
     io->still_running = 1;
 
@@ -217,7 +307,6 @@ ms_fopen (LMIO *io, const char *path, const char *mode,
     {
       return -1;
     }
-
 #endif /* defined(LIBMSEED_URL) */
   }
   else
@@ -336,7 +425,7 @@ ms_fread (LMIO *io, void *buffer, size_t size)
     ms_log (2, "%s(): URL support not included in library\n", __func__);
     return -1;
 #else
-    struct callback_parameters cbp;
+    struct recv_callback_parameters rcp;
     struct timeval timeout;
     fd_set fdread;
     fd_set fdwrite;
@@ -349,14 +438,14 @@ ms_fread (LMIO *io, void *buffer, size_t size)
       return 0;
 
     /* Set up destination buffer in write callback parameters */
-    cbp.buffer = buffer;
-    cbp.size   = size;
-    if (curl_easy_setopt (io->handle, CURLOPT_WRITEDATA, (void *)&cbp) != CURLE_OK)
+    rcp.buffer = buffer;
+    rcp.size   = size;
+    if (curl_easy_setopt (io->handle, CURLOPT_WRITEDATA, (void *)&rcp) != CURLE_OK)
       return -1;
 
     /* Unpause connection */
     curl_easy_pause (io->handle, CURLPAUSE_CONT);
-    cbp.is_paused = 0;
+    rcp.is_paused = 0;
 
     /* Receive data while connection running, destination space available
      * and connection is not paused. */
@@ -405,9 +494,9 @@ ms_fread (LMIO *io, void *buffer, size_t size)
       {
         curl_multi_perform (io->handle2, &io->still_running);
       }
-    } while (io->still_running > 0 && !cbp.is_paused && (cbp.size > 0 || cbp.buffer == NULL));
+    } while (io->still_running > 0 && !rcp.is_paused && (rcp.size > 0 || rcp.buffer == NULL));
 
-    read = size - cbp.size;
+    read = size - rcp.size;
 
 #endif /* defined(LIBMSEED_URL) */
   }
