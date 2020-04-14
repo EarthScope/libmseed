@@ -552,6 +552,37 @@ msio_feof (LMIO *io)
 } /* End of msio_feof() */
 
 /*********************************************************************
+ * msio_url_userpassword:
+ *
+ * Set global user-password credentials for URL-based IO.
+ *
+ * Returns 0 on succes non-zero otherwise.
+ *********************************************************************/
+int
+msio_url_userpassword (const char *userpassword)
+{
+  if (!userpassword)
+    return -1;
+
+#if !defined(LIBMSEED_URL)
+  ms_log (2, "%s(): URL support not included in library\n", __func__);
+  return -1;
+#else
+  if (gCURLeasy == NULL && (gCURLeasy = curl_easy_init ()) == NULL)
+    return -1;
+
+  /* Allow any authentication, libcurl will pick the most secure */
+  if (curl_easy_setopt (gCURLeasy, CURLOPT_HTTPAUTH, CURLAUTH_ANY) != CURLE_OK)
+    return -1;
+
+  if (curl_easy_setopt (gCURLeasy, CURLOPT_USERPWD, userpassword) != CURLE_OK)
+    return -1;
+#endif
+
+  return 0;
+} /* End of msio_url_userpassword() */
+
+/*********************************************************************
  * msio_url_addheader:
  *
  * Add header to global list for URL-based IO.
