@@ -27,6 +27,7 @@
 
 /* Include libcurl library header if URL supported is requested */
 #if defined(LIBMSEED_URL)
+
 #include <curl/curl.h>
 
 /* Control for enabling debugging information */
@@ -34,6 +35,9 @@ int libmseed_urldebug = -1;
 
 /* A global libcurl easy handle for configuration options */
 CURL *gCURLeasy = NULL;
+
+/* A global libcurl list of headers */
+struct curl_slist *gCURLheaders = NULL;
 
 /* Receving callback parameters */
 struct recv_callback_parameters
@@ -154,7 +158,7 @@ header_callback (char *buffer, size_t size, size_t num, void *userdata)
 
 
 /***************************************************************************
- * ms_fopen:
+ * msio_fopen:
  *
  * Determine if requested path is a regular file or a URL and open or
  * initialize as appropriate.
@@ -173,7 +177,7 @@ header_callback (char *buffer, size_t size, size_t num, void *userdata)
  *  -2 Path not found
  ***************************************************************************/
 int
-ms_fopen (LMIO *io, const char *path, const char *mode,
+msio_fopen (LMIO *io, const char *path, const char *mode,
           int64_t *startoffset, int64_t *endoffset)
 {
   int knownfile = 0;
@@ -199,7 +203,7 @@ ms_fopen (LMIO *io, const char *path, const char *mode,
     return -1;
 #else
     long response_code;
-    struct header_callback_parameters *hcp;
+    struct header_callback_parameters hcp;
 
     io->type = LMIO_URL;
 
@@ -279,8 +283,8 @@ ms_fopen (LMIO *io, const char *path, const char *mode,
     /* Set up header callback */
     if (startoffset || endoffset)
     {
-      hcp->startoffset = startoffset;
-      hcp->endoffset = endoffset;
+      hcp.startoffset = startoffset;
+      hcp.endoffset = endoffset;
 
       /* Configure header callback */
       if (curl_easy_setopt (io->handle, CURLOPT_HEADERFUNCTION, header_callback) != CURLE_OK)
@@ -290,11 +294,15 @@ ms_fopen (LMIO *io, const char *path, const char *mode,
         return -1;
     }
 
+    /* Set custom headers */
+    if (gCURLheaders && curl_easy_setopt (io->handle, CURLOPT_HTTPHEADER, gCURLheaders) != CURLE_OK)
+      return -1;
+
     /* Set connection as still running */
     io->still_running = 1;
 
     /* Start connection, get status & headers, without consuming any data */
-    ms_fread (io, NULL, 0);
+    msio_fread (io, NULL, 0);
 
     curl_easy_getinfo (io->handle, CURLINFO_RESPONSE_CODE, &response_code);
 
@@ -329,18 +337,18 @@ ms_fopen (LMIO *io, const char *path, const char *mode,
   }
 
   return 0;
-}  /* End of ms_fopen() */
+}  /* End of msio_fopen() */
 
 
 /*********************************************************************
- * ms_fclose:
+ * msio_fclose:
  *
  * Close an IO handle.
  *
  * Returns 0 on success and negative value on error.
  *********************************************************************/
 int
-ms_fclose (LMIO *io)
+msio_fclose (LMIO *io)
 {
   int rv;
 
@@ -374,11 +382,11 @@ ms_fclose (LMIO *io)
   io->handle2 = NULL;
 
   return 0;
-} /* End of ms_fclose() */
+} /* End of msio_fclose() */
 
 
 /*********************************************************************
- * ms_fread:
+ * msio_fread:
  *
  * Read data from the identified IO handle into the specified buffer.
  * Up to the requested 'size' bytes are read.
@@ -393,7 +401,7 @@ ms_fclose (LMIO *io)
  * error.
  *********************************************************************/
 size_t
-ms_fread (LMIO *io, void *buffer, size_t size)
+msio_fread (LMIO *io, void *buffer, size_t size)
 {
   size_t read = 0;
 
@@ -502,18 +510,18 @@ ms_fread (LMIO *io, void *buffer, size_t size)
   }
 
   return read;
-} /* End of ms_fread() */
+} /* End of msio_fread() */
 
 
 /*********************************************************************
- * ms_feof:
+ * msio_feof:
  *
  * Test if end-of-stream.
  *
  * Returns 1 when stream is at end, 0 otherwise.
  *********************************************************************/
 int
-ms_feof (LMIO *io)
+msio_feof (LMIO *io)
 {
   if (!io)
     return 0;
@@ -541,8 +549,57 @@ ms_feof (LMIO *io)
   }
 
   return 0;
-} /* End of ms_feof() */
+} /* End of msio_feof() */
 
+/*********************************************************************
+ * msio_url_addheader:
+ *
+ * Add header to global list for URL-based IO.
+ *
+ * Returns 0 on succes non-zero otherwise.
+ *********************************************************************/
+int
+msio_url_addheader (const char *header)
+{
+  if (!header)
+    return -1;
+
+#if !defined(LIBMSEED_URL)
+  ms_log (2, "%s(): URL support not included in library\n", __func__);
+  return -1;
+#else
+  struct curl_slist *slist = NULL;
+
+  slist = curl_slist_append (gCURLheaders, header);
+
+  if (slist == NULL)
+    return -1;
+
+  gCURLheaders = slist;
+#endif
+
+  return 0;
+} /* End of msio_url_addheader() */
+
+/*********************************************************************
+ * msio_url_freeheaders:
+ *
+ * Free the global list of headers for URL-based IO.
+ *********************************************************************/
+void
+msio_url_freeheaders (void)
+{
+#if !defined(LIBMSEED_URL)
+  ms_log (2, "%s(): URL support not included in library\n", __func__);
+  return -1;
+#else
+  if (gCURLheaders != NULL)
+  {
+    curl_slist_free_all (gCURLheaders);
+    gCURLheaders = NULL;
+  }
+#endif
+} /* End of msio_url_freeheaders() */
 
 /***************************************************************************
  * lmp_ftell64:
