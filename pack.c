@@ -2029,7 +2029,7 @@ ms_genfactmult (double samprate, int16_t *factor, int16_t *multiplier)
  * unused uint8_t   7       Unused, included for alignment
  * fract  uint16_t  8       0.0001 seconds, i.e. 1/10ths of milliseconds (0—9999)
  *
- * Return nanoseconds success and -1 on error.
+ * Return nanoseconds on success and -1 on error.
  ***************************************************************************/
 static inline uint32_t
 ms_timestr2btime (const char *timestr, uint8_t *btime, char *sid, int8_t swapflag)
@@ -2042,20 +2042,14 @@ ms_timestr2btime (const char *timestr, uint8_t *btime, char *sid, int8_t swapfla
   uint32_t nsec;
   nstime_t nstime;
 
-  fprintf (stderr, "DEBUG, here 0\n");
-
   if (!timestr || !btime)
     return -1;
-  fprintf (stderr, "DEBUG, here 1\n");
 
   if ((nstime = ms_timestr2nstime (timestr)) == NSTERROR)
     return -1;
 
-  fprintf (stderr, "DEBUG, here 2\n");
   if (ms_nstime2time (nstime, &year, &day, &hour, &min, &sec, &nsec))
     return -1;
-
-  fprintf (stderr, "DEBUG, here 3\n");
 
   *((uint16_t *)(btime))     = HO2u (year, swapflag);
   *((uint16_t *)(btime + 2)) = HO2u (day, swapflag);
