@@ -651,6 +651,7 @@ extern int ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath,
                                       int8_t verbose);
 extern int ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath, MS3Tolerance *tolerance,
                                         MS3Selections *selections, int8_t splitversion, uint32_t flags, int8_t verbose);
+extern int ms3_url_useragent (const char *program, const char *version);
 extern int ms3_url_userpassword (const char *userpassword);
 extern int ms3_url_addheader (const char *header);
 extern void ms3_url_freeheaders (void);

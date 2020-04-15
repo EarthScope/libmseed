@@ -230,7 +230,7 @@ msio_fopen (LMIO *io, const char *path, const char *mode,
     if (curl_easy_setopt (io->handle, CURLOPT_URL, path) != CURLE_OK)
       return -1;
 
-    /* Set User-Agent header */
+    /* Set default User-Agent header, can be overridden via custom header */
     if (curl_easy_setopt (io->handle, CURLOPT_USERAGENT,
                           "libmseed/" LIBMSEED_VERSION " libcurl/" LIBCURL_VERSION) != CURLE_OK)
       return -1;
@@ -550,6 +550,41 @@ msio_feof (LMIO *io)
 
   return 0;
 } /* End of msio_feof() */
+
+/*********************************************************************
+ * msio_url_useragent:
+ *
+ * Set global User-Agent header for URL-based IO.
+ *
+ * The header is built as "PROGRAM/VERSION libmseed/version libcurl/version"
+ * where VERSION is optional.
+ *
+ * Returns 0 on succes non-zero otherwise.
+ *********************************************************************/
+int
+msio_url_useragent (const char *program, const char *version)
+{
+  if (!program)
+    return -1;
+
+#if !defined(LIBMSEED_URL)
+  ms_log (2, "%s(): URL support not included in library\n", __func__);
+  return -1;
+#else
+  char header[1024];
+
+  /* Build User-Agent header and add internal versions */
+  snprintf (header, sizeof (header),
+            "User-Agent: %s%s%s libmseed/" LIBMSEED_VERSION " libcurl/" LIBCURL_VERSION,
+            program,
+            (version) ? "/" : "",
+            (version) ? version : "");
+
+  return msio_url_addheader (header);
+#endif
+
+  return 0;
+} /* End of msio_url_useragent() */
 
 /*********************************************************************
  * msio_url_userpassword:
