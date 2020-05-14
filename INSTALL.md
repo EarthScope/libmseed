@@ -8,7 +8,7 @@ and their unsigned counterpart types.
 A simple `make` on most Unix-like systems should build the library.
 
 The included Makefile should work for most Unix-like environments and
-most make variants. It is known to work with GNU make, which, if not the
+many make variants. It is known to work with GNU make, which, if not the
 default, is sometimes installed as `gmake`.
 
 The `CC`, `CFLAGS`, `LDFLAGS` and `CPPFLAGS` environment variables can be set
