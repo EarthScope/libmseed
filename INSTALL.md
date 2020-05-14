@@ -11,20 +11,34 @@ The included Makefile should work for most Unix-like environments and
 most make variants. It is known to work with GNU make, which, if not the
 default, is sometimes installed as gmake.
 
-The CC, CFLAGS, LDFLAGS and CPPFLAGS environment variables can be set
+The `CC`, `CFLAGS`, `LDFLAGS` and `CPPFLAGS` environment variables can be set
 to control the build.
 
-By default a statically linked version of the library is built: 'libmseed.a'.
+If the **LIBMSEED_URL** variable is defined during the build, the library will
+be built with support for reading from URLs.  Currently, this support requires
+that [libcurl](https://curl.haxx.se/) be installed on the target system.
+
+The simplest way to build the library with URL support is to include `-DLIMSEED_URL` 
+in the CFLAGS environment variable.  Or invoking the build as such:
+
+```
+make CFLAGS+=-DLIBMSEED_URL
+```
+
+By default a statically linked version of the library is built: **libmseed.a**,
+with an accompanying header **libmseed.h**.
 
 With GCC, clang or compatible build tools it is possible to build a shared
-library with 'make shared'.
+library with `make shared`.
 
 A simple install method for the shared library can be invoked with
-'make install'.  By default the installation destination is /usr/local.
-The install destination may be specified using the PREFIX variable, for
+`make install`.  By default the installation destination is /usr/local.
+The install destination may be specified using the **PREFIX** variable, for
 example:
 
+```
 make install PREFIX=/path/to/install/
+```
 
 ## Windows
 
