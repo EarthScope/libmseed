@@ -778,7 +778,7 @@ ms3_url_freeheaders (void)
 {
 #if !defined(LIBMSEED_URL)
   ms_log (2, "%s(): URL support not included in library\n", __func__);
-  return -1;
+  return;
 #else
   msio_url_freeheaders ();
 #endif

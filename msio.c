@@ -31,7 +31,10 @@
 #include <curl/curl.h>
 
 /* Control for enabling debugging information */
-int libmseed_urldebug = -1;
+int libmseed_url_debug = -1;
+
+/* Control for SSL peer and host verification */
+long libmseed_ssl_noverify = -1;
 
 /* A global libcurl easy handle for configuration options */
 CURL *gCURLeasy = NULL;
@@ -207,13 +210,22 @@ msio_fopen (LMIO *io, const char *path, const char *mode,
 
     io->type = LMIO_URL;
 
-    /* Check for debugging environment variable */
-    if (libmseed_urldebug < 0)
+    /* Check for URL debugging environment variable */
+    if (libmseed_url_debug < 0)
     {
-      if (getenv ("URL_DEBUG"))
-        libmseed_urldebug = 1;
+      if (getenv ("LIBMSEED_URL_DEBUG"))
+        libmseed_url_debug = 1;
       else
-        libmseed_urldebug = 0;
+        libmseed_url_debug = 0;
+    }
+
+    /* Check for SSL peer/host verify environment variable */
+    if (libmseed_ssl_noverify < 0)
+    {
+      if (getenv ("LIBMSEED_SSL_NOVERIFY"))
+        libmseed_ssl_noverify = 1;
+      else
+        libmseed_ssl_noverify = 0;
     }
 
     /* Configure the libcurl easy handle, duplicate global options if present */
@@ -222,8 +234,14 @@ msio_fopen (LMIO *io, const char *path, const char *mode,
     if (io->handle == NULL)
       return -1;
 
-    /* Debug/development */
-    if (libmseed_urldebug && curl_easy_setopt (io->handle, CURLOPT_VERBOSE, 1L) != CURLE_OK)
+    /* URL debug */
+    if (libmseed_url_debug && curl_easy_setopt (io->handle, CURLOPT_VERBOSE, 1L) != CURLE_OK)
+      return -1;
+
+    /* SSL peer and host verification */
+    if (libmseed_ssl_noverify &&
+        (curl_easy_setopt (io->handle, CURLOPT_SSL_VERIFYPEER, 0L) != CURLE_OK ||
+         curl_easy_setopt (io->handle, CURLOPT_SSL_VERIFYHOST, 0L) != CURLE_OK))
       return -1;
 
     /* Set URL */
@@ -657,7 +675,7 @@ msio_url_freeheaders (void)
 {
 #if !defined(LIBMSEED_URL)
   ms_log (2, "%s(): URL support not included in library\n", __func__);
-  return -1;
+  return;
 #else
   if (gCURLheaders != NULL)
   {

@@ -99,4 +99,8 @@ install: shared
 .c.lo:
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -c $< -o $@
 
+# Print Makefile expanded variables, e.g. % make print-LIB_SO
+print-%:
+	@echo '$*=$($*)'
+
 FORCE:
