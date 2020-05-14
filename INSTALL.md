@@ -5,17 +5,17 @@ and their unsigned counterpart types.
 
 ## Unix, Linux, macOS
 
-A simple 'make' on most Unix-like systems should build the library.
+A simple `make` on most Unix-like systems should build the library.
 
 The included Makefile should work for most Unix-like environments and
 most make variants. It is known to work with GNU make, which, if not the
-default, is sometimes installed as gmake.
+default, is sometimes installed as `gmake`.
 
 The `CC`, `CFLAGS`, `LDFLAGS` and `CPPFLAGS` environment variables can be set
 to control the build.
 
 If the **LIBMSEED_URL** variable is defined during the build, the library will
-be built with support for reading from URLs.  Currently, this support requires
+be compiled with support for reading from URLs.  Currently, this support requires
 that [libcurl](https://curl.haxx.se/) be installed on the target system.
 
 The simplest way to build the library with URL support is to include `-DLIMSEED_URL` 
