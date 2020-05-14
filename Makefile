@@ -46,6 +46,15 @@ else
 	LIB_OPTS = -shared -Wl,--version-script=libmseed.map -Wl,-soname,$(LIB_SO_MAJOR)
 endif
 
+# Automatically configure LDFLAGS for URL support if requested and libcurl is available
+# Test for LIBMSEED_URL in CFLAGS, then if curl-config is available, implying libcurl is available
+ifneq (,$(findstring LIBMSEED_URL,$(CFLAGS)))
+  ifneq (,$(shell command -v curl-config))
+	export LM_CURL_VERSION=$(shell curl-config --version)
+	export LDFLAGS:=$(LDFLAGS) $(shell curl-config --libs)
+  endif
+endif
+
 all: static
 
 static: $(LIB_A)
