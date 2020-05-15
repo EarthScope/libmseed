@@ -22,7 +22,7 @@ $(BINS) : % : %.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LDLIBS) 
 
 clean:
-	rm -rf *.o $(BINS) *.dSYM
+	@rm -rf *.o $(BINS) *.dSYM
 
 install:
 	@echo

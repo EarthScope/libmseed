@@ -78,9 +78,13 @@ $(LIB_SO): $(LIB_LOBJS)
 test check: static FORCE
 	@$(MAKE) -C test test
 
+example: static FORCE
+	@$(MAKE) -C example
+
 clean:
 	@$(RM) $(LIB_OBJS) $(LIB_LOBJS) $(LIB_A) $(LIB_SO) $(LIB_SO_MAJOR) $(LIB_SO_BASE)
 	@$(MAKE) -C test clean
+	@$(MAKE) -C example clean
 	@echo "All clean."
 
 install: shared

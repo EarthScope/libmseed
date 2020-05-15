@@ -22,7 +22,7 @@ The simplest way to build the library with URL support is to include `-DLIMSEED_
 in the CFLAGS environment variable.  Or invoking the build as such:
 
 ```
-make CFLAGS+=-DLIBMSEED_URL
+CFLAGS+=" -DLIBMSEED_URL" make
 ```
 
 By default a statically linked version of the library is built: **libmseed.a**,
