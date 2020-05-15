@@ -58,6 +58,9 @@ main (int argc, char **argv)
   /* Set flag to validate CRCs when reading */
   flags |= MSF_VALIDATECRC;
 
+  /* Parse byte range from file/URL path name if present */
+  flags |= MSF_PNAMERANGE;
+
   /* Set flag to unpack data if printing samples */
   if (printdata)
     flags |= MSF_UNPACKDATA;
