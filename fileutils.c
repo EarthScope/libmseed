@@ -151,10 +151,15 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  *
  * The \a flags argument are bit flags used to control the reading
  * process.  The following flags are supported:
- *  - ::MSF_SKIPNOTDATA - skip input that cannot be identified as
- * miniSEED
+ *  - ::MSF_SKIPNOTDATA - skip input that cannot be identified as miniSEED
  *  - ::MSF_UNPACKDATA data samples will be unpacked
  *  - ::MSF_VALIDATECRC Validate CRC (if present in format)
+ *  - ::MSF_PNAMERANGE Parse byte range suffix from \a mspath
+ *
+ * If ::MSF_PNAMERANGE is set in \a flags, the \a mspath will be
+ * searched for start and end byte offsets for the file or URL in the
+ * following format: '\c PATH@@\c START-\c END', where \c START and \c
+ * END are both optional and specified in bytes.
  *
  * If \a selections is not NULL, the ::MS3Selections will be used to
  * limit what is returned to the caller.  Any data not matching the
@@ -752,6 +757,8 @@ ms3_url_userpassword (const char *userpassword)
  * An error will be returned when the library was not compiled with
  * URL support.
  *
+ * @sa ms3_url_freeheaders()
+ *
  * @param[in] header Header in "key: value" format
  *
  * @returns 0 on succes and a negative library error code on error.
@@ -772,6 +779,8 @@ ms3_url_addheader (const char *header)
  *
  * Free all global headers for URL-based requests as set by
  * ms3_url_addheader().
+ *
+ * @sa ms3_url_addheader()
  *********************************************************************/
 void
 ms3_url_freeheaders (void)

@@ -17,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (C) 2019:
+ * Copyright (C) 2020:
  * @author Chad Trabant, IRIS Data Management Center
  ***************************************************************************/
 
@@ -29,9 +29,9 @@ extern "C" {
 #endif
 
 #define LIBMSEED_VERSION "3.0.8"    //!< Library version
-#define LIBMSEED_RELEASE "2020.086" //!< Library release date
+#define LIBMSEED_RELEASE "2020.135" //!< Library release date
 
-/** @defgroup io-functions File I/O */
+/** @defgroup io-functions File and URL I/O */
 /** @defgroup miniseed-record Record Handling */
 /** @defgroup trace-list Trace List */
 /** @defgroup data-selections Data Selections */
@@ -589,32 +589,63 @@ extern void mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
 /** @} */
 
 /** @addtogroup io-functions
-    @brief Reading and writing interfaces for miniSEED records in files
-    @{ */
+    @brief Reading and writing interfaces for miniSEED to/from files or URLs
+
+    The miniSEED reading interfaces read from either regular files or
+    URLs (if optional support is included).  The miniSEED writing
+    interfaces write to regular files.
+
+    URL support for reading is included by building the library with the
+    **LIBMSEED_URL** variable defined, see the
+<a class="el" href="https://github.com/iris-edu/libmseed/tree/master/INSTALL.md">INSTALL instructions</a>
+    for more information.  Only URL path-specified resources can be read,
+    e.g. HTTP GET requests.  More advanced POST or form-based requests are not supported.
+
+    Some parameters can be set that affect the reading of data from URLs, including:
+    - set the User-Agent header with @ref ms3_url_useragent()
+    - set username and password for authentication with @ref ms3_url_userpassword()
+    - set arbitrary headers with @ref ms3_url_addheader()
+    - disable SSL peer and host verficiation by setting **LIBMSEED_SSL_NOVERIFY** environment variable
+
+    Diagnostics: Setting environment variable **LIBMSEED_URL_DEBUG** enables
+    detailed verbosity of URL protocol exchanges.
+
+    \sa ms3_readmsr()
+    \sa ms3_readmsr_selection()
+    \sa ms3_readtracelist()
+    \sa ms3_readtracelist_selection()
+    \sa msr3_writemseed()
+    \sa mstl3_writemseed()
+ @{ */
 
 /** @brief Type definition for data source I/O: file-system versus URL */
 typedef struct LMIO
 {
   enum
   {
-    LMIO_NULL, //!< IO handle type is undefined
-    LMIO_FILE, //!< IO handle is FILE-type
-    LMIO_URL   //!< IO handle is URL-type
-  } type;
-  void *handle;
-  void *handle2;
-  int still_running;
+    LMIO_NULL,       //!< IO handle type is undefined
+    LMIO_FILE,       //!< IO handle is FILE-type
+    LMIO_URL         //!< IO handle is URL-type
+  } type;            //!< IO handle type
+  void *handle;      //!< Primary IO handle, either file or URL
+  void *handle2;     //!< Secondary IO handle for URL
+  int still_running; //!< Fetch status flag for URL transmissions
 } LMIO;
 
+/** @def LMIO_INITIALIZER
+    @brief Initialializer for the internal stream handle ::LMIO */
 #define LMIO_INITIALIZER                                                   \
   {                                                                        \
     .type = LMIO_NULL, .handle = NULL, .handle2 = NULL, .still_running = 0 \
   }
 
 /** @brief State container for reading miniSEED records from files or URLs.
-    __TODO: document use of this for advanced features.
-      Callers should not modify these values directly and generally
-      should not need to access them.__ */
+
+    In general these values should not be directly set or accessed.  It is
+    possible to allocate a structure and set the \c path, \c startoffset,
+    and \c endoffset values for advanced usage.  Note that file/URL start
+    and end offsets can also be parsed from the path name as well.
+*/
 typedef struct MS3FileParam
 {
   char path[512];      //!< INPUT: File name or URL
@@ -630,6 +661,8 @@ typedef struct MS3FileParam
   LMIO input;          //!< INTERNAL: IO handle, file or URL
 } MS3FileParam;
 
+/** @def MS3FileParam_INITIALIZER
+    @brief Initialializer for the internal file or URL I/O parameters ::MS3FileParam */
 #define MS3FileParam_INITIALIZER                                  \
   {                                                               \
     .path = "", .startoffset = 0, .endoffset = 0, .streampos = 0, \
