@@ -41,6 +41,21 @@ MS3FileParam gMS3FileParam = MS3FileParam_INITIALIZER;
 static char *parse_pathname_range (const char *string, int64_t *start, int64_t *end);
 
 /*****************************************************************/ /**
+ * @brief Run-time test for URL support in libmseed.
+ *
+ * @returns 0 when no URL suported is included, non-zero otherwise.
+ *********************************************************************/
+int
+libmseed_url_support (void)
+{
+#if defined(LIBMSEED_URL)
+  return 1;
+#else
+  return 0;
+#endif
+} /* End of libmseed_url_support() */
+
+/*****************************************************************/ /**
  * @brief Read miniSEED records from a file or URL
  *
  * This routine is a wrapper for ms3_readmsr_selection() that uses the

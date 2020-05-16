@@ -596,10 +596,13 @@ extern void mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
     interfaces write to regular files.
 
     URL support for reading is included by building the library with the
-    **LIBMSEED_URL** variable defined, see the
+    \b LIBMSEED_URL variable defined, see the
 <a class="el" href="https://github.com/iris-edu/libmseed/tree/master/INSTALL.md">INSTALL instructions</a>
     for more information.  Only URL path-specified resources can be read,
     e.g. HTTP GET requests.  More advanced POST or form-based requests are not supported.
+
+    The function @ref libmseed_url_support() can be used as a run-time test
+    to determine if URL support is included in the library.
 
     Some parameters can be set that affect the reading of data from URLs, including:
     - set the User-Agent header with @ref ms3_url_useragent()
@@ -692,6 +695,7 @@ extern int64_t msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overw
                                 uint32_t flags, int8_t verbose);
 extern int64_t mstl3_writemseed (MS3TraceList *mst, const char *mspath, int8_t overwrite,
                                  int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose);
+extern int libmseed_url_support (void);
 /** @} */
 
 /** @addtogroup string-functions

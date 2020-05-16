@@ -270,6 +270,10 @@ parameter_proc (int argcount, char **argvec)
     exit (1);
   }
 
+  /* Add program name and version to User-Agent for URL-based requests */
+  if (libmseed_url_support() && ms3_url_useragent(PACKAGE, VERSION))
+    return -1;
+
   /* Report the program version */
   if (verbose)
     ms_log (1, "%s version: %s\n", PACKAGE, VERSION);
