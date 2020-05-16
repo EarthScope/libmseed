@@ -11,8 +11,8 @@
 # Required compiler parameters
 CFLAGS += -I..
 
-LDFLAGS = -L..
-LDLIBS = -lmseed
+LDFLAGS += -L..
+LDLIBS += -lmseed
 
 SRCS := $(sort $(wildcard *.c))
 BINS := $(SRCS:%.c=%)

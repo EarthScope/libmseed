@@ -58,6 +58,9 @@ main (int argc, char **argv)
   /* Set flag to validate CRCs when reading */
   flags |= MSF_VALIDATECRC;
 
+  /* Parse byte range from file/URL path name if present */
+  flags |= MSF_PNAMERANGE;
+
   /* Set flag to unpack data if printing samples */
   if (printdata)
     flags |= MSF_UNPACKDATA;
@@ -194,6 +197,10 @@ parameter_proc (int argcount, char **argvec)
     ms_log (1, "Try %s -h for usage\n", PACKAGE);
     exit (1);
   }
+
+  /* Add program name and version to User-Agent for URL-based requests */
+  if (libmseed_url_support() && ms3_url_useragent(PACKAGE, VERSION))
+    return -1;
 
   /* Report the program version */
   if (verbose)

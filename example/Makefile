@@ -7,8 +7,8 @@
 # Required compiler parameters
 CFLAGS += -I..
 
-LDFLAGS = -L..
-LDLIBS = -lmseed
+LDFLAGS += -L..
+LDLIBS += -lmseed
 
 # Build all *.c source as independent programs
 SRCS := $(sort $(wildcard *.c))
@@ -22,7 +22,7 @@ $(BINS) : % : %.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LDLIBS) 
 
 clean:
-	rm -rf *.o $(BINS) *.dSYM
+	@rm -rf *.o $(BINS) *.dSYM
 
 install:
 	@echo

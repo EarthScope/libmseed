@@ -17,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (C) 2019:
+ * Copyright (C) 2020:
  * @author Chad Trabant, IRIS Data Management Center
  ***************************************************************************/
 
@@ -28,10 +28,10 @@
 extern "C" {
 #endif
 
-#define LIBMSEED_VERSION "3.0.7"    //!< Library version
-#define LIBMSEED_RELEASE "2019.172" //!< Library release date
+#define LIBMSEED_VERSION "3.0.8"    //!< Library version
+#define LIBMSEED_RELEASE "2020.137" //!< Library release date
 
-/** @defgroup io-functions File I/O */
+/** @defgroup io-functions File and URL I/O */
 /** @defgroup miniseed-record Record Handling */
 /** @defgroup trace-list Trace List */
 /** @defgroup data-selections Data Selections */
@@ -589,42 +589,113 @@ extern void mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
 /** @} */
 
 /** @addtogroup io-functions
-    @brief Reading and writing interfaces for miniSEED records in files
-    @{ */
+    @brief Reading and writing interfaces for miniSEED to/from files or URLs
 
-/** @brief State container for reading miniSEED records from files.
-    __Callers should not modify these values directly and generally
-    should not need to access them.__ */
+    The miniSEED reading interfaces read from either regular files or
+    URLs (if optional support is included).  The miniSEED writing
+    interfaces write to regular files.
+
+    URL support for reading is included by building the library with the
+    \b LIBMSEED_URL variable defined, see the
+<a class="el" href="https://github.com/iris-edu/libmseed/tree/master/INSTALL.md">INSTALL instructions</a>
+    for more information.  Only URL path-specified resources can be read,
+    e.g. HTTP GET requests.  More advanced POST or form-based requests are not supported.
+
+    The function @ref libmseed_url_support() can be used as a run-time test
+    to determine if URL support is included in the library.
+
+    Some parameters can be set that affect the reading of data from URLs, including:
+    - set the User-Agent header with @ref ms3_url_useragent()
+    - set username and password for authentication with @ref ms3_url_userpassword()
+    - set arbitrary headers with @ref ms3_url_addheader()
+    - disable SSL peer and host verficiation by setting **LIBMSEED_SSL_NOVERIFY** environment variable
+
+    Diagnostics: Setting environment variable **LIBMSEED_URL_DEBUG** enables
+    detailed verbosity of URL protocol exchanges.
+
+    \sa ms3_readmsr()
+    \sa ms3_readmsr_selection()
+    \sa ms3_readtracelist()
+    \sa ms3_readtracelist_selection()
+    \sa msr3_writemseed()
+    \sa mstl3_writemseed()
+ @{ */
+
+/** @brief Type definition for data source I/O: file-system versus URL */
+typedef struct LMIO
+{
+  enum
+  {
+    LMIO_NULL,       //!< IO handle type is undefined
+    LMIO_FILE,       //!< IO handle is FILE-type
+    LMIO_URL         //!< IO handle is URL-type
+  } type;            //!< IO handle type
+  void *handle;      //!< Primary IO handle, either file or URL
+  void *handle2;     //!< Secondary IO handle for URL
+  int still_running; //!< Fetch status flag for URL transmissions
+} LMIO;
+
+/** @def LMIO_INITIALIZER
+    @brief Initialializer for the internal stream handle ::LMIO */
+#define LMIO_INITIALIZER                                                   \
+  {                                                                        \
+    .type = LMIO_NULL, .handle = NULL, .handle2 = NULL, .still_running = 0 \
+  }
+
+/** @brief State container for reading miniSEED records from files or URLs.
+
+    In general these values should not be directly set or accessed.  It is
+    possible to allocate a structure and set the \c path, \c startoffset,
+    and \c endoffset values for advanced usage.  Note that file/URL start
+    and end offsets can also be parsed from the path name as well.
+*/
 typedef struct MS3FileParam
 {
-  FILE *fp;            //!< File handle
-  char filename[512];  //!< File name
-  char *readbuffer;    //!< Read buffer
-  int readlength;      //!< Length of data in read buffer
-  int readoffset;      //!< Read offset in read buffer
-  int64_t filepos;     //!< File position corresponding to start of buffer
-  int64_t filesize;    //!< File size
-  int64_t recordcount; //!< Count of records read from this file
+  char path[512];      //!< INPUT: File name or URL
+  int64_t startoffset; //!< INPUT: Start position in input stream
+  int64_t endoffset;   //!< INPUT: End position in input stream, 0 == unknown (e.g. pipe)
+  int64_t streampos;   //!< OUTPUT: Read position of input stream
+  int64_t recordcount; //!< OUTPUT: Count of records read from this file so far
+
+  char *readbuffer;    //!< INTERNAL: Read buffer, allocated internally
+  int readlength;      //!< INTERNAL: Length of data in read buffer
+  int readoffset;      //!< INTERNAL: Read offset in read buffer
+  uint32_t flags;      //!< INTERNAL: Stream reading state flags
+  LMIO input;          //!< INTERNAL: IO handle, file or URL
 } MS3FileParam;
 
-extern int ms3_readmsr (MS3Record **ppmsr, const char *msfile, int64_t *fpos, int8_t *last,
+/** @def MS3FileParam_INITIALIZER
+    @brief Initialializer for the internal file or URL I/O parameters ::MS3FileParam */
+#define MS3FileParam_INITIALIZER                                  \
+  {                                                               \
+    .path = "", .startoffset = 0, .endoffset = 0, .streampos = 0, \
+    .recordcount = 0, .readbuffer = NULL, .readlength = 0,        \
+    .readoffset = 0, .flags = 0, .input = LMIO_INITIALIZER        \
+  }
+
+extern int ms3_readmsr (MS3Record **ppmsr, const char *mspath, int64_t *fpos, int8_t *last,
                         uint32_t flags, int8_t verbose);
-extern int ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
+extern int ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
                           int64_t *fpos, int8_t *last, uint32_t flags, int8_t verbose);
-extern int ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msfile,
+extern int ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
                                   int64_t *fpos, int8_t *last, uint32_t flags,
                                   MS3Selections *selections, int8_t verbose);
-extern int ms3_readtracelist (MS3TraceList **ppmstl, const char *msfile, MS3Tolerance *tolerance,
+extern int ms3_readtracelist (MS3TraceList **ppmstl, const char *mspath, MS3Tolerance *tolerance,
                               int8_t splitversion, uint32_t flags, int8_t verbose);
-extern int ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *msfile, MS3Tolerance *tolerance,
+extern int ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath, MS3Tolerance *tolerance,
                                       nstime_t starttime, nstime_t endtime, int8_t splitversion, uint32_t flags,
                                       int8_t verbose);
-extern int ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *msfile, MS3Tolerance *tolerance,
+extern int ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath, MS3Tolerance *tolerance,
                                         MS3Selections *selections, int8_t splitversion, uint32_t flags, int8_t verbose);
-extern int64_t msr3_writemseed (MS3Record *msr, const char *msfile, int8_t overwrite,
+extern int ms3_url_useragent (const char *program, const char *version);
+extern int ms3_url_userpassword (const char *userpassword);
+extern int ms3_url_addheader (const char *header);
+extern void ms3_url_freeheaders (void);
+extern int64_t msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite,
                                 uint32_t flags, int8_t verbose);
-extern int64_t mstl3_writemseed (MS3TraceList *mst, const char *msfile, int8_t overwrite,
+extern int64_t mstl3_writemseed (MS3TraceList *mst, const char *mspath, int8_t overwrite,
                                  int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose);
+extern int libmseed_url_support (void);
 /** @} */
 
 /** @addtogroup string-functions
@@ -974,6 +1045,8 @@ extern int ms_bigendianhost (void);
 extern int64_t lmp_ftell64 (FILE *stream);
 /** Portable version of POSIX fseeko() to set position in large files */
 extern int lmp_fseek64 (FILE *stream, int64_t offset, int whence);
+/** Portable version of POSIX nanosleep() to sleep for nanoseconds */
+extern uint64_t lmp_nanosleep (uint64_t nanoseconds);
 
 /** Return CRC32C value of supplied buffer, with optional starting CRC32C value */
 extern uint32_t ms_crc32c (const uint8_t* input, int length, uint32_t previousCRC32C);
@@ -1113,12 +1186,13 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
 #define MSF_UNPACKDATA    0x0001  //!< [Parsing] Unpack data samples
 #define MSF_SKIPNOTDATA   0x0002  //!< [Parsing] Skip input that cannot be identified as miniSEED
 #define MSF_VALIDATECRC   0x0004  //!< [Parsing] Validate CRC (if version 3)
-#define MSF_SEQUENCE      0x0008  //!< [Packing] UNSUPPORTED: Maintain a record-level sequence number
-#define MSF_FLUSHDATA     0x0010  //!< [Packing] Pack all available data even if final record would not be filled
-#define MSF_ATENDOFFILE   0x0020  //!< [Parsing] Reading routine is at the end of the file
-#define MSF_RECORDLIST    0x0040  //!< [TraceList] Build a ::MS3RecordList for each ::MS3TraceSeg
-#define MSF_MAINTAINMSTL  0x0080  //!< [TraceList] Do not modify a trace list when packing
-#define MSF_PACKVER2      0x0100  //!< [Packing] Pack as miniSEED version 2 instead of 3
+#define MSF_PNAMERANGE    0x0008  //!< [Parsing] Parse and utilize byte range from path name suffix
+#define MSF_ATENDOFFILE   0x0010  //!< [Parsing] Reading routine is at the end of the file
+#define MSF_SEQUENCE      0x0020  //!< [Packing] UNSUPPORTED: Maintain a record-level sequence number
+#define MSF_FLUSHDATA     0x0040  //!< [Packing] Pack all available data even if final record would not be filled
+#define MSF_PACKVER2      0x0080  //!< [Packing] Pack as miniSEED version 2 instead of 3
+#define MSF_RECORDLIST    0x0100  //!< [TraceList] Build a ::MS3RecordList for each ::MS3TraceSeg
+#define MSF_MAINTAINMSTL  0x0200  //!< [TraceList] Do not modify a trace list when packing
 /** @} */
 
 #ifdef __cplusplus

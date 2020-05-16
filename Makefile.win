@@ -12,7 +12,7 @@ DLL = libmseed.dll
 OBJS=	fileutils.obj	\
 	genutils.obj	\
 	gswap.obj	\
-	lmplatform.obj	\
+	msio.obj	\
 	lookup.obj	\
 	parson.obj	\
 	msrutils.obj	\

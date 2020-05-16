@@ -1,3 +1,8 @@
+2020.137:
+	- Add capability to read data from URLs.  This feature is optional,
+	enabled at build time with LIBMSEED_URL and requires libcurl to be
+	available on the system.
+
 2019.216:
 	- Copy only UTF-8 characters in ms_strncpclean(), ms_strncpcleantail(),
 	and ms_strncpopen().
