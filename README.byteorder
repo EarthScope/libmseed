@@ -1,8 +1,8 @@
 
                  -- Byte order handling in libmseed --
 
-The miniSEED 3 format is defined as little endian-endian headers with
-the endianess of the data payload explicitly defined by the encoding
+The miniSEED 3 format is defined as little-endian headers with the
+endianess of the data payload explicitly defined by the encoding
 value.
 
 The SEED 2.4 standard allows data only SEED (miniSEED) to be either in
