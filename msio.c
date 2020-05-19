@@ -437,10 +437,10 @@ msio_fread (LMIO *io, void *buffer, size_t size)
     if (read <= 0)
     {
       /* Differentiate on returned errors, EOF is not a logged error */
-      if (ferror (io->handle))
+      if (ferror ((FILE *)io->handle))
         ms_log (2, "%s(): Cannot read input file\n", __func__);
 
-      else if (!feof (io->handle))
+      else if (!feof ((FILE *)io->handle))
         ms_log (2, "%s(): Unknown return from fread()\n", __func__);
     }
   }
@@ -549,7 +549,7 @@ msio_feof (LMIO *io)
 
   if (io->type == LMIO_FILE)
   {
-    if (feof (io->handle))
+    if (feof ((FILE *)io->handle))
       return 1;
   }
   else if (io->type == LMIO_URL)
