@@ -5,7 +5,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2019 Chad Trabant, IRIS Data Management Center
+ * Copyright (c) 2020 Chad Trabant, IRIS Data Management Center
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -220,7 +220,7 @@ msr_decode_steim1 (int32_t *input, int inputlength, int64_t samplecount,
     return -1;
 
   if (libmseed_decodedebug > 0)
-    ms_log (1, "Decoding %d Steim1 frames, swapflag: %d, srcname: %s\n",
+    ms_log (0, "Decoding %d Steim1 frames, swapflag: %d, srcname: %s\n",
             maxframes, swapflag, (srcname) ? srcname : "");
 
   for (frameidx = 0; frameidx < maxframes && samplecount > 0; frameidx++)
@@ -244,14 +244,14 @@ msr_decode_steim1 (int32_t *input, int inputlength, int64_t samplecount,
       startnibble = 3; /* First frame: skip nibbles, X0, and Xn */
 
       if (libmseed_decodedebug > 0)
-        ms_log (1, "Frame %d: X0=%d  Xn=%d\n", frameidx, X0, Xn);
+        ms_log (0, "Frame %d: X0=%d  Xn=%d\n", frameidx, X0, Xn);
     }
     else
     {
       startnibble = 1; /* Subsequent frames: skip nibbles */
 
       if (libmseed_decodedebug > 0)
-        ms_log (1, "Frame %d\n", frameidx);
+        ms_log (0, "Frame %d\n", frameidx);
     }
 
     /* Swap 32-bit word containing the nibbles */
@@ -271,14 +271,14 @@ msr_decode_steim1 (int32_t *input, int inputlength, int64_t samplecount,
       {
       case 0: /* 00: Special flag, no differences */
         if (libmseed_decodedebug > 0)
-          ms_log (1, "  W%02d: 00=special\n", widx);
+          ms_log (0, "  W%02d: 00=special\n", widx);
         break;
 
       case 1: /* 01: Four 1-byte differences */
         diffcount = 4;
 
         if (libmseed_decodedebug > 0)
-          ms_log (1, "  W%02d: 01=4x8b  %d  %d  %d  %d\n",
+          ms_log (0, "  W%02d: 01=4x8b  %d  %d  %d  %d\n",
                   widx, word->d8[0], word->d8[1], word->d8[2], word->d8[3]);
         break;
 
@@ -292,7 +292,7 @@ msr_decode_steim1 (int32_t *input, int inputlength, int64_t samplecount,
         }
 
         if (libmseed_decodedebug > 0)
-          ms_log (1, "  W%02d: 10=2x16b  %d  %d\n", widx, word->d16[0], word->d16[1]);
+          ms_log (0, "  W%02d: 10=2x16b  %d  %d\n", widx, word->d16[0], word->d16[1]);
         break;
 
       case 3: /* 11: One 4-byte difference */
@@ -301,7 +301,7 @@ msr_decode_steim1 (int32_t *input, int inputlength, int64_t samplecount,
           ms_gswap4a (&word->d32);
 
         if (libmseed_decodedebug > 0)
-          ms_log (1, "  W%02d: 11=1x32b  %d\n", widx, word->d32);
+          ms_log (0, "  W%02d: 11=1x32b  %d\n", widx, word->d32);
         break;
       } /* Done with decoding 32-bit word based on nibble */
 
@@ -375,7 +375,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
     return -1;
 
   if (libmseed_decodedebug > 0)
-    ms_log (1, "Decoding %d Steim2 frames, swapflag: %d, srcname: %s\n",
+    ms_log (0, "Decoding %d Steim2 frames, swapflag: %d, srcname: %s\n",
             maxframes, swapflag, (srcname) ? srcname : "");
 
   for (frameidx = 0; frameidx < maxframes && samplecount > 0; frameidx++)
@@ -399,14 +399,14 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
       startnibble = 3; /* First frame: skip nibbles, X0, and Xn */
 
       if (libmseed_decodedebug > 0)
-        ms_log (1, "Frame %d: X0=%d  Xn=%d\n", frameidx, X0, Xn);
+        ms_log (0, "Frame %d: X0=%d  Xn=%d\n", frameidx, X0, Xn);
     }
     else
     {
       startnibble = 1; /* Subsequent frames: skip nibbles */
 
       if (libmseed_decodedebug > 0)
-        ms_log (1, "Frame %d\n", frameidx);
+        ms_log (0, "Frame %d\n", frameidx);
     }
 
     /* Swap 32-bit word containing the nibbles */
@@ -424,7 +424,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
       {
       case 0: /* nibble=00: Special flag, no differences */
         if (libmseed_decodedebug > 0)
-          ms_log (1, "  W%02d: 00=special\n", widx);
+          ms_log (0, "  W%02d: 00=special\n", widx);
 
         break;
       case 1: /* nibble=01: Four 1-byte differences */
@@ -437,7 +437,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
         }
 
         if (libmseed_decodedebug > 0)
-          ms_log (1, "  W%02d: 01=4x8b  %d  %d  %d  %d\n", widx, diff[0], diff[1], diff[2], diff[3]);
+          ms_log (0, "  W%02d: 01=4x8b  %d  %d  %d  %d\n", widx, diff[0], diff[1], diff[2], diff[3]);
         break;
 
       case 2: /* nibble=10: Must consult dnib, the high order two bits */
@@ -460,7 +460,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
           diff[0]   = (diff[0] ^ semask) - semask;
 
           if (libmseed_decodedebug > 0)
-            ms_log (1, "  W%02d: 10,01=1x30b  %d\n", widx, diff[0]);
+            ms_log (0, "  W%02d: 10,01=1x30b  %d\n", widx, diff[0]);
           break;
 
         case 2: /* nibble=10, dnib=10: Two 15-bit differences */
@@ -473,7 +473,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
           }
 
           if (libmseed_decodedebug > 0)
-            ms_log (1, "  W%02d: 10,10=2x15b  %d  %d\n", widx, diff[0], diff[1]);
+            ms_log (0, "  W%02d: 10,10=2x15b  %d  %d\n", widx, diff[0], diff[1]);
           break;
 
         case 3: /* nibble=10, dnib=11: Three 10-bit differences */
@@ -486,7 +486,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
           }
 
           if (libmseed_decodedebug > 0)
-            ms_log (1, "  W%02d: 10,11=3x10b  %d  %d  %d\n", widx, diff[0], diff[1], diff[2]);
+            ms_log (0, "  W%02d: 10,11=3x10b  %d  %d  %d\n", widx, diff[0], diff[1], diff[2]);
           break;
         }
 
@@ -509,7 +509,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
           }
 
           if (libmseed_decodedebug > 0)
-            ms_log (1, "  W%02d: 11,00=5x6b  %d  %d  %d  %d  %d\n",
+            ms_log (0, "  W%02d: 11,00=5x6b  %d  %d  %d  %d  %d\n",
                     widx, diff[0], diff[1], diff[2], diff[3], diff[4]);
           break;
 
@@ -523,7 +523,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
           }
 
           if (libmseed_decodedebug > 0)
-            ms_log (1, "  W%02d: 11,01=6x5b  %d  %d  %d  %d  %d  %d\n",
+            ms_log (0, "  W%02d: 11,01=6x5b  %d  %d  %d  %d  %d  %d\n",
                     widx, diff[0], diff[1], diff[2], diff[3], diff[4], diff[5]);
           break;
 
@@ -537,7 +537,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
           }
 
           if (libmseed_decodedebug > 0)
-            ms_log (1, "  W%02d: 11,10=7x4b  %d  %d  %d  %d  %d  %d  %d\n",
+            ms_log (0, "  W%02d: 11,10=7x4b  %d  %d  %d  %d  %d  %d  %d\n",
                     widx, diff[0], diff[1], diff[2], diff[3], diff[4], diff[5], diff[6]);
           break;
 
@@ -590,6 +590,8 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
  * miniSEED data and place in supplied buffer as 32-bit floats.
  *
  * Return number of samples in output buffer on success, -1 on error.
+ *
+ * \ref MessageOnError - this function logs a message on error
  ************************************************************************/
 int
 msr_decode_geoscope (char *input, int64_t samplecount, float *output,
@@ -621,7 +623,7 @@ msr_decode_geoscope (char *input, int64_t samplecount, float *output,
       encoding != DE_GEOSCOPE163 &&
       encoding != DE_GEOSCOPE164)
   {
-    ms_log (2, "msr_decode_geoscope(%s): unrecognized GEOSCOPE encoding: %d\n",
+    ms_log (2, "%s: unrecognized GEOSCOPE encoding: %d\n",
             srcname, encoding);
     return -1;
   }
@@ -873,8 +875,7 @@ msr_decode_sro (int16_t *input, int64_t samplecount, int32_t *output,
 
     if (exponent < 0 || exponent > 10)
     {
-      ms_log (2, "msr_decode_sro(%s): SRO gain ranging exponent out of range: %d\n",
-              srcname, exponent);
+      ms_log (2, "%s: SRO gain ranging exponent out of range: %d\n", srcname, exponent);
       return MS_GENERROR;
     }
 

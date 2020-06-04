@@ -3,7 +3,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2019 Chad Trabant, IRIS Data Management Center
+ * Copyright (c) 2020 Chad Trabant, IRIS Data Management Center
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ static int reclen      = -1;
 static char *inputfile = 0;
 
 static int parameter_proc (int argcount, char **argvec);
-static void print_stderr (char *message);
+static void print_stderr (const char *message);
 static void usage (void);
 
 /* Binary I/O for Windows platforms */
@@ -286,7 +286,7 @@ parameter_proc (int argcount, char **argvec)
  * Print messsage to stderr.
  ***************************************************************************/
 static void
-print_stderr (char *message)
+print_stderr (const char *message)
 {
   fprintf (stderr, "%s", message);
 } /* End of print_stderr() */

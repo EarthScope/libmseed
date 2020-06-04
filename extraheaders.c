@@ -3,7 +3,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2019 Chad Trabant, IRIS Data Management Center
+ * Copyright (c) 2020 Chad Trabant, IRIS Data Management Center
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,8 @@
  * @retval 1 when the value was not found
  * @retval 2 when the value is of a different type
  * @returns A (negative) libmseed error code on error
+ *
+ * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t maxlength)
@@ -61,13 +63,19 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
   int retval              = 0;
 
   if (!msr || !path)
+  {
+    ms_log (2, "Required argument not defined: 'msr' or 'path'\n");
     return MS_GENERROR;
+  }
 
   if (!msr->extralength)
     return 1;
 
   if (!msr->extra)
+  {
+    ms_log (2, "Expected extra headers (msr->extra) are not present\n");
     return MS_GENERROR;
+  }
 
   json_set_allocation_functions (libmseed_memory.malloc,
                                  libmseed_memory.free);
@@ -77,7 +85,7 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
 
   if (!rootvalue)
   {
-    ms_log (2, "%s(): Extra headers are not JSON\n", __func__);
+    ms_log (2, "Extra headers are not JSON\n");
     return MS_GENERROR;
   }
 
@@ -86,7 +94,7 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
 
   if (!rootobject)
   {
-    ms_log (2, "%s(): Extra headers are not a JSON object\n", __func__);
+    ms_log (2, "Extra headers are not a JSON object\n");
     json_value_free (rootvalue);
     return MS_GENERROR;
   }
@@ -155,6 +163,8 @@ mseh_get_path (MS3Record *msr, const char *path, void *value, char type, size_t 
  * @endparblock
  *
  * @retval 0 on success, otherwise a (negative) libmseed error code.
+ *
+ * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
@@ -165,17 +175,20 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
   size_t serializationsize = 0;
   char *serialized         = NULL;
 
-#define EVALSET(KEY, SET)                                \
-  if (SET != JSONSuccess)                                \
-  {                                                      \
-    ms_log (2, "%s(): Cannot set: %s\n", __func__, KEY); \
-    if (rootvalue)                                       \
-      json_value_free (rootvalue);                       \
-    return MS_GENERROR;                                  \
+#define EVALSET(KEY, SET)                            \
+  if (SET != JSONSuccess)                            \
+  {                                                  \
+    ms_log (2, "Cannot set header path: %s\n", KEY); \
+    if (rootvalue)                                   \
+      json_value_free (rootvalue);                   \
+    return MS_GENERROR;                              \
   }
 
   if (!msr || !value || !path)
+  {
+    ms_log (2, "Required argument not defined: 'msr', 'value' or 'path'\n");
     return MS_GENERROR;
+  }
 
   json_set_allocation_functions (libmseed_memory.malloc,
                                  libmseed_memory.free);
@@ -187,7 +200,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
 
     if (!rootvalue)
     {
-      ms_log (2, "%s(): Extra headers are not JSON\n", __func__);
+      ms_log (2, "Extra headers are not JSON\n");
       return MS_GENERROR;
     }
 
@@ -196,7 +209,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
 
     if (!rootobject)
     {
-      ms_log (2, "%s(): Extra headers are not a JSON object\n", __func__);
+      ms_log (2, "Extra headers are not a JSON object\n");
       json_value_free (rootvalue);
       return MS_GENERROR;
     }
@@ -209,7 +222,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
 
     if (!rootobject)
     {
-      ms_log (2, "%s(): Cannot initialize new JSON object\n", __func__);
+      ms_log (2, "Cannot initialize new JSON object\n");
       if (rootvalue)
         json_value_free (rootvalue);
       return MS_GENERROR;
@@ -239,7 +252,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
 
       if (!array)
       {
-        ms_log (2, "%s(): Cannot get array\n", __func__);
+        ms_log (2, "Cannot get extra header array\n");
         if (value)
           json_value_free (rootvalue);
         return MS_GENERROR;
@@ -249,7 +262,7 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
     EVALSET ("Array JSON_Value", json_array_append_value (array, (JSON_Value *)value));
     break;
   default:
-    ms_log (2, "%s(): Unrecognized type '%d'\n", __func__, type);
+    ms_log (2, "Unrecognized type '%d'\n", type);
     json_value_free (rootvalue);
     return MS_GENERROR;
   }
@@ -259,15 +272,15 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
 
   if (!serializationsize)
   {
-    ms_log (2, "%s(): Cannot determine new serialization size\n", __func__);
+    ms_log (2, "Cannot determine new serialization size\n");
     json_value_free (rootvalue);
     return MS_GENERROR;
   }
 
   if (serializationsize > UINT16_MAX)
   {
-    ms_log (2, "%s(): New serialization size exceeds limit of %d bytes: %" PRIu64 "\n",
-            __func__, UINT16_MAX, (uint64_t)serializationsize);
+    ms_log (2, "New serialization size exceeds limit of %d bytes: %" PRIu64 "\n",
+            UINT16_MAX, (uint64_t)serializationsize);
     json_value_free (rootvalue);
     return MS_GENERROR;
   }
@@ -276,14 +289,14 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
 
   if (!serialized)
   {
-    ms_log (2, "%s(): Cannot determine new serialization size\n", __func__);
+    ms_log (2, "Cannot determine new serialization size\n");
     json_value_free (rootvalue);
     return MS_GENERROR;
   }
 
   if (json_serialize_to_buffer (rootvalue, serialized, serializationsize) != JSONSuccess)
   {
-    ms_log (2, "%s(): Error serializing JSON for extra headers\n", __func__);
+    ms_log (2, "Error serializing JSON for extra headers\n");
     json_value_free (rootvalue);
     return MS_GENERROR;
   }
@@ -313,6 +326,8 @@ mseh_set_path (MS3Record *msr, const char *path, void *value, char type)
  * @param[in] eventdetection Structure with event detection values
  *
  * @returns 0 on success, otherwise a (negative) libmseed error code.
+ *
+ * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 mseh_add_event_detection (MS3Record *msr, const char *path,
@@ -323,17 +338,20 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
   JSON_Array *array   = NULL;
   char timestring[30];
 
-#define EVALSET(KEY, SET)                                \
-  if (SET != JSONSuccess)                                \
-  {                                                      \
-    ms_log (2, "%s(): Cannot set: %s\n", __func__, KEY); \
-    if (value)                                           \
-      json_value_free (value);                           \
-    return MS_GENERROR;                                  \
+#define EVALSET(KEY, SET)                            \
+  if (SET != JSONSuccess)                            \
+  {                                                  \
+    ms_log (2, "Cannot set header path: %s\n", KEY); \
+    if (value)                                       \
+      json_value_free (value);                       \
+    return MS_GENERROR;                              \
   }
 
   if (!msr || !eventdetection)
+  {
+    ms_log (2, "Required argument not defined: 'msr' or 'eventdetection'\n");
     return MS_GENERROR;
+  }
 
   json_set_allocation_functions (libmseed_memory.malloc,
                                  libmseed_memory.free);
@@ -344,7 +362,7 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
 
   if (!object)
   {
-    ms_log (2, "%s(): Cannot initialize new JSON object\n", __func__);
+    ms_log (2, "Cannot initialize new JSON object\n");
     if (value)
       json_value_free (value);
     return MS_GENERROR;
@@ -383,7 +401,7 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
     }
     else
     {
-      ms_log (2, "%s(): Cannot create time string for %"PRId64"\n", __func__, eventdetection->onsettime);
+      ms_log (2, "Cannot create time string for %"PRId64"\n", eventdetection->onsettime);
       return MS_GENERROR;
     }
   }
@@ -395,7 +413,7 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
 
     if (!array)
     {
-      ms_log (2, "%s(): Cannot get MEDSNR array\n", __func__);
+      ms_log (2, "Cannot get MEDSNR array\n");
       if (value)
         json_value_free (value);
       return MS_GENERROR;
@@ -425,7 +443,6 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
   /* Add new object to array, created 'value' will be free'd on successful return */
   if (mseh_set_path (msr, (path) ? path : "FDSN.Event.Detection", value, 'A'))
   {
-    ms_log (2, "%s(): Cannot add new array entry\n", __func__);
     if (value)
       json_value_free (value);
     return MS_GENERROR;
@@ -445,6 +462,8 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
  * @param[in] calibration Structure with calibration values
  *
  * @returns 0 on success, otherwise a (negative) libmseed error code.
+ *
+ * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 mseh_add_calibration (MS3Record *msr, const char *path,
@@ -455,17 +474,20 @@ mseh_add_calibration (MS3Record *msr, const char *path,
   char beginstring[31];
   char endstring[31];
 
-#define EVALSET(KEY, SET)                                \
-  if (SET != JSONSuccess)                                \
-  {                                                      \
-    ms_log (2, "%s(): Cannot set: %s\n", __func__, KEY); \
-    if (value)                                           \
-      json_value_free (value);                           \
-    return MS_GENERROR;                                  \
+#define EVALSET(KEY, SET)                            \
+  if (SET != JSONSuccess)                            \
+  {                                                  \
+    ms_log (2, "Cannot set header path: %s\n", KEY); \
+    if (value)                                       \
+      json_value_free (value);                       \
+    return MS_GENERROR;                              \
   }
 
   if (!msr || !calibration)
+  {
+    ms_log (2, "Required argument not defined: 'msr' or 'calibration'\n");
     return MS_GENERROR;
+  }
 
   json_set_allocation_functions (libmseed_memory.malloc,
                                  libmseed_memory.free);
@@ -476,7 +498,7 @@ mseh_add_calibration (MS3Record *msr, const char *path,
 
   if (!object)
   {
-    ms_log (2, "%s(): Cannot initialize new JSON object\n", __func__);
+    ms_log (2, "Cannot initialize new JSON object\n");
     if (value)
       json_value_free (value);
     return MS_GENERROR;
@@ -495,7 +517,6 @@ mseh_add_calibration (MS3Record *msr, const char *path,
     }
     else
     {
-      ms_log (2, "%s(): Cannot create time string for %"PRId64"\n", __func__, calibration->begintime);
       return MS_GENERROR;
     }
   }
@@ -507,7 +528,6 @@ mseh_add_calibration (MS3Record *msr, const char *path,
     }
     else
     {
-      ms_log (2, "%s(): Cannot create time string for %"PRId64"\n", __func__, calibration->endtime);
       return MS_GENERROR;
     }
   }
@@ -579,7 +599,6 @@ mseh_add_calibration (MS3Record *msr, const char *path,
   /* Add new object to array, created 'value' will be free'd on successful return */
   if (mseh_set_path (msr, (path) ? path : "FDSN.Calibration.Sequence", value, 'A'))
   {
-    ms_log (2, "%s(): Cannot add new array entry\n", __func__);
     if (value)
       json_value_free (value);
     return MS_GENERROR;
@@ -599,6 +618,8 @@ mseh_add_calibration (MS3Record *msr, const char *path,
  * @param[in] exception Structure with timing exception values
  *
  * @returns 0 on success, otherwise a (negative) libmseed error code.
+ *
+ * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 mseh_add_timing_exception (MS3Record *msr, const char *path,
@@ -608,17 +629,20 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
   JSON_Object *object = NULL;
   char timestring[30];
 
-#define EVALSET(KEY, SET)                                \
-  if (SET != JSONSuccess)                                \
-  {                                                      \
-    ms_log (2, "%s(): Cannot set: %s\n", __func__, KEY); \
-    if (value)                                           \
-      json_value_free (value);                           \
-    return MS_GENERROR;                                  \
+#define EVALSET(KEY, SET)                            \
+  if (SET != JSONSuccess)                            \
+  {                                                  \
+    ms_log (2, "Cannot set header path: %s\n", KEY); \
+    if (value)                                       \
+      json_value_free (value);                       \
+    return MS_GENERROR;                              \
   }
 
   if (!msr || !exception)
+  {
+    ms_log (2, "Required argument not defined: 'msr' or 'exception'\n");
     return MS_GENERROR;
+  }
 
   json_set_allocation_functions (libmseed_memory.malloc,
                                  libmseed_memory.free);
@@ -629,7 +653,7 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
 
   if (!object)
   {
-    ms_log (2, "%s(): Cannot initialize new JSON object\n", __func__);
+    ms_log (2, "Cannot initialize new JSON object\n");
     if (value)
       json_value_free (value);
     return MS_GENERROR;
@@ -648,7 +672,6 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
     }
     else
     {
-      ms_log (2, "%s(): Cannot create time string for %"PRId64"\n", __func__, exception->time);
       return MS_GENERROR;
     }
   }
@@ -672,7 +695,6 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
   /* Add new object to array, created 'value' will be free'd on successful return */
   if (mseh_set_path (msr, (path) ? path : "FDSN.Time.Exception", value, 'A'))
   {
-    ms_log (2, "%s(): Cannot add new array entry\n", __func__);
     if (value)
       json_value_free (value);
     return MS_GENERROR;
@@ -692,6 +714,8 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
  * @param[in] recenter Structure with recenter values
  *
  * @returns 0 on success, otherwise a (negative) libmseed error code.
+ *
+ * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
@@ -701,17 +725,20 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
   char beginstring[31];
   char endstring[31];
 
-#define EVALSET(KEY, SET)                                \
-  if (SET != JSONSuccess)                                \
-  {                                                      \
-    ms_log (2, "%s(): Cannot set: %s\n", __func__, KEY); \
-    if (value)                                           \
-      json_value_free (value);                           \
-    return MS_GENERROR;                                  \
+#define EVALSET(KEY, SET)                            \
+  if (SET != JSONSuccess)                            \
+  {                                                  \
+    ms_log (2, "Cannot set header path: %s\n", KEY); \
+    if (value)                                       \
+      json_value_free (value);                       \
+    return MS_GENERROR;                              \
   }
 
   if (!msr || !recenter)
+  {
+    ms_log (2, "Required argument not defined: 'msr' or 'recenter'\n");
     return MS_GENERROR;
+  }
 
   json_set_allocation_functions (libmseed_memory.malloc,
                                  libmseed_memory.free);
@@ -722,7 +749,7 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
 
   if (!object)
   {
-    ms_log (2, "%s(): Cannot initialize new JSON object\n", __func__);
+    ms_log (2, "Cannot initialize new JSON object\n");
     if (value)
       json_value_free (value);
     return MS_GENERROR;
@@ -741,7 +768,6 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
     }
     else
     {
-      ms_log (2, "%s(): Cannot create time string for %"PRId64"\n", __func__, recenter->begintime);
       return MS_GENERROR;
     }
   }
@@ -753,7 +779,6 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
     }
     else
     {
-      ms_log (2, "%s(): Cannot create time string for %"PRId64"\n", __func__, recenter->endtime);
       return MS_GENERROR;
     }
   }
@@ -765,7 +790,6 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
   /* Add new object to array, created 'value' will be free'd on successful return */
   if (mseh_set_path (msr, (path) ? path : "FDSN.Recenter.Sequence", value, 'A'))
   {
-    ms_log (2, "%s(): Cannot add new array entry\n", __func__);
     if (value)
       json_value_free (value);
     return MS_GENERROR;
