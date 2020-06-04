@@ -582,8 +582,10 @@ ms_rlog_emit (MSLogParam *logp, int count, int context)
     /* Add function name to message if requested and present */
     if (context && logprint->function[0] != '\0')
     {
-      snprintf (local_message, sizeof(local_message), "%s() %s",
-                logprint->function, logprint->message);
+      snprintf (local_message, sizeof(local_message), "%s() %.*s",
+                logprint->function,
+                (int)(MAX_LOG_MSG_LENGTH - sizeof(logprint->function) - 3),
+                logprint->message);
       message = local_message;
     }
     else
