@@ -1,4 +1,4 @@
-2020.156:
+2020.156: 3.0.8
 	- Add error/warning log registry for accumulation of messages.
 	- Log and diagnostic printing callbacks now require 'const char *'.
 	- Verbose-triggered messages are now sent to stdout instead of stderr.
