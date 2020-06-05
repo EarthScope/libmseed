@@ -1,3 +1,8 @@
+2020.156:
+	- Add error/warning log registry for accumulation of messages.
+	- Log and diagnostic printing callbacks now require 'const char *'.
+	- Verbose-triggered messages are now sent to stdout instead of stderr.
+
 2020.137:
 	- Add capability to read data from URLs.  This feature is optional,
 	enabled at build time with LIBMSEED_URL and requires libcurl to be

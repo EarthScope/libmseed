@@ -12,7 +12,7 @@
 CFLAGS += -I..
 
 LDFLAGS += -L..
-LDLIBS += -lmseed
+LDLIBS := -lmseed $(LDLIBS)
 
 SRCS := $(sort $(wildcard *.c))
 BINS := $(SRCS:%.c=%)

@@ -3,7 +3,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2019 Chad Trabant, IRIS Data Management Center
+ * Copyright (c) 2020 Chad Trabant, IRIS Data Management Center
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,8 @@
  * @retval >0 Data record detected but not enough data is present, the
  *       return value is a hint of how many more bytes are needed.
  * @retval <0 library error code is returned.
+ *
+ * \ref MessageOnError - this function logs a message on error except MS_NOTSEED
  ***************************************************************************/
 int
 msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
@@ -64,7 +66,10 @@ msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
   uint8_t formatversion = 0;
 
   if (!ppmsr || !record)
+  {
+    ms_log (2, "Required argument not defined: 'ppmsr' or 'record'\n");
     return MS_GENERROR;
+  }
 
   /* Detect record, determine length and format version */
   reclen = ms3_detect (record, recbuflen, &formatversion);
@@ -100,13 +105,13 @@ msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
 
   if (verbose > 2)
   {
-    ms_log (1, "Detected record length of %d bytes\n", reclen);
+    ms_log (0, "Detected record length of %d bytes\n", reclen);
   }
 
   /* Check that record length is in supported range */
   if (reclen < MINRECLEN || reclen > MAXRECLEN)
   {
-    ms_log (2, "Record length is out of range: %d (allowed: %d to %d)\n",
+    ms_log (2, "Record length of %d is out of range allowed: %d to %d)\n",
             reclen, MINRECLEN, MAXRECLEN);
 
     return MS_OUTOFRANGE;
@@ -116,7 +121,7 @@ msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
   if (reclen > recbuflen)
   {
     if (verbose > 2)
-      ms_log (1, "Detected %d byte record, need %d more bytes\n",
+      ms_log (0, "Detected %d byte record, need %d more bytes\n",
               reclen, (int)(reclen - recbuflen));
 
     return (int)(reclen - recbuflen);
@@ -133,7 +138,7 @@ msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
   }
   else
   {
-    ms_log (2, "%s(): Unrecognized format version: %d\n", __func__, formatversion);
+    ms_log (2, "Unrecognized format version: %d\n", formatversion);
 
     return MS_GENERROR;
   }
@@ -166,6 +171,8 @@ msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
  * @retval -1 Data record not detected or error
  * @retval 0 Data record detected but could not determine length
  * @retval >0 Size of the record in bytes
+ *
+ * \ref MessageOnError - this function logs a message on error
  *********************************************************************/
 int
 ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion)
@@ -180,7 +187,10 @@ ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion)
   const char *nextfsdh;
 
   if (!record || !formatversion)
+  {
+    ms_log (2, "Required argument not defined: 'record' or 'formatversion'\n");
     return -1;
+  }
 
   /* Buffer must be at least MINRECLEN */
   if (recbuflen < MINRECLEN)
@@ -297,6 +307,8 @@ ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion)
  *
  * @returns 0 when no errors were detected or a positive count of
  * errors detected.
+ *
+ * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 ms_parse_raw3 (char *record, int maxreclen, int8_t details)
@@ -311,10 +323,16 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
   char *sid = NULL;
 
   if (!record)
+  {
+    ms_log (2, "Required argument not defined: 'record'\n");
     return 1;
+  }
 
   if (maxreclen < MINRECLEN)
+  {
+    ms_log (2, "The maxreclen value cannot be smaller than MINRECLEN\n");
     return 1;
+  }
 
   swapflag = (ms_bigendianhost()) ? 1 : 0;
 
@@ -498,6 +516,8 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
  *
  * @returns 0 when no errors were detected or a positive count of
  * errors detected.
+ *
+ * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
@@ -513,10 +533,16 @@ ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
   int idx;
 
   if (!record)
+  {
+    ms_log (2, "Required argument not defined: 'record'\n");
     return 1;
+  }
 
   if (maxreclen < 48)
+  {
+    ms_log (2, "The maxreclen value cannot be smaller than 48\n");
     return 1;
+  }
 
   /* Build source identifier for this record */
   ms2_recordsid (record, sid, sizeof (sid));

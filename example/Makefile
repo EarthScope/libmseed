@@ -8,7 +8,7 @@
 CFLAGS += -I..
 
 LDFLAGS += -L..
-LDLIBS += -lmseed
+LDLIBS := -lmseed $(LDLIBS)
 
 # Build all *.c source as independent programs
 SRCS := $(sort $(wildcard *.c))

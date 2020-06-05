@@ -3,7 +3,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2019 Chad Trabant, IRIS Data Management Center
+ * Copyright (c) 2020 Chad Trabant, IRIS Data Management Center
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,6 +171,8 @@ msr3_matchselect (MS3Selections *selections, MS3Record *msr, MS3SelectTime **pps
  * @param[in] pubversion Publication version for selection, 0 for any
  *
  * @returns 0 on success and -1 on error.
+ *
+ * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 ms3_addselect (MS3Selections **ppselections, char *sidpattern,
@@ -180,12 +182,15 @@ ms3_addselect (MS3Selections **ppselections, char *sidpattern,
   MS3SelectTime *newst = NULL;
 
   if (!ppselections || !sidpattern)
+  {
+    ms_log (2, "Required argument not defined: 'ppselections' or 'sidpattern'\n");
     return -1;
+  }
 
   /* Allocate new SelectTime and populate */
   if (!(newst = (MS3SelectTime *)libmseed_memory.malloc (sizeof (MS3SelectTime))))
   {
-    ms_log (2, "%s(): Cannot allocate memory\n", __func__);
+    ms_log (2, "Cannot allocate memory\n");
     return -1;
   }
   memset (newst, 0, sizeof (MS3SelectTime));
@@ -199,7 +204,7 @@ ms3_addselect (MS3Selections **ppselections, char *sidpattern,
     /* Allocate new Selections and populate */
     if (!(newsl = (MS3Selections *)libmseed_memory.malloc (sizeof (MS3Selections))))
     {
-      ms_log (2, "%s(): Cannot allocate memory\n", __func__);
+      ms_log (2, "Cannot allocate memory\n");
       return -1;
     }
     memset (newsl, 0, sizeof (MS3Selections));
@@ -240,7 +245,7 @@ ms3_addselect (MS3Selections **ppselections, char *sidpattern,
       /* Allocate new MS3Selections and populate */
       if (!(newsl = (MS3Selections *)libmseed_memory.malloc (sizeof (MS3Selections))))
       {
-        ms_log (2, "%s(): Cannot allocate memory\n", __func__);
+        ms_log (2, "Cannot allocate memory\n");
         return -1;
       }
       memset (newsl, 0, sizeof (MS3Selections));
@@ -289,6 +294,8 @@ ms3_addselect (MS3Selections **ppselections, char *sidpattern,
  * @param[in] pubversion Publication version for selection, 0 for any
  *
  * @return 0 on success and -1 on error.
+ *
+ * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 ms3_addselect_comp (MS3Selections **ppselections, char *network, char *station,
@@ -302,7 +309,10 @@ ms3_addselect_comp (MS3Selections **ppselections, char *network, char *station,
   char selchan[20];
 
   if (!ppselections)
+  {
+    ms_log (2, "Required argument not defined: 'ppselections'\n");
     return -1;
+  }
 
   if (network)
   {
@@ -407,6 +417,8 @@ ms3_addselect_comp (MS3Selections **ppselections, char *network, char *station,
  * publication version if it is an integer, otherwise it is ignored.
  *
  * @returns Count of selections added on success and -1 on error.
+ *
+ * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
@@ -429,13 +441,16 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
   uint8_t isend7;
 
   if (!ppselections || !filename)
+  {
+    ms_log (2, "Required argument not defined: 'ppselections' or 'filename'\n");
     return -1;
+  }
 
   if (strcmp (filename, "-"))
   {
     if (!(fp = fopen (filename, "rb")))
     {
-      ms_log (2, "%s(): Cannot open file %s: %s\n", __func__, filename, strerror (errno));
+      ms_log (2, "Cannot open file %s: %s\n", filename, strerror (errno));
       return -1;
     }
   }
@@ -535,7 +550,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
       starttime = ms_timestr2nstime (cp);
       if (starttime == NSTERROR)
       {
-        ms_log (2, "%s(): Cannot convert data selection start time (line %d): %s\n", __func__, linecount, cp);
+        ms_log (2, "Cannot convert data selection start time (line %d): %s\n", linecount, cp);
         return -1;
       }
     }
@@ -552,7 +567,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
       endtime = ms_timestr2nstime (cp);
       if (endtime == NSTERROR)
       {
-        ms_log (2, "%s(): Cannot convert data selection end time (line %d): %s\n", __func__, linecount, cp);
+        ms_log (2, "Cannot convert data selection end time (line %d): %s\n", linecount, cp);
         return -1;
       }
     }
@@ -573,7 +588,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
 
         if (longpver < 0 || longpver > 255 )
         {
-          ms_log (2, "%s(): Cannot convert publication version (line %d): %s\n", __func__, linecount, fields[3]);
+          ms_log (2, "Cannot convert publication version (line %d): %s\n", linecount, fields[3]);
           return -1;
         }
         else
@@ -585,7 +600,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
       /* Add selection to list */
       if (ms3_addselect (ppselections, fields[0], starttime, endtime, pubversion))
       {
-        ms_log (2, "%s(%s): Error adding selection on line %d\n", __func__, filename, linecount);
+        ms_log (2, "%s: Error adding selection on line %d\n", filename, linecount);
         return -1;
       }
     }
@@ -604,7 +619,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
 
         if (longpver < 0 || longpver > 255 )
         {
-          ms_log (2, "%s(): Cannot convert publication version (line %d): %s\n", __func__, linecount, fields[4]);
+          ms_log (2, "Cannot convert publication version (line %d): %s\n", linecount, fields[4]);
           return -1;
         }
         else
@@ -616,13 +631,13 @@ ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
       if (ms3_addselect_comp (ppselections, fields[0], fields[1], fields[2], fields[3],
                               starttime, endtime, pubversion))
       {
-        ms_log (2, "%s(%s): Error adding selection on line %d\n", __func__, filename, linecount);
+        ms_log (2, "%s: Error adding selection on line %d\n", filename, linecount);
         return -1;
       }
     }
     else
     {
-      ms_log (2, "%s(%s): Skipping unrecognized data selection on line %d\n", __func__, filename, linecount);
+      ms_log (1, "%s: Skipping unrecognized data selection on line %d\n", filename, linecount);
     }
 
     selectcount++;

@@ -4,7 +4,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2019 Chad Trabant, IRIS Data Management Center
+ * Copyright (c) 2020 Chad Trabant, IRIS Data Management Center
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,6 +99,8 @@ static uint32_t ms_timestr2btime (const char *timestr, uint8_t *btime, char *sid
  * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
  *
  * @returns the number of records created on success and -1 on error.
+ *
+ * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 msr3_pack (MS3Record *msr, void (*record_handler) (char *, int, void *),
@@ -107,11 +109,14 @@ msr3_pack (MS3Record *msr, void (*record_handler) (char *, int, void *),
   int packedrecs = 0;
 
   if (!msr)
+  {
+    ms_log (2, "Required argument not defined: 'msr'\n");
     return -1;
+  }
 
   if (!record_handler)
   {
-    ms_log (2, "%s(): record_handler() function pointer not set!\n", __func__);
+    ms_log (2, "callback record_handler() function pointer not set!\n");
     return -1;
   }
 
@@ -123,8 +128,7 @@ msr3_pack (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
   if (msr->reclen < MINRECLEN || msr->reclen > MAXRECLEN)
   {
-    ms_log (2, "%s(%s): Record length is out of range: %d\n",
-            __func__, msr->sid, msr->reclen);
+    ms_log (2, "%s: Record length is out of range: %d\n", msr->sid, msr->reclen);
     return -1;
   }
 
@@ -150,6 +154,8 @@ msr3_pack (MS3Record *msr, void (*record_handler) (char *, int, void *),
  * Pack data into miniSEED version 3 record(s).
  *
  * Returns the number of records created on success and -1 on error.
+ *
+ * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
@@ -181,18 +187,21 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   uint32_t nsec;
 
   if (!msr)
+  {
+    ms_log (2, "Required argument not defined: 'msr'\n");
     return -1;
+  }
 
   if (!record_handler)
   {
-    ms_log (2, "%s(): record_handler() function pointer not set!\n", __func__);
+    ms_log (2, "callback record_handler() function pointer not set!\n");
     return -1;
   }
 
   if (msr->reclen < (MS3FSDH_LENGTH + strlen(msr->sid) + msr->extralength))
   {
-    ms_log (2, "%s(%s): Record length (%d) is not large enough for header (%d), SID (%"PRIsize_t"), and extra (%d)\n",
-            __func__, msr->sid, msr->reclen, MS3FSDH_LENGTH, strlen(msr->sid), msr->extralength);
+    ms_log (2, "%s: Record length (%d) is not large enough for header (%d), SID (%"PRIsize_t"), and extra (%d)\n",
+            msr->sid, msr->reclen, MS3FSDH_LENGTH, strlen(msr->sid), msr->extralength);
     return -1;
   }
 
@@ -204,7 +213,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
   if (rawrec == NULL)
   {
-    ms_log (2, "%s(%s): Cannot allocate memory\n", __func__, msr->sid);
+    ms_log (2, "%s: Cannot allocate memory\n", msr->sid);
     return -1;
   }
 
@@ -213,7 +222,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
   if (dataoffset < 0)
   {
-    ms_log (2, "%s(%s): Cannot pack miniSEED version 3 header\n", __func__, msr->sid);
+    ms_log (2, "%s: Cannot pack miniSEED version 3 header\n", msr->sid);
     return -1;
   }
 
@@ -229,7 +238,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     *pMS3FSDH_CRC(rawrec) = HO4u (crc, swapflag);
 
     if (verbose >= 1)
-      ms_log (1, "%s: Packed %d byte record with no payload\n", msr->sid, dataoffset);
+      ms_log (0, "%s: Packed %d byte record with no payload\n", msr->sid, dataoffset);
 
     /* Send record to handler */
     record_handler (rawrec, dataoffset, handlerdata);
@@ -246,7 +255,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
   if (!samplesize)
   {
-    ms_log (2, "%s(%s): Unknown sample type '%c'\n", __func__, msr->sid, msr->sampletype);
+    ms_log (2, "%s: Unknown sample type '%c'\n", msr->sid, msr->sampletype);
     return -1;
   }
 
@@ -273,7 +282,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
     if (encoded == NULL)
     {
-      ms_log (2, "%s(%s): Cannot allocate memory\n", __func__, msr->sid);
+      ms_log (2, "%s: Cannot allocate memory\n", msr->sid);
       libmseed_memory.free (rawrec);
       return -1;
     }
@@ -295,7 +304,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
     if (packsamples < 0)
     {
-      ms_log (2, "%s(%s): Error packing data samples\n", __func__, msr->sid);
+      ms_log (2, "%s: Error packing data samples\n", msr->sid);
       libmseed_memory.free (encoded);
       libmseed_memory.free (rawrec);
       return -1;
@@ -317,7 +326,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     *pMS3FSDH_CRC(rawrec) = HO4u (crc, swapflag);
 
     if (verbose >= 1)
-      ms_log (1, "%s: Packed %d samples into %d byte record\n", msr->sid, packsamples, reclen);
+      ms_log (0, "%s: Packed %d samples into %d byte record\n", msr->sid, packsamples, reclen);
 
     /* Send record to handler */
     record_handler (rawrec, reclen, handlerdata);
@@ -336,8 +345,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
     if (ms_nstime2time (nextstarttime, &year, &day, &hour, &min, &sec, &nsec))
     {
-      ms_log (2, "%s(%s): Cannot convert next record starttime: %" PRId64 "\n",
-              __func__, msr->sid, nextstarttime);
+      ms_log (2, "%s: Cannot convert next record starttime: %" PRId64 "\n", msr->sid, nextstarttime);
       libmseed_memory.free (rawrec);
       return -1;
     }
@@ -351,7 +359,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   }
 
   if (verbose >= 2)
-    ms_log (1, "%s: Packed %" PRId64 " total samples\n", msr->sid, totalpackedsamples);
+    ms_log (0, "%s: Packed %" PRId64 " total samples\n", msr->sid, totalpackedsamples);
 
   if (encoded)
     libmseed_memory.free (encoded);
@@ -377,6 +385,8 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
  * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
  *
  * @returns record length on success and -1 on error.
+ *
+ * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
@@ -389,26 +399,23 @@ msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
   uint32_t reclen;
   int8_t swapflag;
 
-  if (!msr)
-    return -1;
-
-  if (!record)
+  if (!msr || ! record)
   {
-    ms_log (2, "%s(): record buffer is not set!\n", __func__);
+    ms_log (2, "Required argument not defined: 'msr' or 'record'\n");
     return -1;
   }
 
   if (recbuflen < (uint32_t)(MS3FSDH_LENGTH + msr->extralength))
   {
-    ms_log (2, "%s(%s): Record buffer length (%u) is not large enough for header (%d) and extra (%d)\n",
-            __func__, msr->sid, recbuflen, MS3FSDH_LENGTH, msr->extralength);
+    ms_log (2, "%s: Record buffer length (%u) is not large enough for header (%d) and extra (%d)\n",
+            msr->sid, recbuflen, MS3FSDH_LENGTH, msr->extralength);
     return -1;
   }
 
   if (msr->samplecnt > UINT32_MAX)
   {
-    ms_log (2, "%s(%s): Too many samples in input record (%" PRId64 " for a single record)\n",
-            __func__, msr->sid, msr->samplecnt);
+    ms_log (2, "%s: Too many samples in input record (%" PRId64 " for a single record)\n",
+            msr->sid, msr->samplecnt);
     return -1;
   }
 
@@ -417,21 +424,21 @@ msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
 
   if (dataoffset < 0)
   {
-    ms_log (2, "%s(%s): Cannot pack miniSEED version 3 header\n", __func__, msr->sid);
+    ms_log (2, "%s: Cannot pack miniSEED version 3 header\n", msr->sid);
     return -1;
   }
 
   /* Determine encoded data size */
   if (msr3_data_bounds (msr, &origdataoffset, &origdatasize))
   {
-    ms_log (2, "%s(%s): Cannot determine original data bounds\n", __func__, msr->sid);
+    ms_log (2, "%s: Cannot determine original data bounds\n", msr->sid);
     return -1;
   }
 
   if (recbuflen < (uint32_t)(MS3FSDH_LENGTH + msr->extralength + origdatasize))
   {
-    ms_log (2, "%s(%s): Destination record buffer length (%u) is not large enough for record (%d)\n",
-            __func__, msr->sid, recbuflen, (MS3FSDH_LENGTH + msr->extralength + origdatasize));
+    ms_log (2, "%s: Destination record buffer length (%u) is not large enough for record (%d)\n",
+            msr->sid, recbuflen, (MS3FSDH_LENGTH + msr->extralength + origdatasize));
     return -1;
   }
 
@@ -453,7 +460,7 @@ msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
   *pMS3FSDH_CRC(record) = HO4u (crc, swapflag);
 
   if (verbose >= 1)
-    ms_log (1, "%s: Repacked %" PRId64 " samples into a %u byte record\n",
+    ms_log (0, "%s: Repacked %" PRId64 " samples into a %u byte record\n",
             msr->sid, msr->samplecnt, reclen);
 
   return reclen;
@@ -472,6 +479,8 @@ msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
  * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
  *
  * @returns the size of the header (fixed and extra) on success, otherwise -1.
+ *
+ * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose)
@@ -488,7 +497,10 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   uint32_t nsec;
 
   if (!msr || !record)
+  {
+    ms_log (2, "Required argument not defined: 'msr' or 'record'\n");
     return -1;
+  }
 
   /* Set default record length and encoding if needed */
   if (msr->reclen == -1)
@@ -498,7 +510,7 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
   if (msr->reclen < MINRECLEN || msr->reclen > MAXRECLEN)
   {
-    ms_log (2, "%s(%s): Record length is out of range: %d\n", __func__, msr->sid, msr->reclen);
+    ms_log (2, "%s: Record length is out of range: %d\n", msr->sid, msr->reclen);
     return -1;
   }
 
@@ -506,8 +518,8 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
   if (recbuflen < (uint32_t)(MS3FSDH_LENGTH + sidlength + msr->extralength))
   {
-    ms_log (2, "%s(%s): Buffer length (%d) is not large enough for fixed header (%d), SID (%"PRIsize_t"), and extra (%d)\n",
-            __func__, msr->sid, msr->reclen, MS3FSDH_LENGTH, sidlength, msr->extralength);
+    ms_log (2, "%s: Buffer length (%d) is not large enough for fixed header (%d), SID (%"PRIsize_t"), and extra (%d)\n",
+            msr->sid, msr->reclen, MS3FSDH_LENGTH, sidlength, msr->extralength);
     return -1;
   }
 
@@ -515,19 +527,19 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   swapflag = (ms_bigendianhost ()) ? 1 : 0;
 
   if (verbose > 2 && swapflag)
-    ms_log (1, "%s: Byte swapping needed for packing of header\n", msr->sid);
+    ms_log (0, "%s: Byte swapping needed for packing of header\n", msr->sid);
 
   /* Break down start time into individual components */
   if (ms_nstime2time (msr->starttime, &year, &day, &hour, &min, &sec, &nsec))
   {
-    ms_log (2, "%s(%s): Cannot convert starttime: %" PRId64 "\n", __func__, msr->sid, msr->starttime);
+    ms_log (2, "%s: Cannot convert starttime: %" PRId64 "\n", msr->sid, msr->starttime);
     return -1;
   }
 
   /* Ensure that SID length fits in format, which uses data type uint8_t */
   if (sidlength > 255)
   {
-    ms_log (2, "%s(%s): Source ID too long: %"PRIsize_t" bytes\n", __func__, msr->sid, sidlength);
+    ms_log (2, "%s: Source ID too long: %"PRIsize_t" bytes\n", msr->sid, sidlength);
     return -1;
   }
 
@@ -569,6 +581,8 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
  * Pack data into miniSEED version 2 record(s).
  *
  * Returns the number of records created on success and -1 on error.
+ *
+ * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
@@ -599,18 +613,21 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   uint32_t nsec;
 
   if (!msr)
+  {
+    ms_log (2, "Required argument not defined: 'msr'\n");
     return -1;
+  }
 
   if (!record_handler)
   {
-    ms_log (2, "%s(): record_handler() function pointer not set!\n", __func__);
+    ms_log (2, "callback record_handler() function pointer not set!\n");
     return -1;
   }
 
   if (msr->reclen < 128)
   {
-    ms_log (2, "%s(%s): Record length (%d) is not large enough, must be >= 128 bytes\n",
-            __func__, msr->sid, msr->reclen);
+    ms_log (2, "%s: Record length (%d) is not large enough, must be >= 128 bytes\n",
+            msr->sid, msr->reclen);
     return -1;
   }
 
@@ -618,8 +635,8 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
    * Power of two if (X & (X - 1)) == 0 */
   if ((msr->reclen & (msr->reclen - 1)) != 0)
   {
-    ms_log (2, "%s(%s): Cannot create miniSEED 2, record length (%d) is not a power of 2\n",
-            __func__, msr->sid, msr->reclen);
+    ms_log (2, "%s: Cannot create miniSEED 2, record length (%d) is not a power of 2\n",
+            msr->sid, msr->reclen);
     return -1;
   }
 
@@ -631,7 +648,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
   if (rawrec == NULL)
   {
-    ms_log (2, "%s(%s): Cannot allocate memory\n", __func__, msr->sid);
+    ms_log (2, "%s: Cannot allocate memory\n", msr->sid);
     return -1;
   }
 
@@ -639,10 +656,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   headerlen = msr3_pack_header2 (msr, rawrec, msr->reclen, verbose);
 
   if (headerlen < 0)
-  {
-    ms_log (2, "%s(%s): Cannot pack miniSEED version 2 header\n", __func__, msr->sid);
     return -1;
-  }
 
   /* Short cut: if there are no samples, record packing is complete */
   if (msr->numsamples <= 0)
@@ -654,7 +668,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     memset (rawrec + headerlen, 0, msr->reclen - headerlen);
 
     if (verbose >= 1)
-      ms_log (1, "%s: Packed %d byte record with no payload\n", msr->sid, msr->reclen);
+      ms_log (0, "%s: Packed %d byte record with no payload\n", msr->sid, msr->reclen);
 
     /* Send record to handler */
     record_handler (rawrec, msr->reclen, handlerdata);
@@ -671,7 +685,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
   if (!samplesize)
   {
-    ms_log (2, "%s(%s): Unknown sample type '%c'\n", __func__, msr->sid, msr->sampletype);
+    ms_log (2, "%s: Unknown sample type '%c'\n", msr->sid, msr->sampletype);
     return -1;
   }
 
@@ -716,7 +730,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
     if (encoded == NULL)
     {
-      ms_log (2, "%s(%s): Cannot allocate memory\n", __func__, msr->sid);
+      ms_log (2, "%s: Cannot allocate memory\n", msr->sid);
       libmseed_memory.free (rawrec);
       return -1;
     }
@@ -738,7 +752,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
     if (packsamples < 0)
     {
-      ms_log (2, "%s(%s): Error packing data samples\n", __func__, msr->sid);
+      ms_log (2, "%s: Error packing data samples\n", msr->sid);
       libmseed_memory.free (encoded);
       libmseed_memory.free (rawrec);
       return -1;
@@ -753,7 +767,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     *pMS2FSDH_NUMSAMPLES(rawrec) = HO2u (packsamples, swapflag);
 
     if (verbose >= 1)
-      ms_log (1, "%s: Packed %d samples into %d byte record\n", msr->sid, packsamples, msr->reclen);
+      ms_log (0, "%s: Packed %d samples into %d byte record\n", msr->sid, packsamples, msr->reclen);
 
     /* Send record to handler */
     record_handler (rawrec, msr->reclen, handlerdata);
@@ -772,8 +786,8 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
     if (ms_nstime2time (nextstarttime, &year, &day, &hour, &min, &sec, &nsec))
     {
-      ms_log (2, "%s(%s): Cannot convert next record starttime: %" PRId64 "\n",
-              __func__, msr->sid, nextstarttime);
+      ms_log (2, "%s: Cannot convert next record starttime: %" PRId64 "\n",
+              msr->sid, nextstarttime);
       libmseed_memory.free (rawrec);
       return -1;
     }
@@ -787,7 +801,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   }
 
   if (verbose >= 2)
-    ms_log (1, "%s: Packed %" PRId64 " total samples\n", msr->sid, totalpackedsamples);
+    ms_log (0, "%s: Packed %" PRId64 " total samples\n", msr->sid, totalpackedsamples);
 
   if (encoded)
     libmseed_memory.free (encoded);
@@ -810,6 +824,8 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
  * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
  *
  * @returns the size of the header (fixed and blockettes) on success, otherwise -1.
+ *
+ * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose)
@@ -850,7 +866,10 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   int jdx;
 
   if (!msr || !record)
+  {
+    ms_log (2, "Required argument not defined: 'msr' or 'record'\n");
     return -1;
+  }
 
   /* Set default record length and encoding if needed */
   if (msr->reclen == -1)
@@ -860,7 +879,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
   if (msr->reclen < 128 || msr->reclen > MAXRECLEN)
   {
-    ms_log (2, "%s(%s): Record length is out of range: %d\n", __func__, msr->sid, msr->reclen);
+    ms_log (2, "%s: Record length is out of range: %d\n", msr->sid, msr->reclen);
     return -1;
   }
 
@@ -868,8 +887,8 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
    * Power of two if (X & (X - 1)) == 0 */
   if ((msr->reclen & (msr->reclen - 1)) != 0)
   {
-    ms_log (2, "%s(%s): Cannot pack miniSEED 2, record length (%d) is not a power of 2\n",
-            __func__, msr->sid, msr->reclen);
+    ms_log (2, "%s: Cannot pack miniSEED 2, record length (%d) is not a power of 2\n",
+            msr->sid, msr->reclen);
     return -1;
   }
 
@@ -884,16 +903,15 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   /* Parse identifier codes from full identifier */
   if (ms_sid2nslc (msr->sid, network, station, location, channel))
   {
-    ms_log (2, "%s(%s): Cannot parse SEED identifier codes from full identifier\n",
-            __func__, msr->sid);
+    ms_log (2, "%s: Cannot parse SEED identifier codes from full identifier\n", msr->sid);
     return -1;
   }
 
   /* Verify that identifier codes will fit into and are appropriate for miniSEED 2 */
   if (strlen (network) > 2 || strlen (station) > 5 || strlen (location) > 2 || strlen (channel) != 3)
   {
-    ms_log (2, "%s(%s): Cannot create miniSEED 2 for N,S,L,C codes: %s, %s, %s, %s\n",
-            __func__, msr->sid, network, station, location, channel);
+    ms_log (2, "%s: Cannot create miniSEED 2 for N,S,L,C codes: %s, %s, %s, %s\n",
+            msr->sid, network, station, location, channel);
     return -1;
   }
 
@@ -901,12 +919,12 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   swapflag = (ms_bigendianhost ()) ? 0 : 1;
 
   if (verbose > 2 && swapflag)
-    ms_log (1, "%s: Byte swapping needed for packing of header\n", msr->sid);
+    ms_log (0, "%s: Byte swapping needed for packing of header\n", msr->sid);
 
   /* Break down start time into individual components */
   if (ms_nstime2time (msr->starttime, &year, &day, &hour, &min, &sec, &nsec))
   {
-    ms_log (2, "%s(%s): Cannot convert starttime: %" PRId64 "\n", __func__, msr->sid, msr->starttime);
+    ms_log (2, "%s: Cannot convert starttime: %" PRId64 "\n", msr->sid, msr->starttime);
     return -1;
   }
 
@@ -917,8 +935,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   /* Generate factor & multipler representation of sample rate */
   if (ms_genfactmult (msr3_sampratehz(msr), &factor, &multiplier))
   {
-    ms_log (2, "%s(%s): Cannot convert sample rate (%g) to factor and multiplier\n",
-            __func__, msr->sid, msr->samprate);
+    ms_log (2, "%s: Cannot convert sample rate (%g) to factor and multiplier\n", msr->sid, msr->samprate);
     return -1;
   }
 
@@ -932,7 +949,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
     rootvalue = json_parse_string (msr->extra);
     if (!rootvalue)
     {
-      ms_log (2, "%s(): Extra headers are not JSON\n", __func__);
+      ms_log (2, "Extra headers are not JSON\n");
       return -1;
     }
 
@@ -940,7 +957,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
     rootobject = json_value_get_object (rootvalue);
     if (!rootobject)
     {
-      ms_log (2, "%s(): Extra headers are not a JSON object\n", __func__);
+      ms_log (2, "Extra headers are not a JSON object\n");
       json_value_free (rootvalue);
       return -1;
     }
@@ -1110,7 +1127,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
       if ((recbuflen - written) < blockette_length)
       {
-        ms_log (2, "%s(%s): Record length not large enough for B500\n", __func__, msr->sid);
+        ms_log (2, "%s: Record length not large enough for B500\n", msr->sid);
         json_value_free (rootvalue);
         return -1;
       }
@@ -1132,7 +1149,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
         if (ms_timestr2btime (header_string, (uint8_t *)pMS2B500_YEAR (record + written),
                               msr->sid, swapflag) == -1)
         {
-          ms_log (2, "%s(%s): Cannot convert B500 time: %s\n", __func__, msr->sid, header_string);
+          ms_log (2, "%s: Cannot convert B500 time: %s\n", msr->sid, header_string);
           json_value_free (rootvalue);
           return -1;
         }
@@ -1184,7 +1201,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
       if ((recbuflen - written) < blockette_length )
       {
-        ms_log (2, "%s(%s): Record length not large enough for B%d\n", __func__, msr->sid, blockette_type);
+        ms_log (2, "%s: Record length not large enough for B%d\n", msr->sid, blockette_type);
         json_value_free (rootvalue);
         return -1;
       }
@@ -1231,7 +1248,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
         if (ms_timestr2btime (header_string, (uint8_t *)pMS2B200_YEAR (record + written),
                               msr->sid, swapflag) == -1)
         {
-          ms_log (2, "%s(%s): Cannot convert B%d time: %s\n", __func__, msr->sid, blockette_type, header_string);
+          ms_log (2, "%s: Cannot convert B%d time: %s\n", msr->sid, blockette_type, header_string);
           json_value_free (rootvalue);
           return -1;
         }
@@ -1314,14 +1331,14 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
       if (!blockette_type || !blockette_length)
       {
-        ms_log (2, "%s(): Unknown or unset FDSN.Calibration.Sequence.Type or EndTime\n", __func__);
+        ms_log (2, "%s: Unknown or unset FDSN.Calibration.Sequence.Type or EndTime\n", msr->sid);
         json_value_free (rootvalue);
         return -1;
       }
 
       if ((recbuflen - written) < blockette_length )
       {
-        ms_log (2, "%s(%s): Record length not large enough for B%d\n", __func__, msr->sid, blockette_type);
+        ms_log (2, "%s: Record length not large enough for B%d\n", msr->sid, blockette_type);
         json_value_free (rootvalue);
         return -1;
       }
@@ -1343,7 +1360,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
           if (ms_timestr2btime (header_string, (uint8_t *)pMS2B300_YEAR (record + written),
                                 msr->sid, swapflag) == -1)
           {
-            ms_log (2, "%s(%s): Cannot convert B%d time: %s\n", __func__, msr->sid, blockette_type, header_string);
+            ms_log (2, "%s: Cannot convert B%d time: %s\n", msr->sid, blockette_type, header_string);
             json_value_free (rootvalue);
             return -1;
           }
@@ -1506,7 +1523,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
         if ((recbuflen - written) < blockette_length)
         {
-          ms_log (2, "%s(%s): Record length not large enough for B%d\n", __func__, msr->sid, blockette_type);
+          ms_log (2, "%s: Record length not large enough for B%d\n", msr->sid, blockette_type);
           json_value_free (rootvalue);
           return -1;
         }
@@ -1522,7 +1539,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
         if (ms_timestr2btime (header_string, (uint8_t *)pMS2B395_YEAR (record + written),
                               msr->sid, swapflag) == -1)
         {
-          ms_log (2, "%s(%s): Cannot convert B%d time: %s\n", __func__, msr->sid, blockette_type, header_string);
+          ms_log (2, "%s: Cannot convert B%d time: %s\n", msr->sid, blockette_type, header_string);
           json_value_free (rootvalue);
           return -1;
         }
@@ -1543,6 +1560,8 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
  *  be packed with 'encoding' format and placed in 'dest'.
  *
  *  Return number of samples packed on success and a negative on error.
+ *
+ * \ref MessageOnError - this function logs a message on error
  ************************************************************************/
 static int
 msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
@@ -1575,7 +1594,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing ASCII data\n", sid);
+      ms_log (0, "%s: Packing ASCII data\n", sid);
 
     nsamples = msr_encode_text ((char *)src, maxsamples, (char *)dest, maxdatabytes);
 
@@ -1600,7 +1619,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing INT16 data samples\n", sid);
+      ms_log (0, "%s: Packing INT16 data samples\n", sid);
 
     nsamples = msr_encode_int16 ((int32_t *)src, maxsamples, (int16_t *)dest, maxdatabytes, swapflag);
 
@@ -1625,7 +1644,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing INT32 data samples\n", sid);
+      ms_log (0, "%s: Packing INT32 data samples\n", sid);
 
     nsamples = msr_encode_int32 ((int32_t *)src, maxsamples, (int32_t *)dest, maxdatabytes, swapflag);
 
@@ -1650,7 +1669,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing FLOAT32 data samples\n", sid);
+      ms_log (0, "%s: Packing FLOAT32 data samples\n", sid);
 
     nsamples = msr_encode_float32 ((float *)src, maxsamples, (float *)dest, maxdatabytes, swapflag);
 
@@ -1675,7 +1694,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing FLOAT64 data samples\n", sid);
+      ms_log (0, "%s: Packing FLOAT64 data samples\n", sid);
 
     nsamples = msr_encode_float64 ((double *)src, maxsamples, (double *)dest, maxdatabytes, swapflag);
 
@@ -1700,7 +1719,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing Steim1 data frames\n", sid);
+      ms_log (0, "%s: Packing Steim1 data frames\n", sid);
 
     /* Always big endian Steim1 */
     swapflag = (ms_bigendianhost()) ? 0 : 1;
@@ -1725,7 +1744,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     }
 
     if (verbose > 1)
-      ms_log (1, "%s: Packing Steim2 data frames\n", sid);
+      ms_log (0, "%s: Packing Steim2 data frames\n", sid);
 
     /* Always big endian Steim2 */
     swapflag = (ms_bigendianhost()) ? 0 : 1;
@@ -2030,6 +2049,8 @@ ms_genfactmult (double samprate, int16_t *factor, int16_t *multiplier)
  * fract  uint16_t  8       0.0001 seconds, i.e. 1/10ths of milliseconds (0—9999)
  *
  * Return nanoseconds on success and -1 on error.
+ *
+ * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 static inline uint32_t
 ms_timestr2btime (const char *timestr, uint8_t *btime, char *sid, int8_t swapflag)
@@ -2043,7 +2064,10 @@ ms_timestr2btime (const char *timestr, uint8_t *btime, char *sid, int8_t swapfla
   nstime_t nstime;
 
   if (!timestr || !btime)
+  {
+    ms_log (2, "Required argument not defined: 'timestr' or 'btime'\n");
     return -1;
+  }
 
   if ((nstime = ms_timestr2nstime (timestr)) == NSTERROR)
     return -1;

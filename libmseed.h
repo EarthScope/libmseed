@@ -29,7 +29,7 @@ extern "C" {
 #endif
 
 #define LIBMSEED_VERSION "3.0.8"    //!< Library version
-#define LIBMSEED_RELEASE "2020.137" //!< Library release date
+#define LIBMSEED_RELEASE "2020.156" //!< Library release date
 
 /** @defgroup io-functions File and URL I/O */
 /** @defgroup miniseed-record Record Handling */
@@ -619,7 +619,7 @@ extern void mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
     \sa ms3_readtracelist_selection()
     \sa msr3_writemseed()
     \sa mstl3_writemseed()
- @{ */
+    @{ */
 
 /** @brief Type definition for data source I/O: file-system versus URL */
 typedef struct LMIO
@@ -934,7 +934,8 @@ extern int mseh_print (MS3Record *msr, int indent);
     @brief Central logging functions for the library and calling programs
 
     This central logging facility is used for all logging performed by
-    the library.
+    the library.  Calling programs may also wish to log messages via
+    the same facility for consistency.
 
     The logging can be configured to send messages to arbitrary
     functions, referred to as \c log_print() and \c diag_print().
@@ -945,19 +946,79 @@ extern int mseh_print (MS3Record *msr, int indent);
     identification, referred to as \c logprefix and \c errprefix.
 
     @anchor logging-levels
+    Logging levels
+    --------------
+
     Three message levels are recognized:
     - 0 : Normal log messages, printed using \c log_print() with \c logprefix
     - 1  : Diagnostic messages, printed using \c diag_print() with \c logprefix
     - 2+ : Error messages, printed using \c diag_print() with \c errprefix
 
-    It is the task of the \c ms_log() and \c ms_log_l() functions to
+    It is the task of the ms_rlog() and ms_rlog_l() functions to
     format a message using printf conventions and pass the formatted
-    string to the appropriate printing function.
+    string to the appropriate printing function.  The convenience
+    macros ms_log() and ms_log_l() can be used to automatically set
+    the calling function name.
+
+    @anchor log-registry
+    Log Registry
+    ------------
+
+    By default log messages are sent directly to the printing
+    functions.  Optionally, error and warning messages (levels 1 and
+    2) can be accumulated in a log-registry.  The registry is enabled
+    by setting the \c maxmessages argument of either ms_rloginit() or
+    ms_rloginit_l().  Messages can be emitted, aka printed, using
+    ms_rlog_emit() and cleared using ms_rlog_free().  Alternatively,
+    the ::MSLogRegistry associated with a ::MSLogParam (or the global
+    parameters at \c gMSLogParam).
+
+    The log registry facility allows a calling program to disable
+    error (and warning) output from the library and either inspect it
+    or emitting as desired.  See \ref example-mseedview for a simple
+    example of usage.
+
+    @anchor MessageOnError
+    Message on Error
+    ----------------
+
+    Functions marked as \ref MessageOnError log a message when
+    returning an error status or logging a warning (log levels 1 and
+    2).  This indication can be useful when error and warning messages
+    are retained in \ref log-registry.
 
     @{ */
 
 /** Maximum length of log messages in bytes */
 #define MAX_LOG_MSG_LENGTH  200
+
+/** @brief Log registry entry.
+    \sa ms_rlog()
+    \sa ms_rlog_l() */
+typedef struct MSLogEntry
+{
+  int level;                        //!< Message level
+  char function[30];                //!< Function generating the mesage
+  char message[MAX_LOG_MSG_LENGTH]; //!< Log, warning or error message
+  struct MSLogEntry *next;
+} MSLogEntry;
+
+/** @brief Log message registry.
+    \sa ms_rlog()
+    \sa ms_rlog_l() */
+typedef struct MSLogRegistry
+{
+  int maxmessages;
+  int messagecnt;
+  MSLogEntry *messages;
+} MSLogRegistry;
+
+/** @def MSLogRegistry_INITIALIZER
+    @brief Initialializer for ::MSLogRegistry */
+#define MSLogRegistry_INITIALIZER                        \
+  {                                                      \
+    .maxmessages = 0, .messagecnt = 0, .messages = NULL  \
+  }
 
 /** @brief Logging parameters.
     __Callers should not modify these values directly and generally
@@ -966,25 +1027,63 @@ extern int mseh_print (MS3Record *msr, int indent);
     \sa ms_loginit() */
 typedef struct MSLogParam
 {
-  void (*log_print)(char*);  //!< Function to call for regular messages
-  const char *logprefix;     //!< Message prefix for regular and diagnostic messages
-  void (*diag_print)(char*); //!< Function to call for diagnostic and error messages
-  const char *errprefix;     //!< Message prefix for error messages
+  void (*log_print)(const char*);  //!< Function to call for regular messages
+  const char *logprefix;           //!< Message prefix for regular and diagnostic messages
+  void (*diag_print)(const char*); //!< Function to call for diagnostic and error messages
+  const char *errprefix;           //!< Message prefix for error messages
+  MSLogRegistry registry;          //!< Message registry
 } MSLogParam;
 
+/** @def MSLogParam_INITIALIZER
+    @brief Initialializer for ::MSLogParam */
+#define MSLogParam_INITIALIZER             \
+  {                                        \
+    .log_print = NULL, .logprefix = NULL,  \
+    .diag_print = NULL, .errprefix = NULL, \
+    .registry = MSLogRegistry_INITIALIZER  \
+  }
+
+/** @def ms_log
+    @brief Wrapper for ms_rlog(), call as __ms_log (level, format, ...)__
+*/
+#define ms_log(level, ...)                      \
+  ms_rlog(__func__, level, __VA_ARGS__)
+
+/** @def ms_log_l
+    @brief Wrapper for ms_rlog_l(), call as __ms_log_l (logp, level, format, ...)__
+*/
+#define ms_log_l(logp, level, ...)              \
+  ms_rlog_l(logp, __func__, level, __VA_ARGS__)
+
 #if defined(__GNUC__) || defined(__clang__)
-__attribute__((__format__ (__printf__, 2, 3)))
+__attribute__((__format__ (__printf__, 3, 4)))
 #endif
-extern int ms_log (int level, const char *format, ...);
+extern int ms_rlog (const char *function, int level, const char *format, ...);
 #if defined(__GNUC__) || defined(__clang__)
-__attribute__ ((__format__ (__printf__, 3, 4)))
+__attribute__ ((__format__ (__printf__, 4, 5)))
 #endif
-extern int ms_log_l (MSLogParam *logp, int level, const char *format, ...);
-extern void ms_loginit (void (*log_print)(char*), const char *logprefix,
-                        void (*diag_print)(char*), const char *errprefix);
-extern MSLogParam *ms_loginit_l (MSLogParam *logp,
-                                 void (*log_print)(char*), const char *logprefix,
-                                 void (*diag_print)(char*), const char *errprefix);
+extern int ms_rlog_l (MSLogParam *logp, const char *function, int level, const char *format, ...);
+
+/** @def ms_loginit
+    @brief Convenience wrapper for ms_rloginit(), omitting max messages, disabling registry */
+#define ms_loginit(log_print, logprefix, diag_print, errprefix) \
+  ms_rloginit(log_print, logprefix, diag_print, errprefix, 0)
+
+/** @def ms_loginit_l
+    @brief Convenience wrapper for ms_rloginit_l(), omitting max messages, disabling registry */
+#define ms_loginit_l(logp, log_print, logprefix, diag_print, errprefix) \
+  ms_rloginit_l(logp, log_print, logprefix, diag_print, errprefix, 0)
+
+extern void ms_rloginit (void (*log_print)(const char*), const char *logprefix,
+                         void (*diag_print)(const char*), const char *errprefix,
+                         int maxmessages);
+extern MSLogParam *ms_rloginit_l (MSLogParam *logp,
+                                  void (*log_print)(const char*), const char *logprefix,
+                                  void (*diag_print)(const char*), const char *errprefix,
+                                  int maxmessages);
+extern int ms_rlog_emit (MSLogParam *logp, int count, int context);
+extern int ms_rlog_free (MSLogParam *logp);
+
 /** @} */
 
 /** @addtogroup leapsecond
@@ -1013,12 +1112,12 @@ extern MSLogParam *ms_loginit_l (MSLogParam *logp,
     string, the non-leap second representation is used, i.e. no second
     values of "60" are generated.
 
-    @{ */
+  @{ */
 /** @brief Leap second list container */
 typedef struct LeapSecond
 {
   nstime_t leapsecond;       //!< Time of leap second as epoch since 1 January 1900
-  int32_t  TAIdelta;         //!< TAI-UTC difference in seconds
+  int32_t TAIdelta;          //!< TAI-UTC difference in seconds
   struct LeapSecond *next;   //!< Pointer to next entry, NULL if the last
 } LeapSecond;
 
@@ -1029,13 +1128,13 @@ extern int ms_readleapsecondfile (const char *filename);
 /** @} */
 
 /** @addtogroup utility-functions
-    @brief General utilities
-    @{ */
+  @brief General utilities
+  @{ */
 
-extern uint8_t  ms_samplesize (const char sampletype);
+extern uint8_t ms_samplesize (const char sampletype);
 extern int ms_encoding_sizetype (const uint8_t encoding, uint8_t *samplesize, char *sampletype);
-extern const char* ms_encodingstr (const uint8_t encoding);
-extern const char* ms_errorstr (int errorcode);
+extern const char *ms_encodingstr (const uint8_t encoding);
+extern const char *ms_errorstr (int errorcode);
 
 extern nstime_t ms_sampletime (nstime_t time, int64_t offset, double samprate);
 extern double ms_dabs (double val);
@@ -1049,21 +1148,21 @@ extern int lmp_fseek64 (FILE *stream, int64_t offset, int whence);
 extern uint64_t lmp_nanosleep (uint64_t nanoseconds);
 
 /** Return CRC32C value of supplied buffer, with optional starting CRC32C value */
-extern uint32_t ms_crc32c (const uint8_t* input, int length, uint32_t previousCRC32C);
+extern uint32_t ms_crc32c (const uint8_t *input, int length, uint32_t previousCRC32C);
 
 /** In-place byte swapping of 2 byte quantity */
-extern void ms_gswap2 ( void *data2 );
+extern void ms_gswap2 (void *data2);
 /** In-place byte swapping of 4 byte quantity */
-extern void ms_gswap4 ( void *data4 );
+extern void ms_gswap4 (void *data4);
 /** In-place byte swapping of 8 byte quantity */
-extern void ms_gswap8 ( void *data8 );
+extern void ms_gswap8 (void *data8);
 
 /** In-place byte swapping of 2 byte, memory-aligned, quantity */
-extern void ms_gswap2a ( void *data2 );
+extern void ms_gswap2a (void *data2);
 /** In-place byte swapping of 4 byte, memory-aligned, quantity */
-extern void ms_gswap4a ( void *data4 );
+extern void ms_gswap4a (void *data4);
 /** In-place byte swapping of 8 byte, memory-aligned, quantity */
-extern void ms_gswap8a ( void *data8 );
+extern void ms_gswap8a (void *data8);
 
 /** @} */
 
@@ -1098,7 +1197,7 @@ typedef struct LIBMSEED_MEMORY
 {
   void *(*malloc) (size_t);           //!< Pointer to desired malloc()
   void *(*realloc) (void *, size_t);  //!< Pointer to desired realloc()
-  void  (*free) (void *);             //!< Pointer to desired free()
+  void (*free) (void *);              //!< Pointer to desired free()
 } LIBMSEED_MEMORY;
 
 /** Global memory management function list */

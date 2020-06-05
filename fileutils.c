@@ -3,7 +3,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2019 Chad Trabant, IRIS Data Management Center
+ * Copyright (c) 2020 Chad Trabant, IRIS Data Management Center
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +65,8 @@ libmseed_url_support (void)
  * See ms3_readmsr_selection() for a further description of arguments.
  *
  * @returns Return value from ms3_readmsr_selection()
+ *
+ * \ref MessageOnError - this function logs a message on error
  *********************************************************************/
 int
 ms3_readmsr (MS3Record **ppmsr, const char *mspath, int64_t *fpos,
@@ -90,6 +92,8 @@ ms3_readmsr (MS3Record **ppmsr, const char *mspath, int64_t *fpos,
  * See ms3_readmsr_selection() for a further description of arguments.
  *
  * @returns Return value from ms3_readmsr_selection()
+ *
+ * \ref MessageOnError - this function logs a message on error
  *********************************************************************/
 int
 ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
@@ -105,17 +109,21 @@ ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
  * stream reading buffer for a MSFP.  The buffer length, reading offset
  * and stream position indicators are all updated as necessary.
  *
+ * \ref MessageOnError - this function logs a message on error
  *********************************************************************/
 static void
 ms3_shift_msfp (MS3FileParam *msfp, int shift)
 {
   if (!msfp)
+  {
+    ms_log (2, "Required argument not defined: 'msfp'\n");
     return;
+  }
 
   if (shift <= 0 && shift > msfp->readlength)
   {
-    ms_log (2, "%s(): Cannot shift buffer, shift: %d, readlength: %d, readoffset: %d\n",
-            __func__, shift, msfp->readlength, msfp->readoffset);
+    ms_log (2, "Cannot shift buffer, shift: %d, readlength: %d, readoffset: %d\n",
+            shift, msfp->readlength, msfp->readoffset);
     return;
   }
 
@@ -214,6 +222,8 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  * @retval ::MS_ENDOFFILE on reaching the end of a stream
  *
  * \sa @ref data-selections
+ *
+ * \ref MessageOnError - this function logs a message on error
  *********************************************************************/
 int
 ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
@@ -229,11 +239,11 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
   int readcount = 0;
   int retcode   = MS_NOERROR;
 
-  if (!ppmsr)
+  if (!ppmsr || !ppmsfp)
+  {
+    ms_log (2, "Required argument not defined: 'msfp' or 'ppmsfp'\n");
     return MS_GENERROR;
-
-  if (!ppmsfp)
-    return MS_GENERROR;
+  }
 
   msfp = *ppmsfp;
 
@@ -244,7 +254,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
 
     if (msfp == NULL)
     {
-      ms_log (2, "%s(): Cannot allocate memory for MSFP\n", __func__);
+      ms_log (2, "Cannot allocate memory for MSFP\n");
       return MS_GENERROR;
     }
 
@@ -285,7 +295,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
   {
     if (!(msfp->readbuffer = (char *)libmseed_memory.malloc (MAXRECLEN)))
     {
-      ms_log (2, "%s(): Cannot allocate memory for read buffer\n", __func__);
+      ms_log (2, "Cannot allocate memory for read buffer\n");
       return MS_GENERROR;
     }
   }
@@ -325,15 +335,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
     {
       if (msio_fopen(&msfp->input, msfp->path, "rb", &msfp->startoffset, &msfp->endoffset))
       {
-        if (msfp->input.type == LMIO_FILE)
-          ms_log (2, "Cannot open: %s (%s)\n", msfp->path, strerror(errno));
-        else if (errno == ENOENT)
-          ms_log (2, "Cannot open: %s (No such path)\n", msfp->path);
-        else
-          ms_log (2, "Cannot open: %s\n", msfp->path);
-
         msr3_free (ppmsr);
-
         return MS_GENERROR;
       }
 
@@ -385,14 +387,11 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
       /* Read data into record buffer */
       readcount = (int)msio_fread (&msfp->input, msfp->readbuffer + msfp->readlength, readsize);
 
-      if (readcount <= 0)
+      if (readcount <= 0 && !msio_feof (&msfp->input))
       {
-        if (!msio_feof (&msfp->input))
-        {
-          ms_log (2, "Error reading at offset %" PRId64 "\n", msfp->streampos);
-          retcode = MS_GENERROR;
-          break;
-        }
+        ms_log (2, "Error reading %s at offset %" PRId64 "\n", msfp->path, msfp->streampos);
+        retcode = MS_GENERROR;
+        break;
       }
 
       /* Update read buffer length */
@@ -418,7 +417,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
         {
           if (verbose > 1)
           {
-            ms_log (1, "Skipping (selection) record for %s (%d bytes) starting at offset %" PRId64 "\n",
+            ms_log (0, "Skipping (selection) record for %s (%d bytes) starting at offset %" PRId64 "\n",
                     (*ppmsr)->sid, (*ppmsr)->reclen, msfp->streampos);
           }
 
@@ -436,13 +435,13 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
               ms_log (2, "Cannot unpack data samples for record at byte offset %" PRId64 ": %s\n",
                       msfp->streampos, msfp->path);
 
-              retcode = MS_NOERROR;
+              retcode = MS_GENERROR;
               break;
             }
           }
 
           if (verbose > 1)
-            ms_log (1, "Read record length of %d bytes\n", (*ppmsr)->reclen);
+            ms_log (0, "Read record length of %d bytes\n", (*ppmsr)->reclen);
 
           /* Test if this is the last record if end offset is known */
           if (last && msfp->endoffset)
@@ -469,7 +468,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
         {
           if (verbose > 1)
           {
-            ms_log (1, "Skipped %d bytes of non-data record at byte offset %" PRId64 "\n",
+            ms_log (0, "Skipped %d bytes of non-data record at byte offset %" PRId64 "\n",
                     SKIPLEN, msfp->streampos);
           }
 
@@ -478,11 +477,24 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
           msfp->streampos += SKIPLEN;
         }
         /* Parsing errors */
+        else if (parseval == MS_NOTSEED)
+        {
+          ms_log (2, "No miniSEED data detected in %s (starting at byte offset %" PRId64 ")\n",
+                  msfp->path, msfp->streampos);
+
+          retcode = parseval;
+          break;
+        }
+        else if (parseval == MS_OUTOFRANGE)
+        {
+          ms_log (2, "miniSEED record length out of supported range in %s (at byte offset %" PRId64 ")\n",
+                  msfp->path, msfp->streampos);
+
+          retcode = parseval;
+          break;
+        }
         else
         {
-          ms_log (2, "Cannot detect record at byte offset %" PRId64 ": %s\n",
-                  msfp->streampos, msfp->path);
-
           retcode = parseval;
           break;
         }
@@ -500,6 +512,9 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
           }
           else
           {
+            ms_log (2, "miniSEED record length out of supported range in %s (at byte offset %" PRId64 ")\n",
+                    msfp->path, msfp->streampos);
+
             retcode = MS_OUTOFRANGE;
             break;
           }
@@ -508,7 +523,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
         else if (msio_feof (&msfp->input))
         {
           if (verbose)
-            ms_log (1, "Truncated record at byte offset %" PRId64 ", end offset %" PRId64 ": %s\n",
+            ms_log (0, "Truncated record at byte offset %" PRId64 ", end offset %" PRId64 ": %s\n",
                     msfp->streampos, msfp->endoffset, msfp->path);
 
           retcode = MS_ENDOFFILE;
@@ -522,8 +537,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
     {
       if (msfp->recordcount == 0)
       {
-        if (verbose > 0)
-          ms_log (2, "%s: No data records read, not SEED?\n", msfp->path);
+        ms_log (2, "%s: No data records read, not SEED?\n", msfp->path);
         retcode = MS_NOTSEED;
       }
       else
@@ -555,6 +569,8 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
  *
  * @returns Return value from ms3_readtracelist_selection()
  *
+ * \ref MessageOnError - this function logs a message on error
+ *
  * \sa @ref trace-list
  *********************************************************************/
 int
@@ -577,6 +593,8 @@ ms3_readtracelist (MS3TraceList **ppmstl, const char *mspath,
  * arguments.
  *
  * @returns Return value from ms3_readtracelist_selection()
+ *
+ * \ref MessageOnError - this function logs a message on error
  *
  * \sa @ref trace-list
  *********************************************************************/
@@ -638,6 +656,8 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath,
  * @returns ::MS_NOERROR and populates an ::MS3TraceList struct at *ppmstl
  * on success, otherwise returns a (negative) libmseed error code.
  *
+ * \ref MessageOnError - this function logs a message on error
+ *
  * \sa @ref trace-list
  * \sa @ref data-selections
  *********************************************************************/
@@ -656,7 +676,10 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath,
   int retcode;
 
   if (!ppmstl)
+  {
+    ms_log (2, "Required argument not defined: 'ppmstl'\n");
     return MS_GENERROR;
+  }
 
   /* Initialize MS3TraceList if needed */
   if (!*ppmstl)
@@ -664,7 +687,10 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath,
     *ppmstl = mstl3_init (*ppmstl);
 
     if (!*ppmstl)
+    {
+      ms_log (2, "Cannot allocate memory\n");
       return MS_GENERROR;
+    }
   }
 
   /* Loop over the input file and add each record to trace list */
@@ -676,7 +702,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath,
 
     if (seg == NULL)
     {
-      ms_log (2, "%s(%s) Cannot add record to trace list\n", __func__, msr->sid);
+      ms_log (2, "%s: Cannot add record to trace list\n", msr->sid);
 
       retcode = MS_GENERROR;
       break;
@@ -725,12 +751,14 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath,
  * @param[in] version Version of calling program
  *
  * @returns 0 on succes and a negative library error code on error.
+ *
+ * \ref MessageOnError - this function logs a message on error
  *********************************************************************/
 int
 ms3_url_useragent (const char *program, const char *version)
 {
 #if !defined(LIBMSEED_URL)
-  ms_log (2, "%s(): URL support not included in library\n", __func__);
+  ms_log (2, "URL support not included in library\n");
   return -1;
 #else
   return msio_url_useragent (program, version);
@@ -751,12 +779,14 @@ ms3_url_useragent (const char *program, const char *version)
  * @param[in] userpassword User and password as user:password
  *
  * @returns 0 on succes and a negative library error code on error.
+ *
+ * \ref MessageOnError - this function logs a message on error
  *********************************************************************/
 int
 ms3_url_userpassword (const char *userpassword)
 {
 #if !defined(LIBMSEED_URL)
-  ms_log (2, "%s(): URL support not included in library\n", __func__);
+  ms_log (2, "URL support not included in library\n");
   return -1;
 #else
   return msio_url_userpassword (userpassword);
@@ -777,12 +807,14 @@ ms3_url_userpassword (const char *userpassword)
  * @param[in] header Header in "key: value" format
  *
  * @returns 0 on succes and a negative library error code on error.
+ *
+ * \ref MessageOnError - this function logs a message on error
  *********************************************************************/
 int
 ms3_url_addheader (const char *header)
 {
 #if !defined(LIBMSEED_URL)
-  ms_log (2, "%s(): URL support not included in library\n", __func__);
+  ms_log (2, "URL support not included in library\n");
   return -1;
 #else
   return msio_url_addheader (header);
@@ -801,7 +833,7 @@ void
 ms3_url_freeheaders (void)
 {
 #if !defined(LIBMSEED_URL)
-  ms_log (2, "%s(): URL support not included in library\n", __func__);
+  ms_log (2, "URL support not included in library\n");
   return;
 #else
   msio_url_freeheaders ();
@@ -845,6 +877,8 @@ ms_record_handler_int (char *record, int reclen, void *ofp)
  *
  * @returns the number of records written on success and -1 on error.
  *
+ * \ref MessageOnError - this function logs a message on error
+ *
  * \sa msr3_pack()
  ***************************************************************************/
 int64_t
@@ -856,7 +890,10 @@ msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite,
   int64_t packedrecords = 0;
 
   if (!msr || !mspath)
+  {
+    ms_log (2, "Required argument not defined: 'msr' or 'mspath'\n");
     return -1;
+  }
 
   /* Open output file or use stdout */
   if (strcmp (mspath, "-") == 0)
@@ -865,18 +902,12 @@ msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite,
   }
   else if ((ofp = fopen (mspath, perms)) == NULL)
   {
-    ms_log (1, "Cannot open output file %s: %s\n", mspath, strerror (errno));
-
+    ms_log (2, "Cannot open output file %s: %s\n", mspath, strerror (errno));
     return -1;
   }
 
   /* Pack the MS3Record */
   packedrecords = msr3_pack (msr, &ms_record_handler_int, ofp, NULL, flags, verbose - 1);
-
-  if (packedrecords < 0)
-  {
-    ms_log (1, "Cannot write miniSEED for %s\n", msr->sid);
-  }
 
   /* Close file and return record count */
   fclose (ofp);
@@ -906,6 +937,8 @@ msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite,
  *
  * @returns the number of records written on success and -1 on error.
  *
+ * \ref MessageOnError - this function logs a message on error
+ *
  * \sa mstl3_pack()
  * \sa msr3_pack()
  ***************************************************************************/
@@ -918,7 +951,10 @@ mstl3_writemseed (MS3TraceList *mstl, const char *mspath, int8_t overwrite,
   int64_t packedrecords = 0;
 
   if (!mstl || !mspath)
+  {
+    ms_log (2, "Required argument not defined: 'msr' or 'mspath'\n");
     return -1;
+  }
 
   /* Open output file or use stdout */
   if (strcmp (mspath, "-") == 0)
@@ -927,8 +963,7 @@ mstl3_writemseed (MS3TraceList *mstl, const char *mspath, int8_t overwrite,
   }
   else if ((ofp = fopen (mspath, perms)) == NULL)
   {
-    ms_log (1, "Cannot open output file %s: %s\n", mspath, strerror (errno));
-
+    ms_log (2, "Cannot open output file %s: %s\n", mspath, strerror (errno));
     return -1;
   }
 
@@ -940,11 +975,6 @@ mstl3_writemseed (MS3TraceList *mstl, const char *mspath, int8_t overwrite,
 
   packedrecords = mstl3_pack (mstl, &ms_record_handler_int, ofp, maxreclen,
                               encoding, NULL, flags, verbose, NULL);
-
-  if (packedrecords < 0)
-  {
-    ms_log (1, "Cannot write miniSEED for trace list\n");
-  }
 
   /* Close file and return record count */
   fclose (ofp);
