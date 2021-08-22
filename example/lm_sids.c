@@ -62,7 +62,7 @@ main (int argc, char **argv)
   char *sid;
   int idx;
 
-  sid = "XFDSN:NET_STA_LOC_C_H_N";
+  sid = "FDSN:NET_STA_LOC_C_H_N";
 
   if (map_sid (sid))
   {

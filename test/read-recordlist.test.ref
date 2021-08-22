@@ -1,4 +1,4 @@
-TraceID for XFDSN:XX_TEST_00_L_H_Z (1), segments: 1
+TraceID for FDSN:XX_TEST_00_L_H_Z (1), segments: 1
   Segment 2010-02-27T06:50:00.069539000 - 2010-02-27T07:55:51.069539000, samples: 3952, sample rate: 1
   Record list:
     RECORD: bufferptr: NULL, fileptr: NULL, filename: data/Int32-oneseries-mixedlengths-mixedorder.mseed, fileoffset: 0

@@ -3,7 +3,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2020 Chad Trabant, IRIS Data Management Center
+ * Copyright (c) 2021 Chad Trabant, IRIS Data Management Center
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,10 +113,13 @@ static const int monthdays_leap[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30,
 
 
 /**********************************************************************/ /**
- * @brief Parse network, station, location and channel from a source ID URI
+ * @brief Parse network, station, location and channel from an FDSN Source ID
+ *
+ * FDSN Source Identifiers are defined at:
+ *   https://docs.fdsn.org/projects/source-identifiers/
  *
  * Parse a source identifier into separate components, expecting:
- *  \c "XFDSN:NET_STA_LOC_CHAN", where \c CHAN="BAND_SOURCE_POSITION"
+ *  \c "FDSN:NET_STA_LOC_CHAN", where \c CHAN="BAND_SOURCE_POSITION"
  *
  * The CHAN value will be converted to a SEED channel code if
  * possible.  Meaning, if the BAND, SOURCE, and POSITION are single
@@ -124,7 +127,11 @@ static const int monthdays_leap[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30,
  * returned channel.
  *
  * Identifiers may contain additional namespace identifiers, e.g.:
- *  \c "XFDSN:AGENCY:NET_STA_LOC_CHAN"
+ *  \c "FDSN:AGENCY:NET_STA_LOC_CHAN"
+ *
+ * Such additional namespaces are not part of the Source ID standard
+ * as of this writing and support is included for specialized usage or
+ * future identifier changes.
  *
  * Memory for each component must already be allocated.  If a specific
  * component is not desired set the appropriate argument to NULL.
@@ -154,21 +161,20 @@ ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan)
     return -1;
   }
 
-  /* Handle the XFDSN: and FDSN: namespace identifiers */
-  if (!strncmp (sid, "XFDSN:", 6) ||
-      !strncmp (sid, "FDSN:", 5))
+  /* Handle the FDSN: namespace identifier */
+  if (!strncmp (sid, "FDSN:", 5))
   {
     /* Advance sid pointer to last ':', skipping all namespace identifiers */
     sid = strrchr (sid, ':') + 1;
 
-    /* Verify 3 or 5 delimiters */
+    /* Verify 5 delimiters */
     id = sid;
     while ((id = strchr (id, '_')))
     {
       id++;
       sepcnt++;
     }
-    if (sepcnt != 3 && sepcnt != 5)
+    if (sepcnt != 5)
     {
       ms_log (2, "Incorrect number of identifier delimiters (%d): %s\n", sepcnt, sid);
       return -1;
@@ -205,7 +211,7 @@ ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan)
 
       top = next;
     }
-    /* Location (potentially empty) */
+    /* Location, potentially empty */
     if ((ptr = strchr (top, '_')))
     {
       next = ptr + 1;
@@ -240,11 +246,14 @@ ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan)
 } /* End of ms_sid2nslc() */
 
 /**********************************************************************/ /**
- * @brief Convert network, station, location and channel to a source ID URI
+ * @brief Convert network, station, location and channel to an FDSN Source ID
+ *
+ * FDSN Source Identifiers are defined at:
+ *   https://docs.fdsn.org/projects/source-identifiers/
  *
  * Create a source identifier from individual network,
  * station, location and channel codes with the form:
- *  \c XFDSN:NET_STA_LOC_CHAN, where \c CHAN="BAND_SOURCE_POSITION"
+ *  \c FDSN:NET_STA_LOC_CHAN, where \c CHAN="BAND_SOURCE_POSITION"
  *
  * Memory for the source identifier must already be allocated.  If a
  * specific component is NULL it will be empty in the resulting
@@ -288,13 +297,12 @@ ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
     return -1;
   }
 
-  *sptr++ = 'X';
   *sptr++ = 'F';
   *sptr++ = 'D';
   *sptr++ = 'S';
   *sptr++ = 'N';
   *sptr++ = ':';
-  needed  = 6;
+  needed  = 5;
 
   if (net)
   {
