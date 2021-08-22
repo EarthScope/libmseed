@@ -242,11 +242,11 @@ typedef int64_t nstime_t;
  */
 typedef enum
 {
-  ISOMONTHDAY,
-  ISOMONTHDAY_SPACE,
-  SEEDORDINAL,
-  UNIXEPOCH,
-  NANOSECONDEPOCH
+  ISOMONTHDAY       = 0,
+  ISOMONTHDAY_SPACE = 1,
+  SEEDORDINAL       = 2,
+  UNIXEPOCH         = 3,
+  NANOSECONDEPOCH   = 4
 } ms_timeformat_t;
 
 /** @enum ms_subseconds_t
@@ -263,13 +263,13 @@ typedef enum
  */
 typedef enum
 {
-  NONE,
-  MICRO,
-  NANO,
-  MICRO_NONE,
-  NANO_NONE,
-  NANO_MICRO,
-  NANO_MICRO_NONE
+  NONE            = 0,
+  MICRO           = 1,
+  NANO            = 2,
+  MICRO_NONE      = 3,
+  NANO_NONE       = 4,
+  NANO_MICRO      = 5,
+  NANO_MICRO_NONE = 6
 } ms_subseconds_t;
 
 extern int ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *yday,
@@ -626,9 +626,9 @@ typedef struct LMIO
 {
   enum
   {
-    LMIO_NULL,       //!< IO handle type is undefined
-    LMIO_FILE,       //!< IO handle is FILE-type
-    LMIO_URL         //!< IO handle is URL-type
+    LMIO_NULL = 0,   //!< IO handle type is undefined
+    LMIO_FILE = 1,   //!< IO handle is FILE-type
+    LMIO_URL  = 2    //!< IO handle is URL-type
   } type;            //!< IO handle type
   void *handle;      //!< Primary IO handle, either file or URL
   void *handle2;     //!< Secondary IO handle for URL

@@ -241,7 +241,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
 
   if (!ppmsr || !ppmsfp)
   {
-    ms_log (2, "Required argument not defined: 'msfp' or 'ppmsfp'\n");
+    ms_log (2, "Required argument not defined: 'ppmsr' or 'ppmsfp'\n");
     return MS_GENERROR;
   }
 
