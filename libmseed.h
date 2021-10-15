@@ -230,6 +230,24 @@ typedef int64_t nstime_t;
     @brief Macro to convert high precision epoch time to Unix/POSIX epoch time */
 #define MS_NSTIME2EPOCH(X) (X) / NSTMODULUS
 
+/** @def MS_HPTIME2NSTIME
+    @brief Convert a hptime_t value (used by previous releases) to nstime_t
+
+    An HTPTIME/hptime_t value, used by libmseed major version <= 2,
+    defines microsecond ticks.  An NSTIME/nstime_t value, used by this
+    version of the library, defines nanosecond ticks.
+*/
+#define MS_HPTIME2NSTIME(X) (X) * (nstime_t) 1000
+
+/** @def MS_NSTIME2HPTIME
+    @brief Convert an nstime_t value to hptime_t (used by previous releases)
+
+    An HTPTIME/hptime_t value, used by libmseed major version <= 2,
+    defines microsecond ticks.  An NSTIME/nstime_t value, used by this
+    version of the library, defines nanosecond ticks.
+ */
+#define MS_NSTIME2HPTIME(X) (X) / 1000
+
 /** @enum ms_timeformat_t
     @brief Time format identifiers
 
