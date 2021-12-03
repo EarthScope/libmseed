@@ -36,7 +36,7 @@ static int8_t verbose = 0;
 static int8_t ppackets = 0;
 static int8_t basicsum = 0;
 static int printdata = 0;
-static char *inputfile = 0;
+static char *inputfile = NULL;
 
 static int parameter_proc (int argcount, char **argvec);
 static void usage (void);
@@ -44,14 +44,14 @@ static void usage (void);
 int
 main (int argc, char **argv)
 {
-  MS3Record *msr = 0;
+  MS3Record *msr = NULL;
   uint32_t flags = 0;
 
   int64_t totalrecs = 0;
   int64_t totalsamps = 0;
   int retcode;
 
-  /* Process given parameters (command line and parameter file) */
+  /* Process command line arguments */
   if (parameter_proc (argc, argv) < 0)
     return -1;
 
@@ -133,7 +133,7 @@ main (int argc, char **argv)
 
 /***************************************************************************
  * parameter_proc():
- * Process the command line parameters.
+ * Process the command line arguments.
  *
  * Returns 0 on success, and -1 on failure
  ***************************************************************************/
@@ -181,7 +181,7 @@ parameter_proc (int argcount, char **argvec)
       ms_log (2, "Unknown option: %s\n", argvec[optind]);
       exit (1);
     }
-    else if (inputfile == 0)
+    else if (inputfile == NULL)
     {
       inputfile = argvec[optind];
     }
@@ -192,7 +192,7 @@ parameter_proc (int argcount, char **argvec)
     }
   }
 
-  /* Make sure an inputfile was specified */
+  /* Make sure an input file was specified */
   if (!inputfile)
   {
     ms_log (2, "No input file was specified\n\n");

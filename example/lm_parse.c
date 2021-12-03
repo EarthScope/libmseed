@@ -36,7 +36,7 @@ static flag tracegap   = 0;
 static int printraw    = 0;
 static int printdata   = 0;
 static int reclen      = -1;
-static char *inputfile = 0;
+static char *inputfile = NULL;
 
 static int parameter_proc (int argcount, char **argvec);
 static void print_stderr (const char *message);
@@ -62,7 +62,7 @@ main (int argc, char **argv)
   /* Redirect libmseed logging facility to stderr for consistency */
   ms_loginit (print_stderr, NULL, print_stderr, NULL);
 
-  /* Process given parameters (command line and parameter file) */
+  /* Process command line arguments */
   if (parameter_proc (argc, argv) < 0)
     return -1;
 
@@ -190,7 +190,7 @@ main (int argc, char **argv)
 
 /***************************************************************************
  * parameter_proc():
- * Process the command line parameters.
+ * Process the command line arguments.
  *
  * Returns 0 on success, and -1 on failure
  ***************************************************************************/
@@ -250,7 +250,7 @@ parameter_proc (int argcount, char **argvec)
       ms_log (2, "Unknown option: %s\n", argvec[optind]);
       exit (1);
     }
-    else if (inputfile == 0)
+    else if (inputfile == NULL)
     {
       inputfile = argvec[optind];
     }

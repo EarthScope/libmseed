@@ -116,7 +116,7 @@ main (int argc, char **argv)
   /* Redirect libmseed logging facility to stderr for consistency */
   ms_loginit (print_stderr, NULL, print_stderr, NULL);
 
-  /* Process given parameters (command line and parameter file) */
+  /* Process command line arguments */
   if (parameter_proc (argc, argv) < 0)
     return -1;
 
@@ -206,7 +206,7 @@ main (int argc, char **argv)
 /***************************************************************************
  * parameter_proc:
  *
- * Process the command line parameters.
+ * Process the command line arguments.
  *
  * Returns 0 on success, and -1 on failure
  ***************************************************************************/
