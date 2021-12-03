@@ -59,6 +59,12 @@ connection or some other, non-file, mechanism.
 
 @include lm_read_buffer.c
 
+@section example-lm_pararead Reading files in parallel
+
+Read miniSEED in parallel using re-entrant interfaces and POSIX threading.
+
+@include lm_pararead.c
+
 @section example-lm_pack Writing miniSEED
 
 An example of creating miniSEED.  Static data with known signal is
