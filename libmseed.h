@@ -982,19 +982,22 @@ extern int mseh_print (MS3Record *msr, int indent);
     Log Registry
     ------------
 
-    By default log messages are sent directly to the printing
-    functions.  Optionally, error and warning messages (levels 1 and
-    2) can be accumulated in a log-registry.  The registry is enabled
-    by setting the \c maxmessages argument of either ms_rloginit() or
-    ms_rloginit_l().  Messages can be emitted, aka printed, using
-    ms_rlog_emit() and cleared using ms_rlog_free().  Alternatively,
-    the ::MSLogRegistry associated with a ::MSLogParam (or the global
-    parameters at \c gMSLogParam).
-
     The log registry facility allows a calling program to disable
     error (and warning) output from the library and either inspect it
-    or emitting as desired.  See \ref example-mseedview for a simple
-    example of usage.
+    or emit (print) as desired.
+
+    By default log messages are sent directly to the printing
+    functions.  Optionally, **error and warning messages** (levels 1
+    and 2) can be accumulated in a log-registry.  Verbose output
+    messages (level 0) are not accumulated in the registry.  The
+    registry is enabled by setting the \c maxmessages argument of
+    either ms_rloginit() or ms_rloginit_l().  Messages can be emitted,
+    aka printed, using ms_rlog_emit() and cleared using
+    ms_rlog_free().  Alternatively, the ::MSLogRegistry associated
+    with a ::MSLogParam (or the global parameters at \c gMSLogParam).
+
+    See \ref example-mseedview for a simple example of error and
+    warning message registry usage.
 
     @anchor MessageOnError
     Message on Error
