@@ -999,6 +999,22 @@ extern int mseh_print (MS3Record *msr, int indent);
     See \ref example-mseedview for a simple example of error and
     warning message registry usage.
 
+    @anchor log-threading
+    Logging in Threads
+    ------------------
+
+    By default the library is compiled in a mode where each thread of
+    a multi-threaded program will have it's own, default logging
+    parameters.  __If you wish to change the default printing
+    functions, message prefixes, or enable the log registry, this must
+    be done per-thread.__
+
+    The library can be built with the \b LIBMSEED_NO_THREADING
+    variable defined, resulting in a mode where there are global
+    parameters for all threads.  In general this should not be used
+    unless the system does not support the necessary thread-local
+    storage directives.
+
     @anchor MessageOnError
     Message on Error
     ----------------

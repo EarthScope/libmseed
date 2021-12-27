@@ -38,8 +38,29 @@ int add_message_int (MSLogRegistry *logreg, const char *function, int level,
 void print_message_int (MSLogParam *logp, int level, const char *message,
                         char *terminator);
 
-/* Initialize the global logging parameters */
+/* Initialize the global logging parameters
+ *
+ * If not disabled by a defined LIBMSEED_NO_THREADING, use options for
+ * thread-local storage.  In this default case each thread will have
+ * it's own "global" logging parameters initialized to the library
+ * default settings.
+ *
+ * Windows has its own designation for TLS.
+ * Otherwise, C11 defines the standardized _Thread_local storage-class.
+ * Otherwise fallback to the commonly supported __thread keyword.
+ */
+#if defined(LIBMSEED_NO_THREADING)
+#if defined(LMP_WIN)
+  #define lm_thread_local __declspec( thread )
+#elif __STDC_VERSION__ >= 201112L
+  #define lm_thread_local _Thread_local
+#else
+  #define lm_thread_local __thread
+#endif
+lm_thread_local MSLogParam gMSLogParam = MSLogParam_INITIALIZER;
+#else
 MSLogParam gMSLogParam = MSLogParam_INITIALIZER;
+#endif
 
 /**********************************************************************/ /**
  * @brief Initialize the global logging parameters.
@@ -321,7 +342,7 @@ int
 rlog_int (MSLogParam *logp, const char *function, int level,
           const char *format, va_list *varlist)
 {
-  static char message[MAX_LOG_MSG_LENGTH];
+  char message[MAX_LOG_MSG_LENGTH];
   int presize = 0;
   int printed = 0;
 

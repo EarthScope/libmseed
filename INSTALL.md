@@ -18,7 +18,7 @@ If the **LIBMSEED_URL** variable is defined during the build, the library will
 be compiled with support for reading from URLs.  Currently, this support requires
 that [libcurl](https://curl.haxx.se/) be installed on the target system.
 
-The simplest way to build the library with URL support is to include `-DLIMSEED_URL` 
+The simplest way to build the library with URL support is to include `-DLIMSEED_URL`
 in the CFLAGS environment variable.  Or invoking the build as such:
 
 ```
