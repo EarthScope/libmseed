@@ -1157,12 +1157,34 @@ extern void ms_gswap4 (void *data4);
 /** In-place byte swapping of 8 byte quantity */
 extern void ms_gswap8 (void *data8);
 
-/** In-place byte swapping of 2 byte, memory-aligned, quantity */
-extern void ms_gswap2a (void *data2);
-/** In-place byte swapping of 4 byte, memory-aligned, quantity */
-extern void ms_gswap4a (void *data4);
-/** In-place byte swapping of 8 byte, memory-aligned, quantity */
-extern void ms_gswap8a (void *data8);
+#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5) || defined (__clang__)
+/** Deprecated: In-place byte swapping of 2 byte, memory-aligned, quantity */
+__attribute__ ((deprecated("Use ms_gswap2 instead.")))
+extern void     ms_gswap2a ( void *data2 );
+/** Deprecated: In-place byte swapping of 4 byte, memory-aligned, quantity */
+__attribute__ ((deprecated("Use ms_gswap4 instead.")))
+extern void     ms_gswap4a ( void *data4 );
+/** Deprecated: In-place byte swapping of 8 byte, memory-aligned, quantity */
+__attribute__ ((deprecated("Use ms_gswap8 instead.")))
+extern void     ms_gswap8a ( void *data8 );
+#elif defined(_MSC_FULL_VER) && (_MSC_FULL_VER > 140050320)
+/** Deprecated: In-place byte swapping of 2 byte, memory-aligned, quantity */
+__declspec(deprecated("Use ms_gswap2 instead."))
+extern void     ms_gswap2a ( void *data2 );
+/** Deprecated: In-place byte swapping of 4 byte, memory-aligned, quantity */
+__declspec(deprecated("Use ms_gswap4 instead."))
+extern void     ms_gswap4a ( void *data4 );
+/** Deprecated: In-place byte swapping of 8 byte, memory-aligned, quantity */
+__declspec(deprecated("Use ms_gswap8 instead."))
+extern void     ms_gswap8a ( void *data8 );
+#else
+/** Deprecated: In-place byte swapping of 2 byte, memory-aligned, quantity */
+extern void     ms_gswap2a ( void *data2 );
+/** Deprecated: In-place byte swapping of 4 byte, memory-aligned, quantity */
+extern void     ms_gswap4a ( void *data4 );
+/** Deprecated: In-place byte swapping of 8 byte, memory-aligned, quantity */
+extern void     ms_gswap8a ( void *data8 );
+#endif
 
 /** @} */
 
