@@ -4,8 +4,6 @@
  *
  * Written by Chad Trabant
  *   IRIS Data Management Center
- *
- * modified: 2015.108
  ***************************************************************************/
 
 #include <errno.h>
@@ -944,7 +942,9 @@ ms_parse_raw (char *record, int maxreclen, flag details, flag swapflag)
         struct blkt_395_s *blkt_395 = (struct blkt_395_s *)(record + blkt_offset + 4);
 
         if (swapflag)
+        {
           MS_SWAPBTIME (&blkt_395->time);
+        }
 
         if (details >= 1)
         {

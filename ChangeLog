@@ -1,3 +1,7 @@
+2022.075:
+	- Avoid braceless multiple statements MS_SWAPBTIME macro usage.
+	- Avoid string buffer overflow warnings.
+
 2018.240: 2.19.6
 	- Allow ms_readleapsecondfile() to be called multiple times, by @pn2200
 	- Fix compiler warning in mst_printsynclist().

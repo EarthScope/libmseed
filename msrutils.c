@@ -254,7 +254,7 @@ msr_normalize_header (MSRecord *msr, flag verbose)
   struct blkt_link_s *cur_blkt;
   hptime_t hptimems;
   int8_t usecoffset;
-  char seqnum[7];
+  char seqnum[11];
   int offset    = 0;
   int blktcnt   = 0;
   int reclenexp = 0;
@@ -277,7 +277,7 @@ msr_normalize_header (MSRecord *msr, flag verbose)
       msr->sequence_number = 1;
 
     /* Update values in the MSRecord.fsdh struct */
-    snprintf (seqnum, 7, "%06d", msr->sequence_number);
+    snprintf (seqnum, sizeof(seqnum), "%06d", msr->sequence_number);
     memcpy (msr->fsdh->sequence_number, seqnum, 6);
     msr->fsdh->dataquality = msr->dataquality;
     msr->fsdh->reserved    = ' ';

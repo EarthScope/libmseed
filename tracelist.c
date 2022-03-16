@@ -4,8 +4,6 @@
  * Routines to handle TraceList and related structures.
  *
  * Written by Chad Trabant, IRIS Data Management Center
- *
- * modified: 2015.108
  ***************************************************************************/
 
 #include <stdio.h>
@@ -1091,7 +1089,7 @@ mstl_printsynclist (MSTraceList *mstl, char *dccid, flag subsecond)
   MSTraceSeg *seg = 0;
   char starttime[30];
   char endtime[30];
-  char yearday[10];
+  char yearday[24];
   time_t now;
   struct tm *nt;
 

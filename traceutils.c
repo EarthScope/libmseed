@@ -1445,7 +1445,7 @@ mst_printsynclist (MSTraceGroup *mstg, char *dccid, flag subsecond)
   MSTrace *mst = 0;
   char stime[30];
   char etime[30];
-  char yearday[32];
+  char yearday[24];
   time_t now;
   struct tm *nt;
 
