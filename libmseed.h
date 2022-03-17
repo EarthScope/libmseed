@@ -17,7 +17,7 @@
  * License along with this software.
  * If not, see <https://www.gnu.org/licenses/>.
  *
- * Copyright (C) 2017 Chad Trabant
+ * Copyright (C) 2022 Chad Trabant
  * IRIS Data Management Center
  ***************************************************************************/
 
@@ -28,8 +28,8 @@
 extern "C" {
 #endif
 
-#define LIBMSEED_VERSION "2.19.6+"
-#define LIBMSEED_RELEASE "2018.240+"
+#define LIBMSEED_VERSION "2.19.7"
+#define LIBMSEED_RELEASE "2022.075"
 
 /* C99 standard headers */
 #include <stdlib.h>

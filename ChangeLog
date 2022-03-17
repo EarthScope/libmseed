@@ -1,8 +1,11 @@
-2022.075:
+2022.075: 2.19.7
 	- Avoid braceless multiple statements MS_SWAPBTIME macro usage.
 	- Fix statement macros by @QuLogic. #73
 	- Simplification of byte swapping routines by @QuLogic. #74
 	- Avoid string buffer overflow warnings.
+	- Makefile mods for CMake as ExternalProject by Sriram Sundararajan.
+	- Encapsulate value of MS_NSTIME2EPOCH and MS_EPOCH2NSTIME macros.
+	- Fix example mst_pack().
 
 2018.240: 2.19.6
 	- Allow ms_readleapsecondfile() to be called multiple times, by @pn2200
