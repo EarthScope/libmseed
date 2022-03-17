@@ -1,3 +1,7 @@
+2022.???:
+	- Initialize selection.pubversion to 0 in ms3_readtracelist_timewin()
+	by @Cuda-Chen.
+
 2021.234: 3.0.9
 	- Update Source Identifier handling to the adopted specification of:
 	    FDSN:NET_STA_LOC_BAND_SOURCE_POSITION

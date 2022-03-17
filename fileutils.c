@@ -610,6 +610,7 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath,
   selection.sidpattern[0] = '*';
   selection.sidpattern[1] = '\0';
   selection.timewindows   = &selecttime;
+  selection.pubversion    = 0;
   selection.next          = NULL;
 
   selecttime.starttime = starttime;
