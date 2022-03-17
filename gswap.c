@@ -1,18 +1,20 @@
 /***************************************************************************
- * Functions for generalized, in-place byte swapping between LSBF and
- * MSBF byte orders.
+ * Functions for generalized, in-place byte swapping between LSBF (aka
+ * little-endian) and MSBF (aka big-endian) byte orders.
  *
- * Some standard C99 integer types are needed, namely uint8_t and
- * uint32_t.  Each function expects its input to be a void pointer to
+ * Some standard C99 integer types are needed: uint8_t, uint32_t, and
+ * uint64_t.  Each function expects its input to be a void pointer to
  * a quantity of the appropriate size.
  *
- * There are two versions of most routines.  The memory aligned versions
- * (gswapXa) are aliases of the other versions (gswapX) provided for backwards
- * compatibility.  There is no difference between them.
+ * Legacy function wrappers are included for versions that were
+ * specific to swapping memory-aligned quantities, but are no longer
+ * needed and now deprecated.
+ *
+ * Modernization and cleanup by Elliott Sales de Andrade (2022).
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2020 Chad Trabant, IRIS Data Management Center
+ * Copyright (c) 2022 Chad Trabant, IRIS Data Management Center
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,8 +73,7 @@ ms_gswap8 (void *data8)
   memcpy (data8, &dat, sizeof(uint64_t));
 }
 
-/* Swap routines that work on memory aligned quantities are the same as the
- * generic routines. The symbols below exist for backwards compatibility. */
+/* The wrapper functions below exist for backwards compatibility. */
 
 void
 ms_gswap2a (void *data2)
