@@ -1,5 +1,7 @@
 2022.075:
 	- Avoid braceless multiple statements MS_SWAPBTIME macro usage.
+	- Fix statement macros by @QuLogic. #73
+	- Simplification of byte swapping routines by @QuLogic. #74
 	- Avoid string buffer overflow warnings.
 
 2018.240: 2.19.6
