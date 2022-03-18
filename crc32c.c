@@ -305,7 +305,7 @@ const uint32_t CRC32C_TABLE[8][256] = {
 
 /* private (static) function factoring out byte-by-byte CRC computation using just one slice of the lookup table*/
 static uint32_t s_crc_generic_sb1(const uint8_t *input, int length, uint32_t crc, const uint32_t *table_ptr) {
-    uint32_t(*table)[16][256] = (uint32_t(*)[16][256])table_ptr;
+    uint32_t(*table)[8][256] = (uint32_t(*)[8][256])table_ptr;
     while (length-- > 0) {
         crc = (crc >> 8) ^ (*table)[0][(crc & 0xff) ^ *input++];
     }
