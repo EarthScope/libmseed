@@ -8,8 +8,6 @@
  * output file.
  *
  * Written by Chad Trabant, IRIS Data Management Center
- *
- * modified 2012.105
  ***************************************************************************/
 
 #include <stdio.h>
@@ -17,11 +15,6 @@
 #include <string.h>
 #include <time.h>
 #include <errno.h>
-
-#ifndef WIN32
-  #include <signal.h>
-  static void term_handler (int sig);
-#endif
 
 #include <libmseed.h>
 
@@ -44,7 +37,10 @@ static int convertsamples (MSRecord *msr, int packencoding);
 static int parameter_proc (int argcount, char **argvec);
 static void record_handler (char *record, int reclen, void *ptr);
 static void usage (void);
-static void term_handler (int sig);
+#ifndef WIN32
+  #include <signal.h>
+  static void term_handler (int sig);
+#endif
 
 int
 main (int argc, char **argv)
@@ -141,7 +137,7 @@ main (int argc, char **argv)
       
       /* Replace network code */
       if ( netcode )
-	strncpy (msr->network, netcode, sizeof(msr->network));
+	strncpy (msr->network, netcode, sizeof(msr->network) - 1);
       
       /* If no samples in the record just pack the header */
       if ( outfile && msr->numsamples == 0 )

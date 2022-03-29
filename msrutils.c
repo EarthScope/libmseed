@@ -6,8 +6,6 @@
  * Written by Chad Trabant
  *   ORFEUS/EC-Project MEREDIAN
  *   IRIS Data Management Center
- *
- * modified: 2016.283
  ***************************************************************************/
 
 #include <stdio.h>
@@ -254,7 +252,7 @@ msr_normalize_header (MSRecord *msr, flag verbose)
   struct blkt_link_s *cur_blkt;
   hptime_t hptimems;
   int8_t usecoffset;
-  char seqnum[11];
+  char seqnum[16];
   int offset    = 0;
   int blktcnt   = 0;
   int reclenexp = 0;

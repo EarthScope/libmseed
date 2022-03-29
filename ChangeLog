@@ -1,3 +1,7 @@
+2022.087: 2.19.8
+	- Update numsamples and samplecnt consistently in mst_addmsr(), #33 @pn2200
+	- Fix small compiler warnings.
+
 2022.075: 2.19.7
 	- Avoid braceless multiple statements MS_SWAPBTIME macro usage.
 	- Fix statement macros by @QuLogic. #73

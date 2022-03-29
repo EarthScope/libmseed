@@ -6,8 +6,6 @@
  *
  * Written by Chad Trabant,
  *   IRIS Data Management Center
- *
- * modified: 2015.273
  ***************************************************************************/
 
 #include <stdio.h>
@@ -847,7 +845,7 @@ msr_update_header (MSRecord *msr, char *rawrec, flag swapflag,
   struct fsdh_s *fsdh;
   hptime_t hptimems;
   int8_t usecoffset;
-  char seqnum[11];
+  char seqnum[16];
 
   if (!msr || !rawrec)
     return -1;

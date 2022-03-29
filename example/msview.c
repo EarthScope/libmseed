@@ -7,8 +7,6 @@
  * details for each record.
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
- *
- * modified 2016.233
  ***************************************************************************/
 
 #include <errno.h>
@@ -16,11 +14,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
-#ifndef WIN32
-#include <signal.h>
-static void term_handler (int sig);
-#endif
 
 #include <libmseed.h>
 
@@ -36,7 +29,10 @@ static char *inputfile = 0;
 
 static int parameter_proc (int argcount, char **argvec);
 static void usage (void);
-static void term_handler (int sig);
+#ifndef WIN32
+  #include <signal.h>
+  static void term_handler (int sig);
+#endif
 
 int
 main (int argc, char **argv)
@@ -238,7 +234,7 @@ usage (void)
 #ifndef WIN32
 /***************************************************************************
  * term_handler:
- * Signal handler routine. 
+ * Signal handler routine.
  ***************************************************************************/
 static void
 term_handler (int sig)
