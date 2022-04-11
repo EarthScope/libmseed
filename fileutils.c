@@ -672,7 +672,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath,
   MS3RecordPtr *recordptr = NULL;
   uint32_t dataoffset;
   uint32_t datasize;
-  int64_t fpos;
+  int64_t fpos = 0;
   int retcode;
 
   if (!ppmstl)
