@@ -316,7 +316,7 @@ msio_fopen (LMIO *io, const char *path, const char *mode,
       char endstr[21]   = {0};
       char rangestr[42];
 
-      /* Build Range header value, either of the range ends are optional.
+      /* Build Range header value.
        * If start is undefined set it to zero if end is defined. */
       if (*startoffset > 0)
         snprintf (startstr, sizeof (startstr), "%" PRId64, *startoffset);
