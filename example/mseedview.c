@@ -118,14 +118,14 @@ main (int argc, char **argv)
     }
   }
 
-  if (retcode != MS_ENDOFFILE)
-    ms_rlog_emit (NULL, 0, verbose);
+  /* Emit all accumulated warning and error messages */
+  ms_rlog_emit (NULL, 0, verbose);
 
   /* Make sure everything is cleaned up */
   ms3_readmsr (&msr, NULL, NULL, NULL, 0, 0);
 
   if (basicsum)
-    ms_log (1, "Records: %" PRId64 ", Samples: %" PRId64 "\n",
+    ms_log (0, "Records: %" PRId64 ", Samples: %" PRId64 "\n",
             totalrecs, totalsamps);
 
   return 0;
