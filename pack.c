@@ -1049,6 +1049,11 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
       json_value_get_type (extravalue) == JSONNumber)
   {
     *pMS2FSDH_TIMECORRECT (record) = HO4d (json_value_get_number (extravalue) * 10000, swapflag);
+
+    /* Set time correction applied bit in activity flags.
+       Rationale: V3 records do not allow unapplied time corrections and unapplied
+       time corrections in V2 records are always applied on read by this library. */
+    *pMS2FSDH_ACTFLAGS (record) |= 0x02;
   }
   else
   {
