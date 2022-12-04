@@ -97,4 +97,4 @@ git commit -m 'committing documentation'
 git remote add origin $GITREMOTE
 
 echo "Pushing contents of $BASEDIR/$DOCDIR to $GITREMOTE branch gh-pages"
-git push --quiet --force origin master:gh-pages
+git push --quiet --force origin main:gh-pages
