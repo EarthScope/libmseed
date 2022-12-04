@@ -17,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (C) 2021:
+ * Copyright (C) 2022:
  * @author Chad Trabant, IRIS Data Management Center
  ***************************************************************************/
 
@@ -28,8 +28,8 @@
 extern "C" {
 #endif
 
-#define LIBMSEED_VERSION "3.0.11"    //!< Library version
-#define LIBMSEED_RELEASE "2022.156"  //!< Library release date
+#define LIBMSEED_VERSION "3.0.12"    //!< Library version
+#define LIBMSEED_RELEASE "2022.338"  //!< Library release date
 
 /** @defgroup io-functions File and URL I/O */
 /** @defgroup miniseed-record Record Handling */

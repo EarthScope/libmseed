@@ -1,3 +1,7 @@
+2022.338: 3.0.12
+	- Change printing of bit flag sets to print each bit flag in
+	most-significant-bit first order to match binary number representation.
+
 2022.156: 3.0.11
 	- Generate proper HTTP Range header by always including a start value,
 	defaulting to 0, when a range end is specified.
