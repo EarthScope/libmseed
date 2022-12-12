@@ -127,7 +127,7 @@ main (int argc, char **argv)
   }
 
   /* Set up record parameters */
-  strcpy (msr->sid, "XFDSN:XX_TEST__L_H_Z");
+  strcpy (msr->sid, "FDSN:XX_TEST__L_H_Z");
   msr->reclen = reclen;
   msr->pubversion = 1;
   msr->starttime = ms_timestr2nstime ("2012-01-01T00:00:00");

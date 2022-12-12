@@ -1462,7 +1462,7 @@ ms_nomsamprate (int factor, int multiplier)
 /***************************************************************************
  * ms2_recordsid:
  *
- * Generate an XFDSN: source identifier string for a specified raw
+ * Generate an FDSN source identifier string for a specified raw
  * miniSEED 2.x data record.
  *
  * Returns a pointer to the resulting string or NULL on error.

@@ -60,10 +60,10 @@ match the desired time format or subsecond handling. Assume _not_.
 
 - Adapt to new identification of a record source.  The channel
 identification has changed from \c NN_SSS_LL_CHA, commonly printed in
-library console output and logging, to an URI-style Source Identifier
-(SID) with the pattern \c XFDSN:NN_SSS_LL_C_H_A.  The following helper
+library console output and logging, to a URI-style Source Identifier
+(SID) with the pattern \c FDSN:NN_SSS_LL_B_S_s.  The following helper
 functions are available for mapping between the new URI-based scheme
-and the traditional SEED networ, station, location, channel scheme:
+and the traditional SEED network, station, location, channel scheme:
   - ms_sid2nslc(): convert SID to traditional SEED identifiers
   - ms_nslc2sid(): convert traditional SEED identifiers to an SID
   - ms_seedchan2xchan(): convert SEED channel to SID-style channel components
