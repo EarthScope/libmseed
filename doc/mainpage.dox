@@ -22,20 +22,20 @@ fundamentals and capabilities of the library.
 
 @subsection main-downloding Downloading and installing
 
-The <a class="el" href="https://github.com/iris-edu/libmseed/releases">releases</a>
+The <a class="el" href="https://github.com/earthscope/libmseed/releases">releases</a>
 area contains release versions.
 
 For installation instructions see the
-<a class="el" href="https://github.com/iris-edu/libmseed/tree/master/INSTALL.md">INSTALL</a>
+<a class="el" href="https://github.com/earthscope/libmseed/tree/master/INSTALL.md">INSTALL</a>
 file.
 
 @subsection develop-main Development and issues
 
-Please report <a class="el" href="https://github.com/iris-edu/libmseed/issues">issues</a>
+Please report <a class="el" href="https://github.com/earthscope/libmseed/issues">issues</a>
 to the project.
 
 If you would like to contribute to the project please file Pull Requests
-and/or create issues for discussion at the <a class="el" href="https://github.com/iris-edu/libmseed/">
+and/or create issues for discussion at the <a class="el" href="https://github.com/earthscope/libmseed/">
 libmseed project</a>.
 
 @subsubsection porting-main Porting from earlier version of the library
@@ -67,7 +67,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-Copyright (C) @currentyear Chad Trabant, IRIS Data Management Center
+Copyright (C) @currentyear Chad Trabant, EarthScope Data Services
 
 Documentation last generated @currentdate
 */

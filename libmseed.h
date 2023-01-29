@@ -17,8 +17,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (C) 2022:
- * @author Chad Trabant, IRIS Data Management Center
+ * Copyright (C) 2023:
+ * @author Chad Trabant, EarthScope Data Services
  ***************************************************************************/
 
 #ifndef LIBMSEED_H
@@ -198,7 +198,7 @@ extern "C" {
 /** A simple bitwise AND test to return 0 or 1 */
 #define bit(x,y) ((x)&(y)) ? 1 : 0
 
-/* Annotation for deprecated API components */
+/** Annotation for deprecated API components */
 #ifdef _MSC_VER
 #define DEPRECATED __declspec(deprecated)
 #elif defined(__GNUC__) | defined(__clang__)
@@ -632,7 +632,7 @@ extern void mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
 
     URL support for reading is included by building the library with the
     \b LIBMSEED_URL variable defined, see the
-<a class="el" href="https://github.com/iris-edu/libmseed/tree/master/INSTALL.md">INSTALL instructions</a>
+<a class="el" href="https://github.com/earthscope/libmseed/tree/master/INSTALL.md">INSTALL instructions</a>
     for more information.  Only URL path-specified resources can be read,
     e.g. HTTP GET requests.  More advanced POST or form-based requests are not supported.
 

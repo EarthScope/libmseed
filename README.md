@@ -12,7 +12,7 @@ environments.
 
 ## Documentation
 
-The [Documentation](https://iris-edu.github.io/libmseed) provides an
+The [Documentation](https://earthscope.github.io/libmseed) provides an
 overview of using the library, a tutorial and function level details.
 
 ## License
@@ -29,4 +29,4 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-Copyright (C) 2020 Chad Trabant, IRIS Data Management Center
+Copyright (C) 2023 Chad Trabant, EarthScope Data Services
