@@ -198,6 +198,15 @@ extern "C" {
 /** A simple bitwise AND test to return 0 or 1 */
 #define bit(x,y) ((x)&(y)) ? 1 : 0
 
+/* Annotation for deprecated API components */
+#ifdef _MSC_VER
+#define DEPRECATED __declspec(deprecated)
+#elif defined(__GNUC__) | defined(__clang__)
+#define DEPRECATED __attribute__((__deprecated__))
+#else
+#define DEPRECATED
+#endif
+
 /** @addtogroup time-related
     @brief Definitions and functions for related to library time values
 
@@ -253,18 +262,26 @@ typedef int64_t nstime_t;
 
     Formats values:
     - \b ISOMONTHDAY - \c "YYYY-MM-DDThh:mm:ss.sssssssss", ISO 8601 in month-day format
+    - \b ISOMONTHDAY_Z - \c "YYYY-MM-DDThh:mm:ss.sssssssss", ISO 8601 in month-day format with trailing Z
+    - \b ISOMONTHDAY_DOY - \c "YYYY-MM-DD hh:mm:ss.sssssssss (doy)", ISOMONTHDAY with day-of-year
+    - \b ISOMONTHDAY_DOY_Z - \c "YYYY-MM-DD hh:mm:ss.sssssssss (doy)", ISOMONTHDAY with day-of-year and trailing Z
     - \b ISOMONTHDAY_SPACE - \c "YYYY-MM-DD hh:mm:ss.sssssssss", same as ISOMONTHDAY with space separator
+    - \b ISOMONTHDAY_SPACE_Z - \c "YYYY-MM-DD hh:mm:ss.sssssssss", same as ISOMONTHDAY with space separator and trailing Z
     - \b SEEDORDINAL - \c "YYYY,DDD,hh:mm:ss.sssssssss", SEED day-of-year format
     - \b UNIXEPOCH - \c "ssssssssss.sssssssss", Unix epoch value
     - \b NANOSECONDEPOCH - \c "sssssssssssssssssss", Nanosecond epoch value
  */
 typedef enum
 {
-  ISOMONTHDAY       = 0,
-  ISOMONTHDAY_SPACE = 1,
-  SEEDORDINAL       = 2,
-  UNIXEPOCH         = 3,
-  NANOSECONDEPOCH   = 4
+  ISOMONTHDAY         = 0,
+  ISOMONTHDAY_Z       = 1,
+  ISOMONTHDAY_DOY     = 2,
+  ISOMONTHDAY_DOY_Z   = 3,
+  ISOMONTHDAY_SPACE   = 4,
+  ISOMONTHDAY_SPACE_Z = 5,
+  SEEDORDINAL         = 6,
+  UNIXEPOCH           = 7,
+  NANOSECONDEPOCH     = 8
 } ms_timeformat_t;
 
 /** @enum ms_subseconds_t
@@ -294,8 +311,8 @@ extern int ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *yday,
                            uint8_t *hour, uint8_t *min, uint8_t *sec, uint32_t *nsec);
 extern char *ms_nstime2timestr (nstime_t nstime, char *timestr,
                                 ms_timeformat_t timeformat, ms_subseconds_t subsecond);
-extern char *ms_nstime2timestrz (nstime_t nstime, char *timestr,
-                                 ms_timeformat_t timeformat, ms_subseconds_t subsecond);
+DEPRECATED extern char *ms_nstime2timestrz (nstime_t nstime, char *timestr,
+                                            ms_timeformat_t timeformat, ms_subseconds_t subsecond);
 extern nstime_t ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec);
 extern nstime_t ms_timestr2nstime (const char *timestr);
 extern nstime_t ms_mdtimestr2nstime (const char *timestr);
@@ -1035,7 +1052,7 @@ extern int mseh_print (MS3Record *msr, int indent);
 typedef struct MSLogEntry
 {
   int level;                        //!< Message level
-  char function[30];                //!< Function generating the mesage
+  char function[30];                //!< Function generating the message
   char message[MAX_LOG_MSG_LENGTH]; //!< Log, warning or error message
   struct MSLogEntry *next;
 } MSLogEntry;

@@ -336,7 +336,7 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
   JSON_Value *value   = NULL;
   JSON_Object *object = NULL;
   JSON_Array *array   = NULL;
-  char timestring[30];
+  char timestring[40];
 
 #define EVALSET(KEY, SET)                            \
   if (SET != JSONSuccess)                            \
@@ -395,7 +395,7 @@ mseh_add_event_detection (MS3Record *msr, const char *path,
   }
   if (eventdetection->onsettime != NSTERROR)
   {
-    if (ms_nstime2timestrz (eventdetection->onsettime, timestring, ISOMONTHDAY, NANO_MICRO_NONE))
+    if (ms_nstime2timestr (eventdetection->onsettime, timestring, ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       EVALSET ("OnsetTime", json_object_set_string (object, "OnsetTime", timestring));
     }
@@ -471,8 +471,8 @@ mseh_add_calibration (MS3Record *msr, const char *path,
 {
   JSON_Value *value   = NULL;
   JSON_Object *object = NULL;
-  char beginstring[31];
-  char endstring[31];
+  char beginstring[40];
+  char endstring[40];
 
 #define EVALSET(KEY, SET)                            \
   if (SET != JSONSuccess)                            \
@@ -511,7 +511,7 @@ mseh_add_calibration (MS3Record *msr, const char *path,
   }
   if (calibration->begintime != NSTERROR)
   {
-    if (ms_nstime2timestrz (calibration->begintime, beginstring, ISOMONTHDAY, NANO_MICRO_NONE))
+    if (ms_nstime2timestr (calibration->begintime, beginstring, ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       EVALSET ("BeginTime", json_object_set_string (object, "BeginTime", beginstring));
     }
@@ -522,7 +522,7 @@ mseh_add_calibration (MS3Record *msr, const char *path,
   }
   if (calibration->endtime != NSTERROR)
   {
-    if (ms_nstime2timestrz (calibration->endtime, endstring, ISOMONTHDAY, NANO_MICRO_NONE))
+    if (ms_nstime2timestr (calibration->endtime, endstring, ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       EVALSET ("EndTime", json_object_set_string (object, "EndTime", endstring));
     }
@@ -627,7 +627,7 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
 {
   JSON_Value *value   = NULL;
   JSON_Object *object = NULL;
-  char timestring[30];
+  char timestring[40];
 
 #define EVALSET(KEY, SET)                            \
   if (SET != JSONSuccess)                            \
@@ -666,7 +666,7 @@ mseh_add_timing_exception (MS3Record *msr, const char *path,
   }
   if (exception->time != NSTERROR)
   {
-    if (ms_nstime2timestrz (exception->time, timestring, ISOMONTHDAY, NANO_MICRO_NONE))
+    if (ms_nstime2timestr (exception->time, timestring, ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       EVALSET ("Time", json_object_set_string (object, "Time", timestring));
     }
@@ -722,8 +722,8 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
 {
   JSON_Value *value   = NULL;
   JSON_Object *object = NULL;
-  char beginstring[31];
-  char endstring[31];
+  char beginstring[40];
+  char endstring[40];
 
 #define EVALSET(KEY, SET)                            \
   if (SET != JSONSuccess)                            \
@@ -762,7 +762,7 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
   }
   if (recenter->begintime != NSTERROR)
   {
-    if (ms_nstime2timestrz (recenter->begintime, beginstring, ISOMONTHDAY, NANO_MICRO_NONE))
+    if (ms_nstime2timestr (recenter->begintime, beginstring, ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       EVALSET ("BeginTime", json_object_set_string (object, "BeginTime", beginstring));
     }
@@ -773,7 +773,7 @@ mseh_add_recenter (MS3Record *msr, const char *path, MSEHRecenter *recenter)
   }
   if (recenter->endtime != NSTERROR)
   {
-    if (ms_nstime2timestrz (recenter->endtime, endstring, ISOMONTHDAY, NANO_MICRO_NONE))
+    if (ms_nstime2timestr (recenter->endtime, endstring, ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       EVALSET ("EndTime", json_object_set_string (object, "EndTime", endstring));
     }

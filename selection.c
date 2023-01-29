@@ -719,12 +719,12 @@ ms3_printselections (MS3Selections *selections)
     while (selecttime)
     {
       if (selecttime->starttime != NSTERROR)
-        ms_nstime2timestr (selecttime->starttime, starttime, 2, 1);
+        ms_nstime2timestr (selecttime->starttime, starttime, ISOMONTHDAY_Z, NANO_MICRO_NONE);
       else
         strncpy (starttime, "No start time", sizeof (starttime) - 1);
 
       if (selecttime->endtime != NSTERROR)
-        ms_nstime2timestr (selecttime->endtime, endtime, 2, 1);
+        ms_nstime2timestr (selecttime->endtime, endtime, ISOMONTHDAY_Z, NANO_MICRO_NONE);
       else
         strncpy (endtime, "No end time", sizeof (endtime) - 1);
 

@@ -127,8 +127,8 @@ main (int argc, char **argv)
 
           ms_log (0, "    RECORD: bufferptr: %s, fileptr: %s, filename: %s, fileoffset: %"PRId64"\n",
                   bufferptrstr, fileptrstr, recptr->filename, recptr->fileoffset);
-          ms_nstime2timestrz (recptr->msr->starttime, starttimestr, ISOMONTHDAY, NANO);
-          ms_nstime2timestrz (recptr->endtime, endtimestr, ISOMONTHDAY, NANO);
+          ms_nstime2timestr (recptr->msr->starttime, starttimestr, ISOMONTHDAY_Z, NANO);
+          ms_nstime2timestr (recptr->endtime, endtimestr, ISOMONTHDAY_Z, NANO);
           ms_log (0, "    Start: %s, End: %s\n", starttimestr, endtimestr);
 
           recptr = recptr->next;

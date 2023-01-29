@@ -1,3 +1,9 @@
+2023.028:
+	- Add ISOMONTHDAY_DOY time string variant, with day-of-year.
+	- Add '_Z' variants of time string formats for trailing Z versions.
+	- Print record timestamp in new ISOMONTHDAY_DOY_Z format.
+	- Deprecated the ms_nstime2timestrz() function.
+
 2022.338: 3.0.12
 	- Change printing of bit flag sets to print each bit flag in
 	most-significant-bit first order to match binary number representation.

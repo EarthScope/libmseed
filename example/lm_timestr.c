@@ -3,7 +3,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2020 Chad Trabant, IRIS Data Management Center
+ * Copyright (c) 2023 Chad Trabant, EarthScope Data Services
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ int
 main (int argc, char **argv)
 {
   char *timestr;
-  char generated_timestr[30];
+  char generated_timestr[40];
   nstime_t nstime;
   int idx;
 
@@ -38,7 +38,7 @@ main (int argc, char **argv)
   {
     timestr = argv[idx];
 
-    printf ("Input time : %s\n", timestr);
+    printf ("Input time    : %s\n", timestr);
 
     /* Convert time string to epoch format */
     nstime = ms_timestr2nstime (timestr);
@@ -56,16 +56,34 @@ main (int argc, char **argv)
       return 1;
     }
 
-    printf ("ISOMONTH   : %s\n", generated_timestr);
+    printf ("ISOMONTH      : %s\n", generated_timestr);
 
     /* Convert epoch time to ISO month-day time string with Z designator */
-    if (!ms_nstime2timestrz (nstime, generated_timestr, ISOMONTHDAY, NANO_MICRO_NONE))
+    if (!ms_nstime2timestr (nstime, generated_timestr, ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
-      ms_log (2, "Cannot convert epoch to ISOMONTHDAY time string\n");
+      ms_log (2, "Cannot convert epoch to ISOMONTHDAY_Z time string\n");
       return 1;
     }
 
-    printf ("ISOMONTH wZ: %s\n", generated_timestr);
+    printf ("ISOMONTH_Z    : %s\n", generated_timestr);
+
+    /* Convert epoch time to ISO month-day with day-of-year time string */
+    if (!ms_nstime2timestr (nstime, generated_timestr, ISOMONTHDAY_DOY, NANO_MICRO_NONE))
+    {
+      ms_log (2, "Cannot convert epoch to ISOMONTHDAY_DOY time string\n");
+      return 1;
+    }
+
+    printf ("ISOMONTH_DOY  : %s\n", generated_timestr);
+
+    /* Convert epoch time to ISO month-day with day-of-year time string with Z designator */
+    if (!ms_nstime2timestr (nstime, generated_timestr, ISOMONTHDAY_DOY_Z, NANO_MICRO_NONE))
+    {
+      ms_log (2, "Cannot convert epoch to ISOMONTHDAY_DOY_Z time string\n");
+      return 1;
+    }
+
+    printf ("ISOMONTH_DOY_Z: %s\n", generated_timestr);
 
     /* Convert epoch time to SEED-style ordinal (day-of-year) time string */
     if (!ms_nstime2timestr (nstime, generated_timestr, SEEDORDINAL, NANO_MICRO_NONE))
@@ -74,7 +92,7 @@ main (int argc, char **argv)
       return 1;
     }
 
-    printf ("SEEDORDINAL: %s\n", generated_timestr);
+    printf ("SEEDORDINAL   : %s\n", generated_timestr);
 
     /* Convert epoch time to Unix epoch time string */
     if (!ms_nstime2timestr (nstime, generated_timestr, UNIXEPOCH, NANO_MICRO_NONE))
@@ -83,7 +101,7 @@ main (int argc, char **argv)
       return 1;
     }
 
-    printf ("UNIXEPOCH  : %s\n", generated_timestr);
+    printf ("UNIXEPOCH     : %s\n", generated_timestr);
 
     /* Convert epoch time to nanosecond epoch time string */
     if (!ms_nstime2timestr (nstime, generated_timestr, NANOSECONDEPOCH, NANO_MICRO_NONE))
@@ -92,8 +110,8 @@ main (int argc, char **argv)
       return 1;
     }
 
-    printf ("NSEPOCH    : %s\n", generated_timestr);
-    printf ("nstime_t   : %" PRId64 "\n\n", nstime);
+    printf ("NSEPOCH       : %s\n", generated_timestr);
+    printf ("nstime_t      : %" PRId64 "\n\n", nstime);
   }
 
   return 0;

@@ -1,5 +1,5 @@
 FDSN:XX_TEST__B_H_E, version 2, 4096 bytes (format: 2)
-             start time: 1995,265,00:00:18.238400
+             start time: 1995-09-22T00:00:18.238400Z (265)
       number of samples: 3632
        sample rate (Hz): 20
                   flags: [00000000] 8 bits
@@ -9,7 +9,7 @@ FDSN:XX_TEST__B_H_E, version 2, 4096 bytes (format: 2)
        payload encoding: STEIM-1 integer compression (val: 10)
        337         396         454         503         547         581  
 FDSN:XX_TEST__B_H_E, version 2, 4096 bytes (format: 2)
-             start time: 1995,265,00:03:19.838500
+             start time: 1995-09-22T00:03:19.838500Z (265)
       number of samples: 3680
        sample rate (Hz): 20
                   flags: [00000000] 8 bits

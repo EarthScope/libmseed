@@ -237,14 +237,14 @@ msr3_endtime (MS3Record *msr)
 void
 msr3_print (MS3Record *msr, int8_t details)
 {
-  char time[30];
+  char time[40];
   char b;
 
   if (!msr)
     return;
 
   /* Generate a start time string */
-  ms_nstime2timestr (msr->starttime, time, 2, 1);
+  ms_nstime2timestr (msr->starttime, time, ISOMONTHDAY_DOY_Z, NANO_MICRO);
 
   /* Report information in the fixed header */
   if (details > 0)

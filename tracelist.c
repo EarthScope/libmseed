@@ -2081,9 +2081,9 @@ mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
 {
   MS3TraceID *id = 0;
   MS3TraceSeg *seg = 0;
-  char stime[30];
-  char etime[30];
-  char gapstr[20];
+  char stime[40];
+  char etime[40];
+  char gapstr[40];
   int8_t nogap;
   double gap;
   double delta;
@@ -2198,8 +2198,8 @@ mstl3_printsynclist (MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds
 {
   MS3TraceID *id = 0;
   MS3TraceSeg *seg = 0;
-  char starttime[30];
-  char endtime[30];
+  char starttime[40];
+  char endtime[40];
   char yearday[32];
   char net[11] = {0};
   char sta[11] = {0};
@@ -2273,8 +2273,8 @@ mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
   MS3TraceID *id = 0;
   MS3TraceSeg *seg = 0;
 
-  char time1[30], time2[30];
-  char gapstr[30];
+  char time1[40], time2[40];
+  char gapstr[40];
   double gap;
   double delta;
   double nsamples;

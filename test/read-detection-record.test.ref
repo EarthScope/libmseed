@@ -1,5 +1,5 @@
 FDSN:XX_TEST_00_B_H_Z, version 2, 512 bytes (format: 2)
-             start time: 2004,210,20:28:09.000000
+             start time: 2004-07-28T20:28:09.000000Z (210)
       number of samples: 0
        sample rate (Hz): 0
                   flags: [00000000] 8 bits
