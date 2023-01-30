@@ -1,3 +1,7 @@
+2023.029: 3.0.13
+	- Embed current leap second list, used by default and replaced by
+	ms_readleapsecondfile().
+
 2023.028:
 	- Add ISOMONTHDAY_DOY time string variant, with day-of-year.
 	- Add '_Z' variants of time string formats for trailing Z versions.

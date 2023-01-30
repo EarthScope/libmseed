@@ -72,11 +72,43 @@ libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsize)
   return newptr;
 }
 
-/* A constant number of seconds between the NTP and Posix/Unix time epoch */
+/* A constant number of seconds between the NTP and POSIX/Unix time epoch */
 #define NTPPOSIXEPOCHDELTA 2208988800LL
+#define NTPEPOCH2NSTIME(X) (MS_EPOCH2NSTIME (X - NTPPOSIXEPOCHDELTA))
+
+/* Embedded leap second list */
+static LeapSecond embedded_leapsecondlist[] = {
+    {.leapsecond = NTPEPOCH2NSTIME (2272060800), .TAIdelta = 10, .next = &embedded_leapsecondlist[1]},
+    {.leapsecond = NTPEPOCH2NSTIME (2287785600), .TAIdelta = 11, .next = &embedded_leapsecondlist[2]},
+    {.leapsecond = NTPEPOCH2NSTIME (2303683200), .TAIdelta = 12, .next = &embedded_leapsecondlist[3]},
+    {.leapsecond = NTPEPOCH2NSTIME (2335219200), .TAIdelta = 13, .next = &embedded_leapsecondlist[4]},
+    {.leapsecond = NTPEPOCH2NSTIME (2366755200), .TAIdelta = 14, .next = &embedded_leapsecondlist[5]},
+    {.leapsecond = NTPEPOCH2NSTIME (2398291200), .TAIdelta = 15, .next = &embedded_leapsecondlist[6]},
+    {.leapsecond = NTPEPOCH2NSTIME (2429913600), .TAIdelta = 16, .next = &embedded_leapsecondlist[7]},
+    {.leapsecond = NTPEPOCH2NSTIME (2461449600), .TAIdelta = 17, .next = &embedded_leapsecondlist[8]},
+    {.leapsecond = NTPEPOCH2NSTIME (2492985600), .TAIdelta = 18, .next = &embedded_leapsecondlist[9]},
+    {.leapsecond = NTPEPOCH2NSTIME (2524521600), .TAIdelta = 19, .next = &embedded_leapsecondlist[10]},
+    {.leapsecond = NTPEPOCH2NSTIME (2571782400), .TAIdelta = 20, .next = &embedded_leapsecondlist[11]},
+    {.leapsecond = NTPEPOCH2NSTIME (2603318400), .TAIdelta = 21, .next = &embedded_leapsecondlist[12]},
+    {.leapsecond = NTPEPOCH2NSTIME (2634854400), .TAIdelta = 22, .next = &embedded_leapsecondlist[13]},
+    {.leapsecond = NTPEPOCH2NSTIME (2698012800), .TAIdelta = 23, .next = &embedded_leapsecondlist[14]},
+    {.leapsecond = NTPEPOCH2NSTIME (2776982400), .TAIdelta = 24, .next = &embedded_leapsecondlist[15]},
+    {.leapsecond = NTPEPOCH2NSTIME (2840140800), .TAIdelta = 25, .next = &embedded_leapsecondlist[16]},
+    {.leapsecond = NTPEPOCH2NSTIME (2871676800), .TAIdelta = 26, .next = &embedded_leapsecondlist[17]},
+    {.leapsecond = NTPEPOCH2NSTIME (2918937600), .TAIdelta = 27, .next = &embedded_leapsecondlist[18]},
+    {.leapsecond = NTPEPOCH2NSTIME (2950473600), .TAIdelta = 28, .next = &embedded_leapsecondlist[19]},
+    {.leapsecond = NTPEPOCH2NSTIME (2982009600), .TAIdelta = 29, .next = &embedded_leapsecondlist[20]},
+    {.leapsecond = NTPEPOCH2NSTIME (3029443200), .TAIdelta = 30, .next = &embedded_leapsecondlist[21]},
+    {.leapsecond = NTPEPOCH2NSTIME (3076704000), .TAIdelta = 31, .next = &embedded_leapsecondlist[22]},
+    {.leapsecond = NTPEPOCH2NSTIME (3124137600), .TAIdelta = 32, .next = &embedded_leapsecondlist[23]},
+    {.leapsecond = NTPEPOCH2NSTIME (3345062400), .TAIdelta = 33, .next = &embedded_leapsecondlist[24]},
+    {.leapsecond = NTPEPOCH2NSTIME (3439756800), .TAIdelta = 34, .next = &embedded_leapsecondlist[25]},
+    {.leapsecond = NTPEPOCH2NSTIME (3550089600), .TAIdelta = 35, .next = &embedded_leapsecondlist[26]},
+    {.leapsecond = NTPEPOCH2NSTIME (3644697600), .TAIdelta = 36, .next = &embedded_leapsecondlist[27]},
+    {.leapsecond = NTPEPOCH2NSTIME (3692217600), .TAIdelta = 37, .next = NULL}};
 
 /* Global variable to hold a leap second list */
-LeapSecond *leapsecondlist = NULL;
+LeapSecond *leapsecondlist = &embedded_leapsecondlist[0];
 
 /* Days in each month, for non-leap and leap years */
 static const int monthdays[]      = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
@@ -1737,6 +1769,12 @@ ms_readleapsecondfile (const char *filename)
   {
     ms_log (2, "Cannot open leap second file %s: %s\n", filename, strerror (errno));
     return -1;
+  }
+
+  /* Detatch embedded leap second list */
+  if (leapsecondlist == &embedded_leapsecondlist[0])
+  {
+    leapsecondlist = NULL;
   }
 
   /* Free existing leapsecondlist */
