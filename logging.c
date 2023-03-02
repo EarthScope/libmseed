@@ -49,7 +49,7 @@ void print_message_int (MSLogParam *logp, int level, const char *message,
  * Otherwise, C11 defines the standardized _Thread_local storage-class.
  * Otherwise fallback to the commonly supported __thread keyword.
  */
-#if defined(LIBMSEED_NO_THREADING)
+#if !defined(LIBMSEED_NO_THREADING)
 #if defined(LMP_WIN)
   #define lm_thread_local __declspec( thread )
 #elif __STDC_VERSION__ >= 201112L
