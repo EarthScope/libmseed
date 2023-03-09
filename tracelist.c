@@ -517,8 +517,23 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, MS3Record *msr, MS3RecordPtr **pprec
       segbefore = NULL; /* Find segment that record fits before */
       segafter  = NULL; /* Find segment that record fits after */
       followseg = NULL; /* Track segment that record follows in time order */
+
       while (searchseg)
       {
+        /* Done searching if autohealing and record exactly matches
+         * a segment.
+         *
+         * Rationale: autohealing would have combined this segment
+         * with another if that were possible, so this record will
+         * also not fit with any other segment. */
+        if (autoheal &&
+            msr->starttime == searchseg->starttime &&
+            endtime == searchseg->endtime)
+        {
+          followseg = searchseg;
+          break;
+        }
+
         if (msr->starttime > searchseg->starttime)
           followseg = searchseg;
 
