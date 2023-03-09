@@ -59,7 +59,7 @@ main (int argc, char **argv)
   int64_t totalsamps = 0;
   int retcode;
 
-  /* Redirect libmseed logging facility to stderr for consistency */
+  /* Redirect libmseed logging facility to stderr for consistency of tests */
   ms_loginit (print_stderr, NULL, print_stderr, NULL);
 
   /* Process command line arguments */
