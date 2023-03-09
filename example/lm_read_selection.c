@@ -73,7 +73,7 @@ main (int argc, char **argv)
   }
 
   /* Traverse trace list structures and print summary information */
-  tid = mstl->traces;
+  tid = mstl->traces.next[0];
   while (tid)
   {
     if (!ms_nstime2timestr (tid->earliest, starttimestr, SEEDORDINAL, NANO_MICRO_NONE) ||
@@ -103,7 +103,7 @@ main (int argc, char **argv)
       seg = seg->next;
     }
 
-    tid = tid->next;
+    tid = tid->next[0];
   }
 
   /* Make sure everything is cleaned up */

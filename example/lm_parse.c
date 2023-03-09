@@ -29,14 +29,15 @@
 #define PACKAGE "lm_parse"
 #define VERSION "[libmseed " LIBMSEED_VERSION " " PACKAGE " ]"
 
-static flag verbose    = 0;
-static flag ppackets   = 0;
-static flag basicsum   = 0;
-static flag tracegap   = 0;
-static int printraw    = 0;
-static int printdata   = 0;
-static int reclen      = -1;
-static char *inputfile = NULL;
+static flag verbose      = 0;
+static flag ppackets     = 0;
+static flag basicsum     = 0;
+static flag tracegap     = 0;
+static flag splitversion = 0;
+static int printraw      = 0;
+static int printdata     = 0;
+static int reclen        = -1;
+static char *inputfile   = NULL;
 
 static int parameter_proc (int argcount, char **argvec);
 static void print_stderr (const char *message);
@@ -87,7 +88,7 @@ main (int argc, char **argv)
 
     if (tracegap)
     {
-      mstl3_addmsr (mstl, msr, 0, 1, flags, NULL);
+      mstl3_addmsr (mstl, msr, splitversion, 1, flags, NULL);
     }
     else
     {
@@ -173,7 +174,7 @@ main (int argc, char **argv)
     ms_log (2, "Cannot read %s: %s\n", inputfile, ms_errorstr (retcode));
 
   if (tracegap)
-    mstl3_printtracelist (mstl, SEEDORDINAL, 1, 1);
+    mstl3_printtracelist (mstl, SEEDORDINAL, 1, 1, splitversion);
 
   /* Make sure everything is cleaned up */
   ms3_readmsr (&msr, NULL, NULL, NULL, flags, 0);
@@ -231,6 +232,10 @@ parameter_proc (int argcount, char **argvec)
     else if (strncmp (argvec[optind], "-D", 2) == 0)
     {
       printdata = 2;
+    }
+    else if (strcmp (argvec[optind], "-P") == 0)
+    {
+      splitversion = 1;
     }
     else if (strncmp (argvec[optind], "-tg", 3) == 0)
     {
@@ -309,6 +314,7 @@ usage (void)
            " -z             Print raw details of header\n"
            " -d             Print first 6 sample values\n"
            " -D             Print all sample values\n"
+           " -P             Additionally group traces by data publication version\n"
            " -tg            Print trace listing with gap information\n"
            " -s             Print a basic summary after processing a file\n"
            " -r bytes       Specify record length in bytes, required if no Blockette 1000\n"

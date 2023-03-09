@@ -93,7 +93,7 @@ main (int argc, char **argv)
   }
 
   /* Print summary */
-  mstl3_printtracelist (mstl, ISOMONTHDAY, 1, 1);
+  mstl3_printtracelist (mstl, ISOMONTHDAY, 1, 1, 0);
 
   ms_log (1, "Total records: %" PRId64 "\n", records);
 

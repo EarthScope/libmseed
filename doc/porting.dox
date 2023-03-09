@@ -21,16 +21,16 @@ identified at compile time but may yet effect the program.
 
 @subsection porting-important Most important changes that commonly need attention
 
-- Change \c MSRecord structure type usage with MS3Record, which has
+- Convert \c MSRecord structure type usage to ::MS3Record, which has
   similar (but not the same) members.
 
-- Change \c MSTraceList, \c MSTraceID, and \c MSTraceSeg structure
-  types usage with MS3TraceList, MS3TraceID, and MS3TraceSeg, which
+- Convert \c MSTraceList, \c MSTraceID, and \c MSTraceSeg structure
+  types usage to ::MS3TraceList, ::MS3TraceID, and ::MS3TraceSeg, which
   have similar (but not the same) members.
 
-- Convert usage of MSTraceGroups to MS3TraceLists. Trace Groups are no
-  longer supported.  The @ref page-examples page contains examples of
-  using @ref trace-list functionality.
+- Convert usage of MSTraceGroups to ::MS3TraceLists. Legacy "Trace Groups"
+  are no longer supported.  The @ref page-examples page contains examples
+  of using @ref trace-list functionality.
 
 - Convert all \c hptime_t typed variables to \c nstime_t type.
 @note the \c nstime_t type is a nanosecond epoch value, whereas the
@@ -75,11 +75,11 @@ and the traditional SEED network, station, location, channel scheme:
   - \c samprate >= 0.0 is a rate in samples/second (Hertz)
   - \c samprate < 0.0 is a (negated) sampling period in seconds
 
-  It is common that rates equal to or greater than 1 Hz are reprensented
+  It is common that rates equal to or greater than 1 Hz are represented
   in samples/second and rates less than 1 Hz are represented as a
   period.
 
-  Applications that must consistenly have access to the samples/second
+  Applications that must consistently have access to the samples/second
   representation may use the msr3_sampratehz() function.
 
 @subsection porting-other Other changes that may need attention

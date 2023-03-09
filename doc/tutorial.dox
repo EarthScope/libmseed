@@ -99,7 +99,7 @@ int main ()
   }
 
   /* Do something with the traces here, e.g. print */
-  mstl3_printtracelist (mstl, 0, verbose, 0);
+  mstl3_printtracelist (mstl, 0, verbose, 0, 0);
 
   mstl3_free (&mstl, 1);
 

@@ -1,8 +1,24 @@
+2023.082:
+	WARNING: API changes as follows:
+	1. mstl3_printtracelist() now takes an additional `versions` argument.
+	When non-zero the routine will decorate SIDs with publication versions.
+	2. The MS3TraceID structure is no longer a simple linked list.  Instead
+	it is a skip list, slightly changing the syntax for traversing the list
+	as illustrated in the examples.
+
+	- Significant optimization for the case of constructing trace lists with
+	large numbers of differnt source IDs, by using a skip list. Implementation
+	inspired by: https://github.com/tdeck/c-skiplist, thanks @tdeck!
+	- Add new mstl3_findID() function for searching a trace list for specific
+	SourceID and, optionally, publication version.
+
 2023.068:
 	- Optimize trace construction in mstl3_addmsr_recordptr() for the case
 	of duplicate records.
 	- Add 'const' declarations to ms_sid2nslc() and ms_nslc2sid() to guarantee
 	input will not be modified.
+	- Add cURL detection and full build support to example/Makefile.
+	- Fix logic test for LIBMSEED_NO_THREADING declaration.
 
 2023.029: 3.0.13
 	- Embed current leap second list, used by default and replaced by

@@ -182,7 +182,7 @@ main (int argc, char **argv)
             fe->filename, fe->recordcount, fe->result);
 
     if (fe->result == MS_NOERROR || fe->result == MS_ENDOFFILE)
-      mstl3_printtracelist (fe->mstl, ISOMONTHDAY, 1, 1);
+      mstl3_printtracelist (fe->mstl, ISOMONTHDAY, 1, 1, 0);
   }
 
   return 0;

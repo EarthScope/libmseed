@@ -309,9 +309,9 @@ typedef enum
 
 extern int ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *yday,
                            uint8_t *hour, uint8_t *min, uint8_t *sec, uint32_t *nsec);
-extern char *ms_nstime2timestr (nstime_t nstime, char *timestr,
+extern char* ms_nstime2timestr (nstime_t nstime, char *timestr,
                                 ms_timeformat_t timeformat, ms_subseconds_t subsecond);
-DEPRECATED extern char *ms_nstime2timestrz (nstime_t nstime, char *timestr,
+DEPRECATED extern char* ms_nstime2timestrz (nstime_t nstime, char *timestr,
                                             ms_timeformat_t timeformat, ms_subseconds_t subsecond);
 extern nstime_t ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec);
 extern nstime_t ms_timestr2nstime (const char *timestr);
@@ -430,10 +430,10 @@ typedef struct MS3Selections {
   uint8_t pubversion;                //!< Selected publication version, use 0 for any
 } MS3Selections;
 
-extern MS3Selections *ms3_matchselect (MS3Selections *selections, char *sid,
+extern MS3Selections* ms3_matchselect (MS3Selections *selections, char *sid,
                                        nstime_t starttime, nstime_t endtime,
                                        int pubversion, MS3SelectTime **ppselecttime);
-extern MS3Selections *msr3_matchselect (MS3Selections *selections, MS3Record *msr,
+extern MS3Selections* msr3_matchselect (MS3Selections *selections, MS3Record *msr,
                                         MS3SelectTime **ppselecttime);
 extern int ms3_addselect (MS3Selections **ppselections, char *sidpattern,
                           nstime_t starttime, nstime_t endtime, uint8_t pubversion);
@@ -504,7 +504,7 @@ typedef struct MS3RecordList
     A trace list container starts with an ::MS3TraceList, which
     contains one or more ::MS3TraceID entries, which each contain one
     or more ::MS3TraceSeg entries.  The ::MS3TraceID and ::MS3TraceSeg
-    entries are traversed as a simple linked list.
+    entries are easily traversed as linked structures.
 
     The overall structure is illustrated as:
       - MS3TraceList
@@ -523,6 +523,9 @@ typedef struct MS3RecordList
     \sa ms3_readtracelist_selection()
     \sa mstl3_writemseed()
     @{ */
+
+/** @brief Maximum skip list height for MSTraceIDs */
+#define MSTRACEID_SKIPLIST_HEIGHT 8
 
 /** @brief Container for a continuous trace segment, linkable */
 typedef struct MS3TraceSeg {
@@ -550,14 +553,15 @@ typedef struct MS3TraceID {
   uint32_t        numsegments;       //!< Number of segments for this ID
   struct MS3TraceSeg *first;         //!< Pointer to first of list of segments
   struct MS3TraceSeg *last;          //!< Pointer to last of list of segments
-  struct MS3TraceID *next;           //!< Pointer to next trace ID, NULL if the last
+  struct MS3TraceID *next[MSTRACEID_SKIPLIST_HEIGHT];   //!< Next trace ID at first pointer, NULL if the last
+  uint8_t         height;            //!< Height of skip list at \a next
 } MS3TraceID;
 
 /** @brief Container for a collection of continuous trace segment, linkable */
 typedef struct MS3TraceList {
   uint32_t           numtraces;      //!< Number of traces in list
-  struct MS3TraceID *traces;         //!< Pointer to list of traces
-  struct MS3TraceID *last;           //!< Pointer to last modified trace in list
+  struct MS3TraceID  traces;         //!< Head node of trace skip list, first entry at \a traces.next[0]
+  uint64_t           prngstate;      //!< INTERNAL: State for Pseudo RNG
 } MS3TraceList;
 
 /** @brief Callback functions that return time and sample rate tolerances
@@ -593,6 +597,7 @@ typedef struct MS3Tolerance
 
 extern MS3TraceList* mstl3_init (MS3TraceList *mstl);
 extern void          mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr);
+extern MS3TraceID*   mstl3_findID (MS3TraceList *mstl, const char *sid, uint8_t pubversion, MS3TraceID **prev);
 
 /** @def mstl3_addmsr
     @brief Add a ::MS3Record to a ::MS3TraceList @see mstl3_addmsr_recordptr() */
@@ -617,7 +622,7 @@ extern int64_t mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, i
                            void *handlerdata, int reclen, int8_t encoding,
                            int64_t *packedsamples, uint32_t flags, int8_t verbose, char *extra);
 extern void mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
-                                  int8_t details, int8_t gaps);
+                                  int8_t details, int8_t gaps, int8_t versions);
 extern void mstl3_printsynclist (MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds);
 extern void mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
                                 double *mingap, double *maxgap);

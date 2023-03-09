@@ -88,7 +88,7 @@ main (int argc, char **argv)
   }
 
   /* Traverse trace list structures and print summary information */
-  tid = mstl->traces;
+  tid = mstl->traces.next[0];
   while (tid)
   {
     ms_log (0, "TraceID for %s (%d), segments: %u\n",
@@ -193,7 +193,7 @@ main (int argc, char **argv)
       seg = seg->next;
     }
 
-    tid = tid->next;
+    tid = tid->next[0];
   }
 
   /* Make sure everything is cleaned up */

@@ -31,6 +31,9 @@ MS3TraceSeg *mstl3_addmsrtoseg (MS3TraceSeg *seg, MS3Record *msr, nstime_t endti
 MS3TraceSeg *mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2);
 MS3RecordPtr *mstl3_add_recordptr (MS3TraceSeg *seg, MS3Record *msr, nstime_t endtime, int8_t whence);
 
+static uint32_t lm_lcg_r (uint64_t *state);
+static uint8_t lm_random_height (uint8_t maximum, uint64_t *state);
+
 /**********************************************************************/ /**
  * @brief Initialize a ::MS3TraceList container
  *
@@ -62,6 +65,10 @@ mstl3_init (MS3TraceList *mstl)
 
   memset (mstl, 0, sizeof (MS3TraceList));
 
+  /* Seed PRNG with 1, we only need random distribution */
+  mstl->prngstate = 1;
+  mstl->traces.height = MSTRACEID_SKIPLIST_HEIGHT;
+
   return mstl;
 } /* End of mstl3_init() */
 
@@ -88,69 +95,206 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
   if (!ppmstl)
     return;
 
-  if (*ppmstl)
+  /* Free any associated traces */
+  id = (*ppmstl)->traces.next[0];
+  while (id)
   {
-    /* Free any associated traces */
-    id = (*ppmstl)->traces;
-    while (id)
+    nextid = id->next[0];
+
+    /* Free any associated trace segments */
+    seg = id->first;
+    while (seg)
     {
-      nextid = id->next;
-
-      /* Free any associated trace segments */
-      seg = id->first;
-      while (seg)
-      {
-        nextseg = seg->next;
-
-        /* Free private pointer data if present and requested */
-        if (freeprvtptr && seg->prvtptr)
-          libmseed_memory.free (seg->prvtptr);
-
-        /* Free data array if allocated */
-        if (seg->datasamples)
-          libmseed_memory.free (seg->datasamples);
-
-        /* Free associated record list and related private pointers */
-        if (seg->recordlist)
-        {
-          recordptr = seg->recordlist->first;
-          while (recordptr)
-          {
-            nextrecordptr = recordptr->next;
-
-            if (recordptr->msr)
-              msr3_free (&recordptr->msr);
-
-            if (freeprvtptr && recordptr->prvtptr)
-              libmseed_memory.free (recordptr->prvtptr);
-
-            libmseed_memory.free (recordptr);
-
-            recordptr = nextrecordptr;
-          }
-
-          libmseed_memory.free (seg->recordlist);
-        }
-
-        libmseed_memory.free (seg);
-        seg = nextseg;
-      }
+      nextseg = seg->next;
 
       /* Free private pointer data if present and requested */
-      if (freeprvtptr && id->prvtptr)
-        libmseed_memory.free (id->prvtptr);
+      if (freeprvtptr && seg->prvtptr)
+        libmseed_memory.free (seg->prvtptr);
 
-      libmseed_memory.free (id);
-      id = nextid;
+      /* Free data array if allocated */
+      if (seg->datasamples)
+        libmseed_memory.free (seg->datasamples);
+
+      /* Free associated record list and related private pointers */
+      if (seg->recordlist)
+      {
+        recordptr = seg->recordlist->first;
+        while (recordptr)
+        {
+          nextrecordptr = recordptr->next;
+
+          if (recordptr->msr)
+            msr3_free (&recordptr->msr);
+
+          if (freeprvtptr && recordptr->prvtptr)
+            libmseed_memory.free (recordptr->prvtptr);
+
+          libmseed_memory.free (recordptr);
+
+          recordptr = nextrecordptr;
+        }
+
+        libmseed_memory.free (seg->recordlist);
+      }
+
+      libmseed_memory.free (seg);
+      seg = nextseg;
     }
 
-    libmseed_memory.free (*ppmstl);
+    /* Free private pointer data if present and requested */
+    if (freeprvtptr && id->prvtptr)
+      libmseed_memory.free (id->prvtptr);
 
-    *ppmstl = NULL;
+    libmseed_memory.free (id);
+
+    id = nextid;
   }
+
+  libmseed_memory.free (*ppmstl);
+
+  *ppmstl = NULL;
 
   return;
 } /* End of mstl3_free() */
+
+/**********************************************************************/ /**
+ * @brief Find matching ::MS3TraceID in a ::MS3TraceList
+ *
+ * Return the ::MS3TraceID matching the \a sid in the specified ::MS3TraceList.
+ *
+ * If \a prev is not NULL, set pointers to previous entries for the
+ * expected location of the trace ID.  Useful for adding a new ID
+ * with mstl3_addID(), and should be set to \a NULL otherwise.
+ *
+ * @param[in] mstl Pointer to the ::MS3TraceList to search
+ * @param[in] sid Source ID to search for in the list
+ * @param[in] pubversion If non-zero, find the entry with this version
+ * @param[out] prev Pointers to previous entries in expected location or NULL
+ *
+ * @returns a pointer to the matching ::MS3TraceID or NULL if not found or error.
+ ***************************************************************************/
+MS3TraceID *
+mstl3_findID (MS3TraceList *mstl, const char *sid, uint8_t pubversion, MS3TraceID **prev)
+{
+  MS3TraceID *id = NULL;
+  int level;
+  int cmp;
+
+  if (!mstl || !sid)
+  {
+    ms_log (2, "Required argument not defined: 'mstl' or 'sid'\n");
+    return NULL;
+  }
+
+  level = MSTRACEID_SKIPLIST_HEIGHT - 1;
+
+  /* Search trace ID skip list, starting from the head/sentinel node */
+  id = &(mstl->traces);
+  while (id != NULL && level >= 0)
+  {
+    if (prev != NULL) /* Track previous entries at each level */
+    {
+      prev[level] = id;
+    }
+
+    if (id->next[level] == NULL)
+    {
+      level -= 1;
+    }
+    else
+    {
+      cmp = strcmp(id->next[level]->sid, sid);
+
+      /* If source IDs match, check publication if matching requested */
+      if (!cmp && pubversion && id->next[level]->pubversion != pubversion)
+      {
+        cmp = (id->next[level]->pubversion < pubversion) ? -1 : 1;
+      }
+
+      if (cmp == 0) /* Found matching trace ID */
+      {
+        return id->next[level];
+      }
+      else if (cmp > 0) /* Drop a level */
+      {
+        level -= 1;
+      }
+      else /* Continue at this level */
+      {
+        id = id->next[level];
+      }
+    }
+  }
+
+  return NULL;
+} /* End of mstl3_findID() */
+
+/**********************************************************************/ /**
+ * @brief Add ::MS3TraceID to a ::MS3TraceList
+ *
+ * The \a prev array is the list of pointers to previous entries at different
+ * levels of the skip list.  It is common to first search the list using
+ * mstl3_findID() which returns this list of pointers for use here.
+ * If this value is NULL mstl3_findID() will be run to find the pointers.
+ *
+ * @param[in] mstl Add ID to this ::MS3TraceList
+ * @param[in] id The ::MS3TraceID to add
+ * @param[in] prev Pointers to previous entries in expected location, can be NULL
+ *
+ * @returns a pointer to the added ::MS3TraceID or NULL on error.
+ *
+ * \sa mstl3_findID()
+ ***************************************************************************/
+MS3TraceID *
+mstl3_addID (MS3TraceList *mstl, MS3TraceID *id, MS3TraceID **prev)
+{
+  MS3TraceID *local_prev[MSTRACEID_SKIPLIST_HEIGHT] = {NULL};
+  int level;
+
+  if (!mstl || !id)
+  {
+    ms_log (2, "Required argument not defined: 'mstl' or 'id'\n");
+    return NULL;
+  }
+
+  /* If previous list pointers not supplied, find them */
+  if (!prev)
+  {
+    mstl3_findID (mstl, id->sid, 0, local_prev);
+    prev = local_prev;
+  }
+
+  /* Set level of new entry to a random level within head height */
+  id->height = lm_random_height (MSTRACEID_SKIPLIST_HEIGHT, &(mstl->prngstate));
+
+  /* Set all pointers above new entry level to NULL */
+  for (level = MSTRACEID_SKIPLIST_HEIGHT - 1;
+       level > id->height;
+       level--)
+  {
+    id->next[level] = NULL;
+  }
+
+  /* Connect previous and new ID pointers */
+  for (level = id->height - 1;
+       level >= 0;
+       level--)
+  {
+    if (!prev[level])
+    {
+      ms_log (2, "No previous pointer at level %d for adding SID %s\n",
+              level, id->sid);
+      return NULL;
+    }
+
+    id->next[level] = prev[level]->next[level];
+    prev[level]->next[level] = id;
+  }
+
+  mstl->numtraces++;
+
+  return id;
+} /* End of mstl3_addID() */
 
 
 /**********************************************************************/ /**
@@ -219,8 +363,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, MS3Record *msr, MS3RecordPtr **pprec
                         MS3Tolerance *tolerance)
 {
   MS3TraceID *id = 0;
-  MS3TraceID *searchid = 0;
-  MS3TraceID *ltid = 0;
+  MS3TraceID *previd[MSTRACEID_SKIPLIST_HEIGHT] = {NULL};
 
   MS3TraceSeg *seg = 0;
   MS3TraceSeg *searchseg = 0;
@@ -239,14 +382,9 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, MS3Record *msr, MS3RecordPtr **pprec
 
   double sampratehz;
   double sampratetol = -1.0;
-  char *s1, *s2;
   int8_t whence;
   int8_t lastratecheck;
   int8_t firstratecheck;
-  int mag;
-  int cmp;
-  int ltmag;
-  int ltcmp;
 
   if (!mstl || !msr)
   {
@@ -261,87 +399,11 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, MS3Record *msr, MS3RecordPtr **pprec
     return NULL;
   }
 
-  /* Search for matching trace ID starting with last accessed ID and
-     then looping through the trace ID list. */
-  if (mstl->last)
-  {
-    s1 = mstl->last->sid;
-    s2 = msr->sid;
-    while (*s1 == *s2++)
-    {
-      if (*s1++ == '\0')
-        break;
-    }
-    cmp = (*s1 - *--s2);
-
-    /* If source names matched, check publication version if splitting */
-    if (!cmp && splitversion && mstl->last->pubversion != msr->pubversion)
-    {
-      cmp = (mstl->last->pubversion < msr->pubversion) ? -1 : 1;
-    }
-
-    if (!cmp)
-    {
-      id = mstl->last;
-    }
-    else
-    {
-      /* Loop through trace ID list searching for a match, simultaneously
-         track the source name which is closest but less than the MS3Record
-         to allow for later insertion with sort order. */
-      searchid = mstl->traces;
-      ltcmp = 0;
-      ltmag = 0;
-      while (searchid)
-      {
-        /* Compare source names */
-        s1 = searchid->sid;
-        s2 = msr->sid;
-        mag = 0;
-        while (*s1 == *s2++)
-        {
-          mag++;
-          if (*s1++ == '\0')
-            break;
-        }
-        cmp = (*s1 - *--s2);
-
-        /* If source names matched, check publication version if splitting */
-        if (!cmp && splitversion && searchid->pubversion != msr->pubversion)
-        {
-          cmp = (searchid->pubversion < msr->pubversion) ? -1 : 1;
-        }
-
-        /* If source names did not match track closest "less than" value
-           and continue searching. */
-        if (cmp != 0)
-        {
-          if (cmp < 0)
-          {
-            if ((ltcmp == 0 || cmp >= ltcmp) && mag >= ltmag)
-            {
-              ltcmp = cmp;
-              ltmag = mag;
-              ltid = searchid;
-            }
-            else if (mag > ltmag)
-            {
-              ltcmp = cmp;
-              ltmag = mag;
-              ltid = searchid;
-            }
-          }
-
-          searchid = searchid->next;
-          continue;
-        }
-
-        /* If we made it this far we found a match */
-        id = searchid;
-        break;
-      }
-    }
-  } /* Done searching for match in trace ID list */
+  /* Search for matching trace ID */
+  id = mstl3_findID (mstl,
+                     msr->sid,
+                     (splitversion) ? msr->pubversion : 0,
+                     previd);
 
   /* If no matching ID was found create new MS3TraceID and MS3TraceSeg entries */
   if (!id)
@@ -356,7 +418,6 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, MS3Record *msr, MS3RecordPtr **pprec
     /* Populate MS3TraceID */
     memcpy (id->sid, msr->sid, sizeof(id->sid));
     id->pubversion = msr->pubversion;
-
     id->earliest = msr->starttime;
     id->latest = endtime;
     id->numsegments = 1;
@@ -374,18 +435,11 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, MS3Record *msr, MS3RecordPtr **pprec
     }
 
     /* Add new MS3TraceID to MS3TraceList */
-    if (!mstl->traces || !ltid)
+    if (mstl3_addID (mstl, id, previd) == NULL)
     {
-      id->next = mstl->traces;
-      mstl->traces = id;
+      ms_log (2, "Error adding new ID to trace list\n");
+      return NULL;
     }
-    else
-    {
-      id->next = ltid->next;
-      ltid->next = id;
-    }
-
-    mstl->numtraces++;
   }
   /* Add data coverage to the matching MS3TraceID */
   else
@@ -755,9 +809,6 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, MS3Record *msr, MS3RecordPtr **pprec
     if (id->last == seg)
       id->last = segbefore;
   }
-
-  /* Set MS3TraceID as last accessed */
-  mstl->last = id;
 
   return seg;
 } /* End of mstl3_addmsr_recordptr() */
@@ -1509,7 +1560,7 @@ mstl3_resize_buffers (MS3TraceList *mstl)
   }
 
   /* Loop through trace ID and segment lists */
-  id = mstl->traces;
+  id = mstl->traces.next[0];
   while (id)
   {
     seg = id->first;
@@ -1538,7 +1589,7 @@ mstl3_resize_buffers (MS3TraceList *mstl)
       seg = seg->next;
     }
 
-    id = id->next;
+    id = id->next[0];
   }
 
   return 0;
@@ -1966,7 +2017,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
   }
 
   /* Loop through trace list */
-  id = mstl->traces;
+  id = mstl->traces.next[0];
   while (id)
   {
     memcpy (msr->sid, id->sid, sizeof(msr->sid));
@@ -2062,7 +2113,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
       seg = seg->next;
     }
 
-    id = id->next;
+    id = id->next[0];
   }
 
   /* The record structure never owns the actual data so it should not free it */
@@ -2089,10 +2140,11 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
  * @param[in] timeformat Time string format, one of @ref ms_timeformat_t
  * @param[in] details Flag to control inclusion of more details
  * @param[in] gaps Flag to control inclusion of gap/overlap between segments
+ * @param[in] versions Flag to control inclusion of publication version on SourceIDs
  ***************************************************************************/
 void
 mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
-                      int8_t details, int8_t gaps)
+                      int8_t details, int8_t gaps, int8_t versions)
 {
   MS3TraceID *id = 0;
   MS3TraceSeg *seg = 0;
@@ -2104,6 +2156,9 @@ mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
   double delta;
   int tracecnt = 0;
   int segcnt = 0;
+
+  char versioned_sid[LM_SIDLEN] = {0};
+  char *display_sid = NULL;
 
   if (!mstl)
   {
@@ -2121,9 +2176,20 @@ mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
     ms_log (0, "       SourceID                Start sample             End sample\n");
 
   /* Loop through trace list */
-  id = mstl->traces;
+  id = mstl->traces.next[0];
   while (id)
   {
+    /* Generated versioned SID if splitting versions */
+    if (versions)
+    {
+      snprintf (versioned_sid, LM_SIDLEN, "%s#%u", id->sid, id->pubversion);
+      display_sid = versioned_sid;
+    }
+    else
+    {
+      display_sid = id->sid;
+    }
+
     /* Loop through segment list */
     seg = id->first;
     while (seg)
@@ -2169,23 +2235,23 @@ mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
 
         if (details <= 0)
           ms_log (0, "%-24s %-24s %-24s %-4s\n",
-                  id->sid, stime, etime, gapstr);
+                  display_sid, stime, etime, gapstr);
         else
           ms_log (0, "%-24s %-24s %-24s %-s %-3.3g %-" PRId64 "\n",
-                  id->sid, stime, etime, gapstr, seg->samprate, seg->samplecnt);
+                  display_sid, stime, etime, gapstr, seg->samprate, seg->samplecnt);
       }
       else if (details > 0 && gaps <= 0)
         ms_log (0, "%-24s %-24s %-24s %-3.3g %-" PRId64 "\n",
-                id->sid, stime, etime, seg->samprate, seg->samplecnt);
+                display_sid, stime, etime, seg->samprate, seg->samplecnt);
       else
-        ms_log (0, "%-24s %-24s %-24s\n", id->sid, stime, etime);
+        ms_log (0, "%-24s %-24s %-24s\n", display_sid, stime, etime);
 
       segcnt++;
       seg = seg->next;
     }
 
     tracecnt++;
-    id = id->next;
+    id = id->next[0];
   }
 
   if (details > 0)
@@ -2239,7 +2305,7 @@ mstl3_printsynclist (MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds
   ms_log (0, "%s|%s\n", (dccid) ? dccid : "DCC", yearday);
 
   /* Loop through trace list */
-  id = mstl->traces;
+  id = mstl->traces.next[0];
   while (id)
   {
     ms_sid2nslc (id->sid, net, sta, loc, chan);
@@ -2261,7 +2327,7 @@ mstl3_printsynclist (MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds
       seg = seg->next;
     }
 
-    id = id->next;
+    id = id->next[0];
   }
 
   return;
@@ -2299,12 +2365,12 @@ mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
   if (!mstl)
     return;
 
-  if (!mstl->traces)
+  if (!mstl->numtraces)
     return;
 
   ms_log (0, "   SourceID              Last Sample              Next Sample       Gap  Samples\n");
 
-  id = mstl->traces;
+  id = mstl->traces.next[0];
   while (id)
   {
     seg = id->first;
@@ -2374,10 +2440,45 @@ mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
       seg = seg->next;
     }
 
-    id = id->next;
+    id = id->next[0];
   }
 
   ms_log (0, "Total: %d gap(s)\n", gapcnt);
 
   return;
 } /* End of mstl3_printgaplist() */
+
+/* Pseudo random number generator, as a linear congruential generator (LCG):
+ * https://en.wikipedia.org/wiki/Linear_congruential_generator
+ *
+ * Yields a sequence of pseudo-randomized numbers distributed
+ * between 0 and UINT32_MAX.  Roughly half-chance of being above
+ * or below (UINT32_MAX / 2), good enough for coin-flipping.
+ *
+ * Uses 64-bit state but returns only the higher-order bits
+ * for statistically better values.
+ */
+static uint32_t
+lm_lcg_r (uint64_t *state)
+{
+  *state = 6364136223846793005ULL * *state + 1;
+  return *state >> 32;
+}
+
+/* Return random height from 1 up to maximum.
+ *
+ * Coin-flipping method using a pseudo random number generator.
+ */
+static uint8_t
+lm_random_height (uint8_t maximum, uint64_t *state)
+{
+  uint8_t height = 1;
+
+  while (height < maximum &&
+         lm_lcg_r (state) < (UINT32_MAX / 2))
+  {
+    height++;
+  }
+
+  return height;
+}
