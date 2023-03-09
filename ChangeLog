@@ -3,6 +3,8 @@
 	of duplicate records.
 	- Add 'const' declarations to ms_sid2nslc() and ms_nslc2sid() to guarantee
 	input will not be modified.
+	- Add cURL detection and full build support to example/Makefile.
+	- Fix logic test for LIBMSEED_NO_THREADING declaration.
 
 2023.029: 3.0.13
 	- Embed current leap second list, used by default and replaced by
