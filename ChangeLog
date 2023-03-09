@@ -1,3 +1,9 @@
+2023.068:
+	- Optimize trace construction in mstl3_addmsr_recordptr() for the case
+	of duplicate records.
+	- Add 'const' declarations to ms_sid2nslc() and ms_nslc2sid() to guarantee
+	input will not be modified.
+
 2023.029: 3.0.13
 	- Embed current leap second list, used by default and replaced by
 	ms_readleapsecondfile().

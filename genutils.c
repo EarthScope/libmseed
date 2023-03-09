@@ -180,9 +180,10 @@ static const int monthdays_leap[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30,
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan)
+ms_sid2nslc (const char *sid, char *net, char *sta, char *loc, char *chan)
 {
   size_t idlen;
+  const char *cid;
   char *id;
   char *ptr, *top, *next;
   int sepcnt = 0;
@@ -200,10 +201,10 @@ ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan)
     sid = strrchr (sid, ':') + 1;
 
     /* Verify 5 delimiters */
-    id = sid;
-    while ((id = strchr (id, '_')))
+    cid = sid;
+    while ((cid = strchr (cid, '_')))
     {
-      id++;
+      cid++;
       sepcnt++;
     }
     if (sepcnt != 5)
@@ -311,7 +312,7 @@ ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan)
  ***************************************************************************/
 int
 ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
-             char *net, char *sta, char *loc, char *chan)
+             const char *net, const char *sta, const char *loc, const char *chan)
 {
   char *sptr = sid;
   char xchan[6] = {0};

@@ -3,9 +3,6 @@
 * change json handling to yyjson.  Test performance difference.  Need data for testing that requires EHs, ~/data/2Year.TA.MSTX.mseed has events headers
 Issues: JSON Pointer get syntax, change dot-notation or adapt.  Not set function for Pointer, would need to write.
 
-* search for time spans in trace in reverse order and add test for whole match (existing matches
-cannot exist, they would have been combined already).
-
 * Remove last from ms3_readmsr(), last and fpos from two other family routines
   - The last indicator is a crutch and increasingly wrong with unknown stream lengths
   - the fpos from the _r and _selection members is undeeded as the MSFP can be inspected.
@@ -16,8 +13,3 @@ and for
 MS3TraceID
 maybe for
 MS3TraceSeg
-
-Add 'const' to:
-extern int ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan);
-extern int ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
-                        char *net, char *sta, char *loc, char *chan);

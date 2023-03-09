@@ -742,9 +742,9 @@ extern int libmseed_url_support (void);
     combination of the codes.
 
     @{ */
-extern int ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan);
+extern int ms_sid2nslc (const char *sid, char *net, char *sta, char *loc, char *chan);
 extern int ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
-                        char *net, char *sta, char *loc, char *chan);
+                        const char *net, const char *sta, const char *loc, const char *chan);
 extern int ms_seedchan2xchan (char *xchan, const char *seedchan);
 extern int ms_xchan2seedchan (char *seedchan, const char *xchan);
 extern int ms_strncpclean (char *dest, const char *source, int length);
