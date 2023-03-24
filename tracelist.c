@@ -2167,19 +2167,19 @@ mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
 
   /* Print out the appropriate header */
   if (details > 0 && gaps > 0)
-    ms_log (0, "       SourceID                Start sample             End sample         Gap  Hz  Samples\n");
+    ms_log (0, "       SourceID                      Start sample                End sample           Gap  Hz  Samples\n");
   else if (details <= 0 && gaps > 0)
-    ms_log (0, "       SourceID                Start sample             End sample         Gap\n");
+    ms_log (0, "       SourceID                      Start sample                End sample           Gap\n");
   else if (details > 0 && gaps <= 0)
-    ms_log (0, "       SourceID                Start sample             End sample         Hz  Samples\n");
+    ms_log (0, "       SourceID                      Start sample                End sample           Hz  Samples\n");
   else
-    ms_log (0, "       SourceID                Start sample             End sample\n");
+    ms_log (0, "       SourceID                      Start sample                End sample\n");
 
   /* Loop through trace list */
   id = mstl->traces.next[0];
   while (id)
   {
-    /* Generated versioned SID if splitting versions */
+    /* Generated versioned SID if requested */
     if (versions)
     {
       snprintf (versioned_sid, LM_SIDLEN, "%s#%u", id->sid, id->pubversion);
@@ -2234,17 +2234,17 @@ mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
           snprintf (gapstr, sizeof (gapstr), "%-4.4g", gap);
 
         if (details <= 0)
-          ms_log (0, "%-24s %-24s %-24s %-4s\n",
+          ms_log (0, "%-27s %-28s %-28s %-4s\n",
                   display_sid, stime, etime, gapstr);
         else
-          ms_log (0, "%-24s %-24s %-24s %-s %-3.3g %-" PRId64 "\n",
+          ms_log (0, "%-27s %-28s %-28s %-s %-3.3g %-" PRId64 "\n",
                   display_sid, stime, etime, gapstr, seg->samprate, seg->samplecnt);
       }
       else if (details > 0 && gaps <= 0)
-        ms_log (0, "%-24s %-24s %-24s %-3.3g %-" PRId64 "\n",
+        ms_log (0, "%-27s %-28s %-28s %-3.3g %-" PRId64 "\n",
                 display_sid, stime, etime, seg->samprate, seg->samplecnt);
       else
-        ms_log (0, "%-24s %-24s %-24s\n", display_sid, stime, etime);
+        ms_log (0, "%-27s %-28s %-28s\n", display_sid, stime, etime);
 
       segcnt++;
       seg = seg->next;

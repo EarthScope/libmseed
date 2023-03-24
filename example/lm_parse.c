@@ -174,7 +174,7 @@ main (int argc, char **argv)
     ms_log (2, "Cannot read %s: %s\n", inputfile, ms_errorstr (retcode));
 
   if (tracegap)
-    mstl3_printtracelist (mstl, SEEDORDINAL, 1, 1, splitversion);
+    mstl3_printtracelist (mstl, ISOMONTHDAY_Z, 1, 1, splitversion);
 
   /* Make sure everything is cleaned up */
   ms3_readmsr (&msr, NULL, NULL, NULL, flags, 0);
