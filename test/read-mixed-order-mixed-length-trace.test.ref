@@ -1,3 +1,3 @@
-       SourceID                Start sample             End sample         Gap  Hz  Samples
-FDSN:XX_TEST_00_L_H_Z    2010,058,06:50:00.069539 2010,058,07:55:51.069539  ==  1   3952
+       SourceID                      Start sample                End sample           Gap  Hz  Samples
+FDSN:XX_TEST_00_L_H_Z       2010-02-27T06:50:00.069539Z  2010-02-27T07:55:51.069539Z   ==  1   3952
 Total: 1 trace(s) with 1 segment(s)
