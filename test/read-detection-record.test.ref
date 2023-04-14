@@ -4,7 +4,7 @@ FDSN:XX_TEST_00_B_H_Z, version 2, 512 bytes (format: 2)
        sample rate (Hz): 0
                   flags: [00000000] 8 bits
                     CRC: 0x0
-    extra header length: 269 bytes
+    extra header length: 280 bytes
     data payload length: 0 bytes
        payload encoding: Text (val: 0)
           extra headers:
@@ -13,9 +13,9 @@ FDSN:XX_TEST_00_B_H_Z, version 2, 512 bytes (format: 2)
                     "Detection": [
                       {
                         "Type": "MURDOCK",
-                        "SignalAmplitude": 80,
-                        "SignalPeriod": 0.399999976,
-                        "BackgroundEstimate": 18,
+                        "SignalAmplitude": 80.0,
+                        "SignalPeriod": 0.3999999761581421,
+                        "BackgroundEstimate": 18.0,
                         "Wave": "DILATATION",
                         "OnsetTime": "2004-07-28T20:28:06.185000Z",
                         "MEDSNR": [

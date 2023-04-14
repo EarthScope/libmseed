@@ -1,3 +1,8 @@
+
+* Handle unhandle-able years like 0000 in timing exception blockettes. XB_ELYSE HH? channels example
+
+* New test rig?  Unit tests would be good...
+
 * Add some mseed3 parsing tests, reference data.
 
 * change json handling to yyjson.  Test performance difference.  Need data for testing that requires EHs, ~/data/2Year.TA.MSTX.mseed has events headers

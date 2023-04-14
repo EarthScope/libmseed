@@ -1,3 +1,28 @@
+2023.099:
+	WARNING: API change as follows:
+	The `path` argument to mseh_get and mseh_set routines is now in
+	JSON Pointer (RFC 6901) format.  This is a more appropriate, and
+	standardized, format than the pseudo-JSON Path, dotted string style
+	previously used.  It also allows more flexibility such as specification
+	of an array element.
+
+	- `mseh_get_path_r()` and `mseh_set_path_r()`, previously named without
+	the `_r` suffix, now take a additional `parsestate` argument.  This
+	functionality allows the parsed extra headers to be retained between
+	calls to avoid re-parsing.  For advanced usage, this allows more efficient
+	getting or setting of multiple extraheader values.  If used, this state
+	information must be free'd with `mseh_free_parsestate()`.  If used
+	with `mseh_set_path_r()` the headers must also be serialized with
+	`mseh_serialize()`.
+
+	- `mseh_get_path_r()` and `mseh_set_path_r()` accept a value type of `i`
+	that is used with int64_t values.
+
+	- Replace JSON library with yyjson (https://github.com/ibireme/yyjson).
+	Benefits include performance, shortest accurate real number representation,
+	JSON Pointer support, and UTF-8 support.
+
+
 2023.082:
 	WARNING: API changes as follows:
 	1. mstl3_printtracelist() now takes an additional `versions` argument.

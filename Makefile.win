@@ -14,7 +14,7 @@ OBJS=	fileutils.obj	\
 	gswap.obj	\
 	msio.obj	\
 	lookup.obj	\
-	parson.obj	\
+	yyjson.obj	\
 	msrutils.obj	\
 	extraheaders.obj\
 	pack.obj	\

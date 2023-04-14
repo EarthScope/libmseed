@@ -4,12 +4,12 @@ FDSN:XX_TEST_00_B_H_Z, version 1, 4096 bytes (format: 2)
        sample rate (Hz): 40
                   flags: [00000000] 8 bits
                     CRC: 0x0
-    extra header length: 34 bytes
+    extra header length: 36 bytes
     data payload length: 3968 bytes
        payload encoding: STEIM-2 integer compression (val: 11)
           extra headers:
                 "FDSN": {
                   "Time": {
-                    "Correction": 1
+                    "Correction": 1.0
                   }
                 }
