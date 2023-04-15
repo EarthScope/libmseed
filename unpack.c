@@ -166,7 +166,7 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
                                    HO4u (*pMS3FSDH_NSEC (record), msr->swapflag));
   if (msr->starttime == NSTERROR)
   {
-    ms_log (2, "%.*s: Cannot convert start time to internal time stamp\n",
+    ms_log (2, "%.*s: Cannot convert start time to internal time representation\n",
             sidlength, pMS3FSDH_SID (record));
     return MS_GENERROR;
   }
@@ -1639,26 +1639,32 @@ ms2_blktlen (uint16_t blkttype, const char *blkt, int8_t swapflag)
  * unused uint8_t   7       Unused, included for alignment
  * fract  uint16_t  8       0.0001 seconds, i.e. 1/10ths of milliseconds (0—9999)
  *
- * Return nstime_t value on success and NSTERROR on error.
+ * Return nstime_t value on success, NSTUNSET when year is 0, and NSTERROR on error.
  *
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 static inline nstime_t
 ms_btime2nstime (uint8_t *btime, int8_t swapflag)
 {
-  nstime_t nstime;
+  uint16_t year;
 
-  nstime = ms_time2nstime (HO2u (*((uint16_t*)(btime)), swapflag),
-                           HO2u (*((uint16_t*)(btime+2)), swapflag),
-                           *(btime+4),
-                           *(btime+5),
-                           *(btime+6),
-                           (uint32_t)HO2u (*(uint16_t*)(btime+8), swapflag) * (NSTMODULUS / 10000));
-
-  if (nstime == NSTERROR)
+  if (btime == NULL)
   {
     return NSTERROR;
   }
 
-  return nstime;
+  year = HO2u (*((uint16_t*)(btime)), swapflag);
+
+  /* Special case, if year 0 return unset value */
+  if (year == 0)
+  {
+    return NSTUNSET;
+  }
+
+  return ms_time2nstime (year,
+                         HO2u (*((uint16_t *)(btime + 2)), swapflag),
+                         *(btime + 4),
+                         *(btime + 5),
+                         *(btime + 6),
+                         (uint32_t)HO2u (*(uint16_t *)(btime + 8), swapflag) * (NSTMODULUS / 10000));
 } /* End of ms_btime2nstime() */

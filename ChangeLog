@@ -1,3 +1,8 @@
+2023.105:
+	- Handle special case of year 0 when parsing version 2 blockettes. These
+	are now treated as "unset" and not included in the extra headers.
+	- Add nstime_t special value of NSTUNSET for use as "unset" meaning.
+
 2023.099:
 	WARNING: API change as follows:
 	The `path` argument to mseh_get and mseh_set routines is now in

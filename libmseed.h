@@ -228,8 +228,13 @@ typedef int64_t nstime_t;
 
 /** @def NSTERROR
     @brief Error code for routines that normally return a high precision time.
-    The time value corresponds to '1902-1-1 00:00:00.00000000'. **/
+    The time value corresponds to '1902-01-01T00:00:00.000000000Z'. **/
 #define NSTERROR -2145916800000000000LL
+
+/** @def NSTUNSET
+    @brief Special nstime_t value meaning "unset".
+    The time value corresponds to '1902-01-01T00:00:00.000000001Z'. **/
+#define NSTUNSET -2145916799999999999LL
 
 /** @def MS_EPOCH2NSTIME
     @brief macro to convert Unix/POSIX epoch time to high precision epoch time */
@@ -803,7 +808,7 @@ typedef struct MSEHEventDetection
   double backgroundestimate; /**< Background estimate, 0.0 = not included */
   char wave[30]; /**< Detection wave (e.g. "DILATATION"), zero length = not included */
   char units[30]; /**< Units of amplitude and background estimate (e.g. "COUNTS"), zero length = not included */
-  nstime_t onsettime; /**< Onset time, NSTERROR = not included */
+  nstime_t onsettime; /**< Onset time, NSTUNSET = not included */
   uint8_t medsnr[6]; /**< Signal to noise ratio for Murdock event detection, all zeros = not included */
   int medlookback; /**< Murdock event detection lookback value, -1 = not included */
   int medpickalgorithm; /**< Murdock event detection pick algoritm, -1 = not included */
@@ -821,8 +826,8 @@ typedef struct MSEHEventDetection
 typedef struct MSEHCalibration
 {
   char type[30]; /**< Calibration type  (e.g. "STEP", "SINE", "PSEUDORANDOM"), zero length = not included */
-  nstime_t begintime; /**< Begin time, NSTERROR = not included */
-  nstime_t endtime; /**< End time, NSTERROR = not included */
+  nstime_t begintime; /**< Begin time, NSTUNSET = not included */
+  nstime_t endtime; /**< End time, NSTUNSET = not included */
   int steps; /**< Number of step calibrations, -1 = not included */
   int firstpulsepositive; /**< Boolean, step cal. first pulse, -1 = not included */
   int alternatesign; /**< Boolean, step cal. alt. sign, -1 = not included */
@@ -852,7 +857,7 @@ typedef struct MSEHCalibration
  */
 typedef struct MSEHTimingException
 {
-  nstime_t time; /**< Time of exception, NSTERROR = not included */
+  nstime_t time; /**< Time of exception, NSTUNSET = not included */
   float vcocorrection; /**< VCO correction, from 0 to 100%, <0 = not included */
   int usec; /**< [DEPRECATED] microsecond time offset, 0 = not included */
   int receptionquality; /**< Reception quality, 0 to 100% clock accurracy, <0 = not included */
@@ -872,8 +877,8 @@ typedef struct MSEHTimingException
 typedef struct MSEHRecenter
 {
   char type[30]; /**< Recenter type  (e.g. "MASS", "GIMBAL"), zero length = not included */
-  nstime_t begintime; /**< Begin time, NSTERROR = not included */
-  nstime_t endtime; /**< Estimated end time, NSTERROR = not included */
+  nstime_t begintime; /**< Begin time, NSTUNSET = not included */
+  nstime_t endtime; /**< Estimated end time, NSTUNSET = not included */
   char trigger[30]; /**< Trigger, e.g. AUTOMATIC or MANUAL, zero length = not included */
 } MSEHRecenter;
 
