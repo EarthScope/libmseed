@@ -14,11 +14,14 @@ CFLAGS += -I..
 LDFLAGS += -L..
 LDLIBS := -lmseed $(LDLIBS)
 
-SRCS := $(sort $(wildcard *.c))
-BINS := $(SRCS:%.c=%)
+EXAMPLE_SRCS := $(sort $(wildcard lm_*.c))
+EXAMPLE_BINS := $(EXAMPLE_SRCS:%.c=%)
 
-TESTS := $(sort $(wildcard *.test))
-TESTOUTS := $(TESTS:%.test=%.test.out)
+EXAMPLE_TESTS := $(sort $(wildcard *.test))
+EXAMPLE_TESTOUTS := $(EXAMPLE_TESTS:%.test=%.test.out)
+
+UNIT_SRCS := $(sort $(wildcard test_*.c))
+UNIT_TESTS := unittest-runner
 
 # ASCII color coding for test results, green for PASSED and red for FAILED
 PASSED := \033[0;32mPASSED\033[0m
@@ -26,11 +29,11 @@ FAILED := \033[0;31mFAILED\033[0m
 
 TESTCOUNT := 0
 
-test all: $(BINS) $(TESTOUTS)
+test all: $(EXAMPLE_BINS) $(EXAMPLE_TESTOUTS) $(UNIT_TESTS) unittests
 	@printf '%d tests conducted\n' $(TESTCOUNT)
 
-# Build programs and check for executable
-$(BINS) : % : %.c
+# Build example programs and check for executables
+$(EXAMPLE_BINS) : % : %.c
 	@$(eval TESTCOUNT=$(shell echo $$(($(TESTCOUNT)+1))))
 	@$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LDLIBS); exit 0;
 	@if test -x $@; \
@@ -38,8 +41,8 @@ $(BINS) : % : %.c
 	  else printf '$(FAILED) Building $<\n'; exit 1; \
         fi
 
-# Run test scripts, create %.test.out files and compare to %.test.ref references
-$(TESTOUTS) : %.test.out : %.test $(BINS) FORCE
+# Run integration test scripts, create %.test.out files and compare to %.test.ref references
+$(EXAMPLE_TESTOUTS) : %.test.out : %.test $(EXAMPLE_BINS) FORCE
 	@$(eval TESTCOUNT=$(shell echo $$(($(TESTCOUNT)+1))))
 	@$(shell ./$< > $@ 2>&1)
 	@diff $<.ref $@ >/dev/null; \
@@ -49,8 +52,16 @@ $(TESTOUTS) : %.test.out : %.test $(BINS) FORCE
 	    exit 0; \
           fi
 
+# Build unit tests
+$(UNIT_TESTS) : munit.h munit.c $(UNIT_SRCS)
+	$(CC) $(CFLAGS) -o $@ munit.c $(UNIT_SRCS) $(LDFLAGS) $(LDLIBS)
+
+# Execute unit tests
+unittests: $(UNIT_TESTS)
+	./$(UNIT_TESTS)
+
 clean:
-	@rm -rf $(BINS) $(TESTOUTS) *.dSYM
+	@rm -rf $(EXAMPLE_BINS) $(EXAMPLE_TESTOUTS) $(UNIT_TESTS) *.dSYM
 
 # Any targets using this empty FORCE rule as a prerequisite will always run
 FORCE:
