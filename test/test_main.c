@@ -7,12 +7,16 @@
 extern MunitTest time_tests[];
 extern MunitTest crc_tests[];
 extern MunitTest sid_tests[];
+extern MunitTest read_tests[];
+extern MunitTest tracelist_tests[];
 
 /* Array of test suites */
 static MunitSuite all_suites[] = {
     {"/time", time_tests, NULL, 1, MUNIT_SUITE_OPTION_NONE},
     {"/crc", crc_tests, NULL, 1, MUNIT_SUITE_OPTION_NONE},
     {"/sid", sid_tests, NULL, 1, MUNIT_SUITE_OPTION_NONE},
+    {"/read", read_tests, NULL, 1, MUNIT_SUITE_OPTION_NONE},
+    {"/tracelist", tracelist_tests, NULL, 1, MUNIT_SUITE_OPTION_NONE},
     {NULL, NULL, NULL, 0, MUNIT_SUITE_OPTION_NONE}};
 
 /* Top level suite including all test tests */
