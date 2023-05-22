@@ -31,12 +31,81 @@
 int libmseed_decodedebug = -1;
 
 /* Extract bit range.  Byte order agnostic & defined when used with unsigned values */
-#define EXTRACTBITRANGE(VALUE, STARTBIT, LENGTH) ((VALUE >> STARTBIT) & ((1U << LENGTH) - 1))
+#define EXTRACTBITRANGE(VALUE, STARTBIT, LENGTH) (((VALUE) >> (STARTBIT)) & ((1U << (LENGTH)) - 1))
 
 #define MAX12 0x7FFul    /* maximum 12 bit positive # */
 #define MAX14 0x1FFFul   /* maximum 14 bit positive # */
 #define MAX16 0x7FFFul   /* maximum 16 bit positive # */
 #define MAX24 0x7FFFFFul /* maximum 24 bit positive # */
+
+#define LM_PRIMITIVE_CAT(a, ...) a##__VA_ARGS__
+#define LM_CAT(a, b) LM_PRIMITIVE_CAT (a, b)
+
+#define LM_IIF(c) LM_PRIMITIVE_CAT (LM_IIF_, c)
+/* run the 2nd parameter */
+#define LM_IIF_0(t, ...) __VA_ARGS__
+/* run the 1st parameter */
+#define LM_IIF_1(t, ...) t
+
+#define LM_COMPL(b) LM_PRIMITIVE_CAT (LM_COMPL_, b)
+#define LM_COMPL_0 1
+#define LM_COMPL_1 0
+
+#define LM_DEC(x) LM_PRIMITIVE_CAT (LM_DEC_, x)
+#define LM_DEC_1 0
+#define LM_DEC_2 1
+#define LM_DEC_3 2
+#define LM_DEC_4 3
+#define LM_DEC_5 4
+#define LM_DEC_6 5
+#define LM_DEC_7 6
+#define LM_DEC_8 7
+#define LM_DEC_9 8
+#define LM_DEC_10 9
+#define LM_DEC_11 10
+#define LM_DEC_12 11
+#define LM_DEC_13 12
+#define LM_DEC_14 13
+#define LM_DEC_15 14
+#define LM_DEC_16 15
+
+/* detection */
+#define LM_CHECK_N(x, n, ...) n
+#define LM_CHECK(...) LM_CHECK_N (__VA_ARGS__, 0, )
+#define LM_PROBE(x) x, 1,
+
+#define LM_NOT(x) LM_CHECK (LM_PRIMITIVE_CAT (LM_NOT_, x))
+#define LM_NOT_0 LM_PROBE (~)
+
+#define LM_BOOL(x) LM_COMPL (LM_NOT (x))
+#define LM_IF(c) LM_IIF (LM_BOOL (c))
+
+#define LM_EAT(...)
+#define LM_EXPAND(...) __VA_ARGS__
+#define LM_WHEN(c) LM_IF (c) (LM_EXPAND, LM_EAT)
+
+/* recursion */
+/* deferred expression */
+#define LM_EMPTY()
+#define LM_DEFER(id) id LM_EMPTY ()
+#define LM_OBSTRUCT(...) __VA_ARGS__ LM_DEFER (LM_EMPTY) ()
+#define LM_EXPAND(...) __VA_ARGS__
+
+#define LM_EVAL(...) \
+  LM_EVAL1 (LM_EVAL1 (LM_EVAL1 (__VA_ARGS__)))
+#define LM_EVAL1(...) \
+  LM_EVAL2 (LM_EVAL2 (LM_EVAL2 (__VA_ARGS__)))
+#define LM_EVAL2(...) \
+  LM_EVAL3 (LM_EVAL3 (LM_EVAL3 (__VA_ARGS__)))
+#define LM_EVAL3(...) __VA_ARGS__
+
+#define LM_REPEAT(count, macro, ...)                   \
+  LM_WHEN (count)                                      \
+  (LM_OBSTRUCT (LM_REPEAT_INDIRECT) () (               \
+      LM_DEC (count), macro,                           \
+      __VA_ARGS__)LM_OBSTRUCT (macro) (LM_DEC (count), \
+                                       __VA_ARGS__))
+#define LM_REPEAT_INDIRECT() LM_REPEAT
 
 /************************************************************************
  * msr_decode_int16:
@@ -207,7 +276,8 @@ msr_decode_steim1 (int32_t *input, int inputlength, int64_t samplecount,
   int diffcount;
   int idx;
 
-  union dword {
+  union dword
+  {
     int8_t d8[4];
     int16_t d16[2];
     int32_t d32;
@@ -335,6 +405,43 @@ msr_decode_steim1 (int32_t *input, int inputlength, int64_t samplecount,
   return (outputptr - output);
 } /* End of msr_decode_steim1() */
 
+/* Steim2 helper macroes */
+#define LM_PRINT_FORMAT_INTEGER(...) "%d  "
+
+#define LM_PRINT_DIFF(i, _) , diff[i]
+
+/* clang-format off */
+#define LM_STEIM2_DECODE_DEBUG_PRINT(NIBBLE_STR, DNIB_STR, DIFFCNT, STARTBIT)                                                                  \
+  ms_log (0, "  W%02d: " NIBBLE_STR "," DNIB_STR "=" #DIFFCNT "x" #STARTBIT "b  " LM_EVAL (LM_REPEAT (DIFFCNT, LM_PRINT_FORMAT_INTEGER)) "\n", \
+          widx                                                                                                                                 \
+          LM_EVAL (LM_REPEAT (DIFFCNT, LM_PRINT_DIFF, DIFFCNT)))
+/* clang-format on */
+
+#define LM_STEIM2_EXTRACT_TO_DIFF_ARR(IDX, DIFFCNT, STARTBIT, SEMASK)                    \
+  do                                                                                     \
+  {                                                                                      \
+    diff[IDX] = EXTRACTBITRANGE (frame[widx], (DIFFCNT - 1 - IDX) * STARTBIT, STARTBIT); \
+    diff[IDX] = (diff[IDX] ^ SEMASK) - SEMASK;                                           \
+  } while (0);
+
+#define LM_STEIM2_EXTRACT_DIFF(NIBBLE_STR, DNIB_STR, DIFFCNT, STARTBIT)                     \
+  do                                                                                        \
+  {                                                                                         \
+    diffcount = DIFFCNT;                                                                    \
+    semask    = 1ul << (STARTBIT - 1);                                                      \
+    LM_EVAL (LM_REPEAT (DIFFCNT, LM_STEIM2_EXTRACT_TO_DIFF_ARR, DIFFCNT, STARTBIT, semask)) \
+    if (libmseed_decodedebug > 0)                                                           \
+      LM_STEIM2_DECODE_DEBUG_PRINT (NIBBLE_STR, DNIB_STR, DIFFCNT, STARTBIT);               \
+  } while (0)
+
+#define LM_STEIM2_EXTRACT_DNIB                   \
+  do                                             \
+  {                                              \
+    if (swapflag)                                \
+      ms_gswap4 (&frame[widx]);                  \
+    dnib = EXTRACTBITRANGE (frame[widx], 30, 2); \
+  } while (0)
+
 /************************************************************************
  * msr_decode_steim2:
  *
@@ -363,7 +470,8 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
   int dnib;
   int idx;
 
-  union dword {
+  union dword
+  {
     int8_t d8[4];
     int32_t d32;
   } * word;
@@ -383,9 +491,14 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
     /* Copy frame, each is 16x32-bit quantities = 64 bytes */
     memcpy (frame, input + (16 * frameidx), 64);
 
-    /* Save forward integration constant (X0) and reverse integration constant (Xn)
-       and set the starting nibble index depending on frame. */
-    if (frameidx == 0)
+    if (frameidx != 0)
+    {
+      startnibble = 1; /* Subsequent frames: skip nibbles */
+
+      if (libmseed_decodedebug > 0)
+        ms_log (0, "Frame %d\n", frameidx);
+    }
+    else
     {
       if (swapflag)
       {
@@ -401,13 +514,6 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
       if (libmseed_decodedebug > 0)
         ms_log (0, "Frame %d: X0=%d  Xn=%d\n", frameidx, X0, Xn);
     }
-    else
-    {
-      startnibble = 1; /* Subsequent frames: skip nibbles */
-
-      if (libmseed_decodedebug > 0)
-        ms_log (0, "Frame %d\n", frameidx);
-    }
 
     /* Swap 32-bit word containing the nibbles */
     if (swapflag)
@@ -417,17 +523,17 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
     for (widx = startnibble; widx < 16 && samplecount > 0; widx++)
     {
       /* W0: the first 32-bit quantity contains 16 x 2-bit nibbles */
-      nibble    = EXTRACTBITRANGE (frame[0], (30 - (2 * widx)), 2);
-      diffcount = 0;
+      nibble = EXTRACTBITRANGE (frame[0], (30 - (2 * widx)), 2);
 
-      switch (nibble)
+      if (nibble == 0) /* nibble=00: Special flag, no differences */
       {
-      case 0: /* nibble=00: Special flag, no differences */
+        diffcount = 0;
+
         if (libmseed_decodedebug > 0)
           ms_log (0, "  W%02d: 00=special\n", widx);
-
-        break;
-      case 1: /* nibble=01: Four 1-byte differences */
+      }
+      else if (nibble == 1) /* nibble=01: Four 1-byte differences */
+      {
         diffcount = 4;
 
         word = (union dword *)&frame[widx];
@@ -438,117 +544,61 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
 
         if (libmseed_decodedebug > 0)
           ms_log (0, "  W%02d: 01=4x8b  %d  %d  %d  %d\n", widx, diff[0], diff[1], diff[2], diff[3]);
-        break;
-
-      case 2: /* nibble=10: Must consult dnib, the high order two bits */
-        if (swapflag)
-          ms_gswap4 (&frame[widx]);
-        dnib = EXTRACTBITRANGE (frame[widx], 30, 2);
+      }
+      else if (nibble == 2) /* nibble=10: Must consult dnib, the high order two bits */
+      {
+        LM_STEIM2_EXTRACT_DNIB;
 
         switch (dnib)
         {
-        case 0: /* nibble=10, dnib=00: Error, undefined value */
+        case 1: /* nibble=10, dnib=01: One 30-bit difference */
+          /* Sign extension from bit 30 */
+          LM_STEIM2_EXTRACT_DIFF ("10", "01", 1, 30);
+          break;
+
+        case 2: /* nibble=10, dnib=10: Two 15-bit differences */
+          /* Sign extension from bit 15 */
+          LM_STEIM2_EXTRACT_DIFF ("10", "10", 2, 15);
+          break;
+
+        case 3: /* nibble=10, dnib=11: Three 10-bit differences */
+          /* Sign extension from bit 10 */
+          LM_STEIM2_EXTRACT_DIFF ("10", "11", 3, 10);
+          break;
+        default: /* nibble=10, dnib=00: Error, undefined value */
           ms_log (2, "%s: Impossible Steim2 dnib=00 for nibble=10\n", srcname);
 
           return -1;
           break;
-
-        case 1: /* nibble=10, dnib=01: One 30-bit difference */
-          diffcount = 1;
-          semask    = 1ul << (30 - 1); /* Sign extension from bit 30 */
-          diff[0]   = EXTRACTBITRANGE (frame[widx], 0, 30);
-          diff[0]   = (diff[0] ^ semask) - semask;
-
-          if (libmseed_decodedebug > 0)
-            ms_log (0, "  W%02d: 10,01=1x30b  %d\n", widx, diff[0]);
-          break;
-
-        case 2: /* nibble=10, dnib=10: Two 15-bit differences */
-          diffcount = 2;
-          semask    = 1ul << (15 - 1); /* Sign extension from bit 15 */
-          for (idx = 0; idx < diffcount; idx++)
-          {
-            diff[idx] = EXTRACTBITRANGE (frame[widx], (15 - idx * 15), 15);
-            diff[idx] = (diff[idx] ^ semask) - semask;
-          }
-
-          if (libmseed_decodedebug > 0)
-            ms_log (0, "  W%02d: 10,10=2x15b  %d  %d\n", widx, diff[0], diff[1]);
-          break;
-
-        case 3: /* nibble=10, dnib=11: Three 10-bit differences */
-          diffcount = 3;
-          semask    = 1ul << (10 - 1); /* Sign extension from bit 10 */
-          for (idx = 0; idx < diffcount; idx++)
-          {
-            diff[idx] = EXTRACTBITRANGE (frame[widx], (20 - idx * 10), 10);
-            diff[idx] = (diff[idx] ^ semask) - semask;
-          }
-
-          if (libmseed_decodedebug > 0)
-            ms_log (0, "  W%02d: 10,11=3x10b  %d  %d  %d\n", widx, diff[0], diff[1], diff[2]);
-          break;
         }
-
-        break;
-
-      case 3: /* nibble=11: Must consult dnib, the high order two bits */
-        if (swapflag)
-          ms_gswap4 (&frame[widx]);
-        dnib = EXTRACTBITRANGE (frame[widx], 30, 2);
+      }
+      else if (nibble == 3) /* nibble=11: Must consult dnib, the high order two bits */
+      {
+        LM_STEIM2_EXTRACT_DNIB;
 
         switch (dnib)
         {
         case 0: /* nibble=11, dnib=00: Five 6-bit differences */
-          diffcount = 5;
-          semask    = 1ul << (6 - 1); /* Sign extension from bit 6 */
-          for (idx = 0; idx < diffcount; idx++)
-          {
-            diff[idx] = EXTRACTBITRANGE (frame[widx], (24 - idx * 6), 6);
-            diff[idx] = (diff[idx] ^ semask) - semask;
-          }
-
-          if (libmseed_decodedebug > 0)
-            ms_log (0, "  W%02d: 11,00=5x6b  %d  %d  %d  %d  %d\n",
-                    widx, diff[0], diff[1], diff[2], diff[3], diff[4]);
+          /* Sign extension from bit 6 */
+          LM_STEIM2_EXTRACT_DIFF ("11", "00", 5, 6);
           break;
 
         case 1: /* nibble=11, dnib=01: Six 5-bit differences */
-          diffcount = 6;
-          semask    = 1ul << (5 - 1); /* Sign extension from bit 5 */
-          for (idx = 0; idx < diffcount; idx++)
-          {
-            diff[idx] = EXTRACTBITRANGE (frame[widx], (25 - idx * 5), 5);
-            diff[idx] = (diff[idx] ^ semask) - semask;
-          }
-
-          if (libmseed_decodedebug > 0)
-            ms_log (0, "  W%02d: 11,01=6x5b  %d  %d  %d  %d  %d  %d\n",
-                    widx, diff[0], diff[1], diff[2], diff[3], diff[4], diff[5]);
+          /* Sign extension from bit 5 */
+          LM_STEIM2_EXTRACT_DIFF ("11", "01", 6, 5);
           break;
 
         case 2: /* nibble=11, dnib=10: Seven 4-bit differences */
-          diffcount = 7;
-          semask    = 1ul << (4 - 1); /* Sign extension from bit 4 */
-          for (idx = 0; idx < diffcount; idx++)
-          {
-            diff[idx] = EXTRACTBITRANGE (frame[widx], (24 - idx * 4), 4);
-            diff[idx] = (diff[idx] ^ semask) - semask;
-          }
-
-          if (libmseed_decodedebug > 0)
-            ms_log (0, "  W%02d: 11,10=7x4b  %d  %d  %d  %d  %d  %d  %d\n",
-                    widx, diff[0], diff[1], diff[2], diff[3], diff[4], diff[5], diff[6]);
+          /* Sign extension from bit 4 */
+          LM_STEIM2_EXTRACT_DIFF ("11", "10", 7, 4);
           break;
 
-        case 3: /* nibble=11, dnib=11: Error, undefined value */
+        default: /* nibble=11, dnib=11: Error, undefined value */
           ms_log (2, "%s: Impossible Steim2 dnib=11 for nibble=11\n", srcname);
 
           return -1;
           break;
         }
-
-        break;
       } /* Done with decoding 32-bit word based on nibble */
 
       /* Apply differences to calculate output samples */
@@ -556,10 +606,10 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
       {
         for (idx = 0; idx < diffcount && samplecount > 0; idx++, outputptr++)
         {
-          if (outputptr == output) /* Ignore first difference, instead store X0 */
-            *outputptr = X0;
-          else /* Otherwise store difference from previous sample */
+          if (outputptr != output) /* Store difference from previous sample */
             *outputptr = *(outputptr - 1) + diff[idx];
+          else /* Otherwise ignore first difference, instead store X0 */
+            *outputptr = X0;
 
           samplecount--;
         }
@@ -607,7 +657,8 @@ msr_decode_geoscope (char *input, int64_t samplecount, float *output,
   int16_t sint;
   double dsample = 0.0;
 
-  union {
+  union
+  {
     uint8_t b[4];
     uint32_t i;
   } sample32;
@@ -635,10 +686,10 @@ msr_decode_geoscope (char *input, int64_t samplecount, float *output,
     case DE_GEOSCOPE24:
       sample32.i = 0;
       if (swapflag)
-        for (k              = 0; k < 3; k++)
+        for (k = 0; k < 3; k++)
           sample32.b[2 - k] = input[k];
       else
-        for (k              = 0; k < 3; k++)
+        for (k = 0; k < 3; k++)
           sample32.b[1 + k] = input[k];
 
       mantissa = sample32.i;
