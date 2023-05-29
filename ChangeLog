@@ -1,3 +1,6 @@
+2023.149:
+	- Fix forcing of byte order for packing and header and data.
+
 2022.087: 2.19.8
 	- Update numsamples and samplecnt consistently in mst_addmsr(), #33 @pn2200
 	- Fix small compiler warnings.

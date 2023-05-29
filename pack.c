@@ -242,12 +242,12 @@ msr_pack (MSRecord *msr, void (*record_handler) (char *, int, void *),
   /* Check if byte order is forced */
   if (packheaderbyteorder >= 0)
   {
-    headerswapflag = (msr->byteorder != packheaderbyteorder) ? 1 : 0;
+    headerswapflag = (packheaderbyteorder != ms_bigendianhost ()) ? 1 : 0;
   }
 
   if (packdatabyteorder >= 0)
   {
-    dataswapflag = (msr->byteorder != packdatabyteorder) ? 1 : 0;
+    dataswapflag = (packdatabyteorder != ms_bigendianhost ()) ? 1 : 0;
   }
 
   if (verbose > 2)
@@ -481,7 +481,7 @@ msr_pack_header (MSRecord *msr, flag normalize, flag verbose)
   /* Check if byte order is forced */
   if (packheaderbyteorder >= 0)
   {
-    headerswapflag = (msr->byteorder != packheaderbyteorder) ? 1 : 0;
+    headerswapflag = (packheaderbyteorder != ms_bigendianhost ()) ? 1 : 0;
   }
 
   if (verbose > 2)
