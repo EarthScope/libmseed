@@ -34,7 +34,7 @@ libmseed:
 # Build programs and check for executable
 $(BINS) : % : %.c
 	@printf 'Building $<\n';
-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LDLIBS) 
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LDLIBS)
 
 .PHONY: clean
 clean:

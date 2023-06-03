@@ -291,7 +291,7 @@ mstl3_addID (MS3TraceList *mstl, MS3TraceID *id, MS3TraceID **prev)
     prev[level]->next[level] = id;
   }
 
-  mstl->numtraces++;
+  mstl->numtraceids++;
 
   return id;
 } /* End of mstl3_addID() */
@@ -2365,7 +2365,7 @@ mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
   if (!mstl)
     return;
 
-  if (!mstl->numtraces)
+  if (!mstl->numtraceids)
     return;
 
   ms_log (0, "   SourceID              Last Sample              Next Sample       Gap  Samples\n");

@@ -564,7 +564,7 @@ typedef struct MS3TraceID {
 
 /** @brief Container for a collection of continuous trace segment, linkable */
 typedef struct MS3TraceList {
-  uint32_t           numtraces;      //!< Number of traces in list
+  uint32_t           numtraceids;    //!< Number of traces IDs in list
   struct MS3TraceID  traces;         //!< Head node of trace skip list, first entry at \a traces.next[0]
   uint64_t           prngstate;      //!< INTERNAL: State for Pseudo RNG
 } MS3TraceList;
