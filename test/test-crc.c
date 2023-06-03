@@ -9,31 +9,6 @@ struct crc32c_testvec
   uint32_t expected;
 };
 
-static const struct crc32c_testvec crc32c_testvectors[];
-
-TEST(CRC, CRC32C) {
-  const struct crc32c_testvec *tv;
-  uint32_t result;
-  int count;
-
-  /* Loop through test vectors, testing CRC result against expected */
-  for (tv = &crc32c_testvectors[0], count = 1;
-       tv->insize != 0;
-       tv++, count++)
-  {
-    result = ms_crc32c (tv->input, tv->insize, 0);
-
-    CHECK (result == tv->expected, "CRC-32C test vector failure");
-  }
-
-  /* Error test */
-  result = ms_crc32c (NULL, 0, 0);
-  CHECK (result == 0, "CRC-32C NULL input test failure");
-
-  result = ms_crc32c ((const uint8_t *)"SOMEDATA", 0, 0);
-  CHECK (result == 0, "CRC-32C NULL input test failure");
-}
-
 /* CRC32C test vectors, adapted from linux crypto/testmgr.h and leveldb crc32c_test */
 static const struct crc32c_testvec crc32c_testvectors[] = {
     {.input    = {0x61},
@@ -160,3 +135,26 @@ static const struct crc32c_testvec crc32c_testvectors[] = {
      .expected = 0x24c5d375},
     {.insize = 0},
 };
+
+TEST(CRC, CRC32C) {
+  const struct crc32c_testvec *tv;
+  uint32_t result;
+  int count;
+
+  /* Loop through test vectors, testing CRC result against expected */
+  for (tv = &crc32c_testvectors[0], count = 1;
+       tv->insize != 0;
+       tv++, count++)
+  {
+    result = ms_crc32c (tv->input, tv->insize, 0);
+
+    CHECK (result == tv->expected, "CRC-32C test vector failure");
+  }
+
+  /* Error test */
+  result = ms_crc32c (NULL, 0, 0);
+  CHECK (result == 0, "CRC-32C NULL input test failure");
+
+  result = ms_crc32c ((const uint8_t *)"SOMEDATA", 0, 0);
+  CHECK (result == 0, "CRC-32C NULL input test failure");
+}
