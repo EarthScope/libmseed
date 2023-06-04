@@ -10,7 +10,6 @@ ifneq (,$(shell command -v curl-config))
         export LM_CURL_VERSION=$(shell curl-config --version)
         export CFLAGS:=$(CFLAGS) -DLIBMSEED_URL
         export LDFLAGS:=$(LDFLAGS) $(shell curl-config --libs)
-        $(info Configured with $(LM_CURL_VERSION))
 endif
 
 # Required compiler parameters
@@ -29,6 +28,9 @@ all: libmseed $(BINS)
 
 .PHONY: libmseed
 libmseed:
+	@if [ ! -z "$(LM_CURL_VERSION)" ]; then \
+		echo "Configured with $(LM_CURL_VERSION)"; \
+	fi
 	$(MAKE) -C .. $(MAKECMDGOALS)
 
 # Build programs and check for executable

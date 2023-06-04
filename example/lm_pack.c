@@ -155,8 +155,6 @@ int
 main (int argc, char **argv)
 {
   MS3Record *msr = NULL;
-  float *fdata  = NULL;
-  double *ddata = NULL;
   uint32_t flags = 0;
   int32_t sinedata[SINE_DATA_SAMPLES];
   double dsinedata[SINE_DATA_SAMPLES];
