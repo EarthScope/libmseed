@@ -6,6 +6,9 @@ TEST (time, nstime)
   char timestr[50];
   nstime_t nstime;
 
+  /* Suppress error and warning messages by accumulating them */
+  ms_rloginit (NULL, NULL, NULL, NULL, 10);
+
   /* General parsing test to nstime_t */
   nstime = ms_timestr2nstime ("2004-05-12T7:8:9.123456788Z");
   CHECK (nstime == 1084345689123456788, "Failed to convert time string: '2004-05-12T7:8:9.123456788Z'");
