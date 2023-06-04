@@ -1,0 +1,19 @@
+#
+# Nmake file For libmseed tests - MS Visual C/C++
+# Use 'nmake -f Makefile.win'
+
+INCS = -I. -I..
+LIBS = ..\libmseed.lib
+OPTS = /D_CRT_SECURE_NO_WARNINGS /nologo
+
+TEST_RUNNER = test-runner.exe
+
+test: $(TEST_RUNNER)
+	$(TEST_RUNNER)
+
+$(TEST_RUNNER): test-*.c
+	$(CC) $(CFLAGS) $(INCS) $(OPTS) $** $(LIBS) /Fe:$@
+
+# Clean-up directives
+clean:
+	-del a.out core *.o *.obj *% *~ $(TEST_RUNNER) testdata-*

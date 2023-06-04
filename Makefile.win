@@ -1,44 +1,49 @@
 #
-# Nmake file For libmseed - MS Visual C/C++ version
+# Nmake file For libmseed - MS Visual C/C++
 # Use 'nmake -f Makefile.win'
 
 NODEBUG=1
 
 INCS = -I.
 OPTS = /O2 /D_CRT_SECURE_NO_WARNINGS
-LIB = libmseed.lib
-DLL = libmseed.dll
+LM_LIB = libmseed.lib
+LM_DLL = libmseed.dll
 
-OBJS=	fileutils.obj	\
-	genutils.obj	\
-	gswap.obj	\
-	msio.obj	\
-	lookup.obj	\
-	yyjson.obj	\
-	msrutils.obj	\
-	extraheaders.obj\
-	pack.obj	\
-	packdata.obj	\
-	tracelist.obj	\
-	gmtime64.obj	\
-	crc32c.obj	\
-	parseutils.obj	\
-	unpack.obj	\
-	unpackdata.obj  \
-	selection.obj	\
-	logging.obj
+OBJS =  fileutils.obj   \
+        genutils.obj    \
+        gswap.obj       \
+        msio.obj        \
+        lookup.obj      \
+        yyjson.obj      \
+        msrutils.obj    \
+        extraheaders.obj\
+        pack.obj        \
+        packdata.obj    \
+        tracelist.obj   \
+        gmtime64.obj    \
+        crc32c.obj      \
+        parseutils.obj  \
+        unpack.obj      \
+        unpackdata.obj  \
+        selection.obj   \
+        logging.obj
 
 all: lib
 
 lib: $(OBJS)
-	link.exe /lib /nologo /out:$(LIB) $(OBJS)
+	link.exe /lib /nologo /out:$(LM_LIB) $(OBJS)
 
 dll: $(OBJS)
-	link.exe /dll /nologo /out:$(DLL) $(OBJS)
+	link.exe /dll /nologo /out:$(LM_DLL) $(OBJS)
 
 .c.obj:
 	$(CC) /nologo $(CFLAGS) $(INCS) $(OPTS) /c $<
 
+# Run test suite
+test: lib
+	pushd $@ && $(MAKE) /NOLOGO /f Makefile.win /$(MAKEFLAGS) & popd
+
 # Clean-up directives
 clean:
-	-del a.out core *.o *.obj *% *~ $(LIB) $(DLL)
+	-del a.out core *.o *.obj *% *~ $(LM_LIB) $(LM_DLL)
+	@pushd test && $(MAKE) /NOLOGO /f Makefile.win $@ /$(MAKEFLAGS) & popd
