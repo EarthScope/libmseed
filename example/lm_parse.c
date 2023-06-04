@@ -40,7 +40,6 @@ static int reclen        = -1;
 static char *inputfile   = NULL;
 
 static int parameter_proc (int argcount, char **argvec);
-static void print_stderr (const char *message);
 static void usage (void);
 
 /* Binary I/O for Windows platforms */
@@ -59,9 +58,6 @@ main (int argc, char **argv)
   int64_t totalrecs = 0;
   int64_t totalsamps = 0;
   int retcode;
-
-  /* Redirect libmseed logging facility to stderr for consistency of tests */
-  ms_loginit (print_stderr, NULL, print_stderr, NULL);
 
   /* Process command line arguments */
   if (parameter_proc (argc, argv) < 0)
@@ -285,16 +281,6 @@ parameter_proc (int argcount, char **argvec)
 
   return 0;
 } /* End of parameter_proc() */
-
-/***************************************************************************
- * print_stderr():
- * Print messsage to stderr.
- ***************************************************************************/
-static void
-print_stderr (const char *message)
-{
-  fprintf (stderr, "%s", message);
-} /* End of print_stderr() */
 
 /***************************************************************************
  * usage():
