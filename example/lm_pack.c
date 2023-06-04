@@ -36,7 +36,6 @@ static int byteorder = -1;
 static char *outfile = NULL;
 
 static int parameter_proc (int argcount, char **argvec);
-static void print_stderr (const char *message);
 static void usage (void);
 
 /* A simple, expanding sinusoid of 500 samples.
@@ -113,16 +112,13 @@ main (int argc, char **argv)
   int idx;
   int rv;
 
-  /* Redirect libmseed logging facility to stderr for consistency of tests */
-  ms_loginit (print_stderr, NULL, print_stderr, NULL);
-
   /* Process command line arguments */
   if (parameter_proc (argc, argv) < 0)
     return -1;
 
   if (!(msr = msr3_init (msr)))
   {
-    fprintf (stderr, "Could not allocate MS3Record, out of memory?\n");
+    ms_log (2, "Could not allocate MS3Record, out of memory?\n");
     return 1;
   }
 
@@ -146,7 +142,7 @@ main (int argc, char **argv)
 
     if (!(fdata = (float *)malloc (msr->numsamples * sizeof (float))))
     {
-      fprintf (stderr, "Could not allocate buffer, out of memory?\n");
+      ms_log (2,  "Could not allocate buffer, out of memory?\n");
       return 1;
     }
     for (idx = 0; idx < msr->numsamples; idx++)
@@ -162,7 +158,7 @@ main (int argc, char **argv)
 
     if (!(ddata = (double *)malloc (msr->numsamples * sizeof (double))))
     {
-      fprintf (stderr, "Could not allocate buffer, out of memory?\n");
+      ms_log (2,  "Could not allocate buffer, out of memory?\n");
       return 1;
     }
     for (idx = 0; idx < msr->numsamples; idx++)
@@ -269,16 +265,6 @@ parameter_proc (int argcount, char **argvec)
 
   return 0;
 } /* End of parameter_proc() */
-
-/***************************************************************************
- * print_stderr():
- * Print messsage to stderr.
- ***************************************************************************/
-static void
-print_stderr (const char *message)
-{
-  fprintf (stderr, "%s", message);
-} /* End of print_stderr() */
 
 /***************************************************************************
  * usage:

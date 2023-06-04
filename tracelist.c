@@ -291,7 +291,7 @@ mstl3_addID (MS3TraceList *mstl, MS3TraceID *id, MS3TraceID **prev)
     prev[level]->next[level] = id;
   }
 
-  mstl->numtraces++;
+  mstl->numtraceids++;
 
   return id;
 } /* End of mstl3_addID() */
@@ -1780,7 +1780,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
             break;
           }
 
-          if ((filelistptr->fileptr = fopen (recordptr->filename, "r")) == NULL)
+          if ((filelistptr->fileptr = fopen (recordptr->filename, "rb")) == NULL)
           {
             ms_log (2, "%s: Cannot open file (%s): %s\n", id->sid, recordptr->filename, strerror(errno));
 
@@ -2365,7 +2365,7 @@ mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
   if (!mstl)
     return;
 
-  if (!mstl->numtraces)
+  if (!mstl->numtraceids)
     return;
 
   ms_log (0, "   SourceID              Last Sample              Next Sample       Gap  Samples\n");

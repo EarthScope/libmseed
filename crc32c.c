@@ -400,7 +400,7 @@ static uint32_t s_crc32c_sb8(const uint8_t *input, int length, uint32_t previous
 uint32_t
 ms_crc32c (const uint8_t* input, int length, uint32_t previousCRC32C)
 {
-  if (!input)
+  if (!input || length <= 0)
     return 0;
 
   if (ms_bigendianhost())

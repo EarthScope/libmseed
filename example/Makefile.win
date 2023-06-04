@@ -1,14 +1,21 @@
 #
-# Nmake file - Windows version
+# Nmake file for libmseed examples - MS Visual C/C++
 # Use 'nmake -f Makefile.win'
 
-NODEBUG=1
-
 INCS = /I..
-OPTS = /O2 /D_CRT_SECURE_NO_WARNINGS
 LIBS = ../libmseed.lib
+OPTS = /O2 /D_CRT_SECURE_NO_WARNINGS
 
-SRCS = mseedview.c lm_parse.c lm_pack.c lm_pack_rollingbuffer.c lm_read_selection.c lm_read_recordlist.c lm_read_buffer.c lm_timestr.c
+SRCS = lm_pack.c \
+       lm_pack_rollingbuffer.c \
+       lm_parse.c \
+	   lm_read_buffer.c \
+       lm_read_recordlist.c \
+       lm_read_selection.c \
+       lm_sids.c \
+       lm_timestr.c \
+       mseedview.c
+
 BINS = $(SRCS:.c=.exe)
 
 all: $(BINS)
