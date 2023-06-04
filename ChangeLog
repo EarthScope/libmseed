@@ -5,6 +5,11 @@
 	- New test suite based on Tau :https://github.com/jasmcaus/tau.
 	Many tests were added and the suite now works on MS-Windows.
 
+	- Update example/lm_pack.c:
+	  * Use improved test sinusuoid that contains all differences for
+	    Steim1 and Steim2 encoding.
+	  * Add `-2` option to generate miniSEED v2 instead of default v3.
+
 2023.105:
 	- Handle special case of year 0 when parsing version 2 blockettes. These
 	are now treated as "unset" and not included in the extra headers.
