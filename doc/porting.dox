@@ -32,6 +32,8 @@ identified at compile time but may yet effect the program.
   are no longer supported.  The @ref page-examples page contains examples
   of using @ref trace-list functionality.
 
+- ::MS3TraceLists.numtraces renamed to ::MS3TraceLists.numtraceids.
+
 - Convert all \c hptime_t typed variables to \c nstime_t type.
 @note the \c nstime_t type is a nanosecond epoch value, whereas the
 previous \c hptime_t was a microsecond epoch value.  Careful review is
