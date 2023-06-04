@@ -1,3 +1,10 @@
+2023.155:
+	WARNING: API change as follows:
+	The `MS3TraceList.numtraces` was renamed `MS3TraceList.numtraceids`.
+
+	- New test suite based on Tau :https://github.com/jasmcaus/tau.
+	Many tests were added and the suite now works on MS-Windows.
+
 2023.105:
 	- Handle special case of year 0 when parsing version 2 blockettes. These
 	are now treated as "unset" and not included in the extra headers.
