@@ -1,5 +1,5 @@
 #
-# Nmake file For libmseed tests - MS Visual C/C++
+# Nmake file for libmseed tests - MS Visual C/C++
 # Use 'nmake -f Makefile.win'
 
 INCS = -I. -I..
