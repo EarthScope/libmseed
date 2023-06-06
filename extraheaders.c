@@ -39,12 +39,14 @@ void _priv_free(void *ctx, void *ptr) {
 }
 
 /***************************************************************************
- * Internal routine to parse JSON strings into internal state storage
+ * Internal routine to parse JSON strings into internal state storage.
+ *
+ * The state container is allocated if needed and if JSON is supplied,
+ * it is parsed into the immutable form.
  *
  * @param[in] jsonstring JSON string to parse
  * @param[in] length Length of JSON string
  * @param[in] parsed Internal parsed state
- * @param[in] mutable Flag to control parse level
  *
  * @returns A LM_PARSED_JSON* on success or NULL on error
  *
@@ -122,8 +124,8 @@ parse_json (char *jsonstring, size_t length, LM_PARSED_JSON *parsed)
  * mseh_free_parsestate() when done reading the JSON.  If this value
  * is NULL the parse state will be created and destroyed on each call.
  *
- * @param[in] msr Parsed miniSEED record to query
- * @param[in] path Header value desired, specified in dot notation
+ * @param[in] msr Parsed miniSEED record to search
+ * @param[in] path Header value desired, as JSON Pointer
  * @param[out] value Buffer for value, of type \c type
  * @param[in] type Type of value expected, one of:
  * @parblock
@@ -200,6 +202,8 @@ mseh_get_path_r (MS3Record *msr, const char *path,
     }
   }
 
+  //TODO Need to updated immutable form if muttable is existing regardless?
+
   /* Create immutable document from mutable if needed */
   if (parsed->mut_doc != NULL && parsed->doc == NULL)
   {
@@ -217,7 +221,7 @@ mseh_get_path_r (MS3Record *msr, const char *path,
   }
 
   /* Get target value */
-  extravalue = yyjson_doc_get_pointer(parsed->doc, path);
+  extravalue = yyjson_doc_ptr_get(parsed->doc, path);
 
   if (extravalue == NULL)
   {
@@ -282,8 +286,8 @@ mseh_get_path_r (MS3Record *msr, const char *path,
  * If this value is NULL the parse state will be created and destroyed
  * on each call.
  *
- * @param[in] msr Parsed miniSEED record to query
- * @param[in] path Header value desired, specified in dot notation
+ * @param[in] msr Parsed miniSEED record to modify
+ * @param[in] path Header value to set, as JSON Pointer
  * @param[in] value Buffer for value, of type \c type
  * @param[in] type Type of value expected, one of:
  * @parblock
@@ -291,7 +295,8 @@ mseh_get_path_r (MS3Record *msr, const char *path,
  * - \c 'i' - \a value is type \a int64_t
  * - \c 's' - \a value is type \a char*
  * - \c 'b' - \a value is type \a int (boolean value of 0 or 1)
- * - \c 'A' - \a value is an Array element to append, as yyjson_mut_val* (internal use)
+ * - \c 'V' - \a value is type \a yyjson_mut_val* to _set/replace_ (internal use)
+ * - \c 'A' - \a value is type \a yyjson_mut_val* to _append to array_ (internal use)
  * @endparblock
  * @param[in] parsed Parsed state for multiple operations, can be NULL
  *
@@ -307,21 +312,10 @@ mseh_set_path_r (MS3Record *msr, const char *path,
                  void *value, char type,
                  LM_PARSED_JSON **parsestate)
 {
-#define MAXPATHDEPTH 8
   LM_PARSED_JSON *parsed = (parsestate) ? *parsestate : NULL;
-
   yyjson_alc alc = {_priv_malloc, _priv_realloc, _priv_free, NULL};
-  yyjson_mut_doc *new_doc  = NULL;
-  yyjson_mut_val *new_root = NULL;
-  yyjson_mut_val patch;
-  yyjson_mut_val mut_keys[MAXPATHDEPTH];
-  yyjson_mut_val mut_vals[MAXPATHDEPTH];
-  yyjson_mut_val *header = NULL;
-  char *keystr[MAXPATHDEPTH];
-  char keypath[128] = {0};
-  uint8_t keycount  = 0;
-
-  int idx;
+  yyjson_mut_val *array_val = NULL;
+  bool rv = false;
 
   if (!msr || !value || !path)
   {
@@ -336,49 +330,10 @@ mseh_set_path_r (MS3Record *msr, const char *path,
     return MS_GENERROR;
   }
 
-  /* Copy path starting at path[1] to keypath, while:
-   * 1) converting '/' to terminating nulls
-   * 2) tracking starts of key strings */
-  for (idx = 1;
-       path[idx] && idx < (int)sizeof (keypath) && keycount < MAXPATHDEPTH;
-       idx++)
-  {
-    /* Set terminating null if '/' */
-    if (path[idx] == '/')
-      keypath[idx - 1] = '\0';
-    /* Otherwise copy character */
-    else
-      keypath[idx - 1] = path[idx];
-
-    /* Store pointer to start of key string, identified as following a '/' */
-    if (path[idx - 1] == '/')
-      keystr[keycount++] = keypath + idx - 1;
-  }
-
-  if (idx >= (int)sizeof (keypath))
-  {
-    ms_log (2, "%s() Maximun length of path exceeded (%d): %s\n",
-            __func__, (int)sizeof (keypath), path);
-    return MS_GENERROR;
-  }
-
-  if (keycount >= MAXPATHDEPTH)
-  {
-    ms_log (2, "%s() Maximum depth of path exceeded (%d): %s\n",
-            __func__, MAXPATHDEPTH, path);
-    return MS_GENERROR;
-  }
-
-  if (keycount == 0)
-  {
-    ms_log (2, "%s() No keys specified in path: %s\n", __func__, path);
-    return MS_GENERROR;
-  }
-
   /* Parse JSON extra headers if not available in state */
   if (parsed == NULL)
   {
-    /* Parse to mutable state */
+    /* Allocate state container and parse to immutable form */
     parsed = parse_json (msr->extra, msr->extralength, parsed);
 
     if (parsed == NULL)
@@ -425,87 +380,57 @@ mseh_set_path_r (MS3Record *msr, const char *path,
     }
   }
 
-  /* Create patch: root object followed by nested objects from path */
-  yyjson_mut_set_obj (&patch);
-  header = &patch;
-
-  for (idx = 0; idx < keycount; idx++)
-  {
-    yyjson_mut_set_str (&(mut_keys[idx]), keystr[idx]);
-    yyjson_mut_set_obj (&(mut_vals[idx]));
-
-    yyjson_mut_obj_add (header, &(mut_keys[idx]), &(mut_vals[idx]));
-    header = &(mut_vals[idx]);
-  }
-
-  /* Set header value */
+  /* Set (or replace) header value at path */
   switch (type)
   {
   case 'n':
-    yyjson_mut_set_real (header, *((double *)value));
+    rv = yyjson_mut_doc_ptr_set (parsed->mut_doc, path,
+                                 yyjson_mut_real (parsed->mut_doc, *((double *)value)));
     break;
   case 'i':
-    yyjson_mut_set_sint (header, *((int64_t *)value));
+    rv = yyjson_mut_doc_ptr_set (parsed->mut_doc, path,
+                                 yyjson_mut_sint (parsed->mut_doc, *((int64_t *)value)));
     break;
   case 's':
-    yyjson_mut_set_str (header, (const char *)value);
+    rv = yyjson_mut_doc_ptr_set (parsed->mut_doc, path,
+                                 yyjson_mut_strcpy (parsed->mut_doc, (const char *)value));
     break;
   case 'b':
-    yyjson_mut_set_bool (header, *((int *)value) ? true : false);
+    rv = yyjson_mut_doc_ptr_set (parsed->mut_doc, path,
+                                 yyjson_mut_bool (parsed->mut_doc, *((int *)value) ? true : false));
+    break;
+  case 'V':
+    rv = yyjson_mut_doc_ptr_set (parsed->mut_doc, path,
+                                 yyjson_mut_val_mut_copy (parsed->mut_doc, (yyjson_mut_val *)value));
     break;
   case 'A':
-    yyjson_mut_set_arr (header);
-    yyjson_mut_arr_append (header, (yyjson_mut_val *)value);
+    /* Search for existing array, create if necessary */
+    if ((array_val = yyjson_mut_doc_ptr_get (parsed->mut_doc, path)) == NULL)
+    {
+      if ((array_val = yyjson_mut_arr (parsed->mut_doc)) == NULL)
+      {
+        rv = false;
+      }
+      else if (yyjson_mut_doc_ptr_set (parsed->mut_doc, path, array_val) == false)
+      {
+        rv = false;
+      }
+      else
+      {
+        rv = true;
+      }
+    }
+
+    /* Append supplied value */
+    if (rv == true)
+    {
+      rv = yyjson_mut_arr_append (array_val,
+                                  yyjson_mut_val_mut_copy (parsed->mut_doc, (yyjson_mut_val *)value));
+    }
     break;
   default:
     ms_log (2, "%s() Unrecognized value type '%d'\n", __func__, type);
-
-    if (parsestate == NULL)
-    {
-      mseh_free_parsestate (&parsed);
-    }
-
-    return MS_GENERROR;
-  }
-
-  /* Initialize new document */
-  if ((new_doc = yyjson_mut_doc_new (&alc)) == NULL)
-  {
-    ms_log (2, "%s() Cannot allocate memory for new extra header root document\n", __func__);
-
-    if (parsestate == NULL)
-    {
-      mseh_free_parsestate (&parsed);
-    }
-
-    return MS_GENERROR;
-  }
-
-  /* Apply changes as a merge patch to any existing document */
-  if ((new_root = yyjson_mut_merge_patch (new_doc,
-                                          yyjson_mut_doc_get_root (parsed->mut_doc),
-                                          &patch)) == NULL)
-  {
-    ms_log (2, "%s() Cannot set new value with merge patch\n", __func__);
-  }
-  else
-  {
-    /* Replace old document with the new, merged document */
-    yyjson_mut_doc_set_root (new_doc, new_root);
-
-    if (parsed->mut_doc)
-    {
-      yyjson_mut_doc_free (parsed->mut_doc);
-    }
-
-    parsed->mut_doc = new_doc;
-
-    /* Invalidate the immutable version of the document if it exists */
-    if (parsed->doc)
-    {
-      yyjson_doc_free (parsed->doc);
-      parsed->doc = NULL;
-    }
+    rv = false;
   }
 
   /* Serialized extra headers and free parse state if not being retained */
@@ -515,8 +440,7 @@ mseh_set_path_r (MS3Record *msr, const char *path,
     mseh_free_parsestate (&parsed);
   }
 
-  return 0;
-#undef MAXPATHDEPTH
+  return (rv == true) ? 0 : MS_GENERROR;
 } /* End of mseh_set_path_r() */
 
 /**********************************************************************/ /**
