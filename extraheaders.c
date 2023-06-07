@@ -407,26 +407,18 @@ mseh_set_ptr_r (MS3Record *msr, const char *ptr,
     /* Search for existing array, create if necessary */
     if ((array_val = yyjson_mut_doc_ptr_get (parsed->mut_doc, ptr)) == NULL)
     {
-      if ((array_val = yyjson_mut_arr (parsed->mut_doc)) == NULL)
+      if ((array_val = yyjson_mut_arr (parsed->mut_doc)))
       {
-        rv = false;
-      }
-      else if (yyjson_mut_doc_ptr_set (parsed->mut_doc, ptr, array_val) == false)
-      {
-        rv = false;
-      }
-      else
-      {
-        rv = true;
+        if (yyjson_mut_doc_ptr_set (parsed->mut_doc, ptr, array_val) == false)
+        {
+          array_val = NULL;
+        }
       }
     }
 
-    /* Append supplied value */
-    if (rv == true)
-    {
-      rv = yyjson_mut_arr_append (array_val,
-                                  yyjson_mut_val_mut_copy (parsed->mut_doc, (yyjson_mut_val *)value));
-    }
+    /* Append supplied value, will return false if array_val == NULL */
+    rv = yyjson_mut_arr_append (array_val,
+                                yyjson_mut_val_mut_copy (parsed->mut_doc, (yyjson_mut_val *)value));
     break;
   default:
     ms_log (2, "%s() Unrecognized value type '%d'\n", __func__, type);
