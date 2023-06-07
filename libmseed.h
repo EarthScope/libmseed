@@ -885,99 +885,99 @@ typedef struct MSEHRecenter
 
 /**
  * @brief Internal structure for holding parsed JSON extra headers.
- * @see mseh_get_path_r()
- * @see mseh_set_path_r()
+ * @see mseh_get_ptr_r()
+ * @see mseh_set_ptr_r()
  */
 typedef struct LM_PARSED_JSON LM_PARSED_JSON;
 
 /** @def mseh_get
     @brief A simple wrapper to access any type of extra header */
-#define mseh_get(msr, path, valueptr, type, maxlength) \
-  mseh_get_path_r (msr, path, valueptr, type, maxlength, NULL)
+#define mseh_get(msr, ptr, valueptr, type, maxlength) \
+  mseh_get_ptr_r (msr, ptr, valueptr, type, maxlength, NULL)
 
 /** @def mseh_get_number
     @brief A simple wrapper to access a number type extra header */
-#define mseh_get_number(msr, path, valueptr)    \
-  mseh_get_path_r (msr, path, valueptr, 'n', 0, NULL)
+#define mseh_get_number(msr, ptr, valueptr)    \
+  mseh_get_ptr_r (msr, ptr, valueptr, 'n', 0, NULL)
 
 /** @def mseh_get_int64
     @brief A simple wrapper to access a number type extra header */
-#define mseh_get_int64(msr, path, valueptr)    \
-  mseh_get_path_r (msr, path, valueptr, 'i', 0, NULL)
+#define mseh_get_int64(msr, ptr, valueptr)    \
+  mseh_get_ptr_r (msr, ptr, valueptr, 'i', 0, NULL)
 
 /** @def mseh_get_string
     @brief A simple wrapper to access a string type extra header */
-#define mseh_get_string(msr, path, buffer, maxlength)   \
-  mseh_get_path_r (msr, path, buffer, 's', maxlength, NULL)
+#define mseh_get_string(msr, ptr, buffer, maxlength)   \
+  mseh_get_ptr_r (msr, ptr, buffer, 's', maxlength, NULL)
 
 /** @def mseh_get_boolean
     @brief A simple wrapper to access a boolean type extra header */
-#define mseh_get_boolean(msr, path, valueptr)   \
-  mseh_get_path_r (msr, path, valueptr, 'b', 0, NULL)
+#define mseh_get_boolean(msr, ptr, valueptr)   \
+  mseh_get_ptr_r (msr, ptr, valueptr, 'b', 0, NULL)
 
 /** @def mseh_exists
     @brief A simple wrapper to test existence of an extra header */
-#define mseh_exists(msr, path)                  \
-  (!mseh_get_path_r (msr, path, NULL, 0, 0, NULL))
+#define mseh_exists(msr, ptr)                  \
+  (!mseh_get_ptr_r (msr, ptr, NULL, 0, 0, NULL))
 
-extern int mseh_get_path_r (MS3Record *msr, const char *path,
-                            void *value, char type, size_t maxlength,
-                            LM_PARSED_JSON **parsestate);
+extern int mseh_get_ptr_r (MS3Record *msr, const char *ptr,
+                           void *value, char type, size_t maxlength,
+                           LM_PARSED_JSON **parsestate);
 
 /** @def mseh_set
     @brief A simple wrapper to set any type of extra header */
-#define mseh_set(msr, path, valueptr, type) \
-  mseh_set_path_r (msr, path, valueptr, type, NULL)
+#define mseh_set(msr, ptr, valueptr, type) \
+  mseh_set_ptr_r (msr, ptr, valueptr, type, NULL)
 
 /** @def mseh_set_number
     @brief A simple wrapper to set a number type extra header */
-#define mseh_set_number(msr, path, valueptr) \
-  mseh_set_path_r (msr, path, valueptr, 'n', NULL)
+#define mseh_set_number(msr, ptr, valueptr) \
+  mseh_set_ptr_r (msr, ptr, valueptr, 'n', NULL)
 
 /** @def mseh_set_int64
     @brief A simple wrapper to set a number type extra header */
-#define mseh_set_int64(msr, path, valueptr) \
-  mseh_set_path_r (msr, path, valueptr, 'i', NULL)
+#define mseh_set_int64(msr, ptr, valueptr) \
+  mseh_set_ptr_r (msr, ptr, valueptr, 'i', NULL)
 
 /** @def mseh_set_string
     @brief A simple wrapper to set a string type extra header */
-#define mseh_set_string(msr, path, valueptr) \
-  mseh_set_path_r (msr, path, valueptr, 's', NULL)
+#define mseh_set_string(msr, ptr, valueptr) \
+  mseh_set_ptr_r (msr, ptr, valueptr, 's', NULL)
 
 /** @def mseh_set_boolean
     @brief A simple wrapper to set a boolean type extra header */
-#define mseh_set_boolean(msr, path, valueptr)   \
-  mseh_set_path_r (msr, path, valueptr, 'b', NULL)
+#define mseh_set_boolean(msr, ptr, valueptr)   \
+  mseh_set_ptr_r (msr, ptr, valueptr, 'b', NULL)
 
-extern int mseh_set_path_r (MS3Record *msr, const char *path,
-                            void *value, char type,
-                            LM_PARSED_JSON **parsestate);
+extern int mseh_set_ptr_r (MS3Record *msr, const char *ptr,
+                           void *value, char type,
+                           LM_PARSED_JSON **parsestate);
 
-#define mseh_add_event_detection(msr, path, eventdetection) \
-  mseh_add_event_detection_r (msr, path, eventdetection, NULL)
+#define mseh_add_event_detection(msr, ptr, eventdetection) \
+  mseh_add_event_detection_r (msr, ptr, eventdetection, NULL)
 
-extern int mseh_add_event_detection_r (MS3Record *msr, const char *path,
+extern int mseh_add_event_detection_r (MS3Record *msr, const char *ptr,
                                        MSEHEventDetection *eventdetection,
                                        LM_PARSED_JSON **parsestate);
 
-#define mseh_add_calibration(msr, path, calibration) \
-  mseh_add_calibration_r (msr, path, calibration, NULL)
+#define mseh_add_calibration(msr, ptr, calibration) \
+  mseh_add_calibration_r (msr, ptr, calibration, NULL)
 
-extern int mseh_add_calibration_r (MS3Record *msr, const char *path,
+extern int mseh_add_calibration_r (MS3Record *msr, const char *ptr,
                                    MSEHCalibration *calibration,
                                    LM_PARSED_JSON **parsestate);
 
-#define mseh_add_timing_exception(msr, path, exception) \
-  mseh_add_timing_exception_r (msr, path, exception, NULL)
+#define mseh_add_timing_exception(msr, ptr, exception) \
+  mseh_add_timing_exception_r (msr, ptr, exception, NULL)
 
-extern int mseh_add_timing_exception_r (MS3Record *msr, const char *path,
+extern int mseh_add_timing_exception_r (MS3Record *msr, const char *ptr,
                                         MSEHTimingException *exception,
                                         LM_PARSED_JSON **parsestate);
 
-#define mseh_add_recenter(msr, path, recenter) \
-  mseh_add_recenter_r (msr, path, recenter, NULL)
+#define mseh_add_recenter(msr, ptr, recenter) \
+  mseh_add_recenter_r (msr, ptr, recenter, NULL)
 
-extern int mseh_add_recenter_r (MS3Record *msr, const char *path,
+extern int mseh_add_recenter_r (MS3Record *msr, const char *ptr,
                                 MSEHRecenter *recenter,
                                 LM_PARSED_JSON **parsestate);
 
