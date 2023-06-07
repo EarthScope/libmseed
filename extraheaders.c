@@ -202,8 +202,6 @@ mseh_get_ptr_r (MS3Record *msr, const char *ptr,
     }
   }
 
-  //TODO Need to updated immutable form if muttable is existing regardless?
-
   /* Create immutable document from mutable if needed */
   if (parsed->mut_doc != NULL && parsed->doc == NULL)
   {
@@ -430,6 +428,12 @@ mseh_set_ptr_r (MS3Record *msr, const char *ptr,
   {
     mseh_serialize (msr, &parsed);
     mseh_free_parsestate (&parsed);
+  }
+  /* If changes were applied, the immutable form of the document is now invalid */
+  else if (rv ==true && parsed->doc != NULL)
+  {
+    yyjson_doc_free (parsed->doc);
+    parsed->doc = NULL;
   }
 
   return (rv == true) ? 0 : MS_GENERROR;
