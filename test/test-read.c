@@ -29,9 +29,9 @@ TEST (read, v3_parse)
   CHECK (msr->formatversion == 3, "msr->formatversion is not expected 3");
   CHECK (msr->flags == 4, "msr->flags is not expected 4");
   CHECK (msr->starttime == nstime, "msr->starttime is not expected 2010-02-27T06:50:00.069539Z");
-  CHECK (msr->samprate == 1.0, "msr->samprate is not expected 40.0");
+  CHECK (msr->samprate == 1.0, "msr->samprate is not expected 1.0");
   CHECK (msr->encoding == 11, "msr->encoding is not expected 11");
-  CHECK (msr->pubversion == 4, "msr->pubversion is not expected 2");
+  CHECK (msr->pubversion == 4, "msr->pubversion is not expected 4");
   CHECK (msr->samplecnt == 135, "msr->samplecnt is not expected 135");
   CHECK (msr->crc == 0x4F3EAB65, "msr->crc is not expected 0x4F3EAB65");
   CHECK (msr->extralength == 33, "msr->extralength is not expected 33");
@@ -79,9 +79,9 @@ TEST (read, v2_parse)
   CHECK (msr->formatversion == 2, "msr->formatversion is not expected 2");
   CHECK (msr->flags == 4, "msr->flags is not expected 4");
   CHECK (msr->starttime == nstime, "msr->starttime is not expected 2010-02-27T06:50:00.069539Z");
-  CHECK (msr->samprate == 1.0, "msr->samprate is not expected 40.0");
+  CHECK (msr->samprate == 1.0, "msr->samprate is not expected 1.0");
   CHECK (msr->encoding == 11, "msr->encoding is not expected 11");
-  CHECK (msr->pubversion == 4, "msr->pubversion is not expected 2");
+  CHECK (msr->pubversion == 4, "msr->pubversion is not expected 4");
   CHECK (msr->samplecnt == 135, "msr->samplecnt is not expected 135");
   CHECK (msr->crc == 0, "msr->crc is not expected 0");
   CHECK (msr->extralength == 33, "msr->extralength is not expected 33");
