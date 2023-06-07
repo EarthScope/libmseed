@@ -39,12 +39,14 @@ void _priv_free(void *ctx, void *ptr) {
 }
 
 /***************************************************************************
- * Internal routine to parse JSON strings into internal state storage
+ * Internal routine to parse JSON strings into internal state storage.
+ *
+ * The state container is allocated if needed and if JSON is supplied,
+ * it is parsed into the immutable form.
  *
  * @param[in] jsonstring JSON string to parse
  * @param[in] length Length of JSON string
  * @param[in] parsed Internal parsed state
- * @param[in] mutable Flag to control parse level
  *
  * @returns A LM_PARSED_JSON* on success or NULL on error
  *
@@ -122,8 +124,8 @@ parse_json (char *jsonstring, size_t length, LM_PARSED_JSON *parsed)
  * mseh_free_parsestate() when done reading the JSON.  If this value
  * is NULL the parse state will be created and destroyed on each call.
  *
- * @param[in] msr Parsed miniSEED record to query
- * @param[in] path Header value desired, specified in dot notation
+ * @param[in] msr Parsed miniSEED record to search
+ * @param[in] ptr Header value desired, as JSON Pointer
  * @param[out] value Buffer for value, of type \c type
  * @param[in] type Type of value expected, one of:
  * @parblock
@@ -145,7 +147,7 @@ parse_json (char *jsonstring, size_t length, LM_PARSED_JSON *parsed)
  * \sa mseh_free_parsestate()
  ***************************************************************************/
 int
-mseh_get_path_r (MS3Record *msr, const char *path,
+mseh_get_ptr_r (MS3Record *msr, const char *ptr,
                  void *value, char type, size_t maxlength,
                  LM_PARSED_JSON **parsestate)
 {
@@ -157,9 +159,9 @@ mseh_get_path_r (MS3Record *msr, const char *path,
 
   int retval = 0;
 
-  if (!msr || !path)
+  if (!msr || !ptr)
   {
-    ms_log (2, "%s() Required argument not defined: 'msr' or 'path'\n", __func__);
+    ms_log (2, "%s() Required argument not defined: 'msr' or 'ptr'\n", __func__);
     return MS_GENERROR;
   }
 
@@ -176,9 +178,9 @@ mseh_get_path_r (MS3Record *msr, const char *path,
   }
 
   /* Detect invalid JSON Pointer, i.e. with no root '/' designation */
-  if (path[0] != '/')
+  if (ptr[0] != '/')
   {
-    ms_log (2, "%s() Unsupported path notation: %s\n", __func__, path);
+    ms_log (2, "%s() Unsupported ptr notation: %s\n", __func__, ptr);
     return MS_GENERROR;
   }
 
@@ -217,7 +219,7 @@ mseh_get_path_r (MS3Record *msr, const char *path,
   }
 
   /* Get target value */
-  extravalue = yyjson_doc_get_pointer(parsed->doc, path);
+  extravalue = yyjson_doc_ptr_get(parsed->doc, ptr);
 
   if (extravalue == NULL)
   {
@@ -260,7 +262,7 @@ mseh_get_path_r (MS3Record *msr, const char *path,
   }
 
   return retval;
-} /* End of mseh_get_path_r() */
+} /* End of mseh_get_ptr_r() */
 
 /**********************************************************************/ /**
  * @brief Set the value of a single extra header value
@@ -268,7 +270,7 @@ mseh_get_path_r (MS3Record *msr, const char *path,
  * The extra header value is specified as a JSON Pointer (RFC 6901), e.g.
  * \c '/objectA/objectB/header'.
  *
- * If the \a path or final header values do not exist they will be
+ * If the \a ptr or final header values do not exist they will be
  * created.  If the header value exists it will be replaced.
  *
  * The \a type value specifies the data type expected for \c value.
@@ -282,8 +284,8 @@ mseh_get_path_r (MS3Record *msr, const char *path,
  * If this value is NULL the parse state will be created and destroyed
  * on each call.
  *
- * @param[in] msr Parsed miniSEED record to query
- * @param[in] path Header value desired, specified in dot notation
+ * @param[in] msr Parsed miniSEED record to modify
+ * @param[in] ptr Header value to set, as JSON Pointer
  * @param[in] value Buffer for value, of type \c type
  * @param[in] type Type of value expected, one of:
  * @parblock
@@ -291,7 +293,8 @@ mseh_get_path_r (MS3Record *msr, const char *path,
  * - \c 'i' - \a value is type \a int64_t
  * - \c 's' - \a value is type \a char*
  * - \c 'b' - \a value is type \a int (boolean value of 0 or 1)
- * - \c 'A' - \a value is an Array element to append, as yyjson_mut_val* (internal use)
+ * - \c 'V' - \a value is type \a yyjson_mut_val* to _set/replace_ (internal use)
+ * - \c 'A' - \a value is type \a yyjson_mut_val* to _append to array_ (internal use)
  * @endparblock
  * @param[in] parsed Parsed state for multiple operations, can be NULL
  *
@@ -303,82 +306,32 @@ mseh_get_path_r (MS3Record *msr, const char *path,
  * \sa mseh_serialize()
  ***************************************************************************/
 int
-mseh_set_path_r (MS3Record *msr, const char *path,
+mseh_set_ptr_r (MS3Record *msr, const char *ptr,
                  void *value, char type,
                  LM_PARSED_JSON **parsestate)
 {
-#define MAXPATHDEPTH 8
   LM_PARSED_JSON *parsed = (parsestate) ? *parsestate : NULL;
-
   yyjson_alc alc = {_priv_malloc, _priv_realloc, _priv_free, NULL};
-  yyjson_mut_doc *new_doc  = NULL;
-  yyjson_mut_val *new_root = NULL;
-  yyjson_mut_val patch;
-  yyjson_mut_val mut_keys[MAXPATHDEPTH];
-  yyjson_mut_val mut_vals[MAXPATHDEPTH];
-  yyjson_mut_val *header = NULL;
-  char *keystr[MAXPATHDEPTH];
-  char keypath[128] = {0};
-  uint8_t keycount  = 0;
+  yyjson_mut_val *array_val = NULL;
+  bool rv = false;
 
-  int idx;
-
-  if (!msr || !value || !path)
+  if (!msr || !value || !ptr)
   {
-    ms_log (2, "%s() Required argument not defined: 'msr', 'value' or 'path'\n", __func__);
+    ms_log (2, "%s() Required argument not defined: 'msr', 'value' or 'ptr'\n", __func__);
     return MS_GENERROR;
   }
 
   /* Detect invalid JSON Pointer, i.e. with no root '/' designation */
-  if (path[0] != '/')
+  if (ptr[0] != '/')
   {
-    ms_log (2, "%s() Unsupported path notation: %s\n", __func__, path);
-    return MS_GENERROR;
-  }
-
-  /* Copy path starting at path[1] to keypath, while:
-   * 1) converting '/' to terminating nulls
-   * 2) tracking starts of key strings */
-  for (idx = 1;
-       path[idx] && idx < (int)sizeof (keypath) && keycount < MAXPATHDEPTH;
-       idx++)
-  {
-    /* Set terminating null if '/' */
-    if (path[idx] == '/')
-      keypath[idx - 1] = '\0';
-    /* Otherwise copy character */
-    else
-      keypath[idx - 1] = path[idx];
-
-    /* Store pointer to start of key string, identified as following a '/' */
-    if (path[idx - 1] == '/')
-      keystr[keycount++] = keypath + idx - 1;
-  }
-
-  if (idx >= (int)sizeof (keypath))
-  {
-    ms_log (2, "%s() Maximun length of path exceeded (%d): %s\n",
-            __func__, (int)sizeof (keypath), path);
-    return MS_GENERROR;
-  }
-
-  if (keycount >= MAXPATHDEPTH)
-  {
-    ms_log (2, "%s() Maximum depth of path exceeded (%d): %s\n",
-            __func__, MAXPATHDEPTH, path);
-    return MS_GENERROR;
-  }
-
-  if (keycount == 0)
-  {
-    ms_log (2, "%s() No keys specified in path: %s\n", __func__, path);
+    ms_log (2, "%s() Unsupported ptr notation: %s\n", __func__, ptr);
     return MS_GENERROR;
   }
 
   /* Parse JSON extra headers if not available in state */
   if (parsed == NULL)
   {
-    /* Parse to mutable state */
+    /* Allocate state container and parse to immutable form */
     parsed = parse_json (msr->extra, msr->extralength, parsed);
 
     if (parsed == NULL)
@@ -425,87 +378,49 @@ mseh_set_path_r (MS3Record *msr, const char *path,
     }
   }
 
-  /* Create patch: root object followed by nested objects from path */
-  yyjson_mut_set_obj (&patch);
-  header = &patch;
-
-  for (idx = 0; idx < keycount; idx++)
-  {
-    yyjson_mut_set_str (&(mut_keys[idx]), keystr[idx]);
-    yyjson_mut_set_obj (&(mut_vals[idx]));
-
-    yyjson_mut_obj_add (header, &(mut_keys[idx]), &(mut_vals[idx]));
-    header = &(mut_vals[idx]);
-  }
-
-  /* Set header value */
+  /* Set (or replace) header value at ptr */
   switch (type)
   {
   case 'n':
-    yyjson_mut_set_real (header, *((double *)value));
+    rv = yyjson_mut_doc_ptr_set (parsed->mut_doc, ptr,
+                                 yyjson_mut_real (parsed->mut_doc, *((double *)value)));
     break;
   case 'i':
-    yyjson_mut_set_sint (header, *((int64_t *)value));
+    rv = yyjson_mut_doc_ptr_set (parsed->mut_doc, ptr,
+                                 yyjson_mut_sint (parsed->mut_doc, *((int64_t *)value)));
     break;
   case 's':
-    yyjson_mut_set_str (header, (const char *)value);
+    rv = yyjson_mut_doc_ptr_set (parsed->mut_doc, ptr,
+                                 yyjson_mut_strcpy (parsed->mut_doc, (const char *)value));
     break;
   case 'b':
-    yyjson_mut_set_bool (header, *((int *)value) ? true : false);
+    rv = yyjson_mut_doc_ptr_set (parsed->mut_doc, ptr,
+                                 yyjson_mut_bool (parsed->mut_doc, *((int *)value) ? true : false));
+    break;
+  case 'V':
+    rv = yyjson_mut_doc_ptr_set (parsed->mut_doc, ptr,
+                                 yyjson_mut_val_mut_copy (parsed->mut_doc, (yyjson_mut_val *)value));
     break;
   case 'A':
-    yyjson_mut_set_arr (header);
-    yyjson_mut_arr_append (header, (yyjson_mut_val *)value);
+    /* Search for existing array, create if necessary */
+    if ((array_val = yyjson_mut_doc_ptr_get (parsed->mut_doc, ptr)) == NULL)
+    {
+      if ((array_val = yyjson_mut_arr (parsed->mut_doc)))
+      {
+        if (yyjson_mut_doc_ptr_set (parsed->mut_doc, ptr, array_val) == false)
+        {
+          array_val = NULL;
+        }
+      }
+    }
+
+    /* Append supplied value, will return false if array_val == NULL */
+    rv = yyjson_mut_arr_append (array_val,
+                                yyjson_mut_val_mut_copy (parsed->mut_doc, (yyjson_mut_val *)value));
     break;
   default:
     ms_log (2, "%s() Unrecognized value type '%d'\n", __func__, type);
-
-    if (parsestate == NULL)
-    {
-      mseh_free_parsestate (&parsed);
-    }
-
-    return MS_GENERROR;
-  }
-
-  /* Initialize new document */
-  if ((new_doc = yyjson_mut_doc_new (&alc)) == NULL)
-  {
-    ms_log (2, "%s() Cannot allocate memory for new extra header root document\n", __func__);
-
-    if (parsestate == NULL)
-    {
-      mseh_free_parsestate (&parsed);
-    }
-
-    return MS_GENERROR;
-  }
-
-  /* Apply changes as a merge patch to any existing document */
-  if ((new_root = yyjson_mut_merge_patch (new_doc,
-                                          yyjson_mut_doc_get_root (parsed->mut_doc),
-                                          &patch)) == NULL)
-  {
-    ms_log (2, "%s() Cannot set new value with merge patch\n", __func__);
-  }
-  else
-  {
-    /* Replace old document with the new, merged document */
-    yyjson_mut_doc_set_root (new_doc, new_root);
-
-    if (parsed->mut_doc)
-    {
-      yyjson_mut_doc_free (parsed->mut_doc);
-    }
-
-    parsed->mut_doc = new_doc;
-
-    /* Invalidate the immutable version of the document if it exists */
-    if (parsed->doc)
-    {
-      yyjson_doc_free (parsed->doc);
-      parsed->doc = NULL;
-    }
+    rv = false;
   }
 
   /* Serialized extra headers and free parse state if not being retained */
@@ -514,18 +429,23 @@ mseh_set_path_r (MS3Record *msr, const char *path,
     mseh_serialize (msr, &parsed);
     mseh_free_parsestate (&parsed);
   }
+  /* If changes were applied, the immutable form of the document is now invalid */
+  else if (rv ==true && parsed->doc != NULL)
+  {
+    yyjson_doc_free (parsed->doc);
+    parsed->doc = NULL;
+  }
 
-  return 0;
-#undef MAXPATHDEPTH
-} /* End of mseh_set_path_r() */
+  return (rv == true) ? 0 : MS_GENERROR;
+} /* End of mseh_set_ptr_r() */
 
 /**********************************************************************/ /**
  * @brief Add event detection to the extra headers of the given record.
  *
- * If \a path is NULL, the default is \c '/FDSN/Event/Detection'.
+ * If \a ptr is NULL, the default is \c '/FDSN/Event/Detection'.
  *
  * @param[in] msr Parsed miniSEED record to query
- * @param[in] path Header value desired, specified in dot notation
+ * @param[in] ptr Header value desired, specified in dot notation
  * @param[in] eventdetection Structure with event detection values
  * @param[in] parsed Parsed state for multiple operations, can be NULL
  *
@@ -534,7 +454,7 @@ mseh_set_path_r (MS3Record *msr, const char *path,
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-mseh_add_event_detection_r (MS3Record *msr, const char *path,
+mseh_add_event_detection_r (MS3Record *msr, const char *ptr,
                             MSEHEventDetection *eventdetection,
                             LM_PARSED_JSON **parsestate)
 {
@@ -647,7 +567,7 @@ mseh_add_event_detection_r (MS3Record *msr, const char *path,
   }
 
   /* Add new object to array, created 'value' will be free'd on successful return */
-  if (mseh_set_path_r (msr, (path) ? path : "/FDSN/Event/Detection", &entry, 'A', parsestate))
+  if (mseh_set_ptr_r (msr, (ptr) ? ptr : "/FDSN/Event/Detection", &entry, 'A', parsestate))
   {
     return MS_GENERROR;
   }
@@ -658,10 +578,10 @@ mseh_add_event_detection_r (MS3Record *msr, const char *path,
 /**********************************************************************/ /**
  * @brief Add calibration to the extra headers of the given record.
  *
- * If \a path is NULL, the default is \c '/FDSN/Calibration/Sequence'.
+ * If \a ptr is NULL, the default is \c '/FDSN/Calibration/Sequence'.
  *
  * @param[in] msr Parsed miniSEED record to query
- * @param[in] path Header value desired, specified in dot notation
+ * @param[in] ptr Header value desired, specified in dot notation
  * @param[in] calibration Structure with calibration values
  * @param[in] parsed Parsed state for multiple operations, can be NULL
  *
@@ -670,7 +590,7 @@ mseh_add_event_detection_r (MS3Record *msr, const char *path,
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-mseh_add_calibration_r (MS3Record *msr, const char *path,
+mseh_add_calibration_r (MS3Record *msr, const char *ptr,
                         MSEHCalibration *calibration,
                         LM_PARSED_JSON **parsestate)
 {
@@ -839,7 +759,7 @@ mseh_add_calibration_r (MS3Record *msr, const char *path,
   }
 
   /* Add new object to array, created 'value' will be free'd on successful return */
-  if (mseh_set_path_r (msr, (path) ? path : "/FDSN/Calibration/Sequence", &entry, 'A', parsestate))
+  if (mseh_set_ptr_r (msr, (ptr) ? ptr : "/FDSN/Calibration/Sequence", &entry, 'A', parsestate))
   {
     return MS_GENERROR;
   }
@@ -850,10 +770,10 @@ mseh_add_calibration_r (MS3Record *msr, const char *path,
 /**********************************************************************/ /**
  * @brief Add timing exception to the extra headers of the given record.
  *
- * If \a path is NULL, the default is \c '/FDSN/Time/Exception'.
+ * If \a ptr is NULL, the default is \c '/FDSN/Time/Exception'.
  *
  * @param[in] msr Parsed miniSEED record to query
- * @param[in] path Header value desired, specified in dot notation
+ * @param[in] ptr Header value desired, specified in dot notation
  * @param[in] exception Structure with timing exception values
  * @param[in] parsed Parsed state for multiple operations, can be NULL
  *
@@ -862,7 +782,7 @@ mseh_add_calibration_r (MS3Record *msr, const char *path,
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-mseh_add_timing_exception_r (MS3Record *msr, const char *path,
+mseh_add_timing_exception_r (MS3Record *msr, const char *ptr,
                              MSEHTimingException *exception,
                              LM_PARSED_JSON **parsestate)
 {
@@ -931,7 +851,7 @@ mseh_add_timing_exception_r (MS3Record *msr, const char *path,
   }
 
   /* Add new object to array, created 'value' will be free'd on successful return */
-  if (mseh_set_path_r (msr, (path) ? path : "/FDSN/Time/Exception", &entry, 'A', parsestate))
+  if (mseh_set_ptr_r (msr, (ptr) ? ptr : "/FDSN/Time/Exception", &entry, 'A', parsestate))
   {
     return MS_GENERROR;
   }
@@ -942,10 +862,10 @@ mseh_add_timing_exception_r (MS3Record *msr, const char *path,
 /**********************************************************************/ /**
  * @brief Add recenter event to the extra headers of the given record.
  *
- * If \a path is NULL, the default is \c '/FDSN/Recenter/Sequence'.
+ * If \a ptr is NULL, the default is \c '/FDSN/Recenter/Sequence'.
  *
  * @param[in] msr Parsed miniSEED record to query
- * @param[in] path Header value desired, specified in dot notation
+ * @param[in] ptr Header value desired, specified in dot notation
  * @param[in] recenter Structure with recenter values
  * @param[in] parsed Parsed state for multiple operations, can be NULL
  *
@@ -954,7 +874,7 @@ mseh_add_timing_exception_r (MS3Record *msr, const char *path,
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-mseh_add_recenter_r (MS3Record *msr, const char *path, MSEHRecenter *recenter,
+mseh_add_recenter_r (MS3Record *msr, const char *ptr, MSEHRecenter *recenter,
                      LM_PARSED_JSON **parsestate)
 {
   yyjson_mut_val entry;
@@ -1016,7 +936,7 @@ mseh_add_recenter_r (MS3Record *msr, const char *path, MSEHRecenter *recenter,
   }
 
   /* Add new object to array, created 'value' will be free'd on successful return */
-  if (mseh_set_path_r (msr, (path) ? path : "/FDSN/Recenter/Sequence", &entry, 'A', parsestate))
+  if (mseh_set_ptr_r (msr, (ptr) ? ptr : "/FDSN/Recenter/Sequence", &entry, 'A', parsestate))
   {
     return MS_GENERROR;
   }
@@ -1028,14 +948,14 @@ mseh_add_recenter_r (MS3Record *msr, const char *path, MSEHRecenter *recenter,
  * @brief Generate extra headers string (serialize) from internal state
  *
  * Generate the extra headers JSON string from the internal parse state
- * created by mseh_set_path_r().
+ * created by mseh_set_ptr_r().
  *
  * @param[in] msr ::MS3Record to generate extra headers for
  * @param[in] parsed Internal parsed state associated with \a msr
  *
  * @returns Length of extra headers on success, otherwise a (negative) libmseed error code
  *
- * \sa mseh_set_path_r()
+ * \sa mseh_set_ptr_r()
  ***************************************************************************/
 int
 mseh_serialize (MS3Record *msr, LM_PARSED_JSON **parsestate)
@@ -1086,11 +1006,11 @@ mseh_serialize (MS3Record *msr, LM_PARSED_JSON **parsestate)
 /**********************************************************************/ /**
  * @brief Free internally parsed (deserialized) JSON data
  *
- * Free the memory associated with JSON data parsed by mseh_get_path_r()
- * or mseh_set_path_r(), specifically the data at the \a parsestate pointer.
+ * Free the memory associated with JSON data parsed by mseh_get_ptr_r()
+ * or mseh_set_ptr_r(), specifically the data at the \a parsestate pointer.
  *
- * \sa mseh_get_path_r()
- * \sa mseh_set_path_r()
+ * \sa mseh_get_ptr_r()
+ * \sa mseh_set_ptr_r()
  ***************************************************************************/
 void
 mseh_free_parsestate (LM_PARSED_JSON **parsestate)
