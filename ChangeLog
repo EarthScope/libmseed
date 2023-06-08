@@ -1,5 +1,6 @@
 2023.159:
 	- Add JSON Merge Patch capability to mseh_set_ptr_r().
+	- Fix zero-padding of empty bytes following data in miniSEED v2 creation.
 
 2023.155:
 	WARNING: API change as follows:

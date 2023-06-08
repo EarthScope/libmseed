@@ -32,8 +32,7 @@ int libmseed_encodedebug = -1;
 /************************************************************************
  * msr_encode_text:
  *
- * Encode text data and place in supplied buffer.  Pad any space
- * remaining in output buffer with zeros.
+ * Encode text data and place in supplied buffer.
  *
  * Return number of samples in output buffer on success, -1 on failure.
  ************************************************************************/
@@ -54,11 +53,6 @@ msr_encode_text (char *input, int samplecount, char *output,
 
   memcpy (output, input, length);
 
-  outputlength -= length;
-
-  if (outputlength > 0)
-    memset (output + length, 0, outputlength);
-
   return length;
 } /* End of msr_encode_text() */
 
@@ -66,8 +60,7 @@ msr_encode_text (char *input, int samplecount, char *output,
  * msr_encode_int16:
  *
  * Encode 16-bit integer data from an array of 32-bit integers and
- * place in supplied buffer.  Swap if requested.  Pad any space
- * remaining in output buffer with zeros.
+ * place in supplied buffer.  Swap if requested.
  *
  * Return number of samples in output buffer on success, -1 on failure.
  ************************************************************************/
@@ -93,9 +86,6 @@ msr_encode_int16 (int32_t *input, int samplecount, int16_t *output,
     outputlength -= sizeof (int16_t);
   }
 
-  if (outputlength)
-    memset (&output[idx], 0, outputlength);
-
   return idx;
 } /* End of msr_encode_int16() */
 
@@ -103,8 +93,7 @@ msr_encode_int16 (int32_t *input, int samplecount, int16_t *output,
  * msr_encode_int32:
  *
  * Encode 32-bit integer data from an array of 32-bit integers and
- * place in supplied buffer.  Swap if requested.  Pad any space
- * remaining in output buffer with zeros.
+ * place in supplied buffer.  Swap if requested.
  *
  * Return number of samples in output buffer on success, -1 on failure.
  ************************************************************************/
@@ -130,9 +119,6 @@ msr_encode_int32 (int32_t *input, int samplecount, int32_t *output,
     outputlength -= sizeof (int32_t);
   }
 
-  if (outputlength)
-    memset (&output[idx], 0, outputlength);
-
   return idx;
 } /* End of msr_encode_int32() */
 
@@ -140,8 +126,7 @@ msr_encode_int32 (int32_t *input, int samplecount, int32_t *output,
  * msr_encode_float32:
  *
  * Encode 32-bit float data from an array of 32-bit floats and place
- * in supplied buffer.  Swap if requested.  Pad any space remaining in
- * output buffer with zeros.
+ * in supplied buffer.  Swap if requested.
  *
  * Return number of samples in output buffer on success, -1 on failure.
  ************************************************************************/
@@ -167,9 +152,6 @@ msr_encode_float32 (float *input, int samplecount, float *output,
     outputlength -= sizeof (float);
   }
 
-  if (outputlength)
-    memset (&output[idx], 0, outputlength);
-
   return idx;
 } /* End of msr_encode_float32() */
 
@@ -177,8 +159,7 @@ msr_encode_float32 (float *input, int samplecount, float *output,
  * msr_encode_float64:
  *
  * Encode 64-bit float data from an array of 64-bit doubles and place
- * in supplied buffer.  Swap if requested.  Pad any space remaining in
- * output buffer with zeros.
+ * in supplied buffer.  Swap if requested.
  *
  * Return number of samples in output buffer on success, -1 on failure.
  ************************************************************************/
@@ -203,9 +184,6 @@ msr_encode_float64 (double *input, int samplecount, double *output,
 
     outputlength -= sizeof (double);
   }
-
-  if (outputlength)
-    memset (&output[idx], 0, outputlength);
 
   return idx;
 } /* End of msr_encode_float64() */
@@ -236,8 +214,7 @@ msr_encode_float64 (double *input, int samplecount, double *output,
  * msr_encode_steim1:
  *
  * Encode Steim1 data frames from an array of 32-bit integers and
- * place in supplied buffer.  Swap if requested.  Pad any space
- * remaining in output buffer with zeros.
+ * place in supplied buffer.  Swap if requested.
  *
  * diff0 is the first difference in the sequence and relates the first
  * sample to the sample previous to it (not available to this
@@ -431,8 +408,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
  * msr_encode_steim2:
  *
  * Encode Steim2 data frames from an array of 32-bit integers and
- * place in supplied buffer.  Swap if requested.  Pad any space
- * remaining in output buffer with zeros.
+ * place in supplied buffer.  Swap if requested.
  *
  * diff0 is the first difference in the sequence and relates the first
  * sample to the sample previous to it (not available to this

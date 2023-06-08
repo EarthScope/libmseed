@@ -594,6 +594,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   int8_t swapflag;
   int dataoffset = 0;
   int headerlen;
+  int content;
 
   int samplesize;
   int maxdatabytes;
@@ -765,6 +766,11 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
     /* Update number of samples */
     *pMS2FSDH_NUMSAMPLES(rawrec) = HO2u (packsamples, swapflag);
+
+    /* Zero any space between encoded data and end of record */
+    content = dataoffset + datalength;
+    if (content < msr->reclen)
+      memset (rawrec + content, 0, msr->reclen - content);
 
     if (verbose >= 1)
       ms_log (0, "%s: Packed %d samples into %d byte record\n", msr->sid, packsamples, msr->reclen);
