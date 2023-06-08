@@ -1,3 +1,6 @@
+2023.159:
+	- Add JSON Merge Patch capability to mseh_set_ptr_r().
+
 2023.155:
 	WARNING: API change as follows:
 	The `MS3TraceList.numtraces` was renamed `MS3TraceList.numtraceids`.
