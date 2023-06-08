@@ -265,13 +265,15 @@ mseh_get_ptr_r (MS3Record *msr, const char *ptr,
 } /* End of mseh_get_ptr_r() */
 
 /**********************************************************************/ /**
- * @brief Set the value of a single extra header value
+ * @brief Set the value of extra header values
  *
  * The extra header value is specified as a JSON Pointer (RFC 6901), e.g.
  * \c '/objectA/objectB/header'.
  *
- * If the \a ptr or final header values do not exist they will be
- * created.  If the header value exists it will be replaced.
+ * For most value types, if the \a ptr or final header values do not exist
+ * they will be created.  If the header value exists it will be replaced.
+ * When the value type is 'M', for Merge Patch (RFC 7386), the location
+ * indicated by \a ptr must exist.
  *
  * The \a type value specifies the data type expected for \c value.
  *
@@ -285,7 +287,7 @@ mseh_get_ptr_r (MS3Record *msr, const char *ptr,
  * on each call.
  *
  * @param[in] msr Parsed miniSEED record to modify
- * @param[in] ptr Header value to set, as JSON Pointer
+ * @param[in] ptr Header value to set as JSON Pointer, or JSON Merge Patch
  * @param[in] value Buffer for value, of type \c type
  * @param[in] type Type of value expected, one of:
  * @parblock
@@ -293,6 +295,7 @@ mseh_get_ptr_r (MS3Record *msr, const char *ptr,
  * - \c 'i' - \a value is type \a int64_t
  * - \c 's' - \a value is type \a char*
  * - \c 'b' - \a value is type \a int (boolean value of 0 or 1)
+ * - \c 'M' - \a value is type \a char* and a Merge Patch to apply at \a ptr
  * - \c 'V' - \a value is type \a yyjson_mut_val* to _set/replace_ (internal use)
  * - \c 'A' - \a value is type \a yyjson_mut_val* to _append to array_ (internal use)
  * @endparblock
@@ -312,19 +315,23 @@ mseh_set_ptr_r (MS3Record *msr, const char *ptr,
 {
   LM_PARSED_JSON *parsed = (parsestate) ? *parsestate : NULL;
   yyjson_alc alc = {_priv_malloc, _priv_realloc, _priv_free, NULL};
+  yyjson_doc *patch_idoc = NULL;
+  yyjson_mut_doc *patch_doc = NULL;
+  yyjson_mut_val *merged_val = NULL;
+  yyjson_mut_val *target_val = NULL;
   yyjson_mut_val *array_val = NULL;
   bool rv = false;
 
-  if (!msr || !value || !ptr)
+  if (!msr || !ptr || !value)
   {
-    ms_log (2, "%s() Required argument not defined: 'msr', 'value' or 'ptr'\n", __func__);
+    ms_log (2, "%s() Required argument not defined: 'msr', 'ptr', or 'value'\n", __func__);
     return MS_GENERROR;
   }
 
   /* Detect invalid JSON Pointer, i.e. with no root '/' designation */
-  if (ptr[0] != '/')
+  if (ptr[0] != '/' && type != 'M')
   {
-    ms_log (2, "%s() Unsupported ptr notation: %s\n", __func__, ptr);
+    ms_log (2, "%s() Unsupported JSON Pointer notation: %s\n", __func__, ptr);
     return MS_GENERROR;
   }
 
@@ -396,6 +403,35 @@ mseh_set_ptr_r (MS3Record *msr, const char *ptr,
   case 'b':
     rv = yyjson_mut_doc_ptr_set (parsed->mut_doc, ptr,
                                  yyjson_mut_bool (parsed->mut_doc, *((int *)value) ? true : false));
+    break;
+  case 'M':
+    /* Parse supplied patch */
+    if ((patch_idoc = yyjson_read_opts ((char *)value, strlen ((char *)value), 0, &alc, NULL)))
+    {
+      if ((patch_doc = yyjson_doc_mut_copy (patch_idoc, &alc)))
+      {
+        /* Get patch target value */
+        if ((target_val = yyjson_mut_doc_ptr_get (parsed->mut_doc, ptr)))
+        {
+          /* Generate merged value */
+          if ((merged_val = yyjson_mut_merge_patch (parsed->mut_doc,
+                                                    target_val,
+                                                    yyjson_mut_doc_get_root (patch_doc))))
+          {
+            /* Replace value at pointer with merged value */
+            rv = yyjson_mut_doc_ptr_replace (parsed->mut_doc, ptr, merged_val);
+          }
+        }
+      }
+    }
+    else
+    {
+      ms_log (2, "%s() Cannot parse JSON Merge Patch: %s'\n", __func__, (char *)value);
+    }
+
+    yyjson_doc_free(patch_idoc);
+    yyjson_mut_doc_free (patch_doc);
+
     break;
   case 'V':
     rv = yyjson_mut_doc_ptr_set (parsed->mut_doc, ptr,

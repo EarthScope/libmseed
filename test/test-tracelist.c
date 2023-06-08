@@ -40,7 +40,7 @@ TEST (trace, read)
   CHECK (id->first->next == NULL, "id->first->next is not expected NULL");
   CHECK (id->first == id->last, "id->first is not equal to id->last as expected");
 
-  mstl3_free (&mstl, 0);
+  mstl3_free (&mstl, 1);
 }
 
 TEST (read, recptr_file)

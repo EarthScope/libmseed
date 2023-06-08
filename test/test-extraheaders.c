@@ -50,10 +50,10 @@ TEST (extraheaders, get_set)
   msr = msr3_init (msr);
   REQUIRE (msr != NULL, "msr3_init() returned unexpected NULL");
 
-  msr->extra = malloc (strlen (testheaders));
-  REQUIRE (msr->extra != NULL, "Error allocating memory for msr->extra");
-  memcpy (msr->extra, testheaders, strlen (testheaders));
   msr->extralength = strlen (testheaders);
+  msr->extra = malloc (msr->extralength);
+  REQUIRE (msr->extra != NULL, "Error allocating memory for msr->extra");
+  memcpy (msr->extra, testheaders, msr->extralength);
 
   /* Matching */
   rv = mseh_exists (msr, "/FDSN/Time/Quality");
@@ -122,6 +122,50 @@ TEST (extraheaders, get_set)
   msr3_free (&msr);
 }
 
+TEST (extraheaders, mergepatch)
+{
+  MS3Record *msr = NULL;
+  char *jsondoc;
+  char *patchdoc;
+  int rv;
+
+  msr = msr3_init (msr);
+  REQUIRE (msr != NULL, "msr3_init() returned unexpected NULL");
+
+  /* Populate initial header JSON */
+  jsondoc = "{\"root\":{\"string\":\"value\"}}";
+  msr->extralength = strlen (jsondoc);
+  msr->extra = malloc (msr->extralength);
+  REQUIRE (msr->extra != NULL, "Error allocating memory for msr->extra");
+  memcpy (msr->extra, jsondoc, msr->extralength);
+
+  /* Replace /root/string value with a pointer to the whole document ("") */
+  patchdoc = "{\"root\":{\"string\":\"Updated value\"}}";
+  rv = mseh_set_ptr_r (msr, "", patchdoc, 'M', NULL);
+  CHECK (rv == 0, "mseh_set_ptr_r() returned unexpected error");
+  REQUIRE (msr->extra != NULL, "msr->extra cannot be NULL");
+  jsondoc = patchdoc;
+  CHECK_SUBSTREQ (msr->extra, jsondoc, strlen(jsondoc));
+
+  /* Add the /root/array value with pointer to /root */
+  patchdoc = "{\"array\":[1,2,3]}";
+  rv = mseh_set_ptr_r (msr, "/root", patchdoc, 'M', NULL);
+  CHECK (rv == 0, "mseh_set_ptr_r() returned unexpected error");
+  REQUIRE (msr->extra != NULL, "msr->extra cannot be NULL");
+  jsondoc = "{\"root\":{\"string\":\"Updated value\",\"array\":[1,2,3]}}";
+  CHECK_SUBSTREQ (msr->extra, jsondoc, strlen(jsondoc));
+
+  /* Remove /root/string, /root/array, and add /root/boolean */
+  patchdoc = "{\"root\":{\"string\":null,\"array\":null,\"boolean\":true}}";
+  rv = mseh_set_ptr_r (msr, "", patchdoc, 'M', NULL);
+  CHECK (rv == 0, "mseh_set_ptr_r() returned unexpected error");
+  REQUIRE (msr->extra != NULL, "msr->extra cannot be NULL");
+  jsondoc = "{\"root\":{\"boolean\":true}}";
+  CHECK_SUBSTREQ (msr->extra, jsondoc, strlen(jsondoc));
+
+  msr3_free (&msr);
+}
+
 TEST (extraheaders, internal)
 {
   MS3Record *msr = NULL;
@@ -185,4 +229,6 @@ TEST (extraheaders, internal)
   rv = mseh_get_number (msr, "/root/array/1", &getnum);
   CHECK (rv == 0, "mseh_get_number() returned unexpected non-match");
   CHECK (getnum == 123.456, "mseh_get_number() did not return expected value");
+
+  msr3_free (&msr);
 }

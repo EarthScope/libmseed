@@ -244,7 +244,6 @@ TEST (write, trace)
   REQUIRE (rv == 4, "mstl3_writemseed() return unexpected value");
   CHECK (!cmpfiles (TESTFILE_STEIM2_V3 ".trace", "data/reference-" TESTFILE_STEIM2_V3), "Steim2 encoding trace write mismatch");
 
-  mstl->traces.next[0]->first->datasamples = NULL;
   mstl3_free (&mstl, 0);
 
   msr->datasamples = NULL;

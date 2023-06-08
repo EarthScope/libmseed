@@ -396,6 +396,7 @@ TEST (read, selection)
   CHECK (msr->starttime == nstime, "Selection read, unexpected record start time");
 
   ms3_readmsr_selection(&msfp, &msr, NULL, NULL, NULL, flags, NULL, 0);
+  ms3_freeselections (selections);
 }
 
 TEST (read, oddball)
