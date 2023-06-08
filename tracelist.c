@@ -2157,7 +2157,7 @@ mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
   int tracecnt = 0;
   int segcnt = 0;
 
-  char versioned_sid[LM_SIDLEN] = {0};
+  char versioned_sid[LM_SIDLEN + 10] = {0};
   char *display_sid = NULL;
 
   if (!mstl)
@@ -2182,7 +2182,7 @@ mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
     /* Generated versioned SID if requested */
     if (versions)
     {
-      snprintf (versioned_sid, LM_SIDLEN, "%s#%u", id->sid, id->pubversion);
+      snprintf (versioned_sid, sizeof(versioned_sid), "%s#%u", id->sid, id->pubversion);
       display_sid = versioned_sid;
     }
     else
