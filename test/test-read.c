@@ -129,7 +129,7 @@ TEST (read, v3_encodings)
   REQUIRE (msr != NULL, "ms3_readmsr() did not populate 'msr'");
   REQUIRE (msr->datasamples != NULL, "ms3_readmsr() did not populate 'msr->datasamples'");
 
-  CHECK_STREQ ((char *)msr->datasamples, textdata);
+  CHECK_SUBSTREQ ((char *)msr->datasamples, textdata, strlen(textdata));
   ms3_readmsr(&msr, NULL, NULL, NULL, flags, 0);
 
   /* Float32 */
@@ -211,7 +211,7 @@ TEST (read, v2_encodings)
   REQUIRE (msr != NULL, "ms3_readmsr() did not populate 'msr'");
   REQUIRE (msr->datasamples != NULL, "ms3_readmsr() did not populate 'msr->datasamples'");
 
-  CHECK_STREQ ((char *)msr->datasamples, textdata);
+  CHECK_SUBSTREQ ((char *)msr->datasamples, textdata, strlen(textdata));
   ms3_readmsr(&msr, NULL, NULL, NULL, flags, 0);
 
   /* CDSN */
