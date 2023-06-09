@@ -2038,7 +2038,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
       switch (seg->sampletype)
       {
       case 'a':
-        msr->encoding = DE_ASCII;
+        msr->encoding = DE_TEXT;
         break;
       case 'f':
         msr->encoding = DE_FLOAT32;

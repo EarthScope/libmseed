@@ -1047,13 +1047,13 @@ msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize)
 
   /* If a fixed sample length encoding, calculate size and use if less
    * than otherwise determined. */
-  if (msr->encoding == DE_ASCII ||
+  if (msr->encoding == DE_TEXT ||
       msr->encoding == DE_INT16 || msr->encoding == DE_INT32 ||
       msr->encoding == DE_FLOAT32 || msr->encoding == DE_FLOAT64)
   {
     switch (msr->encoding)
     {
-    case DE_ASCII:
+    case DE_TEXT:
       samplebytes = 1;
       break;
     case DE_INT16:
@@ -1309,7 +1309,7 @@ ms_decode_data (const void *input, size_t inputsize, uint8_t encoding,
   /* Decode data samples according to encoding */
   switch (encoding)
   {
-  case DE_ASCII:
+  case DE_TEXT:
     if (verbose > 1)
       ms_log (0, "%s: Decoding ASCII data\n", (sid) ? sid : "");
 

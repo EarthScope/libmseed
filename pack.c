@@ -71,7 +71,7 @@ static uint32_t ms_timestr2btime (const char *timestr, uint8_t *btime, char *sid
  *
  * The following data encodings and expected @ref MS3Record.sampletype
  * are supported:
- *   - ::DE_ASCII (0), text (ASCII), expects type \c 'a'
+ *   - ::DE_TEXT (0), Text, expects type \c 'a'
  *   - ::DE_INT16 (1), 16-bit integer, expects type \c 'i'
  *   - ::DE_INT32 (3), 32-bit integer, expects type \c 'i'
  *   - ::DE_FLOAT32 (4), 32-bit float (IEEE), expects type \c 'f'
@@ -230,7 +230,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   if (msr->numsamples <= 0)
   {
     /* Set encoding to ASCII for consistency and to reduce expectations */
-    *pMS3FSDH_ENCODING(rawrec) = DE_ASCII;
+    *pMS3FSDH_ENCODING(rawrec) = DE_TEXT;
 
     /* Calculate CRC (with CRC field set to 0) and set */
     memset (pMS3FSDH_CRC(rawrec), 0, sizeof(uint32_t));
@@ -663,7 +663,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   if (msr->numsamples <= 0)
   {
     /* Set encoding to ASCII for consistency and to reduce expectations */
-    *pMS2B1000_ENCODING (rawrec + 48) = DE_ASCII;
+    *pMS2B1000_ENCODING (rawrec + 48) = DE_TEXT;
 
     /* Set empty part of record to zeros */
     memset (rawrec + headerlen, 0, msr->reclen - headerlen);
@@ -1579,7 +1579,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
   /* Decide if this is a format that we can encode */
   switch (encoding)
   {
-  case DE_ASCII:
+  case DE_TEXT:
     if (sampletype != 'a')
     {
       ms_log (2, "%s: Sample type must be ascii (a) for ASCII text encoding not '%c'\n",

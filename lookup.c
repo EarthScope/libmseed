@@ -74,7 +74,7 @@ ms_encoding_sizetype (const uint8_t encoding, uint8_t *samplesize, char *samplet
 {
   switch (encoding)
   {
-  case DE_ASCII:
+  case DE_TEXT:
     if (samplesize)
       *samplesize = 1;
     if (sampletype)

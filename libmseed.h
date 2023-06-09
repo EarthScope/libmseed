@@ -1351,6 +1351,9 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
 
 /** @} */
 
+/* Mapping of legacy DE_ASCII to DE_TEXT */
+#define DE_ASCII DE_TEXT
+
 /** @addtogroup encoding-values
     @brief Data encoding type defines
 
@@ -1359,7 +1362,7 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
     be used anywhere and encoding value is needed.
 
     @{ */
-#define DE_ASCII       0            //!< ASCII (text) encoding
+#define DE_TEXT        0            //!< Text encoding (UTF-8)
 #define DE_INT16       1            //!< 16-bit integer
 #define DE_INT32       3            //!< 32-bit integer
 #define DE_FLOAT32     4            //!< 32-bit float (IEEE)
