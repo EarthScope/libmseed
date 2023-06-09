@@ -191,7 +191,7 @@ main (int argc, char **argv)
   {
     msr->numsamples  = strlen (textdata);
     msr->datasamples = textdata;
-    msr->sampletype  = 'a';
+    msr->sampletype  = 't';
   }
   else if (encoding == DE_FLOAT32)
   {

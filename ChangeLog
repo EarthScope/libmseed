@@ -1,5 +1,6 @@
 2023.160:
 	- Add FAQ to documentation and update example code to match API changes.
+	- Change sample type for text encoding to 't', value 'a' still supported.
 
 2023.159:
 	WARNING: API change as follows:

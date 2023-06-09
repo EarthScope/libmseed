@@ -71,7 +71,7 @@ static uint32_t ms_timestr2btime (const char *timestr, uint8_t *btime, char *sid
  *
  * The following data encodings and expected @ref MS3Record.sampletype
  * are supported:
- *   - ::DE_TEXT (0), Text, expects type \c 'a'
+ *   - ::DE_TEXT (0), Text, expects type \c 't'
  *   - ::DE_INT16 (1), 16-bit integer, expects type \c 'i'
  *   - ::DE_INT32 (3), 32-bit integer, expects type \c 'i'
  *   - ::DE_FLOAT32 (4), 32-bit float (IEEE), expects type \c 'f'
@@ -229,7 +229,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   /* Short cut: if there are no samples, record packing is complete */
   if (msr->numsamples <= 0)
   {
-    /* Set encoding to ASCII for consistency and to reduce expectations */
+    /* Set encoding to text for consistency and to reduce expectations */
     *pMS3FSDH_ENCODING(rawrec) = DE_TEXT;
 
     /* Calculate CRC (with CRC field set to 0) and set */
@@ -662,7 +662,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   /* Short cut: if there are no samples, record packing is complete */
   if (msr->numsamples <= 0)
   {
-    /* Set encoding to ASCII for consistency and to reduce expectations */
+    /* Set encoding to text for consistency and to reduce expectations */
     *pMS2B1000_ENCODING (rawrec + 48) = DE_TEXT;
 
     /* Set empty part of record to zeros */
@@ -1580,15 +1580,15 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
   switch (encoding)
   {
   case DE_TEXT:
-    if (sampletype != 'a')
+    if (sampletype != 't' && sampletype != 'a')
     {
-      ms_log (2, "%s: Sample type must be ascii (a) for ASCII text encoding not '%c'\n",
+      ms_log (2, "%s: Sample type must be text (t) for text encoding not '%c'\n",
               sid, sampletype);
       return -1;
     }
 
     if (verbose > 1)
-      ms_log (0, "%s: Packing ASCII data\n", sid);
+      ms_log (0, "%s: Packing text data\n", sid);
 
     nsamples = msr_encode_text ((char *)src, maxsamples, (char *)dest, maxdatabytes);
 

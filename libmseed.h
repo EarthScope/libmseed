@@ -331,7 +331,7 @@ extern int ms_md2doy (int year, int month, int mday, int *yday);
     @brief Data sample types used by the library.
 
     Sample types are represented using a single character as follows:
-    - \c 'a' - Text (ASCII) data samples
+    - \c 't' - Text data samples
     - \c 'i' - 32-bit integer data samples
     - \c 'f' - 32-bit float (IEEE) data samples
     - \c 'd' - 64-bit float (IEEE) data samples

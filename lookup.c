@@ -27,7 +27,7 @@
  *
  * @param[in] sampletype Library sample type code:
  * @parblock
- *   - \c 'a' - Text/ASCII data type
+ *   - \c 't' - Text data type
  *   - \c 'i' - 32-bit integer data type
  *   - \c 'f' - 32-bit float data type
  *   - \c 'd' - 64-bit float (double) data type
@@ -40,6 +40,7 @@ ms_samplesize (const char sampletype)
 {
   switch (sampletype)
   {
+  case 't':
   case 'a':
     return 1;
     break;
@@ -78,7 +79,7 @@ ms_encoding_sizetype (const uint8_t encoding, uint8_t *samplesize, char *samplet
     if (samplesize)
       *samplesize = 1;
     if (sampletype)
-      *sampletype = 'a';
+      *sampletype = 't';
     break;
   case DE_INT16:
   case DE_INT32:

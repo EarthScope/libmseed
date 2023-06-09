@@ -1,5 +1,5 @@
 /***********************************************************************
- * Routines for packing text/ASCII, INT_16, INT_32, FLOAT_32, FLOAT_64,
+ * Routines for packing Text, INT_16, INT_32, FLOAT_32, FLOAT_64,
  * STEIM1 and STEIM2 data records.
  *
  * This file is part of the miniSEED Library.

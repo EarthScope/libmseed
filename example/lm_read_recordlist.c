@@ -154,7 +154,7 @@ main (int argc, char **argv)
         {
           ms_log (0, "DATA (%" PRId64 " samples) of type '%c':\n", seg->numsamples, seg->sampletype);
 
-          if (sampletype == 'a')
+          if (sampletype == 't')
           {
             printf ("%*s",
                     (seg->numsamples > INT_MAX) ? INT_MAX : (int)seg->numsamples,

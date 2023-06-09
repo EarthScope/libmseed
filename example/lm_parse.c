@@ -109,25 +109,25 @@ main (int argc, char **argv)
         {
           ms_log (2, "Unrecognized sample type: '%c'\n", msr->sampletype);
         }
-        if (msr->sampletype == 'a')
+        if (msr->sampletype == 't')
         {
-          char *ascii = (char *)msr->datasamples;
+          char *text = (char *)msr->datasamples;
           int length  = msr->numsamples;
 
-          ms_log (0, "ASCII Data:\n");
+          ms_log (0, "Text data:\n");
 
           /* Print maximum log message segments */
           while (length > (MAX_LOG_MSG_LENGTH - 1))
           {
-            ms_log (0, "%.*s", (MAX_LOG_MSG_LENGTH - 1), ascii);
-            ascii += MAX_LOG_MSG_LENGTH - 1;
+            ms_log (0, "%.*s", (MAX_LOG_MSG_LENGTH - 1), text);
+            text += MAX_LOG_MSG_LENGTH - 1;
             length -= MAX_LOG_MSG_LENGTH - 1;
           }
 
-          /* Print any remaining ASCII and add a newline */
+          /* Print any remaining TEXT and add a newline */
           if (length > 0)
           {
-            ms_log (0, "%.*s\n", length, ascii);
+            ms_log (0, "%.*s\n", length, text);
           }
           else
           {

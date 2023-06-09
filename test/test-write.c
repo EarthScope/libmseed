@@ -52,7 +52,7 @@ TEST (write, msr)
   msr->encoding    = DE_TEXT;
   msr->numsamples  = strlen (textdata);
   msr->datasamples = textdata;
-  msr->sampletype  = 'a';
+  msr->sampletype  = 't';
 
   rv = msr3_writemseed (msr, TESTFILE_TEXT_V3, 1, flags, 0);
   REQUIRE (rv > 0, "msr3_writemseed() return unexpected value");
@@ -131,7 +131,7 @@ TEST (write, msr)
   msr->encoding    = DE_TEXT;
   msr->numsamples  = strlen (textdata);
   msr->datasamples = textdata;
-  msr->sampletype  = 'a';
+  msr->sampletype  = 't';
 
   rv = msr3_writemseed (msr, TESTFILE_TEXT_V2, 1, flags, 0);
   REQUIRE (rv > 0, "msr3_writemseed() return unexpected value");

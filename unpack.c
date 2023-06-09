@@ -999,9 +999,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
  * 2.x the raw record is expected to be located at the
  * ::MS3Record.record pointer.
  *
- * When the encoding is a fixed length per sample (text/ASCII,
- * integers or floats), calculate the data size based on the sample
- * count and use if less than size determined otherwise.
+ * When the encoding is a fixed length per sample (text, integers,
+ * or floats), calculate the data size based on the sample count and
+ * use if less than size determined otherwise.
  *
  * When the encoding is Steim1 or Steim2, search for 64-byte padding
  * frames (all zeros) at the end of the payload and remove from the
@@ -1099,7 +1099,7 @@ msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize)
  * The packed/encoded data is accessed in the record indicated by
  * ::MS3Record.record and the unpacked samples are placed in
  * ::MS3Record.datasamples.  The resulting data samples are either
- * text (ASCII) characters, 32-bit integers, 32-bit floats or 64-bit
+ * text characters, 32-bit integers, 32-bit floats or 64-bit
  * floats in host byte order.
  *
  * An internal buffer is allocated if the encoded data is not aligned
@@ -1311,7 +1311,7 @@ ms_decode_data (const void *input, size_t inputsize, uint8_t encoding,
   {
   case DE_TEXT:
     if (verbose > 1)
-      ms_log (0, "%s: Decoding ASCII data\n", (sid) ? sid : "");
+      ms_log (0, "%s: Decoding TEXT data\n", (sid) ? sid : "");
 
     nsamples = (int32_t)samplecount;
     if (nsamples > 0)
