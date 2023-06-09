@@ -1,0 +1,110 @@
+/**
+@page page-faq Frequency asked questions
+
+@tableofcontents
+
+@section faq-list FAQs
+
+@subsection faq-1 How do I read/write data from/to files?
+
+The short answer is to use ms3_readmsr(), ms3_readtracelist(), and ms3_writemsr().
+You can find descriptions and code examples in the @ref page-tutorial and @ref page-examples sections.
+
+@subsection faq-2 Can I read/write data from/to memory buffers?
+
+Yes!  Use msr3_parse() to read data from a memory buffer, and msr3_pack() to write data to a memory buffer.
+The msr3_pack() function accepts a callback function that is called when records are completed, from there
+the caller can do whatever is desired with the record.
+
+@subsection faq-3 How do I read data from a URL?
+
+The library includes support for reading from URLs using <a class="el" href="https://curl.se/libcurl/">libcurl</a>.
+To use this feature, the library must be compiled with **LIBMSEED_URL** defined, and the program must be
+linked with both this library and libcurl.
+
+The stream/file reading functions in the library will automatically detect URLs versus local files
+and there is no need to do anything special to use this feature.
+
+Specifics of the URL support can be configured with @ref ms3_url_useragent(), @ref ms3_url_userpassword(),
+and @ref ms3_url_addheader().
+
+To disable TLS/SSL peer and host verification set the **LIBMSEED_SSL_NOVERIFY** environment variable.
+
+@subsection faq-4 miniSEED is simple, why is a library needed?
+
+Indeed, a major advantage of miniSEED is that it is relatively simple.  In specific cases, reading
+and even writing of miniSEED can a implemented with very little code.  However, there are many
+combinations possible in record construction, data encodings, record lengths, proper time determination,
+endianess, etc. which make the general case non-trivial.  With 2 versions of the format that are not
+binary compatible, the general case becomes even more complex.
+
+<em>Importantly</em>, the library handles the task of re-assembling continuous time series data from independent,
+and arbitrarily organized, miniSEED records.  This "beyond miniSEED" support no small task, and is required
+for most use cases.
+
+Furthermore, the library contains optimizations for handling large volumes and highly-multiplexed data,
+as well efficiently dealing with historical quirks and data problems.
+
+@subsection faq-5 Can I use libmseed strictly with miniSEED version 2?
+
+Yes.  The library is backwards compatible with miniSEED version 2, and will automatically detect the
+version of data being read.  Version 2 records can be created by setting the @ref MSF_PACKVER2 flag
+when calling the pack or write functions.
+
+@subsection faq-6 I need to use separate FDSN identifiers of Network, Station, Location and Channel.
+
+<em>and what is the deal with this new Source Identifier?</em>
+
+In 2020 the FDSN approved the <a class="el" href="https://docs.fdsn.org/projects/source-identifiers">Source Identifier</a>
+specification to overcome the limitations of <a class="el" href="https://fdsn.org/pdf/SEEDManual_V2.4.pdf">SEED</a>
+network, station, location, and channel codes.
+In particular length limitations, instrument-type code depletion, and provide a standard way to combine them.
+This specification is a superset of SEED codes and is backwards compatible as long as the codes are short
+enough to fit into SEED limitations.
+
+As of major version 3, the library adopted the FDSN Source Identifer, often abbreviated to \a SID, replacing
+the previous representation that was very similar.
+
+You can use the @ref ms_sid2nslc() and @ref ms_nslc2sid() routines to convert between the two representations.
+
+Except for potentially larger individual codes, the major difference in the two representations is the
+\a channel code.  In the SEED specification this is a fixed 3-character code, while in the FDSN Source Identifier
+specification the channel is 3 codes separated by underscores, with each code potentially being larger than a
+single character.  The library is agnostic to form of a channel reprsentation, accepting either and converting
+between them whenever possible and appropriate.
+
+@subsection faq-7 The library API changed! Why? How do I port my libmseed 2.x program to the 3.x API?
+
+Starting with major version 3 of the library the internal data model was changed to be based on miniSEED format
+version 3.  This relatively large structural change required API changes, and the opportunity was taken To
+improve the API in other ways.
+
+See the @ref porting-guide.
+
+@subsection faq-8 I'm using the library and would like to cite it.  How do I do that?
+
+A publication is planned and will be added here when available.
+
+For now, please cite the GitHub repository: https://github.com/EarthScope/libmseed
+
+Thank you!
+
+@subsection faq-9 This library sucks.  What can I do?
+
+It won't be everyone's cup of tea.  Some alternative libraries are:
+
+P. Crotwell's <a class="el" href="https://www.seis.sc.edu/seisFile.html">seisFile</a> - Java library with miniSEED support.
+
+D. Neuhauser's <a class="el" href="https://www.ncedc.org/qug/software/ucb/">Qlib2</a> - C library with miniSEED support.
+
+(happy to add more here, please let me know!)
+
+@subsection faq-10 This library is great, but doesn't do something I need.  What can I do?  How can I contribute?
+
+Contributions of ideas, problems reports, and code are welcome!
+
+Please <a class="el" href="https://github.com/EarthScope/libmseed/issues">post issues</a> to the repository.
+
+Code contributions are best submitted as <a class="el" href="https://github.com/EarthScope/libmseed/pulls">pull requests</a>.
+
+*/

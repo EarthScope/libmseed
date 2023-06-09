@@ -49,7 +49,7 @@ TEST (write, msr)
   /* Text encoding */
   strcpy (msr->sid, "FDSN:XX_TEST__L_O_G");
   msr->samprate    = 0;
-  msr->encoding    = DE_ASCII;
+  msr->encoding    = DE_TEXT;
   msr->numsamples  = strlen (textdata);
   msr->datasamples = textdata;
   msr->sampletype  = 'a';
@@ -128,7 +128,7 @@ TEST (write, msr)
   /* Text encoding */
   strcpy (msr->sid, "FDSN:XX_TEST__L_O_G");
   msr->samprate    = 0;
-  msr->encoding    = DE_ASCII;
+  msr->encoding    = DE_TEXT;
   msr->numsamples  = strlen (textdata);
   msr->datasamples = textdata;
   msr->sampletype  = 'a';

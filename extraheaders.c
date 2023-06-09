@@ -135,7 +135,7 @@ parse_json (char *jsonstring, size_t length, LM_PARSED_JSON *parsed)
  * - \c 'b' - \a value of type \a int (boolean value of 0 or 1)
  * @endparblock
  * @param[in] maxlength Maximum length of string value
- * @param[in] parsed Parsed state for multiple operations, can be NULL
+ * @param[in] parsestate Parsed state for multiple operations, can be NULL
  *
  * @retval 0 on success
  * @retval 1 when the value was not found
@@ -299,7 +299,7 @@ mseh_get_ptr_r (MS3Record *msr, const char *ptr,
  * - \c 'V' - \a value is type \a yyjson_mut_val* to _set/replace_ (internal use)
  * - \c 'A' - \a value is type \a yyjson_mut_val* to _append to array_ (internal use)
  * @endparblock
- * @param[in] parsed Parsed state for multiple operations, can be NULL
+ * @param[in] parsestate Parsed state for multiple operations, can be NULL
  *
  * @retval 0 on success, otherwise a (negative) libmseed error code.
  *
@@ -483,7 +483,7 @@ mseh_set_ptr_r (MS3Record *msr, const char *ptr,
  * @param[in] msr Parsed miniSEED record to query
  * @param[in] ptr Header value desired, specified in dot notation
  * @param[in] eventdetection Structure with event detection values
- * @param[in] parsed Parsed state for multiple operations, can be NULL
+ * @param[in] parsestate Parsed state for multiple operations, can be NULL
  *
  * @returns 0 on success, otherwise a (negative) libmseed error code.
  *
@@ -619,7 +619,7 @@ mseh_add_event_detection_r (MS3Record *msr, const char *ptr,
  * @param[in] msr Parsed miniSEED record to query
  * @param[in] ptr Header value desired, specified in dot notation
  * @param[in] calibration Structure with calibration values
- * @param[in] parsed Parsed state for multiple operations, can be NULL
+ * @param[in] parsestate Parsed state for multiple operations, can be NULL
  *
  * @returns 0 on success, otherwise a (negative) libmseed error code.
  *
@@ -811,7 +811,7 @@ mseh_add_calibration_r (MS3Record *msr, const char *ptr,
  * @param[in] msr Parsed miniSEED record to query
  * @param[in] ptr Header value desired, specified in dot notation
  * @param[in] exception Structure with timing exception values
- * @param[in] parsed Parsed state for multiple operations, can be NULL
+ * @param[in] parsestate Parsed state for multiple operations, can be NULL
  *
  * @returns 0 on success, otherwise a (negative) libmseed error code.
  *
@@ -903,7 +903,7 @@ mseh_add_timing_exception_r (MS3Record *msr, const char *ptr,
  * @param[in] msr Parsed miniSEED record to query
  * @param[in] ptr Header value desired, specified in dot notation
  * @param[in] recenter Structure with recenter values
- * @param[in] parsed Parsed state for multiple operations, can be NULL
+ * @param[in] parsestate Parsed state for multiple operations, can be NULL
  *
  * @returns 0 on success, otherwise a (negative) libmseed error code.
  *
@@ -987,7 +987,7 @@ mseh_add_recenter_r (MS3Record *msr, const char *ptr, MSEHRecenter *recenter,
  * created by mseh_set_ptr_r().
  *
  * @param[in] msr ::MS3Record to generate extra headers for
- * @param[in] parsed Internal parsed state associated with \a msr
+ * @param[in] parsestate Internal parsed state associated with \a msr
  *
  * @returns Length of extra headers on success, otherwise a (negative) libmseed error code
  *
@@ -1045,6 +1045,8 @@ mseh_serialize (MS3Record *msr, LM_PARSED_JSON **parsestate)
  * Free the memory associated with JSON data parsed by mseh_get_ptr_r()
  * or mseh_set_ptr_r(), specifically the data at the \a parsestate pointer.
  *
+ * @param[in] parsestate Internal parsed state associated with \a msr
+ *
  * \sa mseh_get_ptr_r()
  * \sa mseh_set_ptr_r()
  ***************************************************************************/
@@ -1074,6 +1076,9 @@ mseh_free_parsestate (LM_PARSED_JSON **parsestate)
  *
  * Output is printed in a pretty, formatted form for readability and
  * the anonymous, root object container (the outer {}) is not printed.
+ *
+ * @param[in] msr ::MS3Record with extra headers to pring
+ * @param[in] indent Number of spaces to indent output
  *
  * @returns 0 on success and a (negative) libmseed error code on error.
  ***************************************************************************/

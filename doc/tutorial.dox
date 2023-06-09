@@ -38,7 +38,7 @@ int main ()
   int verbose    = 0;
   int retcode;
 
-  while ((retcode = ms3_readmsr (&msr, filename, NULL, NULL, flags, verbose)) == MS_NOERROR)
+  while ((retcode = ms3_readmsr (&msr, filename, flags, verbose)) == MS_NOERROR)
   {
     /* Do something with the record here, e.g. print */
     msr3_print (msr, verbose);
@@ -48,7 +48,7 @@ int main ()
     ms_log (2, "Cannot read %s: %s\n", filename, ms_errorstr (retcode));
 
   /* Cleanup memory and close file */
-  ms3_readmsr (&msr, NULL, NULL, NULL, flags, verbose);
+  ms3_readmsr (&msr, NULL, flags, verbose);
 
   return 0;
 }
@@ -78,16 +78,17 @@ int main ()
   char *filename1    = "datafile1.mseed";
   char *filename2    = "datafile2.mseed";
   MS3TraceList *mstl = NULL;
+  MS3Tolerance tol   = MS3Tolerance_INITIALIZER;
   uint32_t flags     = MSF_SKIPNOTDATA & MSF_UNPACKDATA;
   int verbose        = 0;
   int retcode;
 
-  retcode = ms3_readtracelist (&mstl, filename1, -1.0, -1.0, 0, flags, verbose);
+  retcode = ms3_readtracelist (&mstl, filename1, &tol, 0, flags, verbose);
 
   if (retcode != MS_NOERROR)
     ms_log (2, "Cannot read %s: %s\n", filename1, ms_errorstr (retcode));
 
-  retcode = ms3_readtracelist (&mstl, filename2, -1.0, -1.0, 0, flags, verbose);
+  retcode = ms3_readtracelist (&mstl, filename2, &tol, 0, flags, verbose);
 
   if (retcode != MS_NOERROR)
     ms_log (2, "Cannot read %s: %s\n", filename2, ms_errorstr (retcode));

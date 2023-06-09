@@ -1,3 +1,6 @@
+2023.160:
+	- Add FAQ to documentation and update example code to match API changes.
+
 2023.159:
 	WARNING: API change as follows:
 	The `fpos` and `last` arguments of ms3_readmsr(), ms3_readmsr_r(),

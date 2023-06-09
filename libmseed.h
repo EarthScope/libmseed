@@ -660,7 +660,7 @@ extern void mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
     - set the User-Agent header with @ref ms3_url_useragent()
     - set username and password for authentication with @ref ms3_url_userpassword()
     - set arbitrary headers with @ref ms3_url_addheader()
-    - disable SSL peer and host verficiation by setting **LIBMSEED_SSL_NOVERIFY** environment variable
+    - disable TLS/SSL peer and host verficiation by setting **LIBMSEED_SSL_NOVERIFY** environment variable
 
     Diagnostics: Setting environment variable **LIBMSEED_URL_DEBUG** enables
     detailed verbosity of URL protocol exchanges.

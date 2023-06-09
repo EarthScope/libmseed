@@ -11,7 +11,7 @@
     </tab>
     <tab type="classes" visible="no" title="">
       <tab type="classlist" visible="yes" title="" intro=""/>
-      <tab type="classindex" visible="$ALPHABETICAL_INDEX" title=""/> 
+      <tab type="classindex" visible="$ALPHABETICAL_INDEX" title=""/>
       <tab type="hierarchy" visible="yes" title="" intro=""/>
       <tab type="classmembers" visible="yes" title="" intro=""/>
     </tab>
@@ -21,6 +21,7 @@
     </tab>
     <tab type="globals" visible="yes" title="Functions, etc." intro=""/>
     <tab type="user" visible="yes" url="@ref page-examples" title="Examples" intro="library examples"/>
+    <tab type="user" visible="yes" url="@ref page-faq" title="FAQ" intro="FAQ"/>
   </navindex>
 
   <!-- Layout definition for a class page -->
