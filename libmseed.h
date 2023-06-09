@@ -958,29 +958,17 @@ extern int mseh_set_ptr_r (MS3Record *msr, const char *ptr,
                            void *value, char type,
                            LM_PARSED_JSON **parsestate);
 
-#define mseh_add_event_detection(msr, ptr, eventdetection) \
-  mseh_add_event_detection_r (msr, ptr, eventdetection, NULL)
-
 extern int mseh_add_event_detection_r (MS3Record *msr, const char *ptr,
                                        MSEHEventDetection *eventdetection,
                                        LM_PARSED_JSON **parsestate);
-
-#define mseh_add_calibration(msr, ptr, calibration) \
-  mseh_add_calibration_r (msr, ptr, calibration, NULL)
 
 extern int mseh_add_calibration_r (MS3Record *msr, const char *ptr,
                                    MSEHCalibration *calibration,
                                    LM_PARSED_JSON **parsestate);
 
-#define mseh_add_timing_exception(msr, ptr, exception) \
-  mseh_add_timing_exception_r (msr, ptr, exception, NULL)
-
 extern int mseh_add_timing_exception_r (MS3Record *msr, const char *ptr,
                                         MSEHTimingException *exception,
                                         LM_PARSED_JSON **parsestate);
-
-#define mseh_add_recenter(msr, ptr, recenter) \
-  mseh_add_recenter_r (msr, ptr, recenter, NULL)
 
 extern int mseh_add_recenter_r (MS3Record *msr, const char *ptr,
                                 MSEHRecenter *recenter,
@@ -1356,8 +1344,7 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
 
 /** @} */
 
-/* Mapping of legacy DE_ASCII to DE_TEXT */
-#define DE_ASCII DE_TEXT
+#define DE_ASCII DE_TEXT //!< Mapping of legacy DE_ASCII to DE_TEXT
 
 /** @addtogroup encoding-values
     @brief Data encoding type defines
