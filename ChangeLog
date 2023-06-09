@@ -1,4 +1,9 @@
 2023.159:
+	WARNING: API change as follows:
+	The `fpos` and `last` arguments of ms3_readmsr(), ms3_readmsr_r(),
+	and ms3_readmsr_selection() have been removed.  The same capabilities
+	is avaiable and details are included in the porting guide.
+
 	- Add JSON Merge Patch capability to mseh_set_ptr_r().
 	- Fix zero-padding of empty bytes following data in miniSEED v2 creation.
 	- Rename DE_ASCII to DE_TEXT to generalize to UTF-8, legacy mapping provided.

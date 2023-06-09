@@ -69,12 +69,12 @@ libmseed_url_support (void)
  * \ref MessageOnError - this function logs a message on error
  *********************************************************************/
 int
-ms3_readmsr (MS3Record **ppmsr, const char *mspath, int64_t *fpos,
-             int8_t *last, uint32_t flags, int8_t verbose)
+ms3_readmsr (MS3Record **ppmsr, const char *mspath,
+             uint32_t flags, int8_t verbose)
 {
   MS3FileParam *msfp = &gMS3FileParam;
 
-  return ms3_readmsr_selection (&msfp, ppmsr, mspath, fpos, last,
+  return ms3_readmsr_selection (&msfp, ppmsr, mspath,
                                 flags, NULL, verbose);
 } /* End of ms3_readmsr() */
 
@@ -97,9 +97,9 @@ ms3_readmsr (MS3Record **ppmsr, const char *mspath, int64_t *fpos,
  *********************************************************************/
 int
 ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
-               int64_t *fpos, int8_t *last, uint32_t flags, int8_t verbose)
+               uint32_t flags, int8_t verbose)
 {
-  return ms3_readmsr_selection (ppmsfp, ppmsr, mspath, fpos, last,
+  return ms3_readmsr_selection (ppmsfp, ppmsr, mspath,
                                 flags, NULL, verbose);
 } /* End of ms_readmsr_r() */
 
@@ -162,16 +162,6 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  * safe and can be used to read multiple streams in parallel as long as
  * the stream reading parameters are managed appropriately.
  *
- * If \a *fpos is not NULL it will be updated to reflect the stream
- * position (offset from the beginning in bytes) from where the
- * returned record was read.  As a special case, if \a *fpos is not
- * NULL and the value it points to is less than 0 this will be
- * interpreted as a (positive) starting offset from which to begin
- * reading data allowing the caller to specify an initial read offset.
- *
- * If \a *last is not NULL it will be set to 1 when the last record in
- * the stream is being returned, otherwise it will be 0.
- *
  * The \a flags argument are bit flags used to control the reading
  * process.  The following flags are supported:
  *  - ::MSF_SKIPNOTDATA - skip input that cannot be identified as miniSEED
@@ -189,8 +179,8 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  * selections will be skipped.
  *
  * After reading all the records in a stream the calling program should
- * call this routine one last time with \a mspath set to NULL.  This
- * will close the stream and free allocated memory.
+ * call this routine a final time with \a mspath set to NULL.  This
+ * will close the input stream and free allocated memory.
  *
  * @param[out] ppmsfp Pointer-to-pointer of an ::MS3FileParam, which
  * contains the state of stream reading across iterative calls of this
@@ -200,13 +190,6 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  * contain a parsed record on success.
  *
  * @param[in] mspath File or URL to read
- *
- * @param[in,out] fpos Position in stream of last returned record as a
- * byte offset.  On initial call, if the referenced value is negative
- * it will be used as a starting position.
- *
- * @param[out] last Flag to indicate when the returned record is the
- * last one in the stream.
  *
  * @param[in] flags Flags used to control parsing, see @ref
  * control-flags
@@ -227,8 +210,7 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  *********************************************************************/
 int
 ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
-                       int64_t *fpos, int8_t *last, uint32_t flags,
-                       MS3Selections *selections, int8_t verbose)
+                       uint32_t flags, MS3Selections *selections, int8_t verbose)
 {
   MS3FileParam *msfp;
   uint32_t pflags = flags;
@@ -300,10 +282,6 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
     }
   }
 
-  /* Translate negative fpos (legacy behavior) to start offset if not otherwise set */
-  if (fpos != NULL && *fpos < 0 && msfp->startoffset == 0)
-    msfp->startoffset = *fpos * -1;
-
   /* Open the stream if needed, use stdin if path is "-" */
   if (msfp->input.handle == NULL)
   {
@@ -346,10 +324,6 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
       }
     }
   }
-
-  /* Zero the last record indicator */
-  if (last)
-    *last = 0;
 
   /* Defer data unpacking if selections are used by unsetting MSF_UNPACKDATA */
   if ((flags & MSF_UNPACKDATA) && selections)
@@ -442,15 +416,6 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
 
           if (verbose > 1)
             ms_log (0, "Read record length of %d bytes\n", (*ppmsr)->reclen);
-
-          /* Test if this is the last record if end offset is known */
-          if (last && msfp->endoffset)
-            if (((msfp->endoffset + 1) - (msfp->streampos + (*ppmsr)->reclen)) < MINRECLEN)
-              *last = 1;
-
-          /* Return file position for this record */
-          if (fpos)
-            *fpos = msfp->streampos;
 
           /* Update reading offset, stream position and record count */
           msfp->readoffset += (*ppmsr)->reclen;
@@ -673,7 +638,6 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath,
   MS3RecordPtr *recordptr = NULL;
   uint32_t dataoffset;
   uint32_t datasize;
-  int64_t fpos = 0;
   int retcode;
 
   if (!ppmstl)
@@ -695,7 +659,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath,
   }
 
   /* Loop over the input file and add each record to trace list */
-  while ((retcode = ms3_readmsr_selection (&msfp, &msr, mspath, &fpos, NULL,
+  while ((retcode = ms3_readmsr_selection (&msfp, &msr, mspath,
                                            flags, selections, verbose)) == MS_NOERROR)
   {
     seg = mstl3_addmsr_recordptr (*ppmstl, msr, (flags & MSF_RECORDLIST) ? &recordptr : NULL,
@@ -722,7 +686,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath,
       recordptr->bufferptr  = NULL;
       recordptr->fileptr    = NULL;
       recordptr->filename   = mspath;
-      recordptr->fileoffset = fpos;
+      recordptr->fileoffset = msfp->streampos - msr->reclen;
       recordptr->dataoffset = dataoffset;
       recordptr->prvtptr    = NULL;
     }
@@ -732,7 +696,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath,
   if (retcode == MS_ENDOFFILE)
     retcode = MS_NOERROR;
 
-  ms3_readmsr_selection (&msfp, &msr, NULL, NULL, NULL, 0, NULL, 0);
+  ms3_readmsr_selection (&msfp, &msr, NULL, 0, NULL, 0);
 
   return retcode;
 } /* End of ms3_readtracelist_selection() */

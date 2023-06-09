@@ -76,8 +76,7 @@ main (int argc, char **argv)
     mstl = mstl3_init (NULL);
 
   /* Loop over the input file */
-  while ((retcode = ms3_readmsr (&msr, inputfile, NULL, NULL, flags,
-                                 verbose)) == MS_NOERROR)
+  while ((retcode = ms3_readmsr (&msr, inputfile, flags, verbose)) == MS_NOERROR)
   {
     totalrecs++;
     totalsamps += msr->samplecnt;
@@ -173,7 +172,7 @@ main (int argc, char **argv)
     mstl3_printtracelist (mstl, ISOMONTHDAY_Z, 1, 1, splitversion);
 
   /* Make sure everything is cleaned up */
-  ms3_readmsr (&msr, NULL, NULL, NULL, flags, 0);
+  ms3_readmsr (&msr, NULL, flags, 0);
 
   if (mstl)
     mstl3_free (&mstl, 0);

@@ -700,7 +700,7 @@ typedef struct MS3FileParam
   int64_t startoffset; //!< INPUT: Start position in input stream
   int64_t endoffset;   //!< INPUT: End position in input stream, 0 == unknown (e.g. pipe)
   int64_t streampos;   //!< OUTPUT: Read position of input stream
-  int64_t recordcount; //!< OUTPUT: Count of records read from this file so far
+  int64_t recordcount; //!< OUTPUT: Count of records read from this stream/file so far
 
   char *readbuffer;    //!< INTERNAL: Read buffer, allocated internally
   int readlength;      //!< INTERNAL: Length of data in read buffer
@@ -718,13 +718,11 @@ typedef struct MS3FileParam
     .readoffset = 0, .flags = 0, .input = LMIO_INITIALIZER        \
   }
 
-extern int ms3_readmsr (MS3Record **ppmsr, const char *mspath, int64_t *fpos, int8_t *last,
-                        uint32_t flags, int8_t verbose);
+extern int ms3_readmsr (MS3Record **ppmsr, const char *mspath, uint32_t flags, int8_t verbose);
 extern int ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
-                          int64_t *fpos, int8_t *last, uint32_t flags, int8_t verbose);
+                          uint32_t flags, int8_t verbose);
 extern int ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
-                                  int64_t *fpos, int8_t *last, uint32_t flags,
-                                  MS3Selections *selections, int8_t verbose);
+                                  uint32_t flags, MS3Selections *selections, int8_t verbose);
 extern int ms3_readtracelist (MS3TraceList **ppmstl, const char *mspath, MS3Tolerance *tolerance,
                               int8_t splitversion, uint32_t flags, int8_t verbose);
 extern int ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath, MS3Tolerance *tolerance,

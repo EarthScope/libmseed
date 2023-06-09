@@ -86,8 +86,7 @@ main (int argc, char **argv)
   flags |= MSF_UNPACKDATA;
 
   /* Loop over the input file as a source of data */
-  while ((retcode = ms3_readmsr (&msr, inputfile, NULL, NULL, flags,
-                                 verbose)) == MS_NOERROR)
+  while ((retcode = ms3_readmsr (&msr, inputfile, flags, verbose)) == MS_NOERROR)
   {
     if (mstl3_addmsr (mstl, msr, 0, 1, flags, NULL) == NULL)
     {
@@ -136,6 +135,8 @@ main (int argc, char **argv)
           precords, psamples);
 
   /* Make sure everything is cleaned up */
+  ms3_readmsr (&msr, NULL, flags, 0);
+
   if (msr)
     msr3_free (&msr);
 

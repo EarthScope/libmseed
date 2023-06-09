@@ -75,7 +75,6 @@ static void *ReadMSFileThread (void *vfe)
   /* Loop over the input file record by record */
   while ((fe->result = ms3_readmsr_r (&msfp, &msr,
                                       fe->filename,
-                                      NULL, NULL,
                                       readflags, verbose)) == MS_NOERROR)
   {
     fe->recordcount++;
@@ -92,7 +91,7 @@ static void *ReadMSFileThread (void *vfe)
   }
 
   /* Make sure everything is cleaned up */
-  ms3_readmsr_r (&msfp, &msr, NULL, NULL, NULL, 0, 0);
+  ms3_readmsr_r (&msfp, &msr, NULL, 0, 0);
 
   return NULL;
 }

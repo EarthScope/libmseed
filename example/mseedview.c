@@ -69,8 +69,7 @@ main (int argc, char **argv)
   ms_rloginit (NULL, NULL, NULL, NULL, 10);
 
   /* Loop over the input file record by record */
-  while ((retcode = ms3_readmsr (&msr, inputfile, NULL, NULL,
-                                 flags, verbose)) == MS_NOERROR)
+  while ((retcode = ms3_readmsr (&msr, inputfile, flags, verbose)) == MS_NOERROR)
   {
     totalrecs++;
     totalsamps += msr->samplecnt;
@@ -122,7 +121,7 @@ main (int argc, char **argv)
   ms_rlog_emit (NULL, 0, verbose);
 
   /* Make sure everything is cleaned up */
-  ms3_readmsr (&msr, NULL, NULL, NULL, 0, 0);
+  ms3_readmsr (&msr, NULL, 0, 0);
 
   if (basicsum)
     ms_log (0, "Records: %" PRId64 ", Samples: %" PRId64 "\n",

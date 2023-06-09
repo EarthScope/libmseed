@@ -10,7 +10,7 @@ to 3 of the library.
 
 The recommended approach to porting is as follows:
 
--# Quickly read through the @ref porting-important, changing anything
+-# Read through the @ref porting-important, changing anything
 in the calling program that is obvious.
 
 -# Try compiling the target program with the new library and fix any
@@ -33,6 +33,13 @@ identified at compile time but may yet effect the program.
   of using @ref trace-list functionality.
 
 - ::MS3TraceLists.numtraces renamed to ::MS3TraceLists.numtraceids.
+
+- The \c fpos and \c last arguments of ::ms3_readmsr(), ::ms3_readmsr_r(),
+and ::ms3_readmsr_selection() have been removed.  The same capability is
+available using the re-entrant ('_r') functions with ::MSFileHandle (msfp)
+  - Stream/file position of returned record is (msfp->streampos - msr->reclen)
+  - Starting position of a read can be set at \c msfp->startoffset
+  - The last record read is identified by the return value of ::MS_ENDOFFILE
 
 - Convert all \c hptime_t typed variables to \c nstime_t type.
 @note the \c nstime_t type is a nanosecond epoch value, whereas the
