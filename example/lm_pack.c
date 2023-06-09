@@ -3,7 +3,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2020 Chad Trabant, IRIS Data Management Center
+ * Copyright (c) 2023 Chad Trabant, EarthScope Data Services
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@
 
 static flag verbose  = 0;
 static int reclen    = -1;
-static int encoding  = -1;
+static int encoding  = 10;
 static int byteorder = -1;
 static int msformat  = 3;
 static char *outfile = NULL;
@@ -176,7 +176,7 @@ main (int argc, char **argv)
   if (!(msr = msr3_init (msr)))
   {
     ms_log (2, "Could not allocate MS3Record, out of memory?\n");
-    return 1;
+    return -1;
   }
 
   /* Set up record parameters */
@@ -187,7 +187,7 @@ main (int argc, char **argv)
   msr->samprate = 1.0;
   msr->encoding = encoding;
 
-  if (encoding == DE_ASCII)
+  if (encoding == DE_TEXT)
   {
     msr->numsamples  = strlen (textdata);
     msr->datasamples = textdata;
@@ -211,6 +211,18 @@ main (int argc, char **argv)
     msr->datasamples = sinedata;
     msr->sampletype  = 'i';
   }
+  else if (encoding == DE_INT32)
+  {
+    msr->numsamples  = SINE_DATA_SAMPLES;
+    msr->datasamples = sinedata;
+    msr->sampletype  = 'i';
+  }
+  else if (encoding == DE_STEIM1)
+  {
+    msr->numsamples  = SINE_DATA_SAMPLES;
+    msr->datasamples = sinedata;
+    msr->sampletype  = 'i';
+  }
   else if (encoding == DE_STEIM2)
   {
     msr->numsamples  = SINE_DATA_SAMPLES - 1; /* Steim-2 can represent all but the last difference */
@@ -219,9 +231,8 @@ main (int argc, char **argv)
   }
   else
   {
-    msr->numsamples  = SINE_DATA_SAMPLES;
-    msr->datasamples = sinedata;
-    msr->sampletype  = 'i';
+    ms_log (2, "Unsupported encoding: %d\n", encoding);
+    return -1;
   }
 
   msr->samplecnt = msr->numsamples;
@@ -274,9 +285,9 @@ parameter_proc (int argcount, char **argvec)
     {
       verbose += strspn (&argvec[optind][1], "v");
     }
-    else if (strcmp (argvec[optind], "-2") == 0)
+    else if (strcmp (argvec[optind], "-F") == 0)
     {
-      msformat = 2;
+      msformat = strtol (argvec[++optind], NULL, 10);
     }
     else if (strcmp (argvec[optind], "-r") == 0)
     {
@@ -306,6 +317,12 @@ parameter_proc (int argcount, char **argvec)
   {
     ms_log (2, "No output file was specified\n\n");
     ms_log (1, "Try %s -h for usage\n", PACKAGE);
+    exit (1);
+  }
+
+  if (msformat != 2 && msformat != 3)
+  {
+    ms_log (1, "Specified format must be 2 or 3, version %d is not supported\n", msformat);
     exit (1);
   }
 
