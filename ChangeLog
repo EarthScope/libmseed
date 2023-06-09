@@ -1,4 +1,4 @@
-2023.160:
+2023.160: 3.0.14
 	- Add FAQ to documentation and update example code to match API changes.
 	- Change sample type for text encoding to 't', value 'a' still supported.
 
