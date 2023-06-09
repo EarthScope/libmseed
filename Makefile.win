@@ -4,10 +4,11 @@
 
 NODEBUG=1
 
-INCS = -I.
+INCS = /I.
 OPTS = /O2 /D_CRT_SECURE_NO_WARNINGS
 LM_LIB = libmseed.lib
 LM_DLL = libmseed.dll
+LM_DEF = libmseed.def
 
 OBJS =  fileutils.obj   \
         genutils.obj    \
@@ -31,10 +32,10 @@ OBJS =  fileutils.obj   \
 all: lib
 
 lib: $(OBJS)
-	link.exe /lib /nologo /out:$(LM_LIB) $(OBJS)
+	link.exe /lib /nologo /OUT:$(LM_LIB) $(OBJS)
 
 dll: $(OBJS)
-	link.exe /dll /nologo /out:$(LM_DLL) $(OBJS)
+	link.exe /dll /nologo /OUT:$(LM_DLL) $(OBJS)
 
 .c.obj:
 	$(CC) /nologo $(CFLAGS) $(INCS) $(OPTS) /c $<
@@ -45,5 +46,5 @@ test: lib
 
 # Clean-up directives
 clean:
-	-del a.out core *.o *.obj *% *~ $(LM_LIB) $(LM_DLL)
+	-del a.out core *.o *.obj *% *~ libmseed.exp $(LM_LIB) $(LM_DLL)
 	@pushd test && $(MAKE) /NOLOGO /f Makefile.win $@ /$(MAKEFLAGS) & popd

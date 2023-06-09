@@ -5,6 +5,7 @@ EXPORTS
    ms_nstime2timestrz
    ms_time2nstime
    ms_timestr2nstime
+   ms_mdtimestr2nstime
    ms_seedtimestr2nstime
    ms_doy2md
    ms_md2doy
@@ -12,28 +13,21 @@ EXPORTS
    msr3_pack
    msr3_repack_mseed3
    msr3_pack_header3
+   msr3_pack_header2
    msr3_unpack_data
    msr3_data_bounds
+   ms_decode_data
    msr3_init
    msr3_free
    msr3_duplicate
    msr3_endtime
    msr3_print
+   msr3_resize_buffer
    msr3_sampratehz
    msr3_host_latency
    ms3_detect
    ms_parse_raw3
    ms_parse_raw2
-   mstl3_init
-   mstl3_free
-   mstl3_addmsr
-   mstl3_readbuffer
-   mstl3_readbuffer_selection
-   mstl3_convertsamples
-   mstl3_pack
-   mstl3_printtracelist
-   mstl3_printsynclist
-   mstl3_printgaplist
    ms3_matchselect
    msr3_matchselect
    ms3_addselect
@@ -41,14 +35,32 @@ EXPORTS
    ms3_readselectionsfile
    ms3_freeselections
    ms3_printselections
+   mstl3_init
+   mstl3_free
+   mstl3_findID
+   mstl3_addmsr_recordptr
+   mstl3_readbuffer
+   mstl3_readbuffer_selection
+   mstl3_unpack_recordlist
+   mstl3_convertsamples
+   mstl3_resize_buffers
+   mstl3_pack
+   mstl3_printtracelist
+   mstl3_printsynclist
+   mstl3_printgaplist
    ms3_readmsr
    ms3_readmsr_r
    ms3_readmsr_selection
    ms3_readtracelist
    ms3_readtracelist_timewin
    ms3_readtracelist_selection
+   ms3_url_useragent
+   ms3_url_userpassword
+   ms3_url_addheader
+   ms3_url_freeheaders
    msr3_writemseed
    mstl3_writemseed
+   libmseed_url_support
    ms_sid2nslc
    ms_nslc2sid
    ms_seedchan2xchan
@@ -56,31 +68,33 @@ EXPORTS
    ms_strncpclean
    ms_strncpcleantail
    ms_strncpopen
-   mseh_get_path
-   mseh_set_path
-   mseh_add_event_detection
-   mseh_add_calibration
-   mseh_add_timing_exception
-   mseh_add_recenter
+   mseh_get_ptr_r
+   mseh_set_ptr_r
+   mseh_add_event_detection_r
+   mseh_add_calibration_r
+   mseh_add_timing_exception_r
+   mseh_add_recenter_r
+   mseh_serialize
+   mseh_free_parsestate
    mseh_print
-   ms_log
-   ms_log_l
-   ms_loginit
-   ms_loginit_l
+   ms_rlog
+   ms_rlog_l
+   ms_rloginit
+   ms_rloginit_l
+   ms_rlog_emit
+   ms_rlog_free
    ms_readleapseconds
    ms_readleapsecondfile
    ms_samplesize
+   ms_encoding_sizetype
    ms_encodingstr
    ms_errorstr
+   ms_sampletime
    ms_dabs
    ms_bigendianhost
    ms_crc32c
    ms_gswap2
-   ms_gswap3
    ms_gswap4
    ms_gswap8
-   ms_gswap2a
-   ms_gswap4a
-   ms_gswap8a
    leapsecondlist
    libmseed_memory
