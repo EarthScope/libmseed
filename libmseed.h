@@ -600,6 +600,13 @@ typedef struct MS3Tolerance
   double (*samprate) (MS3Record *msr); //!< Pointer to function that returns sample rate tolerance
 } MS3Tolerance;
 
+/** @def MS3Tolerance_INITIALIZER
+    @brief Initialializer for the tolerances ::MS3Tolerance */
+#define MS3Tolerance_INITIALIZER   \
+  {                                \
+    .time = NULL, .samprate = NULL \
+  }
+
 extern MS3TraceList* mstl3_init (MS3TraceList *mstl);
 extern void          mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr);
 extern MS3TraceID*   mstl3_findID (MS3TraceList *mstl, const char *sid, uint8_t pubversion, MS3TraceID **prev);
