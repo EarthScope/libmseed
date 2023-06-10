@@ -1190,7 +1190,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
       /* Determine which detection type: MURDOCK versus the generic type */
       if ((ehval = yyjson_ptr_get (ehiterval, "/Type")) && yyjson_is_str (ehval) &&
-          strncasecmp (yyjson_get_str (ehval), "MURDOCK", 6) == 0)
+          strncasecmp (yyjson_get_str (ehval), "MURDOCK", 7) == 0)
       {
         blockette_type = 201;
         blockette_length = 60;
@@ -1265,7 +1265,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
         yyjson_val *ehsubiterval;
         int idx = 0;
 
-        if ((ehsubarr = yyjson_ptr_get (ehiterval, "/MEDSNR")) && yyjson_is_arr (ehval))
+        if ((ehsubarr = yyjson_ptr_get (ehiterval, "/MEDSNR")) && yyjson_is_arr (ehsubarr))
         {
           yyjson_arr_iter_init (ehsubarr, &ehsubiter);
 
