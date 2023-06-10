@@ -295,7 +295,7 @@ msr3_print (MS3Record *msr, int8_t details)
   {
     ms_log (0, "%s, %d, %d, %" PRId64 " samples, %-.10g Hz, %s\n",
             msr->sid, msr->pubversion, msr->reclen,
-            msr->samplecnt, msr->samprate, time);
+            msr->samplecnt, msr3_sampratehz(msr), time);
   }
 } /* End of msr3_print() */
 
