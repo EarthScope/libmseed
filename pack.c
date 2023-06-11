@@ -970,12 +970,6 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   if (yyjson_ptr_get_str (ehroot, "/FDSN/DataQuality", &header_string) &&
       MS2_ISDATAINDICATOR (header_string[0]))
     *pMS2FSDH_DATAQUALITY (record) = header_string[0];
-  else if (msr->pubversion >= 4)
-    *pMS2FSDH_DATAQUALITY (record) = 'M';
-  else if (msr->pubversion == 3)
-    *pMS2FSDH_DATAQUALITY (record) = 'Q';
-  else if (msr->pubversion == 1)
-    *pMS2FSDH_DATAQUALITY (record) = 'R';
   else
     *pMS2FSDH_DATAQUALITY (record) = 'D';
 
