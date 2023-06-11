@@ -863,7 +863,7 @@ ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *yday,
 {
   struct tm tms;
   int64_t isec;
-  int32_t ifract;
+  int ifract;
 
   /* Reduce to Unix/POSIX epoch time and fractional seconds */
   isec   = MS_NSTIME2EPOCH (nstime);
@@ -876,9 +876,8 @@ ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *yday,
     ifract = NSTMODULUS - (-ifract);
   }
 
-  if (year || yday || hour || min || sec)
-    if (!(ms_gmtime64_r (&isec, &tms)))
-      return -1;
+  if (!(ms_gmtime64_r (&isec, &tms)))
+    return -1;
 
   if (year)
     *year = tms.tm_year + 1900;

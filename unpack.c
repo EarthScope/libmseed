@@ -796,12 +796,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       if (exception.time == NSTERROR)
         return MS_GENERROR;
 
-      /* Apply microsecond precision if non-zero */
-      if (*pMS2B500_MICROSECOND (record + blkt_offset) != 0)
-      {
-        exception.time += (nstime_t)*pMS2B500_MICROSECOND (record + blkt_offset) * (NSTMODULUS / 1000000);
-      }
-
+      exception.usec = *pMS2B500_MICROSECOND (record + blkt_offset);
       exception.receptionquality = *pMS2B500_RECEPTIONQUALITY (record + blkt_offset);
       exception.count = HO4u (*pMS2B500_EXCEPTIONCOUNT (record + blkt_offset), msr->swapflag);
       ms_strncpcleantail (exception.type, pMS2B500_EXCEPTIONTYPE (record + blkt_offset), 16);
@@ -854,7 +849,6 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
         msr->extralength = length;
       }
-      /* Otherwise add it to existing headers */
       else
       {
         ival = *pMS2B1001_TIMINGQUALITY (record + blkt_offset);
@@ -903,10 +897,13 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
     mseh_free_parsestate (&parsestate);
   }
 
-  /* Check for a Blockette 1000 and log warning if not found */
-  if (B1000offset == 0 && verbose > 1)
+  /* Check for a Blockette 1000 */
+  if (B1000offset == 0)
   {
-    ms_log (1, "%s: Warning: No Blockette 1000 found\n", msr->sid);
+    if (verbose > 1)
+    {
+      ms_log (1, "%s: Warning: No Blockette 1000 found\n", msr->sid);
+    }
   }
 
   /* Check that the data offset is after the blockette chain */

@@ -1148,27 +1148,16 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
       if ((ehval = yyjson_ptr_get (ehiterval, "/Time")) && yyjson_is_str (ehval))
       {
-        uint32_t l_nsec;
-        uint16_t l_fsec;
-        int8_t l_msec_offset;
-
-        l_nsec = ms_timestr2btime (yyjson_get_str (ehval),
-                                   (uint8_t *)pMS2B500_YEAR (record + written),
-                                   msr->sid, swapflag);
-
-        if (l_nsec == -1)
+        if (ms_timestr2btime (yyjson_get_str (ehval), (uint8_t *)pMS2B500_YEAR (record + written),
+                              msr->sid, swapflag) == -1)
         {
           ms_log (2, "%s: Cannot convert B500 time: %s\n", msr->sid, yyjson_get_str (ehval));
           yyjson_doc_free (ehdoc);
           return -1;
         }
-
-        /* Calculate time at fractional 100usec resolution and microsecond offset */
-        l_fsec        = l_nsec / 100000;
-        l_msec_offset = ((l_nsec / 1000) - (l_fsec * 100));
-
-        *pMS2B500_MICROSECOND (record + written) = l_msec_offset;
       }
+
+      *pMS2B500_MICROSECOND (record + written) = msec_offset;
 
       if ((ehval = yyjson_ptr_get (ehiterval, "/ReceptionQuality")) && yyjson_is_num (ehval))
         *pMS2B500_RECEPTIONQUALITY (record + written) = (uint8_t)yyjson_get_num (ehval);
@@ -1179,7 +1168,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
       if ((ehval = yyjson_ptr_get (ehiterval, "/Type")) && yyjson_is_str (ehval))
         ms_strncpopen (pMS2B500_EXCEPTIONTYPE (record + written), yyjson_get_str (ehval), 16);
 
-      if ((ehval = yyjson_ptr_get (ehroot, "/FDSN/Clock/Model")) && yyjson_is_str (ehval))
+      if ((ehval = yyjson_ptr_get (ehiterval, "/FDSN/Clock/Model")) && yyjson_is_str (ehval))
         ms_strncpopen (pMS2B500_CLOCKMODEL (record + written), yyjson_get_str (ehval), 32);
 
       if ((ehval = yyjson_ptr_get (ehiterval, "/ClockStatus")) && yyjson_is_str (ehval))
@@ -1201,7 +1190,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
       /* Determine which detection type: MURDOCK versus the generic type */
       if ((ehval = yyjson_ptr_get (ehiterval, "/Type")) && yyjson_is_str (ehval) &&
-          strncasecmp (yyjson_get_str (ehval), "MURDOCK", 7) == 0)
+          strncasecmp (yyjson_get_str (ehval), "MURDOCK", 6) == 0)
       {
         blockette_type = 201;
         blockette_length = 60;
@@ -1276,7 +1265,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
         yyjson_val *ehsubiterval;
         int idx = 0;
 
-        if ((ehsubarr = yyjson_ptr_get (ehiterval, "/MEDSNR")) && yyjson_is_arr (ehsubarr))
+        if ((ehsubarr = yyjson_ptr_get (ehiterval, "/MEDSNR")) && yyjson_is_arr (ehval))
         {
           yyjson_arr_iter_init (ehsubarr, &ehsubiter);
 
