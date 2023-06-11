@@ -1,3 +1,9 @@
+2023.162:
+	- Print sample rate in Hz consistently in msr3_print()
+	- Fix writing of SNR values field 9 of Blockette 201 (v2)
+	- Read and write microsecond offsets to/from Blockette 500 (v2)
+	- Fix addition of Clock Model field 9 of Blocketee 500 (v2)
+
 2023.160: 3.0.14
 	- Add FAQ to documentation and update example code to match API changes.
 	- Change sample type for text encoding to 't', value 'a' still supported.
