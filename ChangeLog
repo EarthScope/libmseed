@@ -1,4 +1,4 @@
-2023.162:
+2023.162: 3.0.15
 	- Print sample rate in Hz consistently in msr3_print()
 	- Fix writing of SNR values field 9 of Blockette 201 (v2)
 	- Read and write microsecond offsets to/from Blockette 500 (v2)
