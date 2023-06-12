@@ -893,7 +893,7 @@ typedef struct MSEHRecenter
  * @see mseh_get_ptr_r()
  * @see mseh_set_ptr_r()
  */
-typedef struct LM_PARSED_JSON LM_PARSED_JSON;
+typedef struct LM_PARSED_JSON_s LM_PARSED_JSON;
 
 /** @def mseh_get
     @brief A simple wrapper to access any type of extra header */
