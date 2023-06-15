@@ -877,7 +877,7 @@ msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite,
   /* Close file and return record count */
   fclose (ofp);
 
-  return (packedrecords >= 0) ? packedrecords : -1;
+  return packedrecords;
 } /* End of msr3_writemseed() */
 
 /**********************************************************************/ /**
@@ -944,7 +944,7 @@ mstl3_writemseed (MS3TraceList *mstl, const char *mspath, int8_t overwrite,
   /* Close file and return record count */
   fclose (ofp);
 
-  return (packedrecords >= 0) ? packedrecords : -1;
+  return packedrecords;
 } /* End of mstl3_writemseed() */
 
 
