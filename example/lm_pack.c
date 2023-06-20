@@ -342,7 +342,7 @@ usage (void)
            " -V             Report program version\n"
            " -h             Show this usage message\n"
            " -v             Be more verbose, multiple flags can be used\n"
-           " -2             Create miniSEED v2 format, default is v3\n"
+           " -F format      Specify miniSEED version format, default is v3\n"
            " -r bytes       Specify maximum record length in bytes, default 4096\n"
            " -e encoding    Specify encoding format\n"
            "\n"
