@@ -32,7 +32,6 @@
 static flag verbose  = 0;
 static int reclen    = -1;
 static int encoding  = 10;
-static int byteorder = -1;
 static int msformat  = 3;
 static char *outfile = NULL;
 
@@ -297,10 +296,6 @@ parameter_proc (int argcount, char **argvec)
     {
       encoding = strtol (argvec[++optind], NULL, 10);
     }
-    else if (strcmp (argvec[optind], "-b") == 0)
-    {
-      byteorder = strtol (argvec[++optind], NULL, 10);
-    }
     else if (strcmp (argvec[optind], "-o") == 0)
     {
       outfile = argvec[++optind];
@@ -350,7 +345,6 @@ usage (void)
            " -2             Create miniSEED v2 format, default is v3\n"
            " -r bytes       Specify maximum record length in bytes, default 4096\n"
            " -e encoding    Specify encoding format\n"
-           " -b byteorder   Specify byte order for packing, MSBF: 1, LSBF: 0\n"
            "\n"
            " -o outfile     Specify the output file, required\n"
            "\n"
