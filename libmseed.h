@@ -1247,39 +1247,75 @@ extern uint64_t lmp_nanosleep (uint64_t nanoseconds);
 extern uint32_t ms_crc32c (const uint8_t *input, int length, uint32_t previousCRC32C);
 
 /** In-place byte swapping of 2 byte quantity */
-extern void ms_gswap2 (void *data2);
+inline void
+ms_gswap2 (void *data2)
+{
+  uint16_t dat;
+
+  memcpy (&dat, data2, 2);
+
+  dat = ((dat & 0xff00) >> 8) | ((dat & 0x00ff) << 8);
+
+  memcpy (data2, &dat, 2);
+}
+
 /** In-place byte swapping of 4 byte quantity */
-extern void ms_gswap4 (void *data4);
+inline void
+ms_gswap4 (void *data4)
+{
+  uint32_t dat;
+
+  memcpy (&dat, data4, 4);
+
+  dat = ((dat & 0xff000000) >> 24) | ((dat & 0x000000ff) << 24) |
+        ((dat & 0x00ff0000) >>  8) | ((dat & 0x0000ff00) <<  8);
+
+  memcpy (data4, &dat, 4);
+}
+
 /** In-place byte swapping of 8 byte quantity */
-extern void ms_gswap8 (void *data8);
+inline void
+ms_gswap8 (void *data8)
+{
+  uint64_t dat;
+
+  memcpy (&dat, data8, sizeof(uint64_t));
+
+  dat = ((dat & 0xff00000000000000) >> 56) | ((dat & 0x00000000000000ff) << 56) |
+        ((dat & 0x00ff000000000000) >> 40) | ((dat & 0x000000000000ff00) << 40) |
+        ((dat & 0x0000ff0000000000) >> 24) | ((dat & 0x0000000000ff0000) << 24) |
+        ((dat & 0x000000ff00000000) >>  8) | ((dat & 0x00000000ff000000) <<  8);
+
+  memcpy (data8, &dat, sizeof(uint64_t));
+}
 
 #if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5) || defined (__clang__)
 /** Deprecated: In-place byte swapping of 2 byte, memory-aligned, quantity */
 __attribute__ ((deprecated("Use ms_gswap2 instead.")))
-extern void     ms_gswap2a ( void *data2 );
+inline void ms_gswap2a (void *data2) { ms_gswap2 (data2); }
 /** Deprecated: In-place byte swapping of 4 byte, memory-aligned, quantity */
 __attribute__ ((deprecated("Use ms_gswap4 instead.")))
-extern void     ms_gswap4a ( void *data4 );
+inline void ms_gswap4a (void *data4) { ms_gswap4 (data4); }
 /** Deprecated: In-place byte swapping of 8 byte, memory-aligned, quantity */
 __attribute__ ((deprecated("Use ms_gswap8 instead.")))
-extern void     ms_gswap8a ( void *data8 );
+inline void ms_gswap8a (void *data8) { ms_gswap8 (data8); }
 #elif defined(_MSC_FULL_VER) && (_MSC_FULL_VER > 140050320)
 /** Deprecated: In-place byte swapping of 2 byte, memory-aligned, quantity */
 __declspec(deprecated("Use ms_gswap2 instead."))
-extern void     ms_gswap2a ( void *data2 );
+inline void ms_gswap2a (void *data2) { ms_gswap2 (data2); }
 /** Deprecated: In-place byte swapping of 4 byte, memory-aligned, quantity */
 __declspec(deprecated("Use ms_gswap4 instead."))
-extern void     ms_gswap4a ( void *data4 );
+inline void ms_gswap4a (void *data4) { ms_gswap4 (data4); }
 /** Deprecated: In-place byte swapping of 8 byte, memory-aligned, quantity */
 __declspec(deprecated("Use ms_gswap8 instead."))
-extern void     ms_gswap8a ( void *data8 );
+inline void ms_gswap8a (void *data8) { ms_gswap8 (data8); }
 #else
 /** Deprecated: In-place byte swapping of 2 byte, memory-aligned, quantity */
-extern void     ms_gswap2a ( void *data2 );
+inline void ms_gswap2a (void *data2) { ms_gswap2 (data2); }
 /** Deprecated: In-place byte swapping of 4 byte, memory-aligned, quantity */
-extern void     ms_gswap4a ( void *data4 );
+inline void ms_gswap4a (void *data4) { ms_gswap4 (data4); }
 /** Deprecated: In-place byte swapping of 8 byte, memory-aligned, quantity */
-extern void     ms_gswap8a ( void *data8 );
+inline void ms_gswap8a (void *data8) { ms_gswap8 (data8); }
 #endif
 
 /** @} */

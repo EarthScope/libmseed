@@ -12,7 +12,6 @@ LM_DEF = libmseed.def
 
 OBJS =  fileutils.obj   \
         genutils.obj    \
-        gswap.obj       \
         msio.obj        \
         lookup.obj      \
         yyjson.obj      \
