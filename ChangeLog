@@ -1,11 +1,3 @@
-2023.178:
-	- Optimize Steim 1 & 2 decoders.
-	- Change test for environment variable DECODE_DEBUG to compile-time define
-	- Change test for environment variable ENCODE_DEBUG to compile-time define
-
-2023.177:
-	- Incorporate ms_gswapX() functions into libmseed.h to promote inlining.
-
 2023.162: 3.0.15
 	- Print sample rate in Hz consistently in msr3_print()
 	- Fix writing of SNR values field 9 of Blockette 201 (v2)
