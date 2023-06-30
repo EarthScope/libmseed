@@ -28,7 +28,7 @@
 #include "unpackdata.h"
 
 /* Extract bit range.  Byte order agnostic & defined when used with unsigned values */
-#define EXTRACTBITRANGE(VALUE, STARTBIT, LENGTH) ((VALUE >> STARTBIT) & ((1U << LENGTH) - 1))
+#define EXTRACTBITRANGE(VALUE, STARTBIT, LENGTH) (((VALUE) >> (STARTBIT)) & ((1U << (LENGTH)) - 1))
 
 #define MAX12 0x7FFul    /* maximum 12 bit positive # */
 #define MAX14 0x1FFFul   /* maximum 14 bit positive # */
