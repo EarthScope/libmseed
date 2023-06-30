@@ -1227,9 +1227,9 @@ extern int ms_readleapsecondfile (const char *filename);
   @brief General utilities
   @{ */
 
-extern uint8_t ms_samplesize (const char sampletype);
-extern int ms_encoding_sizetype (const uint8_t encoding, uint8_t *samplesize, char *sampletype);
-extern const char *ms_encodingstr (const uint8_t encoding);
+extern uint8_t ms_samplesize (char sampletype);
+extern int ms_encoding_sizetype (uint8_t encoding, uint8_t *samplesize, char *sampletype);
+extern const char *ms_encodingstr (uint8_t encoding);
 extern const char *ms_errorstr (int errorcode);
 
 extern nstime_t ms_sampletime (nstime_t time, int64_t offset, double samprate);
