@@ -72,7 +72,7 @@ static nstime_t ms_btime2nstime (uint8_t *btime, int8_t swapflag);
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int64_t
-msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
+msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr,
                     uint32_t flags, int8_t verbose)
 {
   MS3Record *msr = NULL;
@@ -255,7 +255,7 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int64_t
-msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
+msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
                     uint32_t flags, int8_t verbose)
 {
   int B1000offset = 0;
@@ -1471,7 +1471,7 @@ ms_nomsamprate (int factor, int multiplier)
  * Returns a pointer to the resulting string or NULL on error.
  ***************************************************************************/
 char *
-ms2_recordsid (char *record, char *sid, int sidlen)
+ms2_recordsid (const char *record, char *sid, int sidlen)
 {
   char net[3] = {0};
   char sta[6] = {0};
