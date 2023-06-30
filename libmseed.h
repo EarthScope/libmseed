@@ -343,7 +343,7 @@ extern int ms_md2doy (int year, int month, int mday, int *yday);
 
 /** @brief miniSEED record container */
 typedef struct MS3Record {
-  char           *record;            //!< Raw miniSEED record, if available
+  const char     *record;            //!< Raw miniSEED record, if available
   int32_t         reclen;            //!< Length of miniSEED record in bytes
   uint8_t         swapflag;          //!< Byte swap indicator (bitmask), see @ref byte-swap-flags
 
@@ -368,7 +368,7 @@ typedef struct MS3Record {
   char            sampletype;        //!< Sample type code: a, i, f, d @ref sample-types
 } MS3Record;
 
-extern int msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
+extern int msr3_parse (const char *record, uint64_t recbuflen, MS3Record **ppmsr,
                        uint32_t flags, int8_t verbose);
 
 extern int msr3_pack (MS3Record *msr,
@@ -400,8 +400,8 @@ extern double     msr3_sampratehz (MS3Record *msr);
 extern double     msr3_host_latency (MS3Record *msr);
 
 extern int ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion);
-extern int ms_parse_raw3 (char *record, int maxreclen, int8_t details);
-extern int ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag);
+extern int ms_parse_raw3 (const char *record, int maxreclen, int8_t details);
+extern int ms_parse_raw2 (const char *record, int maxreclen, int8_t details, int8_t swapflag);
 /** @} */
 
 /** @addtogroup data-selections

@@ -1,3 +1,7 @@
+2023.180:
+	- Add const qualifier to record pointer declarations where the
+	library interface does not modify the data.
+
 2023.177:
 	- Incorporate ms_gswapX() functions into libmseed.h to promote inlining.
 

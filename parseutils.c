@@ -58,7 +58,7 @@
  * \ref MessageOnError - this function logs a message on error except MS_NOTSEED
  ***************************************************************************/
 int
-msr3_parse (char *record, uint64_t recbuflen, MS3Record **ppmsr,
+msr3_parse (const char *record, uint64_t recbuflen, MS3Record **ppmsr,
             uint32_t flags, int8_t verbose)
 {
   int reclen  = 0;
@@ -311,10 +311,10 @@ ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion)
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-ms_parse_raw3 (char *record, int maxreclen, int8_t details)
+ms_parse_raw3 (const char *record, int maxreclen, int8_t details)
 {
   MS3Record msr;
-  char *X;
+  const char *X;
   uint8_t b;
 
   int retval = 0;
@@ -476,12 +476,12 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
     ms_log (0, "          extra headers:\n");
     if ((MS3FSDH_LENGTH + sidlength + msr.extralength) <= maxreclen)
     {
-      msr.extra = record + MS3FSDH_LENGTH + sidlength;
+      msr.extra = (char *)record + MS3FSDH_LENGTH + sidlength;
       mseh_print (&msr, 10);
     }
     else
     {
-      ms_log (0, "      [buffer does not contain all extra headers]\n");
+      ms_log (0, "      [buffer does not contain extra headers]\n");
     }
   }
 
@@ -521,11 +521,11 @@ ms_parse_raw3 (char *record, int maxreclen, int8_t details)
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t swapflag)
+ms_parse_raw2 (const char *record, int maxreclen, int8_t details, int8_t swapflag)
 {
   double nomsamprate;
   char sid[21] = {0};
-  char *X;
+  const char *X;
   uint8_t b;
   int retval = 0;
   int b1000encoding = -1;
