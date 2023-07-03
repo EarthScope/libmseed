@@ -26,9 +26,6 @@
 #include "libmseed.h"
 #include "packdata.h"
 
-/* Control for printing debugging information */
-int libmseed_encodedebug = -1;
-
 /************************************************************************
  * msr_encode_text:
  *
@@ -258,9 +255,10 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
     return -1;
   }
 
-  if (libmseed_encodedebug > 0)
+#if ENCODE_DEBUG
     ms_log (0, "Encoding Steim1 frames, samples: %d, max frames: %d, swapflag: %d\n",
             samplecount, maxframes, swapflag);
+#endif
 
   /* Add first difference to buffers */
   diffs[0] = diff0;
@@ -280,22 +278,23 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
     {
       frameptr[1] = input[0];
 
-      if (libmseed_encodedebug > 0)
-        ms_log (0, "Frame %d: X0=%d\n", frameidx, input[0]);
-
       if (swapflag)
         ms_gswap4 (&frameptr[1]);
 
       Xnp = &frameptr[2];
 
       startnibble = 3; /* First frame: skip nibbles, X0, and Xn */
+#if ENCODE_DEBUG
+        ms_log (0, "Frame %d: X0=%d\n", frameidx, input[0]);
+#endif
     }
     else
     {
       startnibble = 1; /* Subsequent frames: skip nibbles */
 
-      if (libmseed_encodedebug > 0)
+#if ENCODE_DEBUG
         ms_log (0, "Frame %d\n", frameidx);
+#endif
     }
 
     for (widx = startnibble; widx < 16 && outputsamples < samplecount; widx++)
@@ -331,9 +330,10 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
           bitwidth[0] <= 8 && bitwidth[1] <= 8 &&
           bitwidth[2] <= 8 && bitwidth[3] <= 8)
       {
-        if (libmseed_encodedebug > 0)
+#if ENCODE_DEBUG
           ms_log (0, "  W%02d: 01=4x8b  %d  %d  %d  %d\n",
                   widx, diffs[0], diffs[1], diffs[2], diffs[3]);
+#endif
 
         word->d8[0] = diffs[0];
         word->d8[1] = diffs[1];
@@ -349,8 +349,9 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
       else if (diffcount >= 2 &&
                bitwidth[0] <= 16 && bitwidth[1] <= 16)
       {
-        if (libmseed_encodedebug > 0)
+#if ENCODE_DEBUG
           ms_log (0, "  W%02d: 2=2x16b  %d  %d\n", widx, diffs[0], diffs[1]);
+#endif
 
         word->d16[0] = diffs[0];
         word->d16[1] = diffs[1];
@@ -369,8 +370,9 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
       /* 1 x 32-bit difference */
       else
       {
-        if (libmseed_encodedebug > 0)
+#if ENCODE_DEBUG
           ms_log (0, "  W%02d: 3=1x32b  %d\n", widx, diffs[0]);
+#endif
 
         frameptr[widx] = diffs[0];
 
@@ -452,9 +454,10 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
     return -1;
   }
 
-  if (libmseed_encodedebug > 0)
+#if ENCODE_DEBUG
     ms_log (0, "Encoding Steim2 frames, samples: %d, max frames: %d, swapflag: %d\n",
             samplecount, maxframes, swapflag);
+#endif
 
   /* Add first difference to buffers */
   diffs[0] = diff0;
@@ -474,8 +477,9 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
     {
       frameptr[1] = input[0];
 
-      if (libmseed_encodedebug > 0)
+#if ENCODE_DEBUG
         ms_log (0, "Frame %d: X0=%d\n", frameidx, input[0]);
+#endif
 
       if (swapflag)
         ms_gswap4 (&frameptr[1]);
@@ -488,8 +492,9 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
     {
       startnibble = 1; /* Subsequent frames: skip nibbles */
 
-      if (libmseed_encodedebug > 0)
+#if ENCODE_DEBUG
         ms_log (0, "Frame %d\n", frameidx);
+#endif
     }
 
     for (widx = startnibble; widx < 16 && outputsamples < samplecount; widx++)
@@ -528,9 +533,10 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
           bitwidth[1] <= 4 && bitwidth[2] <= 4 && bitwidth[3] <= 4 &&
           bitwidth[4] <= 4 && bitwidth[5] <= 4 && bitwidth[6] <= 4)
       {
-        if (libmseed_encodedebug > 0)
+#if ENCODE_DEBUG
           ms_log (0, "  W%02d: 11,10=7x4b  %d  %d  %d  %d  %d  %d  %d\n",
                   widx, diffs[0], diffs[1], diffs[2], diffs[3], diffs[4], diffs[5], diffs[6]);
+#endif
 
         /* Mask the values, shift to proper location and set in word */
         frameptr[widx] = ((uint32_t)diffs[6] & 0xFul);
@@ -554,9 +560,10 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
                bitwidth[0] <= 5 && bitwidth[1] <= 5 && bitwidth[2] <= 5 &&
                bitwidth[3] <= 5 && bitwidth[4] <= 5 && bitwidth[5] <= 5)
       {
-        if (libmseed_encodedebug > 0)
+#if ENCODE_DEBUG
           ms_log (0, "  W%02d: 11,01=6x5b  %d  %d  %d  %d  %d  %d\n",
                   widx, diffs[0], diffs[1], diffs[2], diffs[3], diffs[4], diffs[5]);
+#endif
 
         /* Mask the values, shift to proper location and set in word */
         frameptr[widx] = ((uint32_t)diffs[5] & 0x1Ful);
@@ -579,9 +586,10 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
                bitwidth[0] <= 6 && bitwidth[1] <= 6 && bitwidth[2] <= 6 &&
                bitwidth[3] <= 6 && bitwidth[4] <= 6)
       {
-        if (libmseed_encodedebug > 0)
+#if ENCODE_DEBUG
           ms_log (0, "  W%02d: 11,00=5x6b  %d  %d  %d  %d  %d\n",
                   widx, diffs[0], diffs[1], diffs[2], diffs[3], diffs[4]);
+#endif
 
         /* Mask the values, shift to proper location and set in word */
         frameptr[widx] = ((uint32_t)diffs[4] & 0x3Ful);
@@ -602,9 +610,10 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
                bitwidth[0] <= 8 && bitwidth[1] <= 8 &&
                bitwidth[2] <= 8 && bitwidth[3] <= 8)
       {
-        if (libmseed_encodedebug > 0)
+#if ENCODE_DEBUG
           ms_log (0, "  W%02d: 01=4x8b  %d  %d  %d  %d\n",
                   widx, diffs[0], diffs[1], diffs[2], diffs[3]);
+#endif
 
         word = (union dword *)&frameptr[widx];
 
@@ -622,9 +631,10 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
       else if (diffcount >= 3 &&
                bitwidth[0] <= 10 && bitwidth[1] <= 10 && bitwidth[2] <= 10)
       {
-        if (libmseed_encodedebug > 0)
+#if ENCODE_DEBUG
           ms_log (0, "  W%02d: 10,11=3x10b  %d  %d  %d\n",
                   widx, diffs[0], diffs[1], diffs[2]);
+#endif
 
         /* Mask the values, shift to proper location and set in word */
         frameptr[widx] = ((uint32_t)diffs[2] & 0x3FFul);
@@ -643,9 +653,10 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
       else if (diffcount >= 2 &&
                bitwidth[0] <= 15 && bitwidth[1] <= 15)
       {
-        if (libmseed_encodedebug > 0)
+#if ENCODE_DEBUG
           ms_log (0, "  W%02d: 10,10=2x15b  %d  %d\n",
                   widx, diffs[0], diffs[1]);
+#endif
 
         /* Mask the values, shift to proper location and set in word */
         frameptr[widx] = ((uint32_t)diffs[1] & 0x7FFFul);
@@ -663,9 +674,10 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
       else if (diffcount >= 1 &&
                bitwidth[0] <= 30)
       {
-        if (libmseed_encodedebug > 0)
+#if ENCODE_DEBUG
           ms_log (0, "  W%02d: 10,01=1x30b  %d\n",
                   widx, diffs[0]);
+#endif
 
         /* Mask the value and set in word */
         frameptr[widx] = ((uint32_t)diffs[0] & 0x3FFFFFFFul);

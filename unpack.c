@@ -1287,15 +1287,6 @@ ms_decode_data (const void *input, size_t inputsize, uint8_t encoding,
   if (samplecount <= 0)
     return 0;
 
-  /* Check for decode debugging environment variable */
-  if (libmseed_decodedebug < 0)
-  {
-    if (getenv ("DECODE_DEBUG"))
-      libmseed_decodedebug = 1;
-    else
-      libmseed_decodedebug = 0;
-  }
-
   if (ms_encoding_sizetype(encoding, &samplesize, sampletype))
     samplesize = 0;
 

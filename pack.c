@@ -1575,15 +1575,6 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
 {
   int nsamples;
 
-  /* Check for encode debugging environment variable */
-  if (libmseed_encodedebug < 0)
-  {
-    if (getenv ("ENCODE_DEBUG"))
-      libmseed_encodedebug = 1;
-    else
-      libmseed_encodedebug = 0;
-  }
-
   if (byteswritten)
     *byteswritten = 0;
 
