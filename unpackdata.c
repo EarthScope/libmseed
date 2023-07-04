@@ -189,7 +189,7 @@ msr_decode_float64 (double *input, int64_t samplecount, double *output,
  ************************************************************************/
 int
 msr_decode_steim1 (int32_t *input, int inputlength, int64_t samplecount,
-                   int32_t *output, int64_t outputlength, char *srcname,
+                   int32_t *output, int64_t outputlength, const char *srcname,
                    int swapflag)
 {
   uint32_t frame[16]; /* Frame, 16 x 32-bit quantities = 64 bytes */
@@ -360,7 +360,7 @@ msr_decode_steim1 (int32_t *input, int inputlength, int64_t samplecount,
  ************************************************************************/
 int
 msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
-                   int32_t *output, int64_t outputlength, char *srcname,
+                   int32_t *output, int64_t outputlength, const char *srcname,
                    int swapflag)
 {
   uint32_t frame[16]; /* Frame, 16 x 32-bit quantities = 64 bytes */
@@ -656,7 +656,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
 int
 msr_decode_geoscope (char *input, int64_t samplecount, float *output,
                      int64_t outputlength, int encoding,
-                     char *srcname, int swapflag)
+                     const char *srcname, int swapflag)
 {
   int idx = 0;
   int mantissa;  /* mantissa from SEED data */
@@ -897,7 +897,7 @@ msr_decode_cdsn (int16_t *input, int64_t samplecount, int32_t *output,
  ************************************************************************/
 int
 msr_decode_sro (int16_t *input, int64_t samplecount, int32_t *output,
-                int64_t outputlength, char *srcname, int swapflag)
+                int64_t outputlength, const char *srcname, int swapflag)
 {
   int32_t idx = 0;
   int32_t mantissa;   /* mantissa */

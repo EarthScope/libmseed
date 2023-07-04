@@ -36,7 +36,7 @@
  * @returns The sample size based on type code or 0 for unknown.
  ***************************************************************************/
 uint8_t
-ms_samplesize (const char sampletype)
+ms_samplesize (char sampletype)
 {
   switch (sampletype)
   {
@@ -71,7 +71,7 @@ ms_samplesize (const char sampletype)
  * @returns 0 on success, -1 on error
  ***************************************************************************/
 int
-ms_encoding_sizetype (const uint8_t encoding, uint8_t *samplesize, char *sampletype)
+ms_encoding_sizetype (uint8_t encoding, uint8_t *samplesize, char *sampletype)
 {
   switch (encoding)
   {
@@ -123,7 +123,7 @@ ms_encoding_sizetype (const uint8_t encoding, uint8_t *samplesize, char *samplet
  * @returns a string describing a data encoding format
  ***************************************************************************/
 const char *
-ms_encodingstr (const uint8_t encoding)
+ms_encodingstr (uint8_t encoding)
 {
   switch (encoding)
   {

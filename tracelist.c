@@ -26,10 +26,10 @@
 
 #include "libmseed.h"
 
-MS3TraceSeg *mstl3_msr2seg (MS3Record *msr, nstime_t endtime);
-MS3TraceSeg *mstl3_addmsrtoseg (MS3TraceSeg *seg, MS3Record *msr, nstime_t endtime, int8_t whence);
+MS3TraceSeg *mstl3_msr2seg (const MS3Record *msr, nstime_t endtime);
+MS3TraceSeg *mstl3_addmsrtoseg (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, int8_t whence);
 MS3TraceSeg *mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2);
-MS3RecordPtr *mstl3_add_recordptr (MS3TraceSeg *seg, MS3Record *msr, nstime_t endtime, int8_t whence);
+MS3RecordPtr *mstl3_add_recordptr (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, int8_t whence);
 
 static uint32_t lm_lcg_r (uint64_t *state);
 static uint8_t lm_random_height (uint8_t maximum, uint64_t *state);
@@ -358,9 +358,9 @@ mstl3_addID (MS3TraceList *mstl, MS3TraceID *id, MS3TraceID **prev)
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 MS3TraceSeg *
-mstl3_addmsr_recordptr (MS3TraceList *mstl, MS3Record *msr, MS3RecordPtr **pprecptr,
+mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **pprecptr,
                         int8_t splitversion, int8_t autoheal, uint32_t flags,
-                        MS3Tolerance *tolerance)
+                        const MS3Tolerance *tolerance)
 {
   MS3TraceID *id = 0;
   MS3TraceID *previd[MSTRACEID_SKIPLIST_HEIGHT] = {NULL};
@@ -851,7 +851,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, MS3Record *msr, MS3RecordPtr **pprec
 int64_t
 mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
                   int8_t splitversion, uint32_t flags,
-                  MS3Tolerance *tolerance, int8_t verbose)
+                  const MS3Tolerance *tolerance, int8_t verbose)
 {
   return mstl3_readbuffer_selection (ppmstl, buffer, bufferlength,
                                      splitversion, flags, tolerance,
@@ -900,7 +900,7 @@ mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
 int64_t
 mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
                             int8_t splitversion, uint32_t flags,
-                            MS3Tolerance *tolerance, MS3Selections *selections,
+                            const MS3Tolerance *tolerance, const MS3Selections *selections,
                             int8_t verbose)
 {
   MS3Record *msr   = NULL;
@@ -1021,7 +1021,7 @@ mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *buffer, uint64_t buffer
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 MS3TraceSeg *
-mstl3_msr2seg (MS3Record *msr, nstime_t endtime)
+mstl3_msr2seg (const MS3Record *msr, nstime_t endtime)
 {
   MS3TraceSeg *seg = 0;
   size_t datasize = 0;
@@ -1080,7 +1080,7 @@ mstl3_msr2seg (MS3Record *msr, nstime_t endtime)
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 MS3TraceSeg *
-mstl3_addmsrtoseg (MS3TraceSeg *seg, MS3Record *msr, nstime_t endtime, int8_t whence)
+mstl3_addmsrtoseg (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, int8_t whence)
 {
   int samplesize = 0;
   void *newdatasamples = NULL;
@@ -1289,7 +1289,7 @@ mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
  * \sa mstl3_addmsr()
  ***************************************************************************/
 MS3RecordPtr *
-mstl3_add_recordptr (MS3TraceSeg *seg, MS3Record *msr, nstime_t endtime, int8_t whence)
+mstl3_add_recordptr (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, int8_t whence)
 {
   MS3RecordPtr *recordptr = NULL;
 
@@ -2143,11 +2143,11 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
  * @param[in] versions Flag to control inclusion of publication version on SourceIDs
  ***************************************************************************/
 void
-mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
+mstl3_printtracelist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
                       int8_t details, int8_t gaps, int8_t versions)
 {
-  MS3TraceID *id = 0;
-  MS3TraceSeg *seg = 0;
+  const MS3TraceID *id = 0;
+  const MS3TraceSeg *seg = 0;
   char stime[40];
   char etime[40];
   char gapstr[40];
@@ -2158,7 +2158,7 @@ mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
   int segcnt = 0;
 
   char versioned_sid[LM_SIDLEN + 10] = {0};
-  char *display_sid = NULL;
+  const char *display_sid = NULL;
 
   if (!mstl)
   {
@@ -2275,10 +2275,10 @@ mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
  * @param[in] subseconds Inclusion of subseconds, one of @ref ms_subseconds_t
  ***************************************************************************/
 void
-mstl3_printsynclist (MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds)
+mstl3_printsynclist (const MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds)
 {
-  MS3TraceID *id = 0;
-  MS3TraceSeg *seg = 0;
+  const MS3TraceID *id = 0;
+  const MS3TraceSeg *seg = 0;
   char starttime[40];
   char endtime[40];
   char yearday[32];
@@ -2348,11 +2348,11 @@ mstl3_printsynclist (MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds
  * @param[in] maxgap Maximum gap to print in seconds (pointer to value)
  ***************************************************************************/
 void
-mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
+mstl3_printgaplist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
                     double *mingap, double *maxgap)
 {
-  MS3TraceID *id = 0;
-  MS3TraceSeg *seg = 0;
+  const MS3TraceID *id = 0;
+  const MS3TraceSeg *seg = 0;
 
   char time1[40], time2[40];
   char gapstr[40];

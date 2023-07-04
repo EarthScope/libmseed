@@ -147,7 +147,7 @@ parse_json (char *jsonstring, size_t length, LM_PARSED_JSON *parsed)
  * \sa mseh_free_parsestate()
  ***************************************************************************/
 int
-mseh_get_ptr_r (MS3Record *msr, const char *ptr,
+mseh_get_ptr_r (const MS3Record *msr, const char *ptr,
                  void *value, char type, size_t maxlength,
                  LM_PARSED_JSON **parsestate)
 {
@@ -1083,7 +1083,7 @@ mseh_free_parsestate (LM_PARSED_JSON **parsestate)
  * @returns 0 on success and a (negative) libmseed error code on error.
  ***************************************************************************/
 int
-mseh_print (MS3Record *msr, int indent)
+mseh_print (const MS3Record *msr, int indent)
 {
   char *extra;
   int idx;
