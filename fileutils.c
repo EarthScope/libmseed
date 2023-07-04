@@ -210,7 +210,7 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  *********************************************************************/
 int
 ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
-                       uint32_t flags, MS3Selections *selections, int8_t verbose)
+                       uint32_t flags, const MS3Selections *selections, int8_t verbose)
 {
   MS3FileParam *msfp;
   uint32_t pflags = flags;
@@ -540,7 +540,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
  *********************************************************************/
 int
 ms3_readtracelist (MS3TraceList **ppmstl, const char *mspath,
-                   MS3Tolerance *tolerance, int8_t splitversion,
+                   const MS3Tolerance *tolerance, int8_t splitversion,
                    uint32_t flags, int8_t verbose)
 {
   return ms3_readtracelist_selection (ppmstl, mspath, tolerance, NULL,
@@ -565,7 +565,7 @@ ms3_readtracelist (MS3TraceList **ppmstl, const char *mspath,
  *********************************************************************/
 int
 ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath,
-                           MS3Tolerance *tolerance,
+                           const MS3Tolerance *tolerance,
                            nstime_t starttime, nstime_t endtime,
                            int8_t splitversion, uint32_t flags, int8_t verbose)
 {
@@ -629,7 +629,7 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath,
  *********************************************************************/
 int
 ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath,
-                             MS3Tolerance *tolerance, MS3Selections *selections,
+                             const MS3Tolerance *tolerance, const MS3Selections *selections,
                              int8_t splitversion, uint32_t flags, int8_t verbose)
 {
   MS3Record *msr     = NULL;

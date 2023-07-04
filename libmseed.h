@@ -435,11 +435,11 @@ typedef struct MS3Selections {
   uint8_t pubversion;                //!< Selected publication version, use 0 for any
 } MS3Selections;
 
-extern MS3Selections* ms3_matchselect (MS3Selections *selections, const char *sid,
-                                       nstime_t starttime, nstime_t endtime,
-                                       int pubversion, MS3SelectTime **ppselecttime);
-extern MS3Selections* msr3_matchselect (MS3Selections *selections, const MS3Record *msr,
-                                        MS3SelectTime **ppselecttime);
+extern const MS3Selections* ms3_matchselect (const MS3Selections *selections, const char *sid,
+                                             nstime_t starttime, nstime_t endtime,
+                                             int pubversion, const MS3SelectTime **ppselecttime);
+extern const MS3Selections* msr3_matchselect (const MS3Selections *selections, const MS3Record *msr,
+                                              const MS3SelectTime **ppselecttime);
 extern int ms3_addselect (MS3Selections **ppselections, const char *sidpattern,
                           nstime_t starttime, nstime_t endtime, uint8_t pubversion);
 extern int ms3_addselect_comp (MS3Selections **ppselections,
@@ -596,8 +596,8 @@ typedef struct MS3TraceList {
  */
 typedef struct MS3Tolerance
 {
-  double (*time) (MS3Record *msr);     //!< Pointer to function that returns time tolerance
-  double (*samprate) (MS3Record *msr); //!< Pointer to function that returns sample rate tolerance
+  double (*time) (const MS3Record *msr);     //!< Pointer to function that returns time tolerance
+  double (*samprate) (const MS3Record *msr); //!< Pointer to function that returns sample rate tolerance
 } MS3Tolerance;
 
 /** @def MS3Tolerance_INITIALIZER
@@ -616,15 +616,15 @@ extern MS3TraceID*   mstl3_findID (MS3TraceList *mstl, const char *sid, uint8_t 
 #define mstl3_addmsr(mstl, msr, splitversion, autoheal, flags, tolerance) \
   mstl3_addmsr_recordptr (mstl, msr, NULL, splitversion, autoheal, flags, tolerance)
 
-extern MS3TraceSeg*  mstl3_addmsr_recordptr (MS3TraceList *mstl, MS3Record *msr, MS3RecordPtr **pprecptr,
+extern MS3TraceSeg*  mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **pprecptr,
                                              int8_t splitversion, int8_t autoheal, uint32_t flags,
-                                             MS3Tolerance *tolerance);
+                                             const MS3Tolerance *tolerance);
 extern int64_t       mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
                                        int8_t splitversion, uint32_t flags,
-                                       MS3Tolerance *tolerance, int8_t verbose);
+                                       const MS3Tolerance *tolerance, int8_t verbose);
 extern int64_t       mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
                                                  int8_t splitversion, uint32_t flags,
-                                                 MS3Tolerance *tolerance, MS3Selections *selections,
+                                                 const MS3Tolerance *tolerance, const MS3Selections *selections,
                                                  int8_t verbose);
 extern int64_t mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
                                         size_t outputsize, int8_t verbose);
@@ -729,14 +729,14 @@ extern int ms3_readmsr (MS3Record **ppmsr, const char *mspath, uint32_t flags, i
 extern int ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
                           uint32_t flags, int8_t verbose);
 extern int ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
-                                  uint32_t flags, MS3Selections *selections, int8_t verbose);
-extern int ms3_readtracelist (MS3TraceList **ppmstl, const char *mspath, MS3Tolerance *tolerance,
+                                  uint32_t flags, const MS3Selections *selections, int8_t verbose);
+extern int ms3_readtracelist (MS3TraceList **ppmstl, const char *mspath, const MS3Tolerance *tolerance,
                               int8_t splitversion, uint32_t flags, int8_t verbose);
-extern int ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath, MS3Tolerance *tolerance,
+extern int ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath, const MS3Tolerance *tolerance,
                                       nstime_t starttime, nstime_t endtime, int8_t splitversion, uint32_t flags,
                                       int8_t verbose);
-extern int ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath, MS3Tolerance *tolerance,
-                                        MS3Selections *selections, int8_t splitversion, uint32_t flags, int8_t verbose);
+extern int ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath, const MS3Tolerance *tolerance,
+                                        const MS3Selections *selections, int8_t splitversion, uint32_t flags, int8_t verbose);
 extern int ms3_url_useragent (const char *program, const char *version);
 extern int ms3_url_userpassword (const char *userpassword);
 extern int ms3_url_addheader (const char *header);

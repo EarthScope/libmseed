@@ -54,13 +54,13 @@ static int ms_globmatch (const char *string, const char *pattern);
  * @returns A pointer to matching ::MS3Selections entry successful
  * match and NULL for no match or error.
  ***************************************************************************/
-MS3Selections *
-ms3_matchselect (MS3Selections *selections, const char *sid, nstime_t starttime,
-                 nstime_t endtime, int pubversion, MS3SelectTime **ppselecttime)
+const MS3Selections *
+ms3_matchselect (const MS3Selections *selections, const char *sid, nstime_t starttime,
+                 nstime_t endtime, int pubversion, const MS3SelectTime **ppselecttime)
 {
-  MS3Selections *findsl = NULL;
-  MS3SelectTime *findst = NULL;
-  MS3SelectTime *matchst = NULL;
+  const MS3Selections *findsl = NULL;
+  const MS3SelectTime *findst = NULL;
+  const MS3SelectTime *matchst = NULL;
 
   if (selections)
   {
@@ -141,9 +141,9 @@ ms3_matchselect (MS3Selections *selections, const char *sid, nstime_t starttime,
  * @returns A pointer to matching ::MS3Selections entry successful
  * match and NULL for no match or error.
  ***************************************************************************/
-MS3Selections *
-msr3_matchselect (MS3Selections *selections, const MS3Record *msr,
-                  MS3SelectTime **ppselecttime)
+const MS3Selections *
+msr3_matchselect (const MS3Selections *selections, const MS3Record *msr,
+                  const MS3SelectTime **ppselecttime)
 {
   nstime_t endtime;
 

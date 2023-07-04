@@ -3,9 +3,9 @@
 
 TEST (selection, match)
 {
-  MS3Selections *selections = NULL;
-  MS3Selections *match      = NULL;
-  MS3SelectTime *timematch  = NULL;
+  MS3Selections *selections      = NULL;
+  const MS3Selections *match     = NULL;
+  const MS3SelectTime *timematch = NULL;
   nstime_t starttime;
   nstime_t endtime;
   int rv;
@@ -52,8 +52,8 @@ TEST (selection, match)
 
 TEST (selection, error)
 {
-  MS3Selections *selections = NULL;
-  MS3Selections *match      = NULL;
+  MS3Selections *selections  = NULL;
+  const MS3Selections *match = NULL;
   int rv;
 
   rv = ms3_addselect (NULL, "FDSN:XX_*", NSTUNSET, NSTUNSET, 0);
