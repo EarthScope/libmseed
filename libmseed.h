@@ -384,7 +384,7 @@ extern int msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, 
 
 extern int64_t msr3_unpack_data (MS3Record *msr, int8_t verbose);
 
-extern int msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize);
+extern int msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize);
 
 extern int64_t ms_decode_data (const void *input, size_t inputsize, uint8_t encoding,
                                int64_t samplecount, void *output, size_t outputsize,
@@ -392,12 +392,12 @@ extern int64_t ms_decode_data (const void *input, size_t inputsize, uint8_t enco
 
 extern MS3Record* msr3_init (MS3Record *msr);
 extern void       msr3_free (MS3Record **ppmsr);
-extern MS3Record* msr3_duplicate (MS3Record *msr, int8_t datadup);
-extern nstime_t   msr3_endtime (MS3Record *msr);
-extern void       msr3_print (MS3Record *msr, int8_t details);
+extern MS3Record* msr3_duplicate (const MS3Record *msr, int8_t datadup);
+extern nstime_t   msr3_endtime (const MS3Record *msr);
+extern void       msr3_print (const MS3Record *msr, int8_t details);
 extern int        msr3_resize_buffer (MS3Record *msr);
-extern double     msr3_sampratehz (MS3Record *msr);
-extern double     msr3_host_latency (MS3Record *msr);
+extern double     msr3_sampratehz (const MS3Record *msr);
+extern double     msr3_host_latency (const MS3Record *msr);
 
 extern int ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion);
 extern int ms_parse_raw3 (const char *record, int maxreclen, int8_t details);
@@ -435,19 +435,19 @@ typedef struct MS3Selections {
   uint8_t pubversion;                //!< Selected publication version, use 0 for any
 } MS3Selections;
 
-extern MS3Selections* ms3_matchselect (MS3Selections *selections, char *sid,
+extern MS3Selections* ms3_matchselect (MS3Selections *selections, const char *sid,
                                        nstime_t starttime, nstime_t endtime,
                                        int pubversion, MS3SelectTime **ppselecttime);
-extern MS3Selections* msr3_matchselect (MS3Selections *selections, MS3Record *msr,
+extern MS3Selections* msr3_matchselect (MS3Selections *selections, const MS3Record *msr,
                                         MS3SelectTime **ppselecttime);
-extern int ms3_addselect (MS3Selections **ppselections, char *sidpattern,
+extern int ms3_addselect (MS3Selections **ppselections, const char *sidpattern,
                           nstime_t starttime, nstime_t endtime, uint8_t pubversion);
 extern int ms3_addselect_comp (MS3Selections **ppselections,
                                char *network, char* station, char *location, char *channel,
                                nstime_t starttime, nstime_t endtime, uint8_t pubversion);
 extern int ms3_readselectionsfile (MS3Selections **ppselections, char *filename);
 extern void ms3_freeselections (MS3Selections *selections);
-extern void ms3_printselections (MS3Selections *selections);
+extern void ms3_printselections (const MS3Selections *selections);
 /** @} */
 
 /** @addtogroup record-list
@@ -633,10 +633,10 @@ extern int mstl3_resize_buffers (MS3TraceList *mstl);
 extern int64_t mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
                            void *handlerdata, int reclen, int8_t encoding,
                            int64_t *packedsamples, uint32_t flags, int8_t verbose, char *extra);
-extern void mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
+extern void mstl3_printtracelist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
                                   int8_t details, int8_t gaps, int8_t versions);
-extern void mstl3_printsynclist (MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds);
-extern void mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
+extern void mstl3_printsynclist (const MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds);
+extern void mstl3_printgaplist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
                                 double *mingap, double *maxgap);
 /** @} */
 
@@ -925,7 +925,7 @@ typedef struct LM_PARSED_JSON_s LM_PARSED_JSON;
 #define mseh_exists(msr, ptr)                  \
   (!mseh_get_ptr_r (msr, ptr, NULL, 0, 0, NULL))
 
-extern int mseh_get_ptr_r (MS3Record *msr, const char *ptr,
+extern int mseh_get_ptr_r (const MS3Record *msr, const char *ptr,
                            void *value, char type, size_t maxlength,
                            LM_PARSED_JSON **parsestate);
 
@@ -977,7 +977,7 @@ extern int mseh_add_recenter_r (MS3Record *msr, const char *ptr,
 extern int mseh_serialize (MS3Record *msr, LM_PARSED_JSON **parsestate);
 extern void mseh_free_parsestate (LM_PARSED_JSON **parsestate);
 
-extern int mseh_print (MS3Record *msr, int indent);
+extern int mseh_print (const MS3Record *msr, int indent);
 /** @} */
 
 /** @addtogroup record-list

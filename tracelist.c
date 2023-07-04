@@ -2143,11 +2143,11 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
  * @param[in] versions Flag to control inclusion of publication version on SourceIDs
  ***************************************************************************/
 void
-mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
+mstl3_printtracelist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
                       int8_t details, int8_t gaps, int8_t versions)
 {
-  MS3TraceID *id = 0;
-  MS3TraceSeg *seg = 0;
+  const MS3TraceID *id = 0;
+  const MS3TraceSeg *seg = 0;
   char stime[40];
   char etime[40];
   char gapstr[40];
@@ -2158,7 +2158,7 @@ mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
   int segcnt = 0;
 
   char versioned_sid[LM_SIDLEN + 10] = {0};
-  char *display_sid = NULL;
+  const char *display_sid = NULL;
 
   if (!mstl)
   {
@@ -2275,10 +2275,10 @@ mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
  * @param[in] subseconds Inclusion of subseconds, one of @ref ms_subseconds_t
  ***************************************************************************/
 void
-mstl3_printsynclist (MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds)
+mstl3_printsynclist (const MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds)
 {
-  MS3TraceID *id = 0;
-  MS3TraceSeg *seg = 0;
+  const MS3TraceID *id = 0;
+  const MS3TraceSeg *seg = 0;
   char starttime[40];
   char endtime[40];
   char yearday[32];
@@ -2348,11 +2348,11 @@ mstl3_printsynclist (MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds
  * @param[in] maxgap Maximum gap to print in seconds (pointer to value)
  ***************************************************************************/
 void
-mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
+mstl3_printgaplist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
                     double *mingap, double *maxgap)
 {
-  MS3TraceID *id = 0;
-  MS3TraceSeg *seg = 0;
+  const MS3TraceID *id = 0;
+  const MS3TraceSeg *seg = 0;
 
   char time1[40], time2[40];
   char gapstr[40];

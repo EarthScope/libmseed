@@ -55,7 +55,7 @@ static int ms_globmatch (const char *string, const char *pattern);
  * match and NULL for no match or error.
  ***************************************************************************/
 MS3Selections *
-ms3_matchselect (MS3Selections *selections, char *sid, nstime_t starttime,
+ms3_matchselect (MS3Selections *selections, const char *sid, nstime_t starttime,
                  nstime_t endtime, int pubversion, MS3SelectTime **ppselecttime)
 {
   MS3Selections *findsl = NULL;
@@ -142,7 +142,8 @@ ms3_matchselect (MS3Selections *selections, char *sid, nstime_t starttime,
  * match and NULL for no match or error.
  ***************************************************************************/
 MS3Selections *
-msr3_matchselect (MS3Selections *selections, MS3Record *msr, MS3SelectTime **ppselecttime)
+msr3_matchselect (MS3Selections *selections, const MS3Record *msr,
+                  MS3SelectTime **ppselecttime)
 {
   nstime_t endtime;
 
@@ -177,7 +178,7 @@ msr3_matchselect (MS3Selections *selections, MS3Record *msr, MS3SelectTime **pps
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-ms3_addselect (MS3Selections **ppselections, char *sidpattern,
+ms3_addselect (MS3Selections **ppselections, const char *sidpattern,
                nstime_t starttime, nstime_t endtime, uint8_t pubversion)
 {
   MS3Selections *newsl = NULL;
@@ -701,9 +702,9 @@ ms3_freeselections (MS3Selections *selections)
  * @param[in] selections Start of ::MS3Selections to print
  ***************************************************************************/
 void
-ms3_printselections (MS3Selections *selections)
+ms3_printselections (const MS3Selections *selections)
 {
-  MS3Selections *select;
+  const MS3Selections *select;
   MS3SelectTime *selecttime;
   char starttime[50];
   char endtime[50];

@@ -1019,7 +1019,7 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
  * \ref MessageOnError - this function logs a message on error
  ************************************************************************/
 int
-msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize)
+msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize)
 {
   uint8_t nullframe[64] = {0};
   uint8_t samplebytes = 0;
