@@ -424,7 +424,7 @@ ms3_addselect_comp (MS3Selections **ppselections, char *network, char *station,
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-ms3_readselectionsfile (MS3Selections **ppselections, char *filename)
+ms3_readselectionsfile (MS3Selections **ppselections, const char *filename)
 {
   FILE *fp;
   nstime_t starttime;

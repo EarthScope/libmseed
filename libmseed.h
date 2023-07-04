@@ -388,7 +388,7 @@ extern int msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_
 
 extern int64_t ms_decode_data (const void *input, size_t inputsize, uint8_t encoding,
                                int64_t samplecount, void *output, size_t outputsize,
-                               char *sampletype, int8_t swapflag, char *sid, int8_t verbose);
+                               char *sampletype, int8_t swapflag, const char *sid, int8_t verbose);
 
 extern MS3Record* msr3_init (MS3Record *msr);
 extern void       msr3_free (MS3Record **ppmsr);
@@ -445,7 +445,7 @@ extern int ms3_addselect (MS3Selections **ppselections, const char *sidpattern,
 extern int ms3_addselect_comp (MS3Selections **ppselections,
                                char *network, char* station, char *location, char *channel,
                                nstime_t starttime, nstime_t endtime, uint8_t pubversion);
-extern int ms3_readselectionsfile (MS3Selections **ppselections, char *filename);
+extern int ms3_readselectionsfile (MS3Selections **ppselections, const char *filename);
 extern void ms3_freeselections (MS3Selections *selections);
 extern void ms3_printselections (const MS3Selections *selections);
 /** @} */

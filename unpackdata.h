@@ -40,18 +40,18 @@ extern int msr_decode_float32 (float *input, int64_t samplecount, float *output,
 extern int msr_decode_float64 (double *input, int64_t samplecount, double *output,
                                int64_t outputlength, int swapflag);
 extern int msr_decode_steim1 (int32_t *input, int inputlength, int64_t samplecount,
-                              int32_t *output, int64_t outputlength, char *srcname,
+                              int32_t *output, int64_t outputlength, const char *srcname,
                               int swapflag);
 extern int msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
-                              int32_t *output, int64_t outputlength, char *srcname,
+                              int32_t *output, int64_t outputlength, const char *srcname,
                               int swapflag);
 extern int msr_decode_geoscope (char *input, int64_t samplecount, float *output,
-                                int64_t outputlength, int encoding, char *srcname,
+                                int64_t outputlength, int encoding, const char *srcname,
                                 int swapflag);
 extern int msr_decode_cdsn (int16_t *input, int64_t samplecount, int32_t *output,
                             int64_t outputlength, int swapflag);
 extern int msr_decode_sro (int16_t *input, int64_t samplecount, int32_t *output,
-                           int64_t outputlength, char *srcname, int swapflag);
+                           int64_t outputlength, const char *srcname, int swapflag);
 extern int msr_decode_dwwssn (int16_t *input, int64_t samplecount, int32_t *output,
                               int64_t outputlength, int swapflag);
 

@@ -1272,7 +1272,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
 int64_t
 ms_decode_data (const void *input, size_t inputsize, uint8_t encoding,
                 int64_t samplecount, void *output, size_t outputsize,
-                char *sampletype, int8_t swapflag, char *sid, int8_t verbose)
+                char *sampletype, int8_t swapflag, const char *sid, int8_t verbose)
 {
   size_t decodedsize; /* byte size of decodeded samples */
   int32_t nsamples; /* number of samples unpacked */
