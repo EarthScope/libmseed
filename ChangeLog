@@ -1,6 +1,7 @@
-2023.184:
+2023.185:
+	- Fix logic in `msr3_duplicate()` for certain cases.
 	- Add many const qualifiers to pointer values where the library
-	interface does not modify the data.
+	interface does not modify the data.  Thanks @damb
 
 2023.180:
 	- Add const qualifier to record pointer declarations where the
