@@ -49,7 +49,7 @@ extern int msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
                               int swapflag);
 extern int msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
                               int outputlength, int32_t diff0, uint16_t *byteswritten,
-                              char *sid, int swapflag);
+                              const char *sid, int swapflag);
 
 #ifdef __cplusplus
 }
