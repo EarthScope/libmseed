@@ -423,7 +423,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
 int
 msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
                    int outputlength, int32_t diff0, uint16_t *byteswritten,
-                   char *sid, int swapflag)
+                   const char *sid, int swapflag)
 {
   uint32_t *frameptr;  /* Frame pointer in output */
   int32_t *Xnp = NULL; /* Reverse integration constant, aka last sample */

@@ -43,11 +43,11 @@ static int msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int
 
 static int msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
                           char sampletype, int8_t encoding, int8_t swapflag,
-                          uint16_t *byteswritten, char *sid, int8_t verbose);
+                          uint16_t *byteswritten, const char *sid, int8_t verbose);
 
 static int ms_genfactmult (double samprate, int16_t *factor, int16_t *multiplier);
 
-static uint32_t ms_timestr2btime (const char *timestr, uint8_t *btime, char *sid, int8_t swapflag);
+static uint32_t ms_timestr2btime (const char *timestr, uint8_t *btime, const char *sid, int8_t swapflag);
 
 
 /**********************************************************************/ /**
@@ -1571,7 +1571,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 static int
 msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
                char sampletype, int8_t encoding, int8_t swapflag,
-               uint16_t *byteswritten, char *sid, int8_t verbose)
+               uint16_t *byteswritten, const char *sid, int8_t verbose)
 {
   int nsamples;
 
@@ -2049,7 +2049,7 @@ ms_genfactmult (double samprate, int16_t *factor, int16_t *multiplier)
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 static inline uint32_t
-ms_timestr2btime (const char *timestr, uint8_t *btime, char *sid, int8_t swapflag)
+ms_timestr2btime (const char *timestr, uint8_t *btime, const char *sid, int8_t swapflag)
 {
   uint16_t year;
   uint16_t day;
