@@ -948,7 +948,6 @@ INPUT                  = . \
                          ../extraheaders.c \
                          ../fileutils.c \
                          ../genutils.c \
-                         ../gswap.c \
                          ../logging.c \
                          ../lookup.c \
                          ../msrutils.c \
