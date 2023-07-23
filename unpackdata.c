@@ -193,9 +193,11 @@ msr_decode_steim1 (int32_t *input, int inputlength, int64_t samplecount,
                    int swapflag)
 {
   uint32_t frame[16]; /* Frame, 16 x 32-bit quantities = 64 bytes */
+  int32_t diff[60];   /* Difference values for a frame, max is 15 x 4 (8-bit samples) */
   int32_t Xn = 0;     /* Reverse integration constant, aka last sample */
   int64_t outputidx;
   int maxframes = inputlength / 64;
+  int diffidx;
   int frameidx;
   int startnibble;
   int nibble;
@@ -206,7 +208,7 @@ msr_decode_steim1 (int32_t *input, int inputlength, int64_t samplecount,
     int8_t d8[4];
     int16_t d16[2];
     int32_t d32;
-  } * word;
+  } *word;
 
   if (inputlength <= 0)
     return 0;
@@ -233,6 +235,7 @@ msr_decode_steim1 (int32_t *input, int inputlength, int64_t samplecount,
   {
     /* Copy frame, each is 16x32-bit quantities = 64 bytes */
     memcpy (frame, input + (16 * frameidx), 64);
+    diffidx = 0;
 
     /* Save forward integration constant (X0) and reverse integration constant (Xn)
        and set the starting nibble index depending on frame. */
@@ -268,7 +271,7 @@ msr_decode_steim1 (int32_t *input, int inputlength, int64_t samplecount,
       ms_gswap4 (&frame[0]);
 
     /* Decode each 32-bit word according to nibble */
-    for (widx = startnibble; widx < 16 && outputidx < samplecount; widx++)
+    for (widx = startnibble; widx < 16; widx++)
     {
       /* W0: the first 32-bit contains 16 x 2-bit nibbles for each word */
       nibble = EXTRACTBITRANGE (frame[0], (30 - (2 * widx)), 2);
@@ -283,62 +286,58 @@ msr_decode_steim1 (int32_t *input, int inputlength, int64_t samplecount,
         break;
 
       case 1: /* 01: Four 1-byte differences */
-
-        /* Apply differences from previous sample, skip initial difference */
-        for (idx = (frameidx == 0 && widx == 3) ? 1 : 0;
-             idx < 4 && outputidx < samplecount;
-             idx++, outputidx++)
+        for (idx = 0; idx < 4; idx++)
         {
-          output[outputidx] = output[outputidx - 1] + word->d8[idx];
+          diff[diffidx++] = word->d8[idx];
         }
 
 #if DECODE_DEBUG
-        ms_log (0, "  W%02d: 01=4x8b  %d  %d  %d  %d\n",
-                widx, word->d8[0], word->d8[1], word->d8[2], word->d8[3]);
+        ms_log (0, "  W%02d: 01=4x8b  %d  %d  %d  %d\n", widx,
+                diff[diffidx - 4], diff[diffidx - 3], diff[diffidx - 2], diff[diffidx - 1]);
 #endif
         break;
 
       case 2: /* 10: Two 2-byte differences */
-
-        /* Apply differences from previous sample, skip initial difference */
-        for (idx = (frameidx == 0 && widx == 3) ? 1 : 0;
-             idx < 2 && outputidx < samplecount;
-             idx++, outputidx++)
+        for (idx = 0; idx < 2; idx++)
         {
           if (swapflag)
           {
             ms_gswap2 (&word->d16[idx]);
           }
 
-          output[outputidx] = output[outputidx - 1] + word->d16[idx];
+          diff[diffidx++] = word->d16[idx];
         }
 
 #if DECODE_DEBUG
-        ms_log (0, "  W%02d: 10=2x16b  %d  %d\n", widx, word->d16[0], word->d16[1]);
+        ms_log (0, "  W%02d: 10=2x16b  %d  %d\n", widx,
+                diff[diffidx - 2], diff[diffidx - 1]);
 #endif
         break;
 
       case 3: /* 11: One 4-byte difference */
-
-        /* Apply difference from previous sample if not the initial difference */
-        if (!(frameidx == 0 && widx == 3) && outputidx < samplecount)
+        if (swapflag)
         {
-          if (swapflag)
-          {
-            ms_gswap4 (&word->d32);
-          }
-
-          output[outputidx] = output[outputidx - 1] + word->d32;
-          outputidx++;
+          ms_gswap4 (&word->d32);
         }
 
+        diff[diffidx++] = word->d32;
+
 #if DECODE_DEBUG
-        ms_log (0, "  W%02d: 11=1x32b  %d\n", widx, word->d32);
+        ms_log (0, "  W%02d: 11=1x32b  %d\n", widx, diff[diffidx - 1]);
 #endif
         break;
       } /* Done with decoding 32-bit word based on nibble */
     }   /* Done looping over nibbles and 32-bit words */
-  }     /* Done looping over frames */
+
+    /* Apply differences in this frame to calculate output samples,
+     * ignoring first difference for first frame */
+    for (idx = (frameidx == 0) ? 1 : 0;
+         idx < diffidx && outputidx < samplecount;
+         idx++, outputidx++)
+    {
+      output[outputidx] = output[outputidx - 1] + diff[idx];
+    }
+  } /* Done looping over frames */
 
   /* Check data integrity by comparing last sample to Xn (reverse integration constant) */
   if (outputidx == samplecount && output[outputidx - 1] != Xn)
@@ -364,9 +363,11 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
                    int swapflag)
 {
   uint32_t frame[16]; /* Frame, 16 x 32-bit quantities = 64 bytes */
+  int32_t diff[105];  /* Difference values for a frame, max is 15 x 7 (4-bit samples) */
   int32_t Xn = 0;     /* Reverse integration constant, aka last sample */
   int64_t outputidx;
   int maxframes = inputlength / 64;
+  int diffidx;
   int frameidx;
   int startnibble;
   int nibble;
@@ -377,7 +378,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
   union dword {
     int8_t d8[4];
     int32_t d32;
-  } * word;
+  } *word;
 
   /* Bitfield specifications for sign extension of various bit-width values */
   struct {signed int x:4;} s4;
@@ -412,6 +413,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
   {
     /* Copy frame, each is 16x32-bit quantities = 64 bytes */
     memcpy (frame, input + (16 * frameidx), 64);
+    diffidx = 0;
 
     /* Save forward integration constant (X0) and reverse integration constant (Xn)
        and set the starting nibble index depending on frame. */
@@ -447,7 +449,7 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
       ms_gswap4 (&frame[0]);
 
     /* Decode each 32-bit word according to nibble */
-    for (widx = startnibble; widx < 16 && outputidx < samplecount; widx++)
+    for (widx = startnibble; widx < 16; widx++)
     {
       /* W0: the first 32-bit quantity contains 16 x 2-bit nibbles (high order bits) */
       nibble = EXTRACTBITRANGE (frame[0], (30 - (2 * widx)), 2);
@@ -460,22 +462,15 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
 #endif
         break;
       case 1: /* nibble=01: Four 8-bit differences, starting at high order bits */
-
-        /* Apply differences from previous sample, skip initial difference */
         word = (union dword *)&frame[widx];
-        for (idx = (frameidx == 0 && widx == 3) ? 1 : 0;
-             idx < 4 && outputidx < samplecount;
-             idx++, outputidx++)
+        for (idx = 0; idx < 4; idx++)
         {
-          output[outputidx] = output[outputidx - 1] + word->d8[idx];
+          diff[diffidx++] = word->d8[idx];
         }
 
 #if DECODE_DEBUG
         ms_log (0, "  W%02d: 01=4x8b  %d  %d  %d  %d\n", widx,
-                (s8.x = EXTRACTBITRANGE (frame[widx], 24, 8)),
-                (s8.x = EXTRACTBITRANGE (frame[widx], 16, 8)),
-                (s8.x = EXTRACTBITRANGE (frame[widx], 8, 8)),
-                (s8.x = EXTRACTBITRANGE (frame[widx], 0, 8)));
+                diff[diffidx - 4], diff[diffidx - 3], diff[diffidx - 2], diff[diffidx - 1]);
 #endif
         break;
 
@@ -493,52 +488,34 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
           break;
 
         case 1: /* nibble=10, dnib=01: One 30-bit difference */
-
-          /* Apply difference from previous sample if not the initial difference */
-          if (!(frameidx == 0 && widx == 3) && outputidx < samplecount)
-          {
-            output[outputidx] = output[outputidx - 1] + (s30.x = EXTRACTBITRANGE (frame[widx], 0, 30));
-            outputidx++;
-          }
+          diff[diffidx++] = (s30.x = EXTRACTBITRANGE (frame[widx], 0, 30));
 
 #if DECODE_DEBUG
-          ms_log (0, "  W%02d: 10,01=1x30b  %d\n", widx,
-                  (s30.x = EXTRACTBITRANGE (frame[widx], 0, 30)));
+          ms_log (0, "  W%02d: 10,01=1x30b  %d\n", widx, diff[diffidx - 1]);
 #endif
           break;
 
         case 2: /* nibble=10, dnib=10: Two 15-bit differences, starting at high order bits */
-
-          /* Apply differences from previous sample, skip initial difference */
-          for (idx = (frameidx == 0 && widx == 3) ? 1 : 0;
-               idx < 2 && outputidx < samplecount;
-               idx++, outputidx++)
+          for (idx = 0; idx < 2; idx++)
           {
-            output[outputidx] = output[outputidx - 1] + (s15.x = EXTRACTBITRANGE (frame[widx], (15 - idx * 15), 15));
+            diff[diffidx++] = (s15.x = EXTRACTBITRANGE (frame[widx], (15 - idx * 15), 15));
           }
 
 #if DECODE_DEBUG
           ms_log (0, "  W%02d: 10,10=2x15b  %d  %d\n", widx,
-                  (s15.x = EXTRACTBITRANGE (frame[widx], 15, 15)),
-                  (s15.x = EXTRACTBITRANGE (frame[widx], 0, 15)));
+                  diff[diffidx - 2], diff[diffidx - 1]);
 #endif
           break;
 
         case 3: /* nibble=10, dnib=11: Three 10-bit differences, starting at high order bits */
-
-          /* Apply differences from previous sample, skip initial difference */
-          for (idx = (frameidx == 0 && widx == 3) ? 1 : 0;
-               idx < 3 && outputidx < samplecount;
-               idx++, outputidx++)
+          for (idx = 0; idx < 3; idx++)
           {
-            output[outputidx] = output[outputidx - 1] + (s10.x = EXTRACTBITRANGE (frame[widx], (20 - idx * 10), 10));
+            diff[diffidx++] = (s10.x = EXTRACTBITRANGE (frame[widx], (20 - idx * 10), 10));
           }
 
 #if DECODE_DEBUG
           ms_log (0, "  W%02d: 10,11=3x10b  %d  %d  %d\n", widx,
-                  (s10.x = EXTRACTBITRANGE (frame[widx], 20, 10)),
-                  (s10.x = EXTRACTBITRANGE (frame[widx], 10, 10)),
-                  (s10.x = EXTRACTBITRANGE (frame[widx], 0, 10)));
+                  diff[diffidx - 3], diff[diffidx - 2], diff[diffidx - 1]);
 #endif
           break;
         }
@@ -553,65 +530,41 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
         switch (dnib)
         {
         case 0: /* nibble=11, dnib=00: Five 6-bit differences, starting at high order bits */
-
-          /* Apply differences from previous sample, skip initial difference */
-          for (idx = (frameidx == 0 && widx == 3) ? 1 : 0;
-               idx < 5 && outputidx < samplecount;
-               idx++, outputidx++)
+          for (idx = 0; idx < 5; idx++)
           {
-            output[outputidx] = output[outputidx - 1] + (s6.x = EXTRACTBITRANGE (frame[widx], (24 - idx * 6), 6));
+            diff[diffidx++] = (s6.x = EXTRACTBITRANGE (frame[widx], (24 - idx * 6), 6));
           }
 
 #if DECODE_DEBUG
           ms_log (0, "  W%02d: 11,00=5x6b  %d  %d  %d  %d  %d\n", widx,
-                  (s6.x = EXTRACTBITRANGE (frame[widx], 24, 6)),
-                  (s6.x = EXTRACTBITRANGE (frame[widx], 18, 6)),
-                  (s6.x = EXTRACTBITRANGE (frame[widx], 12, 6)),
-                  (s6.x = EXTRACTBITRANGE (frame[widx], 6, 6)),
-                  (s6.x = EXTRACTBITRANGE (frame[widx], 0, 6)));
+                  diff[diffidx - 5], diff[diffidx - 4], diff[diffidx - 3], diff[diffidx - 2],
+                  diff[diffidx - 1]);
 #endif
           break;
 
         case 1: /* nibble=11, dnib=01: Six 5-bit differences, starting at high order bits */
-
-          /* Apply differences from previous sample, skip initial difference */
-          for (idx = (frameidx == 0 && widx == 3) ? 1 : 0;
-               idx < 6 && outputidx < samplecount;
-               idx++, outputidx++)
+          for (idx = 0; idx < 6; idx++)
           {
-            output[outputidx] = output[outputidx - 1] + (s5.x = EXTRACTBITRANGE (frame[widx], (25 - idx * 5), 5));
+            diff[diffidx++] = (s5.x = EXTRACTBITRANGE (frame[widx], (25 - idx * 5), 5));
           }
 
 #if DECODE_DEBUG
           ms_log (0, "  W%02d: 11,01=6x5b  %d  %d  %d  %d  %d  %d\n", widx,
-                  (s5.x = EXTRACTBITRANGE (frame[widx], 25, 5)),
-                  (s5.x = EXTRACTBITRANGE (frame[widx], 20, 5)),
-                  (s5.x = EXTRACTBITRANGE (frame[widx], 15, 5)),
-                  (s5.x = EXTRACTBITRANGE (frame[widx], 10, 5)),
-                  (s5.x = EXTRACTBITRANGE (frame[widx], 5, 5)),
-                  (s5.x = EXTRACTBITRANGE (frame[widx], 0, 5)));
+                  diff[diffidx - 6], diff[diffidx - 5], diff[diffidx - 4], diff[diffidx - 3],
+                  diff[diffidx - 2], diff[diffidx - 1]);
 #endif
           break;
 
         case 2: /* nibble=11, dnib=10: Seven 4-bit differences, starting at high order bits */
-
-          /* Apply differences from previous sample, skip initial difference */
-          for (idx = (frameidx == 0 && widx == 3) ? 1 : 0;
-               idx < 7 && outputidx < samplecount;
-               idx++, outputidx++)
+          for (idx = 0; idx < 7; idx++)
           {
-            output[outputidx] = output[outputidx - 1] + (s4.x = EXTRACTBITRANGE (frame[widx], (24 - idx * 4), 4));
+            diff[diffidx++] = (s4.x = EXTRACTBITRANGE (frame[widx], (24 - idx * 4), 4));
           }
 
 #if DECODE_DEBUG
           ms_log (0, "  W%02d: 11,10=7x4b  %d  %d  %d  %d  %d  %d  %d\n", widx,
-                  (s4.x = EXTRACTBITRANGE (frame[widx], 24, 4)),
-                  (s4.x = EXTRACTBITRANGE (frame[widx], 20, 4)),
-                  (s4.x = EXTRACTBITRANGE (frame[widx], 16, 4)),
-                  (s4.x = EXTRACTBITRANGE (frame[widx], 12, 4)),
-                  (s4.x = EXTRACTBITRANGE (frame[widx], 8, 4)),
-                  (s4.x = EXTRACTBITRANGE (frame[widx], 4, 4)),
-                  (s4.x = EXTRACTBITRANGE (frame[widx], 0, 4)));
+                  diff[diffidx - 7], diff[diffidx - 6], diff[diffidx - 5], diff[diffidx - 4],
+                  diff[diffidx - 3], diff[diffidx - 2], diff[diffidx - 1]);
 #endif
           break;
 
@@ -625,7 +578,16 @@ msr_decode_steim2 (int32_t *input, int inputlength, int64_t samplecount,
         break;
       } /* Done with decoding 32-bit word based on nibble */
     }   /* Done looping over nibbles and 32-bit words */
-  }     /* Done looping over frames */
+
+    /* Apply differences in this frame to calculate output samples,
+     * ignoring first difference for first frame */
+    for (idx = (frameidx == 0) ? 1 : 0;
+         idx < diffidx && outputidx < samplecount;
+         idx++, outputidx++)
+    {
+      output[outputidx] = output[outputidx - 1] + diff[idx];
+    }
+  } /* Done looping over frames */
 
   /* Check data integrity by comparing last sample to Xn (reverse integration constant) */
   if (outputidx == samplecount && output[outputidx - 1] != Xn)
@@ -695,10 +657,10 @@ msr_decode_geoscope (char *input, int64_t samplecount, float *output,
     case DE_GEOSCOPE24:
       sample32.i = 0;
       if (swapflag)
-        for (k              = 0; k < 3; k++)
+        for (k = 0; k < 3; k++)
           sample32.b[2 - k] = input[k];
       else
-        for (k              = 0; k < 3; k++)
+        for (k = 0; k < 3; k++)
           sample32.b[1 + k] = input[k];
 
       mantissa = sample32.i;
