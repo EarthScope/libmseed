@@ -1,3 +1,7 @@
+2023.204: 3.0.16
+	- Additional Steim 1 & 2 decoder optimization.
+	- Add more const qualifiers to pointer values.  Thanks @damb.
+
 2023.185:
 	- Fix logic in `msr3_duplicate()` for certain cases.
 	- Add many const qualifiers to pointer values where the library
