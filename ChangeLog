@@ -1,3 +1,7 @@
+2023.205:
+	- Add const qualifiers to packing routines that do not modify the
+	passed MS3Record structure.
+
 2023.204: 3.0.16
 	- Additional Steim 1 & 2 decoder optimization.
 	- Add more const qualifiers to pointer values.  Thanks @damb.

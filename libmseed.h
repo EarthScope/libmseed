@@ -337,6 +337,16 @@ extern int ms_md2doy (int year, int month, int mday, int *yday);
     - \c 'd' - 64-bit float (IEEE) data samples
 */
 
+/** @def MS_PACK_DEFAULT_RECLEN
+    @brief Default record length to use when ::MS3Record.reclen == -1
+ */
+#define MS_PACK_DEFAULT_RECLEN 4096
+
+/** @def MS_PACK_DEFAULT_ENCODING
+    @brief Default data encoding to use when ::MS3Record.encoding == -1
+ */
+#define MS_PACK_DEFAULT_ENCODING DE_STEIM2
+
 /** @addtogroup miniseed-record
     @brief Definitions and functions related to individual miniSEED records
     @{ */
@@ -371,16 +381,16 @@ typedef struct MS3Record {
 extern int msr3_parse (const char *record, uint64_t recbuflen, MS3Record **ppmsr,
                        uint32_t flags, int8_t verbose);
 
-extern int msr3_pack (MS3Record *msr,
+extern int msr3_pack (const MS3Record *msr,
                       void (*record_handler) (char *, int, void *),
                       void *handlerdata, int64_t *packedsamples,
                       uint32_t flags, int8_t verbose);
 
-extern int msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
+extern int msr3_repack_mseed3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
 
-extern int msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
+extern int msr3_pack_header3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
 
-extern int msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
+extern int msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
 
 extern int64_t msr3_unpack_data (MS3Record *msr, int8_t verbose);
 

@@ -33,11 +33,11 @@
 extern double ms_nomsamprate (int factor, int multiplier);
 
 /* Function(s) internal to this file */
-static int msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
+static int msr3_pack_mseed3 (const MS3Record *msr, void (*record_handler) (char *, int, void *),
                              void *handlerdata, int64_t *packedsamples,
                              uint32_t flags, int8_t verbose);
 
-static int msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
+static int msr3_pack_mseed2 (const MS3Record *msr, void (*record_handler) (char *, int, void *),
                              void *handlerdata, int64_t *packedsamples,
                              uint32_t flags, int8_t verbose);
 
@@ -103,7 +103,7 @@ static uint32_t ms_timestr2btime (const char *timestr, uint8_t *btime, const cha
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-msr3_pack (MS3Record *msr, void (*record_handler) (char *, int, void *),
+msr3_pack (const MS3Record *msr, void (*record_handler) (char *, int, void *),
            void *handlerdata, int64_t *packedsamples, uint32_t flags, int8_t verbose)
 {
   int packedrecs = 0;
@@ -120,13 +120,7 @@ msr3_pack (MS3Record *msr, void (*record_handler) (char *, int, void *),
     return -1;
   }
 
-  /* Set default record length and encoding if needed */
-  if (msr->reclen == -1)
-    msr->reclen = 4096;
-  if (msr->encoding == -1)
-    msr->encoding = DE_STEIM2;
-
-  if (msr->reclen < MINRECLEN || msr->reclen > MAXRECLEN)
+  if ((msr->reclen != -1) && (msr->reclen < MINRECLEN || msr->reclen > MAXRECLEN))
   {
     ms_log (2, "%s: Record length is out of range: %d\n", msr->sid, msr->reclen);
     return -1;
@@ -158,7 +152,7 @@ msr3_pack (MS3Record *msr, void (*record_handler) (char *, int, void *),
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
+msr3_pack_mseed3 (const MS3Record *msr, void (*record_handler) (char *, int, void *),
                   void *handlerdata, int64_t *packedsamples,
                   uint32_t flags, int8_t verbose)
 {
@@ -175,6 +169,8 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   int packoffset;
   int64_t totalpackedsamples;
   int32_t reclen;
+  int32_t maxreclen;
+  int8_t encoding;
 
   uint32_t crc;
   uint16_t datalength;
@@ -198,10 +194,14 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     return -1;
   }
 
-  if (msr->reclen < (MS3FSDH_LENGTH + strlen(msr->sid) + msr->extralength))
+  /* Use default record length and encoding if needed */
+  maxreclen = (msr->reclen == -1) ? MS_PACK_DEFAULT_RECLEN : msr->reclen;
+  encoding = (msr->encoding == -1) ? MS_PACK_DEFAULT_ENCODING : msr->encoding;
+
+  if (maxreclen < (MS3FSDH_LENGTH + strlen(msr->sid) + msr->extralength))
   {
     ms_log (2, "%s: Record length (%d) is not large enough for header (%d), SID (%"PRIsize_t"), and extra (%d)\n",
-            msr->sid, msr->reclen, MS3FSDH_LENGTH, strlen(msr->sid), msr->extralength);
+            msr->sid, maxreclen, MS3FSDH_LENGTH, strlen(msr->sid), msr->extralength);
     return -1;
   }
 
@@ -209,7 +209,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   swapflag = (ms_bigendianhost ()) ? 1 : 0;
 
   /* Allocate space for data record */
-  rawrec = (char *)libmseed_memory.malloc (msr->reclen);
+  rawrec = (char *)libmseed_memory.malloc (maxreclen);
 
   if (rawrec == NULL)
   {
@@ -218,7 +218,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   }
 
   /* Pack fixed header and extra headers, returned size is data offset */
-  dataoffset = msr3_pack_header3 (msr, rawrec, msr->reclen, verbose);
+  dataoffset = msr3_pack_header3 (msr, rawrec, maxreclen, verbose);
 
   if (dataoffset < 0)
   {
@@ -260,13 +260,13 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   }
 
   /* Determine the max data bytes and sample count */
-  maxdatabytes = msr->reclen - dataoffset;
+  maxdatabytes = maxreclen - dataoffset;
 
-  if (msr->encoding == DE_STEIM1)
+  if (encoding == DE_STEIM1)
   {
     maxsamples = (int)(maxdatabytes / 64) * STEIM1_FRAME_MAX_SAMPLES;
   }
-  else if (msr->encoding == DE_STEIM2)
+  else if (encoding == DE_STEIM2)
   {
     maxsamples = (int)(maxdatabytes / 64) * STEIM2_FRAME_MAX_SAMPLES;
   }
@@ -299,7 +299,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     packsamples = msr_pack_data (encoded,
                                  (char *)msr->datasamples + packoffset,
                                  (int)(msr->numsamples - totalpackedsamples), maxdatabytes,
-                                 msr->sampletype, msr->encoding, swapflag,
+                                 msr->sampletype, encoding, swapflag,
                                  &datalength, msr->sid, verbose);
 
     if (packsamples < 0)
@@ -389,7 +389,7 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
+msr3_repack_mseed3 (const MS3Record *msr, char *record, uint32_t recbuflen,
                     int8_t verbose)
 {
   int dataoffset;
@@ -483,10 +483,12 @@ msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen,
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose)
+msr3_pack_header3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose)
 {
   int extraoffset = 0;
   size_t sidlength;
+  int32_t maxreclen;
+  int8_t encoding;
   int8_t swapflag;
 
   uint16_t year;
@@ -502,15 +504,13 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
     return -1;
   }
 
-  /* Set default record length and encoding if needed */
-  if (msr->reclen == -1)
-    msr->reclen = 4096;
-  if (msr->encoding == -1)
-    msr->encoding = DE_STEIM2;
+  /* Use default record length and encoding if needed */
+  maxreclen = (msr->reclen == -1) ? MS_PACK_DEFAULT_RECLEN : msr->reclen;
+  encoding = (msr->encoding == -1) ? MS_PACK_DEFAULT_ENCODING : msr->encoding;
 
-  if (msr->reclen < MINRECLEN || msr->reclen > MAXRECLEN)
+  if (maxreclen < MINRECLEN || maxreclen > MAXRECLEN)
   {
-    ms_log (2, "%s: Record length is out of range: %d\n", msr->sid, msr->reclen);
+    ms_log (2, "%s: Record length is out of range: %d\n", msr->sid, maxreclen);
     return -1;
   }
 
@@ -519,7 +519,7 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   if (recbuflen < (uint32_t)(MS3FSDH_LENGTH + sidlength + msr->extralength))
   {
     ms_log (2, "%s: Buffer length (%d) is not large enough for fixed header (%d), SID (%"PRIsize_t"), and extra (%d)\n",
-            msr->sid, msr->reclen, MS3FSDH_LENGTH, sidlength, msr->extralength);
+            msr->sid, maxreclen, MS3FSDH_LENGTH, sidlength, msr->extralength);
     return -1;
   }
 
@@ -556,7 +556,7 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   *pMS3FSDH_HOUR (record) = hour;
   *pMS3FSDH_MIN (record) = min;
   *pMS3FSDH_SEC (record) = sec;
-  *pMS3FSDH_ENCODING (record) = msr->encoding;
+  *pMS3FSDH_ENCODING (record) = encoding;
 
   /* If rate positive and less than one, convert to period notation */
   if (msr->samprate != 0.0 && msr->samprate > 0 && msr->samprate < 1.0)
@@ -585,13 +585,15 @@ msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
+msr3_pack_mseed2 (const MS3Record *msr, void (*record_handler) (char *, int, void *),
                   void *handlerdata, int64_t *packedsamples,
                   uint32_t flags, int8_t verbose)
 {
   char *rawrec = NULL;
   char *encoded = NULL;  /* Separate encoded data buffer for alignment */
   int8_t swapflag;
+  int32_t reclen;
+  int8_t encoding;
   int dataoffset = 0;
   int headerlen;
   int content;
@@ -625,19 +627,23 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     return -1;
   }
 
-  if (msr->reclen < 128)
+  /* Use default record length and encoding if needed */
+  reclen = (msr->reclen == -1) ? MS_PACK_DEFAULT_RECLEN : msr->reclen;
+  encoding = (msr->encoding == -1) ? MS_PACK_DEFAULT_ENCODING : msr->encoding;
+
+  if (reclen < 128)
   {
     ms_log (2, "%s: Record length (%d) is not large enough, must be >= 128 bytes\n",
-            msr->sid, msr->reclen);
+            msr->sid, reclen);
     return -1;
   }
 
   /* Check that record length is a power of 2.
    * Power of two if (X & (X - 1)) == 0 */
-  if ((msr->reclen & (msr->reclen - 1)) != 0)
+  if ((reclen & (reclen - 1)) != 0)
   {
     ms_log (2, "%s: Cannot create miniSEED 2, record length (%d) is not a power of 2\n",
-            msr->sid, msr->reclen);
+            msr->sid, reclen);
     return -1;
   }
 
@@ -645,7 +651,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   swapflag = (ms_bigendianhost ()) ? 0 : 1;
 
   /* Allocate space for data record */
-  rawrec = (char *)libmseed_memory.malloc (msr->reclen);
+  rawrec = (char *)libmseed_memory.malloc (reclen);
 
   if (rawrec == NULL)
   {
@@ -654,7 +660,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   }
 
   /* Pack fixed header and extra headers, returned size is data offset */
-  headerlen = msr3_pack_header2 (msr, rawrec, msr->reclen, verbose);
+  headerlen = msr3_pack_header2 (msr, rawrec, reclen, verbose);
 
   if (headerlen < 0)
     return -1;
@@ -666,13 +672,13 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     *pMS2B1000_ENCODING (rawrec + 48) = DE_TEXT;
 
     /* Set empty part of record to zeros */
-    memset (rawrec + headerlen, 0, msr->reclen - headerlen);
+    memset (rawrec + headerlen, 0, reclen - headerlen);
 
     if (verbose >= 1)
-      ms_log (0, "%s: Packed %d byte record with no payload\n", msr->sid, msr->reclen);
+      ms_log (0, "%s: Packed %d byte record with no payload\n", msr->sid, reclen);
 
     /* Send record to handler */
-    record_handler (rawrec, msr->reclen, handlerdata);
+    record_handler (rawrec, reclen, handlerdata);
 
     libmseed_memory.free (rawrec);
 
@@ -691,7 +697,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   }
 
   /* Determine offset to encoded data */
-  if (msr->encoding == DE_STEIM1 || msr->encoding == DE_STEIM2)
+  if (encoding == DE_STEIM1 || encoding == DE_STEIM2)
   {
     dataoffset = 64;
     while (dataoffset < headerlen)
@@ -709,13 +715,13 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   *pMS2FSDH_DATAOFFSET(rawrec) = HO2u (dataoffset, swapflag);
 
   /* Determine the max data bytes and sample count */
-  maxdatabytes = msr->reclen - dataoffset;
+  maxdatabytes = reclen - dataoffset;
 
-  if (msr->encoding == DE_STEIM1)
+  if (encoding == DE_STEIM1)
   {
     maxsamples = (int)(maxdatabytes / 64) * STEIM1_FRAME_MAX_SAMPLES;
   }
-  else if (msr->encoding == DE_STEIM2)
+  else if (encoding == DE_STEIM2)
   {
     maxsamples = (int)(maxdatabytes / 64) * STEIM2_FRAME_MAX_SAMPLES;
   }
@@ -748,7 +754,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
     packsamples = msr_pack_data (encoded,
                                  (char *)msr->datasamples + packoffset,
                                  (int)(msr->numsamples - totalpackedsamples), maxdatabytes,
-                                 msr->sampletype, msr->encoding, swapflag,
+                                 msr->sampletype, encoding, swapflag,
                                  &datalength, msr->sid, verbose);
 
     if (packsamples < 0)
@@ -769,14 +775,14 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
     /* Zero any space between encoded data and end of record */
     content = dataoffset + datalength;
-    if (content < msr->reclen)
-      memset (rawrec + content, 0, msr->reclen - content);
+    if (content < reclen)
+      memset (rawrec + content, 0, reclen - content);
 
     if (verbose >= 1)
-      ms_log (0, "%s: Packed %d samples into %d byte record\n", msr->sid, packsamples, msr->reclen);
+      ms_log (0, "%s: Packed %d samples into %d byte record\n", msr->sid, packsamples, reclen);
 
     /* Send record to handler */
-    record_handler (rawrec, msr->reclen, handlerdata);
+    record_handler (rawrec, reclen, handlerdata);
 
     totalpackedsamples += packsamples;
     if (packedsamples)
@@ -834,10 +840,12 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose)
+msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose)
 {
   int written = 0;
   int8_t swapflag;
+  int32_t reclen;
+  int8_t encoding;
 
   char network[64];
   char station[64];
@@ -881,24 +889,22 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
     return -1;
   }
 
-  /* Set default record length and encoding if needed */
-  if (msr->reclen == -1)
-    msr->reclen = 4096;
-  if (msr->encoding == -1)
-    msr->encoding = DE_STEIM2;
+  /* Use default record length and encoding if needed */
+  reclen = (msr->reclen == -1) ? MS_PACK_DEFAULT_RECLEN : msr->reclen;
+  encoding = (msr->encoding == -1) ? MS_PACK_DEFAULT_ENCODING : msr->encoding;
 
-  if (msr->reclen < 128 || msr->reclen > MAXRECLEN)
+  if (reclen < 128 || reclen > MAXRECLEN)
   {
-    ms_log (2, "%s: Record length is out of range: %d\n", msr->sid, msr->reclen);
+    ms_log (2, "%s: Record length is out of range: %d\n", msr->sid, reclen);
     return -1;
   }
 
   /* Check that record length is a power of 2.
    * Power of two if (X & (X - 1)) == 0 */
-  if ((msr->reclen & (msr->reclen - 1)) != 0)
+  if ((reclen & (reclen - 1)) != 0)
   {
     ms_log (2, "%s: Cannot pack miniSEED 2, record length (%d) is not a power of 2\n",
-            msr->sid, msr->reclen);
+            msr->sid, reclen);
     return -1;
   }
 
@@ -906,7 +912,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   for (reclenfind = 1, reclenexp = 1; reclenfind <= MAXRECLEN; reclenexp++)
   {
     reclenfind *= 2;
-    if (reclenfind == msr->reclen)
+    if (reclenfind == reclen)
       break;
   }
 
@@ -1071,7 +1077,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
   *pMS2B1000_TYPE (record + written)      = HO2u (1000, swapflag);
   *pMS2B1000_NEXT (record + written)      = 0;
-  *pMS2B1000_ENCODING (record + written)  = msr->encoding;
+  *pMS2B1000_ENCODING (record + written)  = encoding;
   *pMS2B1000_BYTEORDER (record + written) = 1;
   *pMS2B1000_RECLEN (record + written)    = reclenexp;
   *pMS2B1000_RESERVED (record + written)  = 0;
