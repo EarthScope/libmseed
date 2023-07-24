@@ -849,7 +849,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
  * \sa mstl3_addmsr()
  *********************************************************************/
 int64_t
-mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
+mstl3_readbuffer (MS3TraceList **ppmstl, const char *buffer, uint64_t bufferlength,
                   int8_t splitversion, uint32_t flags,
                   const MS3Tolerance *tolerance, int8_t verbose)
 {
@@ -898,7 +898,7 @@ mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
  * \sa mstl3_addmsr()
  *********************************************************************/
 int64_t
-mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
+mstl3_readbuffer_selection (MS3TraceList **ppmstl, const char *buffer, uint64_t bufferlength,
                             int8_t splitversion, uint32_t flags,
                             const MS3Tolerance *tolerance, const MS3Selections *selections,
                             int8_t verbose)
@@ -2275,7 +2275,7 @@ mstl3_printtracelist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
  * @param[in] subseconds Inclusion of subseconds, one of @ref ms_subseconds_t
  ***************************************************************************/
 void
-mstl3_printsynclist (const MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds)
+mstl3_printsynclist (const MS3TraceList *mstl, const char *dccid, ms_subseconds_t subseconds)
 {
   const MS3TraceID *id = 0;
   const MS3TraceSeg *seg = 0;

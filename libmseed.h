@@ -619,10 +619,10 @@ extern MS3TraceID*   mstl3_findID (MS3TraceList *mstl, const char *sid, uint8_t 
 extern MS3TraceSeg*  mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **pprecptr,
                                              int8_t splitversion, int8_t autoheal, uint32_t flags,
                                              const MS3Tolerance *tolerance);
-extern int64_t       mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
+extern int64_t       mstl3_readbuffer (MS3TraceList **ppmstl, const char *buffer, uint64_t bufferlength,
                                        int8_t splitversion, uint32_t flags,
                                        const MS3Tolerance *tolerance, int8_t verbose);
-extern int64_t       mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
+extern int64_t       mstl3_readbuffer_selection (MS3TraceList **ppmstl, const char *buffer, uint64_t bufferlength,
                                                  int8_t splitversion, uint32_t flags,
                                                  const MS3Tolerance *tolerance, const MS3Selections *selections,
                                                  int8_t verbose);
@@ -635,7 +635,7 @@ extern int64_t mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, i
                            int64_t *packedsamples, uint32_t flags, int8_t verbose, char *extra);
 extern void mstl3_printtracelist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
                                   int8_t details, int8_t gaps, int8_t versions);
-extern void mstl3_printsynclist (const MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds);
+extern void mstl3_printsynclist (const MS3TraceList *mstl, const char *dccid, ms_subseconds_t subseconds);
 extern void mstl3_printgaplist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
                                 double *mingap, double *maxgap);
 /** @} */
