@@ -70,7 +70,7 @@ You can use the @ref ms_sid2nslc() and @ref ms_nslc2sid() routines to convert be
 Except for potentially larger individual codes, the major difference in the two representations is the
 \a channel code.  In the SEED specification this is a fixed 3-character code, while in the FDSN Source Identifier
 specification the channel is 3 codes separated by underscores, with each code potentially being larger than a
-single character.  The library is agnostic to form of a channel reprsentation, accepting either and converting
+single character.  The library is agnostic to form of a channel representation, accepting either and converting
 between them whenever possible and appropriate.
 
 @subsection faq-7 The library API changed! Why? How do I port my libmseed 2.x program to the 3.x API?
@@ -93,7 +93,7 @@ Thank you!
 
 It won't be everyone's cup of tea.  Some alternative libraries are:
 
-P. Crotwell's <a class="el" href="https://www.seis.sc.edu/seisFile.html">seisFile</a> - Java library with miniSEED support.
+P. Crotwell's <a class="el" href="https://www.seis.sc.edu/seisFile.html">SeisFile</a> - Java library with miniSEED support.
 
 D. Neuhauser's <a class="el" href="https://www.ncedc.org/qug/software/ucb/">Qlib2</a> - C library with miniSEED support.
 
