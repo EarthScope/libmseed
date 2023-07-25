@@ -13,6 +13,7 @@ extern int cmpfiles (char *fileA, char *fileB);
 #define TESTFILE_INT32_V2   "testdata-int32.mseed2"
 #define TESTFILE_STEIM1_V2  "testdata-steim1.mseed2"
 #define TESTFILE_STEIM2_V2  "testdata-steim2.mseed2"
+#define TESTFILE_DEFAULTS_V2  "testdata-defaults.mseed2"
 
 #define TESTFILE_TEXT_V3    "testdata-text.mseed3"
 #define TESTFILE_FLOAT32_V3 "testdata-float32.mseed3"
@@ -21,6 +22,7 @@ extern int cmpfiles (char *fileA, char *fileB);
 #define TESTFILE_INT32_V3   "testdata-int32.mseed3"
 #define TESTFILE_STEIM1_V3  "testdata-steim1.mseed3"
 #define TESTFILE_STEIM2_V3  "testdata-steim2.mseed3"
+#define TESTFILE_DEFAULTS_V3  "testdata-defaults.mseed3"
 
 TEST (write, msr)
 {
@@ -121,9 +123,20 @@ TEST (write, msr)
   REQUIRE (rv > 0, "msr3_writemseed() return unexpected value");
   CHECK (!cmpfiles (TESTFILE_STEIM2_V3, "data/reference-" TESTFILE_STEIM2_V3), "Steim2 encoding write mismatch");
 
+  /* Default encoding (Steim2) and record length (4096) */
+  msr->encoding = -1;
+  msr->reclen = -1;
+  msr->numsamples  = SINE_DATA_SAMPLES - 1; /* All but last sample for which the difference cannot be represented */
+  msr->datasamples = sinedata;
+  msr->sampletype  = 'i';
+
+  rv = msr3_writemseed (msr, TESTFILE_DEFAULTS_V3, 1, flags, 0);
+  REQUIRE (rv > 0, "msr3_writemseed() return unexpected value");
+  CHECK (!cmpfiles (TESTFILE_DEFAULTS_V3, "data/reference-" TESTFILE_DEFAULTS_V3), "Default encoding/reclen write mismatch");
 
   /* Set miniSEED v2 flag */
   flags |= MSF_PACKVER2;
+  msr->reclen = 512;
 
   /* Text encoding */
   strcpy (msr->sid, "FDSN:XX_TEST__L_O_G");
@@ -199,6 +212,17 @@ TEST (write, msr)
   rv = msr3_writemseed (msr, TESTFILE_STEIM2_V2, 1, flags, 0);
   REQUIRE (rv > 0, "msr3_writemseed() return unexpected value");
   CHECK (!cmpfiles (TESTFILE_STEIM2_V2, "data/reference-" TESTFILE_STEIM2_V2), "Steim2 encoding write mismatch");
+
+/* Default encoding (Steim2) and record length (4096) */
+  msr->encoding = -1;
+  msr->reclen = -1;
+  msr->numsamples  = SINE_DATA_SAMPLES - 1; /* All but last sample for which the difference cannot be represented */
+  msr->datasamples = sinedata;
+  msr->sampletype  = 'i';
+
+  rv = msr3_writemseed (msr, TESTFILE_DEFAULTS_V2, 1, flags, 0);
+  REQUIRE (rv > 0, "msr3_writemseed() return unexpected value");
+  CHECK (!cmpfiles (TESTFILE_DEFAULTS_V2, "data/reference-" TESTFILE_DEFAULTS_V2), "Default encoding/reclen write mismatch");
 
   msr->datasamples = NULL;
   msr3_free (&msr);
