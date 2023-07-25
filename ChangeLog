@@ -1,4 +1,6 @@
-2023.205:
+2023.206: 3.0.17
+	- Add tests for default record length and encoding.
+	- Document versioning schema as semantic versioning.
 	- Add const qualifiers to packing routines that do not modify the
 	passed MS3Record structure.
 
