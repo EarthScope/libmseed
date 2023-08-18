@@ -375,7 +375,7 @@ typedef struct MS3Record {
   void           *datasamples;       //!< Data samples, \a numsamples of type \a sampletype
   size_t          datasize;          //!< Size of datasamples buffer in bytes
   int64_t         numsamples;        //!< Number of data samples in datasamples
-  char            sampletype;        //!< Sample type code: a, i, f, d @ref sample-types
+  char            sampletype;        //!< Sample type code: t, i, f, d @ref sample-types
 } MS3Record;
 
 extern int msr3_parse (const char *record, uint64_t recbuflen, MS3Record **ppmsr,
@@ -1194,6 +1194,10 @@ extern int ms_rlog_free (MSLogParam *logp);
 
 /** @addtogroup leapsecond
     @brief Utilities for handling leap seconds
+
+    @note The library contains an embedded list of leap seconds through
+    year 2023.  These functions are only needed if leap seconds are added
+    in 2024 and beyond.
 
     The library contains functionality to load a list of leap seconds
     into a global list, which is then used to determine when leap

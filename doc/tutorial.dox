@@ -160,12 +160,12 @@ int main()
   msr = msr3_init (NULL);
 
   /* Populate MS3Record values */
-  strcpy (msr->sid, "XX_TEXT__B_H_E");
-  msr->formatversion = 3;
+  strcpy (msr->sid, "FDSN:XX_TEXT__B_H_E");
   msr->reclen = 512;
-  msr->encoding = DE_STEIM2;
+  msr->pubversion = 1;
   msr->starttime = ms_timestr2nstime ("2018-12-01T00:00:00.000000000");
   msr->samprate = 20.0;
+  msr->encoding = DE_STEIM2;
 
   msr->datasamples = datasamples;  /* pointer to 32-bit integer data samples */
   msr->numsamples = 11;

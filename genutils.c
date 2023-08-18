@@ -76,7 +76,7 @@ libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsize)
 #define NTPPOSIXEPOCHDELTA 2208988800LL
 #define NTPEPOCH2NSTIME(X) (MS_EPOCH2NSTIME (X - NTPPOSIXEPOCHDELTA))
 
-/* Embedded leap second list */
+/* Embedded leap second list, good through: 28 December 2023 */
 static LeapSecond embedded_leapsecondlist[] = {
     {.leapsecond = NTPEPOCH2NSTIME (2272060800), .TAIdelta = 10, .next = &embedded_leapsecondlist[1]},
     {.leapsecond = NTPEPOCH2NSTIME (2287785600), .TAIdelta = 11, .next = &embedded_leapsecondlist[2]},
