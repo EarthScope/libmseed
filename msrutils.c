@@ -365,7 +365,7 @@ msr3_sampratehz (const MS3Record *msr)
  * Double precision is returned, but the true precision is dependent
  * on the accuracy of the host system clock among other things.
  *
- * @param[in] msr ::MS3Record to calculate lactency for
+ * @param[in] msr ::MS3Record to calculate latency for
  *
  * @returns seconds of latency or 0.0 on error (indistinguishable from
  * 0.0 latency).
