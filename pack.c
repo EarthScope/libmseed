@@ -519,7 +519,7 @@ msr3_pack_header3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
   if (recbuflen < (uint32_t)(MS3FSDH_LENGTH + sidlength + msr->extralength))
   {
     ms_log (2, "%s: Buffer length (%d) is not large enough for fixed header (%d), SID (%"PRIsize_t"), and extra (%d)\n",
-            msr->sid, maxreclen, MS3FSDH_LENGTH, sidlength, msr->extralength);
+            msr->sid, recbuflen, MS3FSDH_LENGTH, sidlength, msr->extralength);
     return -1;
   }
 
