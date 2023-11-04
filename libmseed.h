@@ -114,6 +114,7 @@ extern "C" {
     #define strncasecmp _strnicmp
     #define strtoull _strtoui64
     #define fileno _fileno
+    #define fdopen _fdopen
   #endif
 
   /* Extras needed for MinGW */
@@ -690,7 +691,8 @@ typedef struct LMIO
   {
     LMIO_NULL = 0,   //!< IO handle type is undefined
     LMIO_FILE = 1,   //!< IO handle is FILE-type
-    LMIO_URL  = 2    //!< IO handle is URL-type
+    LMIO_URL  = 2,   //!< IO handle is URL-type
+    LMIO_FD   = 3    //!< IO handle is a provided file descriptor
   } type;            //!< IO handle type
   void *handle;      //!< Primary IO handle, either file or URL
   void *handle2;     //!< Secondary IO handle for URL
@@ -756,6 +758,7 @@ extern int64_t msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overw
 extern int64_t mstl3_writemseed (MS3TraceList *mst, const char *mspath, int8_t overwrite,
                                  int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose);
 extern int libmseed_url_support (void);
+extern MS3FileParam *ms3_mstl_init_fd (int fd);
 /** @} */
 
 /** @addtogroup string-functions

@@ -56,6 +56,51 @@ libmseed_url_support (void)
 } /* End of libmseed_url_support() */
 
 /*****************************************************************/ /**
+ * @brief Initialize ::MS3FileParam parameters for a file descriptor
+ *
+ * Initialize a ::MS3FileParam for reading from a specified \a fd
+ * (file descriptor).  The input handle type will be set to ::LMIO_FD.
+ *
+ * The ::MS3FileParam should be used with ms3_readmsr_r() or
+ * ms3_readmsr_selection().  Once all data has been read from the
+ * stream, it will be closed during the cleanup call of those routines.
+ *
+ * @param[in] fd File descriptor for input reading
+ *
+ * @returns Allocated ::MS3FileParam on success and NULL on error.
+ *
+ * \ref MessageOnError - this function logs a message on error
+ *********************************************************************/
+MS3FileParam *
+ms3_mstl_init_fd (int fd)
+{
+  MS3FileParam *msfp;
+
+  /* Initialize the read parameters if needed */
+  msfp = (MS3FileParam *)libmseed_memory.malloc (sizeof (MS3FileParam));
+
+  if (msfp == NULL)
+  {
+    ms_log (2, "%s(): Cannot allocate memory for MS3FileParam\n", __func__);
+    return NULL;
+  }
+
+  *msfp = (MS3FileParam)MS3FileParam_INITIALIZER;
+
+  msfp->input.type = LMIO_FD;
+  msfp->input.handle = fdopen (fd, "rb");
+
+  if (msfp->input.handle == NULL)
+  {
+    ms_log (2, "%s(): Cannot open file descriptor %d\n", __func__, fd);
+    libmseed_memory.free (msfp);
+    return NULL;
+  }
+
+  return msfp;
+}
+
+/*****************************************************************/ /**
  * @brief Read miniSEED records from a file or URL
  *
  * This routine is a wrapper for ms3_readmsr_selection() that uses the
@@ -236,7 +281,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
 
     if (msfp == NULL)
     {
-      ms_log (2, "Cannot allocate memory for MSFP\n");
+      ms_log (2, "Cannot allocate memory for MS3FileParam\n");
       return MS_GENERROR;
     }
 
@@ -306,7 +351,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
 
     if (strcmp (mspath, "-") == 0)
     {
-      msfp->input.type = LMIO_FILE;
+      msfp->input.type = LMIO_FD;
       msfp->input.handle = stdin;
     }
     else

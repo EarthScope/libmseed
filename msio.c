@@ -429,13 +429,13 @@ msio_fclose (LMIO *io)
   if (io->handle == NULL || io->type == LMIO_NULL)
     return 0;
 
-  if (io->type == LMIO_FILE)
+  if (io->type == LMIO_FILE || io->type == LMIO_FD)
   {
     rv = fclose (io->handle);
 
     if (rv)
     {
-      ms_log (2, "Error closing file (%s)\n", strerror(errno));
+      ms_log (2, "Error closing file (%s)\n", strerror (errno));
       return -1;
     }
   }
@@ -489,7 +489,7 @@ msio_fread (LMIO *io, void *buffer, size_t size)
   }
 
   /* Read from regular file stream */
-  if (io->type == LMIO_FILE)
+  if (io->type == LMIO_FILE || io->type == LMIO_FD)
   {
     read = fread (buffer, 1, size, io->handle);
   }
@@ -598,7 +598,7 @@ msio_feof (LMIO *io)
   if (io->handle == NULL || io->type == LMIO_NULL)
     return 0;
 
-  if (io->type == LMIO_FILE)
+  if (io->type == LMIO_FILE || io->type == LMIO_FD)
   {
     if (feof ((FILE *)io->handle))
       return 1;
