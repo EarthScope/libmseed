@@ -75,7 +75,7 @@ $(LIB_SO): $(LIB_LOBJS)
 	ln -s $(LIB_SO) $(LIB_SO_BASE)
 	ln -s $(LIB_SO) $(LIB_SO_MAJOR)
 
-test check: static FORCE
+test tests check: static FORCE
 	@$(MAKE) -C test test
 
 example: static FORCE
