@@ -1,3 +1,7 @@
+2023.328:
+	- Add LMIO_FD type of reading IO via arbitrary file descriptor and hooks for setting.
+	- Add mseh_replace() to replace extra headers.
+
 2023.206: 3.0.17
 	- Add tests for default record length and encoding.
 	- Document versioning schema as semantic versioning.

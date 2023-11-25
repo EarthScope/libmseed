@@ -166,6 +166,47 @@ TEST (extraheaders, mergepatch)
   msr3_free (&msr);
 }
 
+TEST (extraheaders, replace)
+{
+  MS3Record *msr = NULL;
+  char *jsondoc;
+  char *newdoc;
+  char *newdoc_uncompact;
+  int rv;
+
+  msr = msr3_init (msr);
+  REQUIRE (msr != NULL, "msr3_init() returned unexpected NULL");
+
+  /* Populate initial header JSON */
+  jsondoc = "{\"root\":{\"string\":\"value\"}}";
+  msr->extralength = strlen (jsondoc);
+  msr->extra = malloc (msr->extralength);
+  REQUIRE (msr->extra != NULL, "Error allocating memory for msr->extra");
+  memcpy (msr->extra, jsondoc, msr->extralength);
+
+  /* Replace extra headers with new, compact doc */
+  newdoc = "{\"new\":{\"string\":\"Updated value\"}}";
+  rv = mseh_replace (msr, newdoc);
+  CHECK (rv == strlen(newdoc), "mseh_replace() returned unexpected error");
+  REQUIRE (msr->extra != NULL, "msr->extra cannot be NULL");
+  CHECK_SUBSTREQ (msr->extra, newdoc, strlen(newdoc));
+
+  /* Replace extra headers with new, uncompact doc */
+  newdoc = "{\"new\":{\"string\":\"Updated value\"}}";
+  newdoc_uncompact = "{  \"new\":\n  {  \"string\"  :  \n  \"Updated value\"  }  }";
+  rv = mseh_replace (msr, newdoc_uncompact);
+  CHECK (rv == strlen(newdoc), "mseh_replace() returned unexpected error");
+  REQUIRE (msr->extra != NULL, "msr->extra cannot be NULL");
+  CHECK_SUBSTREQ (msr->extra, newdoc, strlen(newdoc));
+
+  /* Remove extra headers */
+  rv = mseh_replace (msr, NULL);
+  CHECK (rv == 0, "mseh_replace() returned unexpected error");
+  REQUIRE (msr->extra == NULL, "msr->extra MUST be NULL");
+
+  msr3_free (&msr);
+}
+
 TEST (extraheaders, internal)
 {
   MS3Record *msr = NULL;

@@ -989,6 +989,7 @@ extern int mseh_add_recenter_r (MS3Record *msr, const char *ptr,
 
 extern int mseh_serialize (MS3Record *msr, LM_PARSED_JSON **parsestate);
 extern void mseh_free_parsestate (LM_PARSED_JSON **parsestate);
+extern int mseh_replace (MS3Record *msr, char *jsonstring);
 
 extern int mseh_print (const MS3Record *msr, int indent);
 /** @} */
