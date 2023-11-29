@@ -217,6 +217,8 @@ msr3_pack_mseed3 (const MS3Record *msr, void (*record_handler) (char *, int, voi
     return -1;
   }
 
+  memset (rawrec, 0, MS3FSDH_LENGTH);
+
   /* Pack fixed header and extra headers, returned size is data offset */
   dataoffset = msr3_pack_header3 (msr, rawrec, maxreclen, verbose);
 
@@ -658,6 +660,8 @@ msr3_pack_mseed2 (const MS3Record *msr, void (*record_handler) (char *, int, voi
     ms_log (2, "%s: Cannot allocate memory\n", msr->sid);
     return -1;
   }
+
+  memset (rawrec, 0, MS2FSDH_LENGTH);
 
   /* Pack fixed header and extra headers, returned size is data offset */
   headerlen = msr3_pack_header2 (msr, rawrec, reclen, verbose);

@@ -28,7 +28,7 @@ extern "C" {
 #include <stdint.h>
 #include "libmseed.h"
 
-/* Length of Fixed Section of Data Header for miniSEED 3 */
+/* Length of Fixed Section of Data Header for miniSEED v3 */
 #define MS3FSDH_LENGTH 40
 
 /***************************************************************************
@@ -77,6 +77,9 @@ extern "C" {
 #define pMS3FSDH_EXTRALENGTH(record)     ((uint16_t*)((uint8_t*)record+34))
 #define pMS3FSDH_DATALENGTH(record)      ((uint32_t*)((uint8_t*)record+36))
 #define pMS3FSDH_SID(record)             ((char*)((uint8_t*)record+40))
+
+/* Length of Fixed Section of Data Header for miniSEED v2 */
+#define MS2FSDH_LENGTH 48
 
 /***************************************************************************
  * miniSEED 2.4 Fixed Section of Data Header
