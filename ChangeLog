@@ -1,7 +1,8 @@
-2023.332:
+2023.335:
 	- Add LMIO_FD type of reading IO via arbitrary file descriptor and hooks for setting.
 	- Add mseh_replace() to replace extra headers.
 	- Consistently initialize header values to 0, fixing edge cases like header-only records.
+	- Update link in documentation of ms_readleapsecondfile() for sources of leap-seconds.list.
 
 2023.206: 3.0.17
 	- Add tests for default record length and encoding.

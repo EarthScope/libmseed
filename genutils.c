@@ -1736,9 +1736,9 @@ ms_readleapseconds (const char *envvarname)
  *
  * Leap seconds are loaded into the library's global leapsecond list.
  *
- * The file is expected to be standard IETF leap second list format.
- * The list is usually available from:
- * https://www.ietf.org/timezones/data/leap-seconds.list
+ * The file is expected to be in NTP leap second list format. Some locations
+ * where this file can be obtained are indicated in RFC 8633 section 3.7:
+ * https://www.rfc-editor.org/rfc/rfc8633.html#section-3.7
  *
  * @param[in] filename File containing leap second list
  *
