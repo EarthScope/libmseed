@@ -288,9 +288,9 @@ ms_sid2nslc (const char *sid, char *net, char *sta, char *loc, char *chan)
  * station, location and channel codes with the form:
  *  \c FDSN:NET_STA_LOC_CHAN, where \c CHAN="BAND_SOURCE_POSITION"
  *
- * Memory for the source identifier must already be allocated.  If a
- * specific component is NULL it will be empty in the resulting
- * identifier.
+ * Memory for the source identifier must already be allocated.
+ *
+ * If the \a loc value is NULL it will be empty in the resulting Source ID.
  *
  * The \a chan value will be converted to extended channel format if
  * it appears to be in SEED channel form.  Meaning, if the \a chan is
@@ -318,9 +318,9 @@ ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
   char xchan[6] = {0};
   int needed = 0;
 
-  if (!sid)
+  if (!sid || !net || !sta || !chan)
   {
-    ms_log (2, "Required argument not defined: 'sid'\n");
+    ms_log (2, "Required argument not defined: sid,net,sta,chan\n");
     return -1;
   }
 
@@ -337,38 +337,33 @@ ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
   *sptr++ = ':';
   needed  = 5;
 
-  if (net)
+  /* Network code */
+  while (*net)
   {
-    while (*net)
-    {
-      if ((sptr - sid) < sidlen)
-        *sptr++ = *net;
-
-      net++;
-      needed++;
-    }
+    if ((sptr - sid) < sidlen)
+      *sptr++ = *net;
+    net++;
+    needed++;
   }
 
   if ((sptr - sid) < sidlen)
     *sptr++ = '_';
   needed++;
 
-  if (sta)
+  /* Station code */
+  while (*sta)
   {
-    while (*sta)
-    {
-      if ((sptr - sid) < sidlen)
-        *sptr++ = *sta;
-
-      sta++;
-      needed++;
-    }
+    if ((sptr - sid) < sidlen)
+      *sptr++ = *sta;
+    sta++;
+    needed++;
   }
 
   if ((sptr - sid) < sidlen)
     *sptr++ = '_';
   needed++;
 
+  /* Location code, may be empty */
   if (loc)
   {
     while (*loc)
@@ -385,22 +380,19 @@ ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
     *sptr++ = '_';
   needed++;
 
-  if (chan)
+  /* Map SEED channel to extended channel if possible, otherwise direct copy */
+  if (!ms_seedchan2xchan (xchan, chan))
   {
-    /* Map SEED channel to extended channel if possible, otherwise direct copy */
-    if (!ms_seedchan2xchan (xchan, chan))
-    {
-      chan = xchan;
-    }
+    chan = xchan;
+  }
 
-    while (*chan)
-    {
-      if ((sptr - sid) < sidlen)
-        *sptr++ = *chan;
-
-      chan++;
-      needed++;
-    }
+  /* Channel code */
+  while (*chan)
+  {
+    if ((sptr - sid) < sidlen)
+      *sptr++ = *chan;
+    chan++;
+    needed++;
   }
 
   if ((sptr - sid) < sidlen)

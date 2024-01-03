@@ -59,7 +59,7 @@ libmseed_url_support (void)
  * @brief Initialize ::MS3FileParam parameters for a file descriptor
  *
  * Initialize a ::MS3FileParam for reading from a specified \a fd
- * (file descriptor).  The input handle type will be set to ::LMIO_FD.
+ * (file descriptor).
  *
  * The ::MS3FileParam should be used with ms3_readmsr_r() or
  * ms3_readmsr_selection().  Once all data has been read from the

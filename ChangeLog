@@ -1,3 +1,6 @@
+2024.002:
+	- ms_nslc2sid() requires all codes except location to be set to reduce misuse.
+
 2023.335:
 	- Add LMIO_FD type of reading IO via arbitrary file descriptor and hooks for setting.
 	- Add mseh_replace() to replace extra headers.
