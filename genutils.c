@@ -324,9 +324,9 @@ ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
     return -1;
   }
 
-  if (sidlen < 13)
+  if (sidlen < 16)
   {
-    ms_log (2, "Length of destination SID buffer must be at least 13 bytes\n");
+    ms_log (2, "Length of destination SID buffer must be at least 16 bytes\n");
     return -1;
   }
 
@@ -395,14 +395,19 @@ ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
     needed++;
   }
 
+  /* Terminate: at the end of the ID or end of the buffer */
   if ((sptr - sid) < sidlen)
     *sptr = '\0';
   else
     *--sptr = '\0';
 
-  if (needed >= sidlen)
+  /* A byte is needed for the terminator */
+  needed++;
+
+  if (needed > sidlen)
   {
-    ms_log (2, "Provided SID destination (%d bytes) is not big enough for the needed %d bytes\n", sidlen, needed);
+    ms_log (2, "Provided SID destination (%d bytes) is not big enough for the needed %d bytes\n",
+            sidlen, needed);
     return -1;
   }
 

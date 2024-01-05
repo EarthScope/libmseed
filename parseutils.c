@@ -524,7 +524,7 @@ int
 ms_parse_raw2 (const char *record, int maxreclen, int8_t details, int8_t swapflag)
 {
   double nomsamprate;
-  char sid[21] = {0};
+  char sid[LM_SIDLEN] = {0};
   const char *X;
   uint8_t b;
   int retval = 0;
