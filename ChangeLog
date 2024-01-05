@@ -1,6 +1,7 @@
 2024.002:
 	- ms_nslc2sid() requires all codes except location to be set to reduce misuse.
 	- Fix raw, diagnostic generation of SIDs from miniSEED v2 when full codes are used.
+	- Update yyjson to release 0.8.0.
 
 2023.335:
 	- Add LMIO_FD type of reading IO via arbitrary file descriptor and hooks for setting.
