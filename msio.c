@@ -3,7 +3,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2023 Chad Trabant, EarthScope Data Services
+ * Copyright (c) 2024 Chad Trabant, EarthScope Data Services
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -422,7 +422,7 @@ msio_fclose (LMIO *io)
 
   if (!io)
   {
-    ms_log (2, "Required argument not defined: 'io'\n");
+    ms_log (2, "%s(): Required input not defined: 'io'\n", __func__);
     return -1;
   }
 
@@ -637,7 +637,7 @@ msio_url_useragent (const char *program, const char *version)
 {
   if (!program)
   {
-    ms_log (2, "Required argument not defined: 'program'\n");
+    ms_log (2, "%s(): Required input not defined: 'program'\n", __func__);
     return -1;
   }
 
@@ -674,7 +674,7 @@ msio_url_userpassword (const char *userpassword)
 {
   if (!userpassword)
   {
-    ms_log (2, "Required argument not defined: 'userpassword'\n");
+    ms_log (2, "%s(): Required input not defined: 'userpassword'\n", __func__);
     return -1;
   }
 
@@ -716,7 +716,7 @@ msio_url_addheader (const char *header)
 {
   if (!header)
   {
-    ms_log (2, "Required argument not defined: 'header'\n");
+    ms_log (2, "%s(): Required input not defined: 'header'\n", __func__);
     return -1;
   }
 

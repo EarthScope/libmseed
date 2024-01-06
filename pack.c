@@ -4,7 +4,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2023 Chad Trabant, EarthScope Data Services
+ * Copyright (c) 2024 Chad Trabant, EarthScope Data Services
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,7 +110,7 @@ msr3_pack (const MS3Record *msr, void (*record_handler) (char *, int, void *),
 
   if (!msr)
   {
-    ms_log (2, "Required argument not defined: 'msr'\n");
+    ms_log (2, "%s(): Required input not defined: 'msr'\n", __func__);
     return -1;
   }
 
@@ -184,7 +184,7 @@ msr3_pack_mseed3 (const MS3Record *msr, void (*record_handler) (char *, int, voi
 
   if (!msr)
   {
-    ms_log (2, "Required argument not defined: 'msr'\n");
+    ms_log (2, "%s(): Required input not defined: 'msr'\n", __func__);
     return -1;
   }
 
@@ -403,7 +403,8 @@ msr3_repack_mseed3 (const MS3Record *msr, char *record, uint32_t recbuflen,
 
   if (!msr || !msr->record || ! record)
   {
-    ms_log (2, "Required argument not defined: 'msr', 'msr->record', or 'record'\n");
+    ms_log (2, "%s(): Required input not defined: 'msr', 'msr->record', or 'record'\n",
+            __func__);
     return -1;
   }
 
@@ -502,7 +503,7 @@ msr3_pack_header3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
 
   if (!msr || !record)
   {
-    ms_log (2, "Required argument not defined: 'msr' or 'record'\n");
+    ms_log (2, "%s(): Required input not defined: 'msr' or 'record'\n", __func__);
     return -1;
   }
 
@@ -619,7 +620,7 @@ msr3_pack_mseed2 (const MS3Record *msr, void (*record_handler) (char *, int, voi
 
   if (!msr)
   {
-    ms_log (2, "Required argument not defined: 'msr'\n");
+    ms_log (2, "%s(): Required input not defined: 'msr'\n", __func__);
     return -1;
   }
 
@@ -899,7 +900,7 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
 
   if (!msr || !record)
   {
-    ms_log (2, "Required argument not defined: 'msr' or 'record'\n");
+    ms_log (2, "%s(): Required input not defined: 'msr' or 'record'\n", __func__);
     return -1;
   }
 
@@ -2081,7 +2082,7 @@ ms_timestr2btime (const char *timestr, uint8_t *btime, const char *sid, int8_t s
 
   if (!timestr || !btime)
   {
-    ms_log (2, "Required argument not defined: 'timestr' or 'btime'\n");
+    ms_log (2, "%s(): Required input not defined: 'timestr' or 'btime'\n", __func__);
     return -1;
   }
 

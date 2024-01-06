@@ -3,7 +3,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2023 Chad Trabant, EarthScope Data Services
+ * Copyright (c) 2024 Chad Trabant, EarthScope Data Services
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ msr3_parse (const char *record, uint64_t recbuflen, MS3Record **ppmsr,
 
   if (!ppmsr || !record)
   {
-    ms_log (2, "Required argument not defined: 'ppmsr' or 'record'\n");
+    ms_log (2, "%s(): Required input not defined: 'ppmsr' or 'record'\n", __func__);
     return MS_GENERROR;
   }
 
@@ -188,7 +188,8 @@ ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion)
 
   if (!record || !formatversion)
   {
-    ms_log (2, "Required argument not defined: 'record' or 'formatversion'\n");
+    ms_log (2, "%s(): Required input not defined: 'record' or 'formatversion'\n",
+            __func__);
     return -1;
   }
 
@@ -324,13 +325,14 @@ ms_parse_raw3 (const char *record, int maxreclen, int8_t details)
 
   if (!record)
   {
-    ms_log (2, "Required argument not defined: 'record'\n");
+    ms_log (2, "%s(): Required input not defined: 'record'\n", __func__);
     return 1;
   }
 
   if (maxreclen < MINRECLEN)
   {
-    ms_log (2, "The maxreclen value cannot be smaller than MINRECLEN\n");
+    ms_log (2, "%s(): The maxreclen value cannot be smaller than MINRECLEN\n",
+            __func__);
     return 1;
   }
 
@@ -535,13 +537,13 @@ ms_parse_raw2 (const char *record, int maxreclen, int8_t details, int8_t swapfla
 
   if (!record)
   {
-    ms_log (2, "Required argument not defined: 'record'\n");
+    ms_log (2, "%s(): Required input not defined: 'record'\n", __func__);
     return 1;
   }
 
   if (maxreclen < 48)
   {
-    ms_log (2, "The maxreclen value cannot be smaller than 48\n");
+    ms_log (2, "%s(): The maxreclen value cannot be smaller than 48\n", __func__);
     return 1;
   }
 

@@ -3,7 +3,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2023 Chad Trabant, EarthScope Data Services
+ * Copyright (c) 2024 Chad Trabant, EarthScope Data Services
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -186,7 +186,8 @@ ms3_addselect (MS3Selections **ppselections, const char *sidpattern,
 
   if (!ppselections || !sidpattern)
   {
-    ms_log (2, "Required argument not defined: 'ppselections' or 'sidpattern'\n");
+    ms_log (2, "%s(): Required input not defined: 'ppselections' or 'sidpattern'\n",
+            __func__);
     return -1;
   }
 
@@ -313,7 +314,7 @@ ms3_addselect_comp (MS3Selections **ppselections, char *network, char *station,
 
   if (!ppselections)
   {
-    ms_log (2, "Required argument not defined: 'ppselections'\n");
+    ms_log (2, "%s(): Required input not defined: 'ppselections'\n", __func__);
     return -1;
   }
 
@@ -445,7 +446,8 @@ ms3_readselectionsfile (MS3Selections **ppselections, const char *filename)
 
   if (!ppselections || !filename)
   {
-    ms_log (2, "Required argument not defined: 'ppselections' or 'filename'\n");
+    ms_log (2, "%s(): Required input not defined: 'ppselections' or 'filename'\n",
+            __func__);
     return -1;
   }
 

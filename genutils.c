@@ -3,7 +3,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2023 Chad Trabant, EarthScope Data Services
+ * Copyright (c) 2024 Chad Trabant, EarthScope Data Services
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -190,7 +190,7 @@ ms_sid2nslc (const char *sid, char *net, char *sta, char *loc, char *chan)
 
   if (!sid)
   {
-    ms_log (2, "Required argument not defined: 'sid'\n");
+    ms_log (2, "%s(): Required input not defined: 'sid'\n", __func__);
     return -1;
   }
 
@@ -320,7 +320,7 @@ ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
 
   if (!sid || !net || !sta || !chan)
   {
-    ms_log (2, "Required argument not defined: sid,net,sta,chan\n");
+    ms_log (2, "%s(): Required input not defined: sid,net,sta,chan\n", __func__);
     return -1;
   }
 
@@ -744,7 +744,7 @@ ms_doy2md (int year, int yday, int *month, int *mday)
 
   if (!month || !mday)
   {
-    ms_log (2, "Required argument not defined: 'month' or 'mday'\n");
+    ms_log (2, "%s(): Required input not defined: 'month' or 'mday'\n", __func__);
     return -1;
   }
 
@@ -798,7 +798,7 @@ ms_md2doy (int year, int month, int mday, int *yday)
 
   if (!yday)
   {
-    ms_log (2, "Required argument not defined: 'yday'\n");
+    ms_log (2, "%s(): Required input not defined: 'yday'\n", __func__);
     return -1;
   }
 
@@ -938,7 +938,7 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
 
   if (!timestr)
   {
-    ms_log (2, "Required argument not defined: 'timestr'\n");
+    ms_log (2, "%s(): Required input not defined: 'timestr'\n", __func__);
     return NULL;
   }
 
@@ -1291,7 +1291,7 @@ ms_timestr2nstime (const char *timestr)
 
   if (!timestr)
   {
-    ms_log (2, "Required argument not defined: 'timestr'\n");
+    ms_log (2, "%s(): Required input not defined: 'timestr'\n", __func__);
     return NSTERROR;
   }
 
@@ -1443,7 +1443,7 @@ ms_mdtimestr2nstime (const char *timestr)
 
   if (!timestr)
   {
-    ms_log (2, "Required argument not defined: 'timestr'\n");
+    ms_log (2, "%s(): Required input not defined: 'timestr'\n", __func__);
     return NSTERROR;
   }
 
@@ -1549,7 +1549,7 @@ ms_seedtimestr2nstime (const char *seedtimestr)
 
   if (!seedtimestr)
   {
-    ms_log (2, "Required argument not defined: 'seedtimestr'\n");
+    ms_log (2, "%s(): Required input not defined: 'seedtimestr'\n", __func__);
     return NSTERROR;
   }
 
@@ -1760,7 +1760,7 @@ ms_readleapsecondfile (const char *filename)
 
   if (!filename)
   {
-    ms_log (2, "Required argument not defined: 'filename'\n");
+    ms_log (2, "%s(): Required input not defined: 'filename'\n", __func__);
     return -1;
   }
 

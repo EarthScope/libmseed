@@ -3,7 +3,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2023 Chad Trabant, EarthScope Data Services
+ * Copyright (c) 2024 Chad Trabant, EarthScope Data Services
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -182,7 +182,7 @@ mstl3_findID (MS3TraceList *mstl, const char *sid, uint8_t pubversion, MS3TraceI
 
   if (!mstl || !sid)
   {
-    ms_log (2, "Required argument not defined: 'mstl' or 'sid'\n");
+    ms_log (2, "%s(): Required input not defined: 'mstl' or 'sid'\n", __func__);
     return NULL;
   }
 
@@ -253,7 +253,7 @@ mstl3_addID (MS3TraceList *mstl, MS3TraceID *id, MS3TraceID **prev)
 
   if (!mstl || !id)
   {
-    ms_log (2, "Required argument not defined: 'mstl' or 'id'\n");
+    ms_log (2, "%s(): Required input not defined: 'mstl' or 'id'\n", __func__);
     return NULL;
   }
 
@@ -388,7 +388,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
 
   if (!mstl || !msr)
   {
-    ms_log (2, "Required argument not defined: 'mstl' or 'msr'\n");
+    ms_log (2, "%s(): Required input not defined: 'mstl' or 'msr'\n", __func__);
     return NULL;
   }
 
@@ -915,7 +915,7 @@ mstl3_readbuffer_selection (MS3TraceList **ppmstl, const char *buffer, uint64_t 
 
   if (!ppmstl)
   {
-    ms_log (2, "Required argument not defined: 'ppmstl'\n");
+    ms_log (2, "%s(): Required input not defined: 'ppmstl'\n", __func__);
     return MS_GENERROR;
   }
 
@@ -1027,6 +1027,12 @@ mstl3_msr2seg (const MS3Record *msr, nstime_t endtime)
   size_t datasize = 0;
   int samplesize;
 
+  if (!msr)
+  {
+    ms_log (2, "%s(): Required input not defined: 'msr'\n", __func__);
+    return NULL;
+  }
+
   if (!(seg = (MS3TraceSeg *)libmseed_memory.malloc (sizeof (MS3TraceSeg))))
   {
     ms_log (2, "Error allocating memory\n");
@@ -1088,7 +1094,7 @@ mstl3_addmsrtoseg (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, int
 
   if (!seg || !msr)
   {
-    ms_log (2, "Required argument not defined: 'seg' or 'msr'\n");
+    ms_log (2, "%s(): Required input not defined: 'seg' or 'msr'\n", __func__);
     return NULL;
   }
 
@@ -1189,7 +1195,7 @@ mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
 
   if (!seg1 || !seg2)
   {
-    ms_log (2, "Required argument not defined: 'seg1' or 'seg2'\n");
+    ms_log (2, "%s(): Required input not defined: 'seg1' or 'seg2'\n", __func__);
     return NULL;
   }
 
@@ -1295,7 +1301,7 @@ mstl3_add_recordptr (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, i
 
   if (!seg || !msr)
   {
-    ms_log (2, "Required argument not defined: 'seg' or 'msr'\n");
+    ms_log (2, "%s(): Required input not defined: 'seg' or 'msr'\n", __func__);
     return NULL;
   }
 
@@ -1405,7 +1411,7 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
 
   if (!seg)
   {
-    ms_log (2, "Required argument not defined: 'seg'\n");
+    ms_log (2, "%s(): Required input not defined: 'seg'\n", __func__);
     return -1;
   }
 
@@ -1555,7 +1561,7 @@ mstl3_resize_buffers (MS3TraceList *mstl)
 
   if (!mstl)
   {
-    ms_log (2, "Required argument not defined: 'mstl'\n");
+    ms_log (2, "%s(): Required input not defined: 'mstl'\n", __func__);
     return MS_GENERROR;
   }
 
@@ -1667,7 +1673,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
 
   if (!id || !seg)
   {
-    ms_log (2, "Required argument not defined: 'id' or 'seg'\n");
+    ms_log (2, "%s(): Required input not defined: 'id' or 'seg'\n", __func__);
     return -1;
   }
 
@@ -1978,7 +1984,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
 
   if (!mstl)
   {
-    ms_log (2, "Required argument not defined: 'mstl'\n");
+    ms_log (2, "%s(): Required input not defined: 'mstl'\n", __func__);
     return -1;
   }
 
@@ -2363,10 +2369,9 @@ mstl3_printgaplist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
   int gapcnt = 0;
 
   if (!mstl)
+  {
     return;
-
-  if (!mstl->numtraceids)
-    return;
+  }
 
   ms_log (0, "   SourceID              Last Sample              Next Sample       Gap  Samples\n");
 

@@ -3,7 +3,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2023 Chad Trabant, EarthScope Data Services
+ * Copyright (c) 2024 Chad Trabant, EarthScope Data Services
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -161,7 +161,7 @@ mseh_get_ptr_r (const MS3Record *msr, const char *ptr,
 
   if (!msr || !ptr)
   {
-    ms_log (2, "%s() Required argument not defined: 'msr' or 'ptr'\n", __func__);
+    ms_log (2, "%s() Required input not defined: 'msr' or 'ptr'\n", __func__);
     return MS_GENERROR;
   }
 
@@ -324,7 +324,7 @@ mseh_set_ptr_r (MS3Record *msr, const char *ptr,
 
   if (!msr || !ptr || !value)
   {
-    ms_log (2, "%s() Required argument not defined: 'msr', 'ptr', or 'value'\n", __func__);
+    ms_log (2, "%s() Required input not defined: 'msr', 'ptr', or 'value'\n", __func__);
     return MS_GENERROR;
   }
 
@@ -513,7 +513,7 @@ mseh_add_event_detection_r (MS3Record *msr, const char *ptr,
 
   if (!msr || !eventdetection)
   {
-    ms_log (2, "%s() Required argument not defined: 'msr' or 'eventdetection'\n", __func__);
+    ms_log (2, "%s() Required input not defined: 'msr' or 'eventdetection'\n", __func__);
     return MS_GENERROR;
   }
 
@@ -656,7 +656,7 @@ mseh_add_calibration_r (MS3Record *msr, const char *ptr,
 
   if (!msr || !calibration)
   {
-    ms_log (2, "%s() Required argument not defined: 'msr' or 'calibration'\n", __func__);
+    ms_log (2, "%s() Required input not defined: 'msr' or 'calibration'\n", __func__);
     return MS_GENERROR;
   }
 
@@ -834,7 +834,7 @@ mseh_add_timing_exception_r (MS3Record *msr, const char *ptr,
 
   if (!msr || !exception)
   {
-    ms_log (2, "%s() Required argument not defined: 'msr' or 'exception'\n", __func__);
+    ms_log (2, "%s() Required input not defined: 'msr' or 'exception'\n", __func__);
     return MS_GENERROR;
   }
 
@@ -923,7 +923,7 @@ mseh_add_recenter_r (MS3Record *msr, const char *ptr, MSEHRecenter *recenter,
 
   if (!msr || !recenter)
   {
-    ms_log (2, "%s() Required argument not defined: 'msr' or 'recenter'\n", __func__);
+    ms_log (2, "%s() Required input not defined: 'msr' or 'recenter'\n", __func__);
     return MS_GENERROR;
   }
 

@@ -3,7 +3,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2023 Chad Trabant, EarthScope Data Services
+ * Copyright (c) 2024 Chad Trabant, EarthScope Data Services
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -161,7 +161,7 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
 {
   if (!msfp)
   {
-    ms_log (2, "Required argument not defined: 'msfp'\n");
+    ms_log (2, "%s(): Required input not defined: 'msfp'\n", __func__);
     return;
   }
 
@@ -268,7 +268,7 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
 
   if (!ppmsr || !ppmsfp)
   {
-    ms_log (2, "Required argument not defined: 'ppmsr' or 'ppmsfp'\n");
+    ms_log (2, "%s(): Required input not defined: 'ppmsr' or 'ppmsfp'\n", __func__);
     return MS_GENERROR;
   }
 
@@ -687,7 +687,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath,
 
   if (!ppmstl)
   {
-    ms_log (2, "Required argument not defined: 'ppmstl'\n");
+    ms_log (2, "%s(): Required input not defined: 'ppmstl'\n", __func__);
     return MS_GENERROR;
   }
 
@@ -901,7 +901,7 @@ msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite,
 
   if (!msr || !mspath)
   {
-    ms_log (2, "Required argument not defined: 'msr' or 'mspath'\n");
+    ms_log (2, "%s(): Required input not defined: 'msr' or 'mspath'\n", __func__);
     return -1;
   }
 
@@ -962,7 +962,7 @@ mstl3_writemseed (MS3TraceList *mstl, const char *mspath, int8_t overwrite,
 
   if (!mstl || !mspath)
   {
-    ms_log (2, "Required argument not defined: 'msr' or 'mspath'\n");
+    ms_log (2, "%s(): Required input not defined: 'msr' or 'mspath'\n", __func__);
     return -1;
   }
 

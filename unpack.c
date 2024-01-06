@@ -9,7 +9,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2023 Chad Trabant, EarthScope Data Services
+ * Copyright (c) 2024 Chad Trabant, EarthScope Data Services
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr,
 
   if (!record || !ppmsr)
   {
-    ms_log (2, "Required argument not defined: 'record' or 'ppmsr'\n");
+    ms_log (2, "%s(): Required input not defined: 'record' or 'ppmsr'\n", __func__);
     return MS_GENERROR;
   }
 
@@ -287,7 +287,7 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
 
   if (!record || !ppmsr)
   {
-    ms_log (2, "Required argument not defined: 'record' or 'ppmsr'\n");
+    ms_log (2, "%s(): Required input not defined: 'record' or 'ppmsr'\n", __func__);
     return MS_GENERROR;
   }
 
@@ -1130,7 +1130,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
 
   if (!msr)
   {
-    ms_log (2, "Required argument not defined: 'msr'\n");
+    ms_log (2, "%s(): Required input not defined: 'msr'\n", __func__);
     return MS_GENERROR;
   }
 
@@ -1281,7 +1281,8 @@ ms_decode_data (const void *input, size_t inputsize, uint8_t encoding,
 
   if (!input || !output || !sampletype)
   {
-    ms_log (2, "Required argument not defined: 'input', 'output' or 'sampletype'\n");
+    ms_log (2, "%s(): Required input not defined: 'input', 'output' or 'sampletype'\n",
+            __func__);
     return MS_GENERROR;
   }
 
