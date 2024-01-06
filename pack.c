@@ -633,10 +633,10 @@ msr3_pack_mseed2 (const MS3Record *msr, void (*record_handler) (char *, int, voi
   reclen = (msr->reclen < 0) ? MS_PACK_DEFAULT_RECLEN : msr->reclen;
   encoding = (msr->encoding < 0) ? MS_PACK_DEFAULT_ENCODING : msr->encoding;
 
-  if (reclen < 128)
+  if (reclen < 128 || reclen > MAXRECLENv2)
   {
-    ms_log (2, "%s: Record length (%u) is not large enough, must be >= 128 bytes\n",
-            msr->sid, reclen);
+    ms_log (2, "%s: Record length (%u) is out of allowed range: 128 to %u bytes\n",
+            msr->sid, reclen, MAXRECLENv2);
     return -1;
   }
 
@@ -769,6 +769,15 @@ msr3_pack_mseed2 (const MS3Record *msr, void (*record_handler) (char *, int, voi
       return -1;
     }
 
+    if (packsamples > UINT16_MAX)
+    {
+      ms_log (2, "%s: Too many samples packed (%d) for a single v2 record)\n",
+              msr->sid, packsamples);
+      libmseed_memory.free (encoded);
+      libmseed_memory.free (rawrec);
+      return -1;
+    }
+
     packoffset += packsamples * samplesize;
 
     /* Copy encoded data into record */
@@ -804,6 +813,7 @@ msr3_pack_mseed2 (const MS3Record *msr, void (*record_handler) (char *, int, voi
     {
       ms_log (2, "%s: Cannot convert next record starttime: %" PRId64 "\n",
               msr->sid, nextstarttime);
+      libmseed_memory.free (encoded);
       libmseed_memory.free (rawrec);
       return -1;
     }

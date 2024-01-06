@@ -134,6 +134,7 @@ extern "C" {
 
 #define MINRECLEN 40       //!< Minimum miniSEED record length supported
 #define MAXRECLEN 10485760 //!< Maximum miniSEED record length supported (10MiB)
+#define MAXRECLENv2 131172 //!< Maximum v2 miniSEED record length supported (131+ KiB or 2^17)
 
 #define LM_SIDLEN 64       //!< Length of source ID string
 
