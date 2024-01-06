@@ -1,4 +1,4 @@
-2024.002:
+2024.006: 3.0.18
 	- ms_nslc2sid() requires all codes except location to be set to reduce misuse.
 	- Fix raw, diagnostic generation of SIDs from miniSEED v2 when full codes are used.
 	- Fix handling of data length field in miniSEED v3 as 32-bits instead of 16-bits.
