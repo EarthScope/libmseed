@@ -1025,9 +1025,10 @@ msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize
   uint8_t samplebytes = 0;
   uint64_t rawsize;
 
-  if (!msr || !dataoffset || !datasize)
+  if (!msr || !msr->record || !dataoffset || !datasize)
   {
-    ms_log (2, "Required argument not defined: 'msr', 'dataoffset' or 'datasize'\n");
+    ms_log (2, "%s(): Required input not defined: 'msr', 'msr->record', 'dataoffset' or 'datasize'\n",
+            __func__);
     return MS_GENERROR;
   }
 

@@ -401,16 +401,16 @@ msr3_repack_mseed3 (const MS3Record *msr, char *record, uint32_t recbuflen,
   uint32_t reclen;
   int8_t swapflag;
 
-  if (!msr || ! record)
+  if (!msr || !msr->record || ! record)
   {
-    ms_log (2, "Required argument not defined: 'msr' or 'record'\n");
+    ms_log (2, "Required argument not defined: 'msr', 'msr->record', or 'record'\n");
     return -1;
   }
 
-  if (recbuflen < (uint32_t)(MS3FSDH_LENGTH + msr->extralength))
+  if (recbuflen < (MS3FSDH_LENGTH + strlen(msr->sid) + msr->extralength))
   {
-    ms_log (2, "%s: Record buffer length (%u) is not large enough for header (%d) and extra (%d)\n",
-            msr->sid, recbuflen, MS3FSDH_LENGTH, msr->extralength);
+    ms_log (2, "%s: Record length (%u) is not large enough for header (%u), SID (%"PRIsize_t"), and extra (%d)\n",
+            msr->sid, recbuflen, MS3FSDH_LENGTH, strlen(msr->sid), msr->extralength);
     return -1;
   }
 
@@ -489,8 +489,8 @@ msr3_pack_header3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
 {
   int extraoffset = 0;
   size_t sidlength;
-  int32_t maxreclen;
-  int8_t encoding;
+  uint32_t maxreclen;
+  uint8_t encoding;
   int8_t swapflag;
 
   uint16_t year;
@@ -507,8 +507,8 @@ msr3_pack_header3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
   }
 
   /* Use default record length and encoding if needed */
-  maxreclen = (msr->reclen == -1) ? MS_PACK_DEFAULT_RECLEN : msr->reclen;
-  encoding = (msr->encoding == -1) ? MS_PACK_DEFAULT_ENCODING : msr->encoding;
+  maxreclen = (msr->reclen < 0) ? MS_PACK_DEFAULT_RECLEN : msr->reclen;
+  encoding = (msr->encoding < 0) ? MS_PACK_DEFAULT_ENCODING : msr->encoding;
 
   if (maxreclen < MINRECLEN || maxreclen > MAXRECLEN)
   {
