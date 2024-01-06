@@ -1,6 +1,8 @@
 2024.002:
 	- ms_nslc2sid() requires all codes except location to be set to reduce misuse.
 	- Fix raw, diagnostic generation of SIDs from miniSEED v2 when full codes are used.
+	- Fix handling of data length in miniSEED v3 as 32-bits instead of 16-bits.
+	- Increase MAXRECLEN from 131172 (131+ KiB) to 10485760 (10 MiB)
 	- Update yyjson to release 0.8.0.
 
 2023.335:

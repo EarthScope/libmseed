@@ -223,7 +223,7 @@ msr_encode_float64 (double *input, int samplecount, double *output,
  ************************************************************************/
 int
 msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
-                   int outputlength, int32_t diff0, uint16_t *byteswritten,
+                   int outputlength, int32_t diff0, uint32_t *byteswritten,
                    int swapflag)
 {
   int32_t *frameptr;   /* Frame pointer in output */
@@ -422,7 +422,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
  ************************************************************************/
 int
 msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
-                   int outputlength, int32_t diff0, uint16_t *byteswritten,
+                   int outputlength, int32_t diff0, uint32_t *byteswritten,
                    const char *sid, int swapflag)
 {
   uint32_t *frameptr;  /* Frame pointer in output */

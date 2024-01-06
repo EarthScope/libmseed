@@ -133,7 +133,7 @@ extern "C" {
 #endif
 
 #define MINRECLEN 40       //!< Minimum miniSEED record length supported
-#define MAXRECLEN 131172   //!< Maximum miniSEED record length supported
+#define MAXRECLEN 10485760 //!< Maximum miniSEED record length supported (10MiB)
 
 #define LM_SIDLEN 64       //!< Length of source ID string
 
@@ -369,7 +369,7 @@ typedef struct MS3Record {
   int64_t         samplecnt;         //!< Number of samples in record
   uint32_t        crc;               //!< CRC of entire record
   uint16_t        extralength;       //!< Length of extra headers in bytes
-  uint16_t        datalength;        //!< Length of data payload in bytes
+  uint32_t        datalength;        //!< Length of data payload in bytes
   char           *extra;             //!< Pointer to extra headers
 
   /* Data sample fields */

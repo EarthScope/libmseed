@@ -191,7 +191,7 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr,
     msr->extra[msr->extralength] = '\0';
   }
 
-  msr->datalength = HO2u (*pMS3FSDH_DATALENGTH (record), msr->swapflag);
+  msr->datalength = HO4u (*pMS3FSDH_DATALENGTH (record), msr->swapflag);
 
   /* Determine data payload byte swapping.
      Steim encodings are big endian.

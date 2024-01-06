@@ -465,7 +465,7 @@ ms_parse_raw3 (const char *record, int maxreclen, int8_t details)
     ms_log (0, "                    CRC: 0x%X\n", HO4u(*pMS3FSDH_CRC (record), swapflag));
     ms_log (0, "   length of identifier: %u\n", *pMS3FSDH_SIDLENGTH (record));
     ms_log (0, "length of extra headers: %u\n", HO2u(*pMS3FSDH_EXTRALENGTH (record), swapflag));
-    ms_log (0, " length of data payload: %u\n", HO2u(*pMS3FSDH_DATALENGTH (record), swapflag));
+    ms_log (0, " length of data payload: %u\n", HO4u(*pMS3FSDH_DATALENGTH (record), swapflag));
   } /* Done printing raw header details */
 
   /* Print extra headers */
