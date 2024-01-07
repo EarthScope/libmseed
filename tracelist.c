@@ -2373,7 +2373,7 @@ mstl3_printgaplist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
     return;
   }
 
-  ms_log (0, "   SourceID              Last Sample              Next Sample       Gap  Samples\n");
+  ms_log (0, "       SourceID                      Last Sample                 Next Sample          Gap  Samples\n");
 
   id = mstl->traces.next[0];
   while (id)
@@ -2436,7 +2436,7 @@ mstl3_printgaplist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
         if (ms_nstime2timestr (seg->next->starttime, time2, timeformat, NANO_MICRO) == NULL)
           ms_log (2, "Cannot convert trace end time for %s\n", id->sid);
 
-        ms_log (0, "%-17s %-24s %-24s %-4s %-.8g\n",
+        ms_log (0, "%-27s %-28s %-28s %-4s %-.8g\n",
                 id->sid, time1, time2, gapstr, nsamples);
 
         gapcnt++;

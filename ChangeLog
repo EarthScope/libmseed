@@ -1,3 +1,6 @@
+2024.007:
+	- Improve formatting of gap list produced by mstl3_printgaplist().
+
 2024.006: 3.0.18
 	- ms_nslc2sid() requires all codes except location to be set to reduce misuse.
 	- Fix raw, diagnostic generation of SIDs from miniSEED v2 when full codes are used.
