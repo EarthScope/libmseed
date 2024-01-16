@@ -34,7 +34,7 @@ lib: $(OBJS)
 	link.exe /lib /nologo /OUT:$(LM_LIB) $(OBJS)
 
 dll: $(OBJS)
-	link.exe /dll /nologo /OUT:$(LM_DLL) $(OBJS)
+	link.exe /dll /nologo /DEF:$(LM_DEF) /OUT:$(LM_DLL) $(OBJS)
 
 .c.obj:
 	$(CC) /nologo $(CFLAGS) $(INCS) $(OPTS) /c $<

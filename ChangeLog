@@ -1,3 +1,6 @@
+2024.015:
+	- Fix build of DLL target on Windows by defining exports in libmseed.def.
+
 2024.007:
 	- Improve formatting of gap list produced by mstl3_printgaplist().
 

@@ -61,6 +61,7 @@ EXPORTS
    msr3_writemseed
    mstl3_writemseed
    libmseed_url_support
+   ms3_mstl_init_fd
    ms_sid2nslc
    ms_nslc2sid
    ms_seedchan2xchan
@@ -76,6 +77,7 @@ EXPORTS
    mseh_add_recenter_r
    mseh_serialize
    mseh_free_parsestate
+   mseh_replace
    mseh_print
    ms_rlog
    ms_rlog_l
@@ -93,8 +95,5 @@ EXPORTS
    ms_dabs
    ms_bigendianhost
    ms_crc32c
-   ms_gswap2
-   ms_gswap4
-   ms_gswap8
    leapsecondlist
    libmseed_memory
