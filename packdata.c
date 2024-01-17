@@ -33,16 +33,16 @@
  *
  * Return number of samples in output buffer on success, -1 on failure.
  ************************************************************************/
-int
-msr_encode_text (char *input, int samplecount, char *output,
-                 int outputlength)
+int64_t
+msr_encode_text (char *input, uint64_t samplecount, char *output,
+                 uint64_t outputlength)
 {
-  int length;
+  uint64_t length;
 
-  if (samplecount <= 0)
+  if (samplecount == 0)
     return 0;
 
-  if (!input || !output || outputlength <= 0)
+  if (!input || !output || outputlength == 0)
     return -1;
 
   /* Determine minimum of input or output */
@@ -61,19 +61,19 @@ msr_encode_text (char *input, int samplecount, char *output,
  *
  * Return number of samples in output buffer on success, -1 on failure.
  ************************************************************************/
-int
-msr_encode_int16 (int32_t *input, int samplecount, int16_t *output,
-                  int outputlength, int swapflag)
+int64_t
+msr_encode_int16 (int32_t *input, uint64_t samplecount, int16_t *output,
+                  uint64_t outputlength, int swapflag)
 {
-  int idx;
+  uint64_t idx;
 
-  if (samplecount <= 0)
+  if (samplecount == 0)
     return 0;
 
-  if (!input || !output || outputlength <= 0)
+  if (!input || !output || outputlength == 0)
     return -1;
 
-  for (idx = 0; idx < samplecount && outputlength >= (int)sizeof (int16_t); idx++)
+  for (idx = 0; idx < samplecount && outputlength >= sizeof (int16_t); idx++)
   {
     output[idx] = (int16_t)input[idx];
 
@@ -94,19 +94,19 @@ msr_encode_int16 (int32_t *input, int samplecount, int16_t *output,
  *
  * Return number of samples in output buffer on success, -1 on failure.
  ************************************************************************/
-int
-msr_encode_int32 (int32_t *input, int samplecount, int32_t *output,
-                  int outputlength, int swapflag)
+int64_t
+msr_encode_int32 (int32_t *input, uint64_t samplecount, int32_t *output,
+                  uint64_t outputlength, int swapflag)
 {
-  int idx;
+  uint64_t idx;
 
-  if (samplecount <= 0)
+  if (samplecount == 0)
     return 0;
 
-  if (!input || !output || outputlength <= 0)
+  if (!input || !output || outputlength == 0)
     return -1;
 
-  for (idx = 0; idx < samplecount && outputlength >= (int)sizeof (int32_t); idx++)
+  for (idx = 0; idx < samplecount && outputlength >= sizeof (int32_t); idx++)
   {
     output[idx] = input[idx];
 
@@ -127,19 +127,19 @@ msr_encode_int32 (int32_t *input, int samplecount, int32_t *output,
  *
  * Return number of samples in output buffer on success, -1 on failure.
  ************************************************************************/
-int
-msr_encode_float32 (float *input, int samplecount, float *output,
-                    int outputlength, int swapflag)
+int64_t
+msr_encode_float32 (float *input, uint64_t samplecount, float *output,
+                    uint64_t outputlength, int swapflag)
 {
-  int idx;
+  uint64_t idx;
 
-  if (samplecount <= 0)
+  if (samplecount == 0)
     return 0;
 
-  if (!input || !output || outputlength <= 0)
+  if (!input || !output || outputlength == 0)
     return -1;
 
-  for (idx = 0; idx < samplecount && outputlength >= (int)sizeof (float); idx++)
+  for (idx = 0; idx < samplecount && outputlength >= sizeof (float); idx++)
   {
     output[idx] = input[idx];
 
@@ -160,19 +160,19 @@ msr_encode_float32 (float *input, int samplecount, float *output,
  *
  * Return number of samples in output buffer on success, -1 on failure.
  ************************************************************************/
-int
-msr_encode_float64 (double *input, int samplecount, double *output,
-                    int outputlength, int swapflag)
+int64_t
+msr_encode_float64 (double *input, uint64_t samplecount, double *output,
+                    uint64_t outputlength, int swapflag)
 {
-  int idx;
+  uint64_t idx;
 
-  if (samplecount <= 0)
+  if (samplecount == 0)
     return 0;
 
-  if (!input || !output || outputlength <= 0)
+  if (!input || !output || outputlength == 0)
     return -1;
 
-  for (idx = 0; idx < samplecount && outputlength >= (int)sizeof (double); idx++)
+  for (idx = 0; idx < samplecount && outputlength >= sizeof (double); idx++)
   {
     output[idx] = input[idx];
 
@@ -221,21 +221,21 @@ msr_encode_float64 (double *input, int samplecount, double *output,
  *
  * \ref MessageOnError - this function logs a message on error
  ************************************************************************/
-int
-msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
-                   int outputlength, int32_t diff0, uint32_t *byteswritten,
+int64_t
+msr_encode_steim1 (int32_t *input, uint64_t samplecount, int32_t *output,
+                   uint64_t outputlength, int32_t diff0, uint32_t *byteswritten,
                    int swapflag)
 {
   int32_t *frameptr;   /* Frame pointer in output */
   int32_t *Xnp = NULL; /* Reverse integration constant, aka last sample */
   int32_t diffs[4];
   int32_t bitwidth[4];
+  uint64_t inputidx      = 0;
+  uint64_t outputsamples = 0;
+  uint64_t maxframes     = outputlength / 64;
+  uint64_t frameidx;
   int diffcount     = 0;
-  int inputidx      = 0;
-  int outputsamples = 0;
-  int maxframes     = outputlength / 64;
   int packedsamples = 0;
-  int frameidx;
   int startnibble;
   int widx;
   int idx;
@@ -246,18 +246,18 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
     int32_t d32;
   } * word;
 
-  if (samplecount <= 0)
+  if (samplecount == 0)
     return 0;
 
-  if (!input || !output || outputlength <= 0)
+  if (!input || !output || outputlength == 0)
   {
-    ms_log (2, "%s(): Required input not defined: 'input', 'output' or 'outputlength' <= 0\n",
+    ms_log (2, "%s(): Required input not defined: 'input', 'output' or 'outputlength' == 0\n",
             __func__);
     return -1;
   }
 
 #if ENCODE_DEBUG
-    ms_log (0, "Encoding Steim1 frames, samples: %d, max frames: %d, swapflag: %d\n",
+    ms_log (0, "Encoding Steim1 frames, samples: %" PRIu64 ", max frames: %" PRIu64 ", swapflag: %d\n",
             samplecount, maxframes, swapflag);
 #endif
 
@@ -286,7 +286,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
 
       startnibble = 3; /* First frame: skip nibbles, X0, and Xn */
 #if ENCODE_DEBUG
-        ms_log (0, "Frame %d: X0=%d\n", frameidx, input[0]);
+        ms_log (0, "Frame %" PRIu64 ": X0=%d\n", frameidx, input[0]);
 #endif
     }
     else
@@ -294,7 +294,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
       startnibble = 1; /* Subsequent frames: skip nibbles */
 
 #if ENCODE_DEBUG
-        ms_log (0, "Frame %d\n", frameidx);
+        ms_log (0, "Frame %" PRIu64 "\n", frameidx);
 #endif
     }
 
@@ -421,21 +421,21 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
  *
  * \ref MessageOnError - this function logs a message on error
  ************************************************************************/
-int
-msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
-                   int outputlength, int32_t diff0, uint32_t *byteswritten,
+int64_t
+msr_encode_steim2 (int32_t *input, uint64_t samplecount, int32_t *output,
+                   uint64_t outputlength, int32_t diff0, uint32_t *byteswritten,
                    const char *sid, int swapflag)
 {
   uint32_t *frameptr;  /* Frame pointer in output */
   int32_t *Xnp = NULL; /* Reverse integration constant, aka last sample */
   int32_t diffs[7];
   int32_t bitwidth[7];
+  uint64_t inputidx      = 0;
+  uint64_t outputsamples = 0;
+  uint64_t maxframes     = outputlength / 64;
+  uint64_t frameidx;
   int diffcount     = 0;
-  int inputidx      = 0;
-  int outputsamples = 0;
-  int maxframes     = outputlength / 64;
   int packedsamples = 0;
-  int frameidx;
   int startnibble;
   int widx;
   int idx;
@@ -446,18 +446,18 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
     int32_t d32;
   } * word;
 
-  if (samplecount <= 0)
+  if (samplecount == 0)
     return 0;
 
-  if (!input || !output || outputlength <= 0)
+  if (!input || !output || outputlength == 0)
   {
-    ms_log (2, "%s(): Required input not defined: 'input', 'output' or 'outputlength' <= 0\n",
+    ms_log (2, "%s(): Required input not defined: 'input', 'output' or 'outputlength' == 0\n",
             __func__);
     return -1;
   }
 
 #if ENCODE_DEBUG
-    ms_log (0, "Encoding Steim2 frames, samples: %d, max frames: %d, swapflag: %d\n",
+    ms_log (0, "Encoding Steim2 frames, samples: %" PRIu64 ", max frames: %" PRIu64 ", swapflag: %d\n",
             samplecount, maxframes, swapflag);
 #endif
 
@@ -480,7 +480,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
       frameptr[1] = input[0];
 
 #if ENCODE_DEBUG
-        ms_log (0, "Frame %d: X0=%d\n", frameidx, input[0]);
+        ms_log (0, "Frame %" PRIu64 ": X0=%d\n", frameidx, input[0]);
 #endif
 
       if (swapflag)
@@ -495,7 +495,7 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
       startnibble = 1; /* Subsequent frames: skip nibbles */
 
 #if ENCODE_DEBUG
-        ms_log (0, "Frame %d\n", frameidx);
+        ms_log (0, "Frame %" PRIu64 "\n", frameidx);
 #endif
     }
 
