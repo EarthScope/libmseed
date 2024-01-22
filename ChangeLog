@@ -1,3 +1,15 @@
+2024.020:
+	API changes:
+	- ms3_detect() now returns int64_t instead of int.
+	- MS3Record.encoding now int16_t instead of int8_t.
+	- MS3Record.datasize and MS3TraceSeg.datasize now uint64_t instead of size_t.
+	These changes should not effect the vast amount, or any, usage but are important
+	for capability and portability.
+	- Fix to handle full range of encoding values from 0-255.
+	- Fix to handle detection of huge record lengths beyond MAXRECLEN gracefully.
+	- Add more checks to avoid writing impossible values to miniSEED v2 blockette fields.
+	- Fix all compiler warnings at -Wextra level for clang, gcc, and MSVC.
+
 2024.015:
 	- Fix build of DLL target on Windows by defining exports in libmseed.def.
 

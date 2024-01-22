@@ -187,7 +187,7 @@ TEST (extraheaders, replace)
   /* Replace extra headers with new, compact doc */
   newdoc = "{\"new\":{\"string\":\"Updated value\"}}";
   rv = mseh_replace (msr, newdoc);
-  CHECK (rv == strlen(newdoc), "mseh_replace() returned unexpected error");
+  CHECK (rv == (int)strlen(newdoc), "mseh_replace() returned unexpected error");
   REQUIRE (msr->extra != NULL, "msr->extra cannot be NULL");
   CHECK_SUBSTREQ (msr->extra, newdoc, strlen(newdoc));
 
@@ -195,7 +195,7 @@ TEST (extraheaders, replace)
   newdoc = "{\"new\":{\"string\":\"Updated value\"}}";
   newdoc_uncompact = "{  \"new\":\n  {  \"string\"  :  \n  \"Updated value\"  }  }";
   rv = mseh_replace (msr, newdoc_uncompact);
-  CHECK (rv == strlen(newdoc), "mseh_replace() returned unexpected error");
+  CHECK (rv == (int)strlen(newdoc), "mseh_replace() returned unexpected error");
   REQUIRE (msr->extra != NULL, "msr->extra cannot be NULL");
   CHECK_SUBSTREQ (msr->extra, newdoc, strlen(newdoc));
 

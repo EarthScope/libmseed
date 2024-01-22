@@ -916,6 +916,8 @@ ms_globmatch (const char *string, const char *pattern)
     case '\\':
       if (*pattern)
         c = *pattern++;
+      break;
+
     default:
       if (c != *string)
         return GLOBMATCH_FALSE;

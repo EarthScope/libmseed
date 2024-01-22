@@ -41,13 +41,13 @@ static int msr3_pack_mseed2 (const MS3Record *msr, void (*record_handler) (char 
                              void *handlerdata, int64_t *packedsamples,
                              uint32_t flags, int8_t verbose);
 
-static int msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
-                          char sampletype, int8_t encoding, int8_t swapflag,
-                          uint32_t *byteswritten, const char *sid, int8_t verbose);
+static int64_t msr_pack_data (void *dest, void *src, uint64_t maxsamples, uint64_t maxdatabytes,
+                              char sampletype, int8_t encoding, int8_t swapflag,
+                              uint32_t *byteswritten, const char *sid, int8_t verbose);
 
 static int ms_genfactmult (double samprate, int16_t *factor, int16_t *multiplier);
 
-static uint32_t ms_timestr2btime (const char *timestr, uint8_t *btime, const char *sid, int8_t swapflag);
+static int64_t ms_timestr2btime (const char *timestr, uint8_t *btime, const char *sid, int8_t swapflag);
 
 
 /**********************************************************************/ /**
@@ -165,8 +165,8 @@ msr3_pack_mseed3 (const MS3Record *msr, void (*record_handler) (char *, int, voi
   uint32_t maxdatabytes;
   uint32_t maxsamples;
   int recordcnt = 0;
-  int packsamples;
-  int packoffset;
+  int64_t packsamples;
+  int64_t packoffset;
   int64_t totalpackedsamples;
   uint32_t reclen;
   uint32_t maxreclen;
@@ -266,11 +266,11 @@ msr3_pack_mseed3 (const MS3Record *msr, void (*record_handler) (char *, int, voi
 
   if (encoding == DE_STEIM1)
   {
-    maxsamples = (int)(maxdatabytes / 64) * STEIM1_FRAME_MAX_SAMPLES;
+    maxsamples = (uint32_t)(maxdatabytes / 64) * STEIM1_FRAME_MAX_SAMPLES;
   }
   else if (encoding == DE_STEIM2)
   {
-    maxsamples = (int)(maxdatabytes / 64) * STEIM2_FRAME_MAX_SAMPLES;
+    maxsamples = (uint32_t)(maxdatabytes / 64) * STEIM2_FRAME_MAX_SAMPLES;
   }
   else
   {
@@ -319,7 +319,7 @@ msr3_pack_mseed3 (const MS3Record *msr, void (*record_handler) (char *, int, voi
     memcpy (rawrec + dataoffset, encoded, datalength);
 
     /* Update number of samples and data length */
-    *pMS3FSDH_NUMSAMPLES(rawrec) = HO4u (packsamples, swapflag);
+    *pMS3FSDH_NUMSAMPLES(rawrec) = HO4u ((uint32_t)packsamples, swapflag);
     *pMS3FSDH_DATALENGTH(rawrec) = HO4u (datalength, swapflag);
 
     /* Calculate CRC (with CRC field set to 0) and set */
@@ -328,7 +328,7 @@ msr3_pack_mseed3 (const MS3Record *msr, void (*record_handler) (char *, int, voi
     *pMS3FSDH_CRC(rawrec) = HO4u (crc, swapflag);
 
     if (verbose >= 1)
-      ms_log (0, "%s: Packed %d samples into %u byte record\n", msr->sid, packsamples, reclen);
+      ms_log (0, "%s: Packed %" PRId64 " samples into %u byte record\n", msr->sid, packsamples, reclen);
 
     /* Send record to handler */
     record_handler (rawrec, reclen, handlerdata);
@@ -546,7 +546,7 @@ msr3_pack_header3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
     return -1;
   }
 
-  extraoffset = MS3FSDH_LENGTH + sidlength;
+  extraoffset = MS3FSDH_LENGTH + (int)sidlength;
 
   /* Build fixed header */
   record[0] = 'M';
@@ -575,7 +575,7 @@ msr3_pack_header3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
   if (msr->extralength > 0)
     memcpy (record + extraoffset, msr->extra, msr->extralength);
 
-  return (MS3FSDH_LENGTH + sidlength + msr->extralength);
+  return (MS3FSDH_LENGTH + (int)sidlength + msr->extralength);
 } /* End of msr3_pack_header3() */
 
 /***************************************************************************
@@ -605,8 +605,8 @@ msr3_pack_mseed2 (const MS3Record *msr, void (*record_handler) (char *, int, voi
   uint32_t maxdatabytes;
   uint32_t maxsamples;
   int recordcnt = 0;
-  int packsamples;
-  int packoffset;
+  int64_t packsamples;
+  int64_t packoffset;
   int64_t totalpackedsamples;
 
   uint32_t datalength;
@@ -772,7 +772,7 @@ msr3_pack_mseed2 (const MS3Record *msr, void (*record_handler) (char *, int, voi
 
     if (packsamples > UINT16_MAX)
     {
-      ms_log (2, "%s: Too many samples packed (%d) for a single v2 record)\n",
+      ms_log (2, "%s: Too many samples packed (%" PRId64 ") for a single v2 record)\n",
               msr->sid, packsamples);
       libmseed_memory.free (encoded);
       libmseed_memory.free (rawrec);
@@ -785,7 +785,7 @@ msr3_pack_mseed2 (const MS3Record *msr, void (*record_handler) (char *, int, voi
     memcpy (rawrec + dataoffset, encoded, datalength);
 
     /* Update number of samples */
-    *pMS2FSDH_NUMSAMPLES(rawrec) = HO2u (packsamples, swapflag);
+    *pMS2FSDH_NUMSAMPLES(rawrec) = HO2u ((uint16_t)packsamples, swapflag);
 
     /* Zero any space between encoded data and end of record */
     content = dataoffset + datalength;
@@ -793,7 +793,7 @@ msr3_pack_mseed2 (const MS3Record *msr, void (*record_handler) (char *, int, voi
       memset (rawrec + content, 0, reclen - content);
 
     if (verbose >= 1)
-      ms_log (0, "%s: Packed %d samples into %u byte record\n", msr->sid, packsamples, reclen);
+      ms_log (0, "%s: Packed %" PRId64 " samples into %u byte record\n", msr->sid, packsamples, reclen);
 
     /* Send record to handler */
     record_handler (rawrec, reclen, handlerdata);
@@ -890,13 +890,13 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
   yyjson_val *eharr;
   yyjson_arr_iter ehiter;
   yyjson_val *ehiterval;
-  yyjson_val *ehval;
   const char *header_string;
   double header_number;
+  uint64_t header_uint;
   bool header_boolean;
 
-  int blockette_type;
-  int blockette_length;
+  uint16_t blockette_type;
+  uint16_t blockette_length;
 
   if (!msr || !record)
   {
@@ -1069,7 +1069,7 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
 
   if (yyjson_ptr_get_num (ehroot, "/FDSN/Time/Correction", &header_number))
   {
-    *pMS2FSDH_TIMECORRECT (record) = HO4d (header_number * 10000, swapflag);
+    *pMS2FSDH_TIMECORRECT (record) = HO4d ((int32_t)(header_number * 10000 + 0.5), swapflag);
 
     /* Set time correction applied bit in activity flags.
        Rationale: V3 records do not allow unapplied time corrections and unapplied
@@ -1100,7 +1100,7 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
   written += 8;
 
   /* Add Blockette 1001 if microsecond offset or timing quality is present */
-  if (yyjson_ptr_get_num (ehroot, "/FDSN/Time/Quality", &header_number) || msec_offset)
+  if (yyjson_ptr_get_uint (ehroot, "/FDSN/Time/Quality", &header_uint) || msec_offset)
   {
     *next_blockette = HO2u ((uint16_t)written, swapflag);
     next_blockette = pMS2B1001_NEXT (record + written);
@@ -1109,8 +1109,8 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
     *pMS2B1001_TYPE (record + written) = HO2u (1001, swapflag);
     *pMS2B1001_NEXT (record + written) = 0;
 
-    if (yyjson_ptr_get_num (ehroot, "/FDSN/Time/Quality", &header_number))
-      *pMS2B1001_TIMINGQUALITY (record + written) = (uint8_t) (header_number + 0.5);
+    if (yyjson_ptr_get_uint (ehroot, "/FDSN/Time/Quality", &header_uint) && header_uint <= UINT8_MAX)
+      *pMS2B1001_TIMINGQUALITY (record + written) = (uint8_t) (header_uint);
     else
       *pMS2B1001_TIMINGQUALITY (record + written) = 0;
 
@@ -1130,7 +1130,7 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
 
     *pMS2B100_TYPE (record + written)     = HO2u (100, swapflag);
     *pMS2B100_NEXT (record + written)     = 0;
-    *pMS2B100_SAMPRATE (record + written) = HO4f (msr->samprate, swapflag);
+    *pMS2B100_SAMPRATE (record + written) = HO4f ((float)msr->samprate, swapflag);
     *pMS2B100_FLAGS (record + written)    = 0;
     memset (pMS2B100_RESERVED (record + written), 0, 3);
 
@@ -1164,47 +1164,47 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
       *pMS2B500_TYPE (record + written) = HO2u (500, swapflag);
       *pMS2B500_NEXT (record + written) = 0;
 
-      if ((ehval = yyjson_ptr_get (ehiterval, "/VCOCorrection")) && yyjson_is_num (ehval))
-        *pMS2B500_VCOCORRECTION (record + written) = HO4f (yyjson_get_num (ehval), swapflag);
+      if (yyjson_ptr_get_num (ehiterval, "/VCOCorrection", &header_number))
+        *pMS2B500_VCOCORRECTION (record + written) = HO4f ((float)header_number, swapflag);
 
-      if ((ehval = yyjson_ptr_get (ehiterval, "/Time")) && yyjson_is_str (ehval))
+      if (yyjson_ptr_get_str (ehiterval, "/Time", &header_string))
       {
-        uint32_t l_nsec;
+        int64_t l_nsec;
         uint16_t l_fsec;
         int8_t l_msec_offset;
 
-        l_nsec = ms_timestr2btime (yyjson_get_str (ehval),
+        l_nsec = ms_timestr2btime (header_string,
                                    (uint8_t *)pMS2B500_YEAR (record + written),
                                    msr->sid, swapflag);
 
         if (l_nsec == -1)
         {
-          ms_log (2, "%s: Cannot convert B500 time: %s\n", msr->sid, yyjson_get_str (ehval));
+          ms_log (2, "%s: Cannot convert B500 time: %s\n", msr->sid, header_string);
           yyjson_doc_free (ehdoc);
           return -1;
         }
 
         /* Calculate time at fractional 100usec resolution and microsecond offset */
-        l_fsec        = l_nsec / 100000;
-        l_msec_offset = ((l_nsec / 1000) - (l_fsec * 100));
+        l_fsec        = (uint16_t)(l_nsec / 100000);
+        l_msec_offset = (int8_t)((l_nsec / 1000) - (l_fsec * 100));
 
         *pMS2B500_MICROSECOND (record + written) = l_msec_offset;
       }
 
-      if ((ehval = yyjson_ptr_get (ehiterval, "/ReceptionQuality")) && yyjson_is_num (ehval))
-        *pMS2B500_RECEPTIONQUALITY (record + written) = (uint8_t)yyjson_get_num (ehval);
+      if (yyjson_ptr_get_uint (ehiterval, "/ReceptionQuality", &header_uint) && header_uint <= UINT8_MAX)
+        *pMS2B500_RECEPTIONQUALITY (record + written) = (uint8_t)header_uint;
 
-      if ((ehval = yyjson_ptr_get (ehiterval, "/Count")) && yyjson_is_num (ehval))
-        *pMS2B500_EXCEPTIONCOUNT (record + written) = HO4d (yyjson_get_num (ehval), swapflag);
+      if (yyjson_ptr_get_uint (ehiterval, "/Count", &header_uint) && header_uint <= UINT32_MAX)
+        *pMS2B500_EXCEPTIONCOUNT (record + written) = HO4d ((uint32_t)header_uint, swapflag);
 
-      if ((ehval = yyjson_ptr_get (ehiterval, "/Type")) && yyjson_is_str (ehval))
-        ms_strncpopen (pMS2B500_EXCEPTIONTYPE (record + written), yyjson_get_str (ehval), 16);
+      if (yyjson_ptr_get_str (ehiterval, "/Type", &header_string))
+        ms_strncpopen (pMS2B500_EXCEPTIONTYPE (record + written), header_string, 16);
 
-      if ((ehval = yyjson_ptr_get (ehroot, "/FDSN/Clock/Model")) && yyjson_is_str (ehval))
-        ms_strncpopen (pMS2B500_CLOCKMODEL (record + written), yyjson_get_str (ehval), 32);
+      if (yyjson_ptr_get_str (ehroot, "/FDSN/Clock/Model", &header_string))
+        ms_strncpopen (pMS2B500_CLOCKMODEL (record + written), header_string, 32);
 
-      if ((ehval = yyjson_ptr_get (ehiterval, "/ClockStatus")) && yyjson_is_str (ehval))
-        ms_strncpopen (pMS2B500_CLOCKSTATUS (record + written), yyjson_get_str (ehval), 128);
+      if (yyjson_ptr_get_str (ehiterval, "/ClockStatus", &header_string))
+        ms_strncpopen (pMS2B500_CLOCKSTATUS (record + written), header_string, 128);
 
       written += blockette_length;
     }
@@ -1221,8 +1221,8 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
         continue;
 
       /* Determine which detection type: MURDOCK versus the generic type */
-      if ((ehval = yyjson_ptr_get (ehiterval, "/Type")) && yyjson_is_str (ehval) &&
-          strncasecmp (yyjson_get_str (ehval), "MURDOCK", 7) == 0)
+      if (yyjson_ptr_get_str (ehiterval, "/Type", &header_string) &&
+          strncasecmp (header_string, "MURDOCK", 7) == 0)
       {
         blockette_type = 201;
         blockette_length = 60;
@@ -1235,7 +1235,7 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
 
       if ((recbuflen - written) < blockette_length )
       {
-        ms_log (2, "%s: Record length not large enough for B%d\n", msr->sid, blockette_type);
+        ms_log (2, "%s: Record length not large enough for B%u\n", msr->sid, blockette_type);
         yyjson_doc_free (ehdoc);
         return -1;
       }
@@ -1249,19 +1249,19 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
       *pMS2B200_TYPE (record + written) = HO2u (blockette_type, swapflag);
       *pMS2B200_NEXT (record + written) = 0;
 
-      if ((ehval = yyjson_ptr_get (ehiterval, "/SignalAmplitude")) && yyjson_is_num (ehval))
-        *pMS2B200_AMPLITUDE (record + written) = HO4f (yyjson_get_num (ehval), swapflag);
+      if (yyjson_ptr_get_num (ehiterval, "/SignalAmplitude", &header_number))
+        *pMS2B200_AMPLITUDE (record + written) = HO4f ((float)header_number, swapflag);
 
-      if ((ehval = yyjson_ptr_get (ehiterval, "/SignalPeriod")) && yyjson_is_num (ehval))
-        *pMS2B200_PERIOD (record + written) = HO4f (yyjson_get_num (ehval), swapflag);
+      if (yyjson_ptr_get_num (ehiterval, "/SignalPeriod", &header_number))
+        *pMS2B200_PERIOD (record + written) = HO4f ((float)header_number, swapflag);
 
-      if ((ehval = yyjson_ptr_get (ehiterval, "/BackgroundEstimate")) && yyjson_is_num (ehval))
-        *pMS2B200_BACKGROUNDEST (record + written) = HO4f (yyjson_get_num (ehval), swapflag);
+      if (yyjson_ptr_get_num (ehiterval, "/BackgroundEstimate", &header_number))
+        *pMS2B200_BACKGROUNDEST (record + written) = HO4f ((float)header_number, swapflag);
 
       /* Determine which wave: DILATATION versus (assumed) COMPRESSION */
-      if ((ehval = yyjson_ptr_get (ehiterval, "/Wave")))
+      if (yyjson_ptr_get_str (ehiterval, "/Wave", &header_string))
       {
-        if (yyjson_is_str (ehval) && strncasecmp (yyjson_get_str (ehval), "DILATATION", 10) == 0)
+        if (strncasecmp (header_string, "DILATATION", 10) == 0)
           *pMS2B200_FLAGS (record + written) |= 0x01;
       }
       else if (blockette_type == 200)
@@ -1270,16 +1270,16 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
       }
 
       if (blockette_type == 200 &&
-          (ehval = yyjson_ptr_get (ehiterval, "/Units")) && yyjson_is_str (ehval) &&
-          strncasecmp (yyjson_get_str (ehval), "COUNT", 5) != 0)
+          yyjson_ptr_get_str (ehiterval, "/Units", &header_string) &&
+          strncasecmp (header_string, "COUNT", 5) != 0)
         *pMS2B200_FLAGS (record + written) |= 0x02;
 
-      if ((ehval = yyjson_ptr_get (ehiterval, "/OnsetTime")) && yyjson_is_str (ehval))
+      if (yyjson_ptr_get_str (ehiterval, "/OnsetTime", &header_string))
       {
-        if (ms_timestr2btime (yyjson_get_str (ehval), (uint8_t *)pMS2B200_YEAR (record + written),
+        if (ms_timestr2btime (header_string, (uint8_t *)pMS2B200_YEAR (record + written),
                               msr->sid, swapflag) == -1)
         {
-          ms_log (2, "%s: Cannot convert B%d time: %s\n", msr->sid, blockette_type, yyjson_get_str (ehval));
+          ms_log (2, "%s: Cannot convert B%u time: %s\n", msr->sid, blockette_type, header_string);
           yyjson_doc_free (ehdoc);
           return -1;
         }
@@ -1287,8 +1287,8 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
 
       if (blockette_type == 200)
       {
-        if ((ehval = yyjson_ptr_get (ehiterval, "/Detector")) && yyjson_is_str (ehval))
-          ms_strncpopen (pMS2B200_DETECTOR (record + written), yyjson_get_str (ehval), 24);
+        if (yyjson_ptr_get_str (ehiterval, "/Detector", &header_string))
+          ms_strncpopen (pMS2B200_DETECTOR (record + written), header_string, 24);
       }
       else /* Blockette 201 */
       {
@@ -1310,14 +1310,14 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
           }
         }
 
-        if ((ehval = yyjson_ptr_get (ehiterval, "/MEDLookback")) && yyjson_is_num (ehval))
-          *pMS2B201_LOOPBACK (record + written) = (uint8_t)yyjson_get_num (ehval);
+        if (yyjson_ptr_get_uint (ehiterval, "/MEDLookback", &header_uint) && header_uint < UINT8_MAX)
+          *pMS2B201_LOOPBACK (record + written) = (uint8_t)header_uint;
 
-        if ((ehval = yyjson_ptr_get (ehiterval, "/MEDPickAlgorithm")) && yyjson_is_num (ehval))
-          *pMS2B201_PICKALGORITHM (record + written) = (uint8_t)yyjson_get_num (ehval);
+        if (yyjson_ptr_get_uint (ehiterval, "/MEDPickAlgorithm", &header_uint) && header_uint < UINT8_MAX)
+          *pMS2B201_PICKALGORITHM (record + written) = (uint8_t)header_uint;
 
-        if ((ehval = yyjson_ptr_get (ehiterval, "/Detector")) && yyjson_is_str (ehval))
-          ms_strncpopen (pMS2B201_DETECTOR (record + written), yyjson_get_str (ehval), 24);
+        if (yyjson_ptr_get_str (ehiterval, "/Detector", &header_string))
+          ms_strncpopen (pMS2B201_DETECTOR (record + written), header_string, 24);
       }
 
       written += blockette_length;
@@ -1338,30 +1338,30 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
       /* Determine which calibration type: STEP, SINE, PSEUDORANDOM, GENERIC */
       blockette_type   = 0;
       blockette_length = 0;
-      if ((ehval = yyjson_ptr_get (ehiterval, "/Type")) && yyjson_is_str (ehval))
+      if (yyjson_ptr_get_str (ehiterval, "/Type", &header_string))
       {
-        if (strncasecmp (yyjson_get_str (ehval), "STEP", 4) == 0)
+        if (strncasecmp (header_string, "STEP", 4) == 0)
         {
           blockette_type   = 300;
           blockette_length = 60;
         }
-        else if (strncasecmp (yyjson_get_str (ehval), "SINE", 4) == 0)
+        else if (strncasecmp (header_string, "SINE", 4) == 0)
         {
           blockette_type   = 310;
           blockette_length = 60;
         }
-        else if (strncasecmp (yyjson_get_str (ehval), "PSEUDORANDOM", 12) == 0)
+        else if (strncasecmp (header_string, "PSEUDORANDOM", 12) == 0)
         {
           blockette_type   = 320;
           blockette_length = 64;
         }
-        else if (strncasecmp (yyjson_get_str (ehval), "GENERIC", 7) == 0)
+        else if (strncasecmp (header_string, "GENERIC", 7) == 0)
         {
           blockette_type   = 390;
           blockette_length = 28;
         }
       }
-      else if ((ehval = yyjson_ptr_get (ehiterval, "/EndTime")))
+      else if (yyjson_ptr_get (ehiterval, "/EndTime"))
       {
         blockette_type = 395;
         blockette_length = 16;
@@ -1376,7 +1376,7 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
 
       if ((recbuflen - written) < blockette_length )
       {
-        ms_log (2, "%s: Record length not large enough for B%d\n", msr->sid, blockette_type);
+        ms_log (2, "%s: Record length not large enough for B%u\n", msr->sid, blockette_type);
         yyjson_doc_free (ehdoc);
         return -1;
       }
@@ -1393,12 +1393,12 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
         *pMS2B300_TYPE (record + written) = HO2u (blockette_type, swapflag);
         *pMS2B300_NEXT (record + written) = 0;
 
-        if ((ehval = yyjson_ptr_get (ehiterval, "/BeginTime")) && yyjson_is_str (ehval))
+        if (yyjson_ptr_get_str (ehiterval, "/BeginTime", &header_string))
         {
-          if (ms_timestr2btime (yyjson_get_str (ehval), (uint8_t *)pMS2B300_YEAR (record + written),
+          if (ms_timestr2btime (header_string, (uint8_t *)pMS2B300_YEAR (record + written),
                                 msr->sid, swapflag) == -1)
           {
-            ms_log (2, "%s: Cannot convert B%d time: %s\n", msr->sid, blockette_type, yyjson_get_str (ehval));
+            ms_log (2, "%s: Cannot convert B%u time: %s\n", msr->sid, blockette_type, header_string);
             yyjson_doc_free (ehdoc);
             return -1;
           }
@@ -1406,148 +1406,148 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
 
         if (blockette_type == 300)
         {
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Steps")) && yyjson_is_num (ehval))
-            *pMS2B300_NUMCALIBRATIONS (record + written) = (uint8_t)yyjson_get_num (ehval);
+          if (yyjson_ptr_get_uint (ehiterval, "/Steps", &header_uint) && header_uint <= UINT8_MAX)
+            *pMS2B300_NUMCALIBRATIONS (record + written) = (uint8_t)header_uint;
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/StepFirstPulsePositive")) && yyjson_get_bool (ehval))
+          if (yyjson_ptr_get_bool (ehiterval, "/StepFirstPulsePositive", &header_boolean) && header_boolean)
             *pMS2B300_FLAGS (record + written) |= 0x01;
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/StepAlternateSign")) && yyjson_get_bool (ehval))
+          if (yyjson_ptr_get_bool (ehiterval, "/StepAlternateSign", &header_boolean) && header_boolean)
             *pMS2B300_FLAGS (record + written) |= 0x02;
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Trigger")) && yyjson_is_str (ehval) &&
-              strncasecmp (yyjson_get_str (ehval), "AUTOMATIC", 9) == 0)
+          if (yyjson_ptr_get_str (ehiterval, "/Trigger", &header_string) &&
+              strncasecmp (header_string, "AUTOMATIC", 9) == 0)
             *pMS2B300_FLAGS (record + written) |= 0x04;
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Continued")) && yyjson_get_bool (ehval))
+          if (yyjson_ptr_get_bool (ehiterval, "/Continued", &header_boolean) && header_boolean)
             *pMS2B300_FLAGS (record + written) |= 0x08;
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Duration")) && yyjson_is_num (ehval))
-            *pMS2B300_STEPDURATION (record + written) = HO4u (yyjson_get_num (ehval) * 10000, swapflag);
+          if (yyjson_ptr_get_num (ehiterval, "/Duration", &header_number))
+            *pMS2B300_STEPDURATION (record + written) = HO4u ((uint32_t)(header_number * 10000 + 0.5), swapflag);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/StepBetween")) && yyjson_is_num (ehval))
-            *pMS2B300_INTERVALDURATION (record + written) = HO4u (yyjson_get_num (ehval) * 10000, swapflag);
+          if (yyjson_ptr_get_num (ehiterval, "/StepBetween", &header_number))
+            *pMS2B300_INTERVALDURATION (record + written) = HO4u ((uint32_t)(header_number * 10000 + 0.5), swapflag);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Amplitude")) && yyjson_is_num (ehval))
-            *pMS2B300_AMPLITUDE (record + written) = HO4f (yyjson_get_num (ehval), swapflag);
+          if (yyjson_ptr_get_num (ehiterval, "/Amplitude", &header_number))
+            *pMS2B300_AMPLITUDE (record + written) = HO4f ((float)header_number, swapflag);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/InputChannel")) && yyjson_is_str (ehval))
-            ms_strncpopen (pMS2B300_INPUTCHANNEL (record + written), yyjson_get_str (ehval), 3);
+          if (yyjson_ptr_get_str (ehiterval, "/InputChannel", &header_string))
+            ms_strncpopen (pMS2B300_INPUTCHANNEL (record + written), header_string, 3);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/ReferenceAmplitude")) && yyjson_is_num (ehval))
-            *pMS2B300_REFERENCEAMPLITUDE (record + written) = HO4u (yyjson_get_num (ehval), swapflag);
+          if (yyjson_ptr_get_num (ehiterval, "/ReferenceAmplitude", &header_number))
+            *pMS2B300_REFERENCEAMPLITUDE (record + written) = HO4u ((uint32_t)(header_number + 0.5), swapflag);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Coupling")) && yyjson_is_str (ehval))
-            ms_strncpopen (pMS2B300_COUPLING (record + written), yyjson_get_str (ehval), 12);
+          if (yyjson_ptr_get_str (ehiterval, "/Coupling", &header_string))
+            ms_strncpopen (pMS2B300_COUPLING (record + written), header_string, 12);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Rolloff")) && yyjson_is_str (ehval))
-            ms_strncpopen (pMS2B300_ROLLOFF (record + written), yyjson_get_str (ehval), 12);
+          if (yyjson_ptr_get_str (ehiterval, "/Rolloff", &header_string))
+            ms_strncpopen (pMS2B300_ROLLOFF (record + written), header_string, 12);
         }
         else if (blockette_type == 310)
         {
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Trigger")) && yyjson_is_str (ehval) &&
-              strncasecmp (yyjson_get_str (ehval), "AUTOMATIC", 9) == 0)
+          if (yyjson_ptr_get_str (ehiterval, "/Trigger", &header_string) &&
+              strncasecmp (header_string, "AUTOMATIC", 9) == 0)
             *pMS2B310_FLAGS (record + written) |= 0x04;
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Continued")) && yyjson_get_bool (ehval))
+          if (yyjson_ptr_get_bool (ehiterval, "/Continued", &header_boolean) && header_boolean)
             *pMS2B310_FLAGS (record + written) |= 0x08;
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/AmplitudeRange")) && yyjson_is_str (ehval))
+          if (yyjson_ptr_get_str (ehiterval, "/AmplitudeRange", &header_string))
           {
-            if (strncasecmp (yyjson_get_str (ehval), "PEAKTOPEAK", 10) == 0)
+            if (strncasecmp (header_string, "PEAKTOPEAK", 10) == 0)
               *pMS2B310_FLAGS (record + written) |= 0x10;
-            if (strncasecmp (yyjson_get_str (ehval), "ZEROTOPEAK", 10) == 0)
+            if (strncasecmp (header_string, "ZEROTOPEAK", 10) == 0)
               *pMS2B310_FLAGS (record + written) |= 0x20;
-            if (strncasecmp (yyjson_get_str (ehval), "RMS", 3) == 0)
+            if (strncasecmp (header_string, "RMS", 3) == 0)
               *pMS2B310_FLAGS (record + written) |= 0x40;
           }
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Duration")) && yyjson_is_num (ehval))
-            *pMS2B310_DURATION (record + written) = HO4u (yyjson_get_num (ehval) * 10000, swapflag);
+          if (yyjson_ptr_get_num (ehiterval, "/Duration", &header_number))
+            *pMS2B310_DURATION (record + written) = HO4u ((uint32_t)(header_number * 10000 + 0.5), swapflag);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/SinePeriod")) && yyjson_is_num (ehval))
-            *pMS2B310_PERIOD (record + written) = HO4f (yyjson_get_num (ehval), swapflag);
+          if (yyjson_ptr_get_num (ehiterval, "/SinePeriod", &header_number))
+            *pMS2B310_PERIOD (record + written) = HO4f ((float)header_number, swapflag);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Amplitude")) && yyjson_is_num (ehval))
-            *pMS2B310_AMPLITUDE (record + written) = HO4f (yyjson_get_num (ehval), swapflag);
+          if (yyjson_ptr_get_num (ehiterval, "/Amplitude", &header_number))
+            *pMS2B310_AMPLITUDE (record + written) = HO4f ((float)header_number, swapflag);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/InputChannel")) && yyjson_is_str (ehval))
-            ms_strncpopen (pMS2B310_INPUTCHANNEL (record + written), yyjson_get_str (ehval), 3);
+          if (yyjson_ptr_get_str (ehiterval, "/InputChannel", &header_string))
+            ms_strncpopen (pMS2B310_INPUTCHANNEL (record + written), header_string, 3);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/ReferenceAmplitude")) && yyjson_is_num (ehval))
-            *pMS2B310_REFERENCEAMPLITUDE (record + written) = HO4u (yyjson_get_num (ehval), swapflag);
+          if (yyjson_ptr_get_num (ehiterval, "/ReferenceAmplitude", &header_number))
+            *pMS2B310_REFERENCEAMPLITUDE (record + written) = HO4u ((uint32_t)(header_number + 0.5), swapflag);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Coupling")) && yyjson_is_str (ehval))
-            ms_strncpopen (pMS2B320_COUPLING (record + written), yyjson_get_str (ehval), 12);
+          if (yyjson_ptr_get_str (ehiterval, "/Coupling", &header_string))
+            ms_strncpopen (pMS2B310_COUPLING (record + written), header_string, 12);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Rolloff")) && yyjson_is_str (ehval))
-            ms_strncpopen (pMS2B320_ROLLOFF (record + written), yyjson_get_str (ehval), 12);
+          if (yyjson_ptr_get_str (ehiterval, "/Rolloff", &header_string))
+            ms_strncpopen (pMS2B310_ROLLOFF (record + written), header_string, 12);
         }
         else if (blockette_type == 320)
         {
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Trigger")) && yyjson_is_str (ehval) &&
-              strncasecmp (yyjson_get_str (ehval), "AUTOMATIC", 9) == 0)
+          if (yyjson_ptr_get_str (ehiterval, "/Trigger", &header_string) &&
+              strncasecmp (header_string, "AUTOMATIC", 9) == 0)
             *pMS2B320_FLAGS (record + written) |= 0x04;
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Continued")) && yyjson_get_bool (ehval))
+          if (yyjson_ptr_get_bool (ehiterval, "/Continued", &header_boolean) && header_boolean)
             *pMS2B320_FLAGS (record + written) |= 0x08;
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/AmplitudeRange")) && yyjson_is_str (ehval) &&
-              strncasecmp (yyjson_get_str (ehval), "RANDOM", 6) == 0)
+          if (yyjson_ptr_get_str (ehiterval, "/AmplitudeRange", &header_string) &&
+              strncasecmp (header_string, "RANDOM", 6) == 0)
             *pMS2B320_FLAGS (record + written) |= 0x10;
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Duration")) && yyjson_is_num (ehval))
-            *pMS2B320_DURATION (record + written) = HO4u (yyjson_get_num (ehval) * 10000, swapflag);
+          if (yyjson_ptr_get_num (ehiterval, "/Duration", &header_number))
+            *pMS2B320_DURATION (record + written) = HO4u ((uint32_t)(header_number * 10000 + 0.5), swapflag);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Amplitude")) && yyjson_is_num (ehval))
-            *pMS2B320_PTPAMPLITUDE (record + written) = HO4f (yyjson_get_num (ehval), swapflag);
+          if (yyjson_ptr_get_num (ehiterval, "/Amplitude", &header_number))
+            *pMS2B320_PTPAMPLITUDE (record + written) = HO4f ((float)header_number, swapflag);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/InputChannel")) && yyjson_is_str (ehval))
-            ms_strncpopen (pMS2B320_INPUTCHANNEL (record + written), yyjson_get_str (ehval), 3);
+          if (yyjson_ptr_get_str (ehiterval, "/InputChannel", &header_string))
+            ms_strncpopen (pMS2B320_INPUTCHANNEL (record + written), header_string, 3);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/ReferenceAmplitude")) && yyjson_is_num (ehval))
-            *pMS2B320_REFERENCEAMPLITUDE (record + written) = HO4u (yyjson_get_num (ehval), swapflag);
+          if (yyjson_ptr_get_num (ehiterval, "/ReferenceAmplitude", &header_number))
+            *pMS2B320_REFERENCEAMPLITUDE (record + written) = HO4u ((uint32_t)(header_number + 0.5), swapflag);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Coupling")) && yyjson_is_str (ehval))
-            ms_strncpopen (pMS2B320_COUPLING (record + written), yyjson_get_str (ehval), 12);
+          if (yyjson_ptr_get_str (ehiterval, "/Coupling", &header_string))
+            ms_strncpopen (pMS2B320_COUPLING (record + written), header_string, 12);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Rolloff")) && yyjson_is_str (ehval))
-            ms_strncpopen (pMS2B320_ROLLOFF (record + written), yyjson_get_str (ehval), 12);
+          if (yyjson_ptr_get_str (ehiterval, "/Rolloff", &header_string))
+            ms_strncpopen (pMS2B320_ROLLOFF (record + written), header_string, 12);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Noise")) && yyjson_is_str (ehval))
-            ms_strncpopen (pMS2B320_NOISETYPE (record + written), yyjson_get_str (ehval), 8);
+          if (yyjson_ptr_get_str (ehiterval, "/Noise", &header_string))
+            ms_strncpopen (pMS2B320_NOISETYPE (record + written), header_string, 8);
         }
         else if (blockette_type == 390)
         {
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Trigger")) && yyjson_is_str (ehval) &&
-              strncasecmp (yyjson_get_str (ehval), "AUTOMATIC", 9) == 0)
+          if (yyjson_ptr_get_str (ehiterval, "/Trigger", &header_string) &&
+              strncasecmp (header_string, "AUTOMATIC", 9) == 0)
             *pMS2B390_FLAGS (record + written) |= 0x04;
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Continued")) && yyjson_get_bool (ehval))
+          if (yyjson_ptr_get_bool (ehiterval, "/Continued", &header_boolean) && header_boolean)
             *pMS2B390_FLAGS (record + written) |= 0x08;
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Duration")) && yyjson_is_num (ehval))
-            *pMS2B390_DURATION (record + written) = HO4u (yyjson_get_num (ehval) * 10000, swapflag);
+          if (yyjson_ptr_get_num (ehiterval, "/Duration", &header_number))
+            *pMS2B390_DURATION (record + written) = HO4u ((uint32_t)(header_number * 10000 + 0.5), swapflag);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/Amplitude")) && yyjson_is_num (ehval))
-            *pMS2B390_AMPLITUDE (record + written) = HO4f (yyjson_get_num (ehval), swapflag);
+          if (yyjson_ptr_get_num (ehiterval, "/Amplitude", &header_number))
+            *pMS2B390_AMPLITUDE (record + written) = HO4f ((float)header_number, swapflag);
 
-          if ((ehval = yyjson_ptr_get (ehiterval, "/InputChannel")) && yyjson_is_str (ehval))
-            ms_strncpopen (pMS2B390_INPUTCHANNEL (record + written), yyjson_get_str (ehval), 3);
+          if (yyjson_ptr_get_str (ehiterval, "/InputChannel", &header_string))
+            ms_strncpopen (pMS2B390_INPUTCHANNEL (record + written), header_string, 3);
         }
 
         written += blockette_length;
       }
 
       /* Add Blockette 395 if EndTime is included */
-      if ((ehval = yyjson_ptr_get (ehiterval, "/EndTime")) && yyjson_is_str (ehval))
+      if (yyjson_ptr_get_str (ehiterval, "/EndTime", &header_string))
       {
         blockette_type  = 395;
         blockette_length = 16;
 
         if ((recbuflen - written) < blockette_length)
         {
-          ms_log (2, "%s: Record length not large enough for B%d\n", msr->sid, blockette_type);
+          ms_log (2, "%s: Record length not large enough for B%u\n", msr->sid, blockette_type);
           yyjson_doc_free (ehdoc);
           return -1;
         }
@@ -1560,10 +1560,10 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
         *pMS2B395_TYPE (record + written) = HO2u (blockette_type, swapflag);
         *pMS2B395_NEXT (record + written) = 0;
 
-        if (ms_timestr2btime (yyjson_get_str (ehval), (uint8_t *)pMS2B395_YEAR (record + written),
+        if (ms_timestr2btime (header_string, (uint8_t *)pMS2B395_YEAR (record + written),
                               msr->sid, swapflag) == -1)
         {
-          ms_log (2, "%s: Cannot convert B%d time: %s\n", msr->sid, blockette_type, yyjson_get_str (ehval));
+          ms_log (2, "%s: Cannot convert B%u time: %s\n", msr->sid, blockette_type, header_string);
           yyjson_doc_free (ehdoc);
           return -1;
         }
@@ -1589,12 +1589,12 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
  *
  * \ref MessageOnError - this function logs a message on error
  ************************************************************************/
-static int
-msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
+static int64_t
+msr_pack_data (void *dest, void *src, uint64_t maxsamples, uint64_t maxdatabytes,
                char sampletype, int8_t encoding, int8_t swapflag,
                uint32_t *byteswritten, const char *sid, int8_t verbose)
 {
-  int nsamples;
+  int64_t nsamples;
 
   if (byteswritten)
     *byteswritten = 0;
@@ -1616,7 +1616,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     nsamples = msr_encode_text ((char *)src, maxsamples, (char *)dest, maxdatabytes);
 
     if (byteswritten && nsamples > 0)
-      *byteswritten = nsamples;
+      *byteswritten = (uint32_t)nsamples;
 
     break;
 
@@ -1630,7 +1630,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
 
     if (maxdatabytes < sizeof(int16_t))
     {
-      ms_log (2, "%s: Not enough space in record (%d) for INT16 encoding, need at least %"PRIsize_t" bytes\n",
+      ms_log (2, "%s: Not enough space in record (%" PRIu64 ") for INT16 encoding, need at least %"PRIsize_t" bytes\n",
               sid, maxdatabytes, sizeof(int16_t));
       return -1;
     }
@@ -1641,7 +1641,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     nsamples = msr_encode_int16 ((int32_t *)src, maxsamples, (int16_t *)dest, maxdatabytes, swapflag);
 
     if (byteswritten && nsamples > 0)
-      *byteswritten = nsamples * 2;
+      *byteswritten = (uint32_t)(nsamples * 2);
 
     break;
 
@@ -1655,7 +1655,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
 
     if (maxdatabytes < sizeof(int32_t))
     {
-      ms_log (2, "%s: Not enough space in record (%d) for INT32 encoding, need at least %"PRIsize_t" bytes\n",
+      ms_log (2, "%s: Not enough space in record (%" PRIu64 ") for INT32 encoding, need at least %"PRIsize_t" bytes\n",
               sid, maxdatabytes, sizeof(int32_t));
       return -1;
     }
@@ -1666,7 +1666,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     nsamples = msr_encode_int32 ((int32_t *)src, maxsamples, (int32_t *)dest, maxdatabytes, swapflag);
 
     if (byteswritten && nsamples > 0)
-      *byteswritten = nsamples * 4;
+      *byteswritten = (uint32_t)(nsamples * 4);
 
     break;
 
@@ -1680,7 +1680,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
 
     if (maxdatabytes < sizeof(float))
     {
-      ms_log (2, "%s: Not enough space in record (%d) for FLOAT32 encoding, need at least %"PRIsize_t" bytes\n",
+      ms_log (2, "%s: Not enough space in record (%" PRIu64 ") for FLOAT32 encoding, need at least %"PRIsize_t" bytes\n",
               sid, maxdatabytes, sizeof(float));
       return -1;
     }
@@ -1691,7 +1691,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     nsamples = msr_encode_float32 ((float *)src, maxsamples, (float *)dest, maxdatabytes, swapflag);
 
     if (byteswritten && nsamples > 0)
-      *byteswritten = nsamples * 4;
+      *byteswritten = (uint32_t)(nsamples * 4);
 
     break;
 
@@ -1705,7 +1705,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
 
     if (maxdatabytes < sizeof(double))
     {
-      ms_log (2, "%s: Not enough space in record (%d) for FLOAT64 encoding, need at least %"PRIsize_t" bytes\n",
+      ms_log (2, "%s: Not enough space in record (%" PRIu64 ") for FLOAT64 encoding, need at least %"PRIsize_t" bytes\n",
               sid, maxdatabytes, sizeof(double));
       return -1;
     }
@@ -1716,7 +1716,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
     nsamples = msr_encode_float64 ((double *)src, maxsamples, (double *)dest, maxdatabytes, swapflag);
 
     if (byteswritten && nsamples > 0)
-      *byteswritten = nsamples * 8;
+      *byteswritten = (uint32_t)(nsamples * 8);
 
     break;
 
@@ -1730,7 +1730,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
 
     if (maxdatabytes < 64)
     {
-      ms_log (2, "%s: Not enough space in record (%d) for STEIM1 encoding, need at least 64 bytes\n",
+      ms_log (2, "%s: Not enough space in record (%" PRIu64 ") for STEIM1 encoding, need at least 64 bytes\n",
               sid, maxdatabytes);
       return -1;
     }
@@ -1755,7 +1755,7 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
 
     if (maxdatabytes < 64)
     {
-      ms_log (2, "%s: Not enough space in record (%d) for STEIM2 encoding, need at least 64 bytes\n",
+      ms_log (2, "%s: Not enough space in record (%" PRIu64 ") for STEIM2 encoding, need at least 64 bytes\n",
               sid, maxdatabytes);
       return -1;
     }
@@ -2069,7 +2069,7 @@ ms_genfactmult (double samprate, int16_t *factor, int16_t *multiplier)
  *
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
-static inline uint32_t
+static inline int64_t
 ms_timestr2btime (const char *timestr, uint8_t *btime, const char *sid, int8_t swapflag)
 {
   uint16_t year;
@@ -2082,7 +2082,8 @@ ms_timestr2btime (const char *timestr, uint8_t *btime, const char *sid, int8_t s
 
   if (!timestr || !btime)
   {
-    ms_log (2, "%s(): Required input not defined: 'timestr' or 'btime'\n", __func__);
+    ms_log (2, "%s(%s): Required input not defined: 'timestr' or 'btime'\n",
+            sid, __func__);
     return -1;
   }
 

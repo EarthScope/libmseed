@@ -365,7 +365,7 @@ typedef struct MS3Record {
   uint8_t         flags;             //!< Record-level bit flags
   nstime_t        starttime;         //!< Record start time (first sample)
   double          samprate;          //!< Nominal sample rate as samples/second (Hz) or period (s)
-  int8_t          encoding;          //!< Data encoding format, see @ref encoding-values
+  int16_t         encoding;          //!< Data encoding format, see @ref encoding-values
   uint8_t         pubversion;        //!< Publication version
   int64_t         samplecnt;         //!< Number of samples in record
   uint32_t        crc;               //!< CRC of entire record
@@ -375,7 +375,7 @@ typedef struct MS3Record {
 
   /* Data sample fields */
   void           *datasamples;       //!< Data samples, \a numsamples of type \a sampletype
-  size_t          datasize;          //!< Size of datasamples buffer in bytes
+  uint64_t        datasize;          //!< Size of datasamples buffer in bytes
   int64_t         numsamples;        //!< Number of data samples in datasamples
   char            sampletype;        //!< Sample type code: t, i, f, d @ref sample-types
 } MS3Record;
@@ -398,8 +398,8 @@ extern int64_t msr3_unpack_data (MS3Record *msr, int8_t verbose);
 
 extern int msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize);
 
-extern int64_t ms_decode_data (const void *input, size_t inputsize, uint8_t encoding,
-                               int64_t samplecount, void *output, size_t outputsize,
+extern int64_t ms_decode_data (const void *input, uint64_t inputsize, uint8_t encoding,
+                               uint64_t samplecount, void *output, uint64_t outputsize,
                                char *sampletype, int8_t swapflag, const char *sid, int8_t verbose);
 
 extern MS3Record* msr3_init (MS3Record *msr);
@@ -411,7 +411,7 @@ extern int        msr3_resize_buffer (MS3Record *msr);
 extern double     msr3_sampratehz (const MS3Record *msr);
 extern double     msr3_host_latency (const MS3Record *msr);
 
-extern int ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion);
+extern int64_t ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion);
 extern int ms_parse_raw3 (const char *record, int maxreclen, int8_t details);
 extern int ms_parse_raw2 (const char *record, int maxreclen, int8_t details, int8_t swapflag);
 /** @} */
@@ -551,7 +551,7 @@ typedef struct MS3TraceSeg {
   double          samprate;          //!< Nominal sample rate (Hz)
   int64_t         samplecnt;         //!< Number of samples in trace coverage
   void           *datasamples;       //!< Data samples, \a numsamples of type \a sampletype
-  size_t          datasize;          //!< Size of datasamples buffer in bytes
+  uint64_t        datasize;          //!< Size of datasamples buffer in bytes
   int64_t         numsamples;        //!< Number of data samples in datasamples
   char            sampletype;        //!< Sample type code, see @ref sample-types
   void           *prvtptr;           //!< Private pointer for general use, unused by library
@@ -639,7 +639,7 @@ extern int64_t       mstl3_readbuffer_selection (MS3TraceList **ppmstl, const ch
                                                  const MS3Tolerance *tolerance, const MS3Selections *selections,
                                                  int8_t verbose);
 extern int64_t mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
-                                        size_t outputsize, int8_t verbose);
+                                        uint64_t outputsize, int8_t verbose);
 extern int mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate);
 extern int mstl3_resize_buffers (MS3TraceList *mstl);
 extern int64_t mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
@@ -940,7 +940,7 @@ typedef struct LM_PARSED_JSON_s LM_PARSED_JSON;
   (!mseh_get_ptr_r (msr, ptr, NULL, 0, 0, NULL))
 
 extern int mseh_get_ptr_r (const MS3Record *msr, const char *ptr,
-                           void *value, char type, size_t maxlength,
+                           void *value, char type, uint32_t maxlength,
                            LM_PARSED_JSON **parsestate);
 
 /** @def mseh_set

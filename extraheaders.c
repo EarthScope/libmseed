@@ -148,7 +148,7 @@ parse_json (char *jsonstring, size_t length, LM_PARSED_JSON *parsed)
  ***************************************************************************/
 int
 mseh_get_ptr_r (const MS3Record *msr, const char *ptr,
-                 void *value, char type, size_t maxlength,
+                 void *value, char type, uint32_t maxlength,
                  LM_PARSED_JSON **parsestate)
 {
   LM_PARSED_JSON *parsed  = (parsestate) ? *parsestate : NULL;

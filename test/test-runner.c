@@ -94,7 +94,7 @@ cmpfiles (char *fileA, char *fileB)
 int
 cmpint32s (int32_t *arrayA, int32_t *arrayB, size_t length)
 {
-  int idx;
+  size_t idx;
 
   for (idx = 0; idx < length; idx++)
   {
@@ -112,7 +112,7 @@ cmpint32s (int32_t *arrayA, int32_t *arrayB, size_t length)
 int
 cmpfloats (float *arrayA, float *arrayB, size_t length)
 {
-  int idx;
+  size_t idx;
 
   for (idx = 0; idx < length; idx++)
   {
@@ -130,7 +130,7 @@ cmpfloats (float *arrayA, float *arrayB, size_t length)
 int
 cmpdoubles (double *arrayA, double *arrayB, size_t length)
 {
-  int idx;
+  size_t idx;
 
   for (idx = 0; idx < length; idx++)
   {

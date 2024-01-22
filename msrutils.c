@@ -273,7 +273,7 @@ msr3_print (const MS3Record *msr, int8_t details)
     ms_log (0, "    extra header length: %d bytes\n", msr->extralength);
     ms_log (0, "    data payload length: %d bytes\n", msr->datalength);
     ms_log (0, "       payload encoding: %s (val: %d)\n",
-            (char *)ms_encodingstr (msr->encoding), msr->encoding);
+            (char *)ms_encodingstr ((uint8_t)msr->encoding), msr->encoding);
 
     if (details > 1 && msr->extralength > 0 && msr->extra)
     {

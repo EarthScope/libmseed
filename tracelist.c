@@ -362,6 +362,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
                         int8_t splitversion, int8_t autoheal, uint32_t flags,
                         const MS3Tolerance *tolerance)
 {
+  (void)flags; /* Unused */
   MS3TraceID *id = 0;
   MS3TraceID *previd[MSTRACEID_SKIPLIST_HEIGHT] = {NULL};
 
@@ -1118,7 +1119,9 @@ mstl3_addmsrtoseg (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, int
 
     if (libmseed_prealloc_block_size)
     {
-      newdatasamples = libmseed_memory_prealloc (seg->datasamples, newdatasize, &(seg->datasize));
+      size_t current_size = seg->datasize;
+      newdatasamples = libmseed_memory_prealloc (seg->datasamples, newdatasize, &current_size);
+      seg->datasize = current_size;
     }
     else
     {
@@ -1219,7 +1222,9 @@ mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
 
     if (libmseed_prealloc_block_size)
     {
-      newdatasamples = libmseed_memory_prealloc (seg1->datasamples, newdatasize, &(seg1->datasize));
+      size_t current_size = seg1->datasize;
+      newdatasamples = libmseed_memory_prealloc (seg1->datasamples, newdatasize, &current_size);
+      seg1->datasize = current_size;
     }
     else
     {
@@ -1644,17 +1649,17 @@ mstl3_resize_buffers (MS3TraceList *mstl)
  ***************************************************************************/
 int64_t
 mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
-                         size_t outputsize, int8_t verbose)
+                         uint64_t outputsize, int8_t verbose)
 {
   MS3RecordPtr *recordptr = NULL;
   int64_t unpackedsamples = 0;
   int64_t totalunpackedsamples = 0;
 
   char *filebuffer = NULL;
-  size_t filebuffersize = 0;
+  int64_t filebuffersize = 0;
 
-  size_t outputoffset = 0;
-  size_t decodedsize = 0;
+  uint64_t outputoffset = 0;
+  uint64_t decodedsize = 0;
   uint8_t samplesize = 0;
   char sampletype = 0;
   char recsampletype = 0;
@@ -1685,7 +1690,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
 
   recordptr = seg->recordlist->first;
 
-  if (ms_encoding_sizetype(recordptr->msr->encoding, &samplesize, &sampletype))
+  if (ms_encoding_sizetype((uint8_t)recordptr->msr->encoding, &samplesize, &sampletype))
   {
     ms_log (2, "%s: Cannot determine sample size and type for encoding: %u\n",
             id->sid, recordptr->msr->encoding);
@@ -1693,14 +1698,14 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
   }
 
   /* Calculate buffer size needed for unpacked samples */
-  decodedsize = (size_t)seg->samplecnt * samplesize;
+  decodedsize = seg->samplecnt * samplesize;
 
   /* If output buffer is supplied, check needed size */
   if (output)
   {
     if (decodedsize > outputsize)
     {
-      ms_log (2, "%s: Output buffer (%"PRIsize_t" bytes) is not large enough for decoded data (%"PRIsize_t" bytes)\n",
+      ms_log (2, "%s: Output buffer (%" PRIu64 " bytes) is not large enough for decoded data (%" PRIu64 " bytes)\n",
               id->sid, decodedsize, outputsize);
       return -1;
     }
@@ -1714,7 +1719,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
   /* Otherwise allocate new buffer */
   else
   {
-    if ((output = libmseed_memory.malloc (decodedsize)) == NULL)
+    if ((output = libmseed_memory.malloc ((size_t)decodedsize)) == NULL)
     {
       ms_log (2, "%s: Cannot allocate memory for segment data samples\n", id->sid);
       return -1;
@@ -1735,7 +1740,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
       continue;
     }
 
-    if (ms_encoding_sizetype(recordptr->msr->encoding, NULL, &recsampletype))
+    if (ms_encoding_sizetype((uint8_t)recordptr->msr->encoding, NULL, &recsampletype))
     {
       ms_log (2, "%s: Cannot determine sample type for encoding: %u\n", id->sid, recordptr->msr->encoding);
 
@@ -1830,7 +1835,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
       }
 
       /* Read record into buffer */
-      if (fread (filebuffer, 1, recordptr->msr->reclen, fileptr) != recordptr->msr->reclen)
+      if (fread (filebuffer, 1, recordptr->msr->reclen, fileptr) != (size_t)recordptr->msr->reclen)
       {
         ms_log (2, "%s: Cannot read record from file: %s (%s)\n",
                 id->sid,
@@ -1854,7 +1859,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
 
     /* Decode data from buffer */
     unpackedsamples = ms_decode_data (input, recordptr->msr->reclen - recordptr->dataoffset,
-                                      recordptr->msr->encoding, recordptr->msr->samplecnt,
+                                      (uint8_t)recordptr->msr->encoding, recordptr->msr->samplecnt,
                                       (unsigned char *)output + outputoffset, decodedsize - outputoffset,
                                       &sampletype, recordptr->msr->swapflag, id->sid, verbose);
 

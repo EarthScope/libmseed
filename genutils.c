@@ -139,7 +139,7 @@ static const int monthdays_leap[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30,
 #define VALIDSEC(sec) (sec >= 0 && sec <= 60)
 
 /* Check that a nanosecond is in a valid range */
-#define VALIDNANOSEC(nanosec) (nanosec >= 0 && nanosec <= 999999999)
+#define VALIDNANOSEC(nanosec) (nanosec <= 999999999)
 
 /** @endcond */
 
@@ -314,6 +314,7 @@ int
 ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
              const char *net, const char *sta, const char *loc, const char *chan)
 {
+  (void)flags; /* Unused */
   char *sptr = sid;
   char xchan[6] = {0};
   int needed = 0;
@@ -411,7 +412,7 @@ ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
     return -1;
   }
 
-  return (sptr - sid);
+  return (int)(sptr - sid);
 } /* End of ms_nslc2sid() */
 
 /**********************************************************************/ /**
@@ -1344,7 +1345,7 @@ ms_timestr2nstime (const char *timestr)
     }
   }
 
-  length = cp - timestr;
+  length = (int)(cp - timestr);
 
   /* If the time string is all number-like characters assume it is an epoch time.
    * Unless it is 4 characters, which could be a year, unless it starts with a sign. */
@@ -1431,15 +1432,15 @@ nstime_t
 ms_mdtimestr2nstime (const char *timestr)
 {
   int fields;
-  int year    = 0;
-  int mon     = 1;
-  int mday    = 1;
-  int yday    = 1;
-  int hour    = 0;
-  int min     = 0;
-  int sec     = 0;
-  double fsec = 0.0;
-  int nsec    = 0;
+  int year      = 0;
+  int mon       = 1;
+  int mday      = 1;
+  int yday      = 1;
+  int hour      = 0;
+  int min       = 0;
+  int sec       = 0;
+  double fsec   = 0.0;
+  uint32_t nsec = 0;
 
   if (!timestr)
   {
@@ -1453,7 +1454,7 @@ ms_mdtimestr2nstime (const char *timestr)
   /* Convert fractional seconds to nanoseconds */
   if (fsec != 0.0)
   {
-    nsec = (int)(fsec * 1000000000.0 + 0.5);
+    nsec = (uint32_t)(fsec * 1000000000.0 + 0.5);
   }
 
   if (fields < 1)
@@ -1500,7 +1501,7 @@ ms_mdtimestr2nstime (const char *timestr)
 
   if (!VALIDNANOSEC (nsec))
   {
-    ms_log (2, "fractional second (%d) is out of range\n", nsec);
+    ms_log (2, "fractional second (%u) is out of range\n", nsec);
     return NSTERROR;
   }
 
@@ -1539,13 +1540,13 @@ nstime_t
 ms_seedtimestr2nstime (const char *seedtimestr)
 {
   int fields;
-  int year    = 0;
-  int yday    = 1;
-  int hour    = 0;
-  int min     = 0;
-  int sec     = 0;
-  double fsec = 0.0;
-  int nsec    = 0;
+  int year      = 0;
+  int yday      = 1;
+  int hour      = 0;
+  int min       = 0;
+  int sec       = 0;
+  double fsec   = 0.0;
+  uint32_t nsec = 0;
 
   if (!seedtimestr)
   {
@@ -1559,7 +1560,7 @@ ms_seedtimestr2nstime (const char *seedtimestr)
   /* Convert fractional seconds to nanoseconds */
   if (fsec != 0.0)
   {
-    nsec = (int)(fsec * 1000000000.0 + 0.5);
+    nsec = (uint32_t)(fsec * 1000000000.0 + 0.5);
   }
 
   if (fields < 1)
@@ -1600,7 +1601,7 @@ ms_seedtimestr2nstime (const char *seedtimestr)
 
   if (!VALIDNANOSEC (nsec))
   {
-    ms_log (2, "fractional second (%d) is out of range\n", nsec);
+    ms_log (2, "fractional second (%u) is out of range\n", nsec);
     return NSTERROR;
   }
 

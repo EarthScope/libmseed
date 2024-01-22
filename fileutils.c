@@ -768,6 +768,8 @@ int
 ms3_url_useragent (const char *program, const char *version)
 {
 #if !defined(LIBMSEED_URL)
+  (void)program; /* Unused */
+  (void)version; /* Unused */
   ms_log (2, "URL support not included in library\n");
   return -1;
 #else
@@ -796,6 +798,7 @@ int
 ms3_url_userpassword (const char *userpassword)
 {
 #if !defined(LIBMSEED_URL)
+  (void) userpassword; /* Unused */
   ms_log (2, "URL support not included in library\n");
   return -1;
 #else
@@ -824,6 +827,7 @@ int
 ms3_url_addheader (const char *header)
 {
 #if !defined(LIBMSEED_URL)
+  (void)header; /* Unused */
   ms_log (2, "URL support not included in library\n");
   return -1;
 #else
@@ -1008,12 +1012,12 @@ mstl3_writemseed (MS3TraceList *mstl, const char *mspath, int8_t overwrite,
 char *
 parse_pathname_range (const char *string, int64_t *start, int64_t *end)
 {
-  char startstr[21] = {0}; /* Maximum of 20 digit value */
-  char endstr[21]   = {0}; /* Maximum of 20 digit value */
-  int startdigits   = 0;
-  int enddigits     = 0;
-  char *dash        = NULL;
-  char *at          = NULL;
+  char startstr[21]   = {0}; /* Maximum of 20 digit value */
+  char endstr[21]     = {0}; /* Maximum of 20 digit value */
+  uint8_t startdigits = 0;
+  uint8_t enddigits   = 0;
+  char *dash          = NULL;
+  char *at            = NULL;
   char *ptr;
 
   if (!string || (!start || !end))

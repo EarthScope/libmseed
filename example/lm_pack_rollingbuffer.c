@@ -37,6 +37,7 @@
 void
 record_handler (char *record, int reclen, void *handlerdata)
 {
+  (void)handlerdata;
   MS3Record *msr = NULL;
 
   if (!msr3_parse (record, reclen, &msr, 0, 0))

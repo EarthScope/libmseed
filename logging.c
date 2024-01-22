@@ -366,7 +366,7 @@ rlog_int (MSLogParam *logp, const char *function, int level,
       strncpy (message, "Error: ", MAX_LOG_MSG_LENGTH);
     }
 
-    presize = strlen (message);
+    presize = (int)strlen (message);
     printed = vsnprintf (&message[presize],
                          MAX_LOG_MSG_LENGTH - presize,
                          format, *varlist);
@@ -381,7 +381,7 @@ rlog_int (MSLogParam *logp, const char *function, int level,
       message[MAX_LOG_MSG_LENGTH - 1] = '\0';
     }
 
-    presize = strlen (message);
+    presize = (int)strlen (message);
     printed = vsnprintf (&message[presize],
                          MAX_LOG_MSG_LENGTH - presize,
                          format, *varlist);
@@ -396,7 +396,7 @@ rlog_int (MSLogParam *logp, const char *function, int level,
       message[MAX_LOG_MSG_LENGTH - 1] = '\0';
     }
 
-    presize = strlen (message);
+    presize = (int)strlen (message);
     printed = vsnprintf (&message[presize],
                          MAX_LOG_MSG_LENGTH - presize,
                          format, *varlist);

@@ -202,6 +202,7 @@ msio_fopen (LMIO *io, const char *path, const char *mode,
   if (!knownfile && strstr (path, "://"))
   {
 #if !defined(LIBMSEED_URL)
+    (void)endoffset; /* Unused */
     ms_log (2, "URL support not included in library for %s\n", path);
     return -1;
 #else
@@ -642,6 +643,7 @@ msio_url_useragent (const char *program, const char *version)
   }
 
 #if !defined(LIBMSEED_URL)
+  (void)version; /* Unused */
   ms_log (2, "URL support not included in library\n");
   return -1;
 #else

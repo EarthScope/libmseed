@@ -1035,7 +1035,7 @@ msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize
   /* Determine offset to data */
   if (msr->formatversion == 3)
   {
-    *dataoffset = MS3FSDH_LENGTH + strlen (msr->sid) + msr->extralength;
+    *dataoffset = MS3FSDH_LENGTH + (uint32_t)strlen (msr->sid) + msr->extralength;
     *datasize = msr->datalength;
   }
   else if (msr->formatversion == 2)
@@ -1120,7 +1120,7 @@ msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize
 int64_t
 msr3_unpack_data (MS3Record *msr, int8_t verbose)
 {
-  uint32_t datasize; /* byte size of data samples in record */
+  uint32_t datasize; /* length of data payload in bytes */
   int64_t nsamples; /* number of samples unpacked */
   size_t unpacksize; /* byte size of unpacked samples */
   uint8_t samplesize = 0; /* size of the data samples in bytes */
@@ -1181,7 +1181,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
     msr->encoding = DE_STEIM1;
   }
 
-  if (ms_encoding_sizetype(msr->encoding, &samplesize, NULL))
+  if (ms_encoding_sizetype((uint8_t)msr->encoding, &samplesize, NULL))
   {
     ms_log (2, "%s: Cannot determine sample size for encoding: %u\n", msr->sid, msr->encoding);
     return MS_GENERROR;
@@ -1210,7 +1210,9 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   {
     if (libmseed_prealloc_block_size)
     {
-      msr->datasamples = libmseed_memory_prealloc (msr->datasamples, unpacksize, &(msr->datasize));
+      size_t current_size  = msr->datasize;
+      msr->datasamples = libmseed_memory_prealloc (msr->datasamples, unpacksize, &current_size);
+      msr->datasize = current_size;
     }
     else
     {
@@ -1239,7 +1241,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   if (verbose > 2)
     ms_log (0, "%s: Unpacking %" PRId64 " samples\n", msr->sid, msr->samplecnt);
 
-  nsamples = ms_decode_data (encoded, datasize, msr->encoding, msr->samplecnt,
+  nsamples = ms_decode_data (encoded, datasize, (uint8_t)msr->encoding, msr->samplecnt,
                              msr->datasamples, msr->datasize, &(msr->sampletype),
                              (msr->swapflag & MSSWAP_PAYLOAD), msr->sid, verbose);
 
@@ -1271,12 +1273,12 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
  * \ref MessageOnError - this function logs a message on error
  ************************************************************************/
 int64_t
-ms_decode_data (const void *input, size_t inputsize, uint8_t encoding,
-                int64_t samplecount, void *output, size_t outputsize,
+ms_decode_data (const void *input, uint64_t inputsize, uint8_t encoding,
+                uint64_t samplecount, void *output, uint64_t outputsize,
                 char *sampletype, int8_t swapflag, const char *sid, int8_t verbose)
 {
-  size_t decodedsize; /* byte size of decodeded samples */
-  int32_t nsamples; /* number of samples unpacked */
+  uint64_t decodedsize; /* byte size of decodeded samples */
+  int64_t nsamples; /* number of samples unpacked */
   uint8_t samplesize = 0; /* size of the data samples in bytes */
 
   if (!input || !output || !sampletype)
@@ -1286,18 +1288,18 @@ ms_decode_data (const void *input, size_t inputsize, uint8_t encoding,
     return MS_GENERROR;
   }
 
-  if (samplecount <= 0)
+  if (samplecount == 0)
     return 0;
 
   if (ms_encoding_sizetype(encoding, &samplesize, sampletype))
     samplesize = 0;
 
   /* Calculate buffer size needed for unpacked samples */
-  decodedsize = (size_t)samplecount * samplesize;
+  decodedsize = samplecount * samplesize;
 
   if (decodedsize > outputsize)
   {
-    ms_log (2, "%s: Output buffer (%"PRIsize_t" bytes) is not large enought for decoded data (%"PRIsize_t" bytes)\n",
+    ms_log (2, "%s: Output buffer (%"PRIu64" bytes) is not large enought for decoded data (%"PRIu64" bytes)\n",
             (sid) ? sid : "", decodedsize, outputsize);
     return MS_GENERROR;
   }
@@ -1309,7 +1311,7 @@ ms_decode_data (const void *input, size_t inputsize, uint8_t encoding,
     if (verbose > 1)
       ms_log (0, "%s: Decoding TEXT data\n", (sid) ? sid : "");
 
-    nsamples = (int32_t)samplecount;
+    nsamples = (int64_t)samplecount;
     if (nsamples > 0)
     {
       memcpy (output, input, nsamples);
@@ -1431,9 +1433,9 @@ ms_decode_data (const void *input, size_t inputsize, uint8_t encoding,
     break;
   }
 
-  if (nsamples >= 0 && nsamples != samplecount)
+  if (nsamples >= 0 && (uint64_t)nsamples != samplecount)
   {
-    ms_log (2, "%s: only decoded %d samples of %" PRId64 " expected\n",
+    ms_log (2, "%s: only decoded %" PRId64 " samples of %" PRIu64 " expected\n",
             (sid) ? sid : "", nsamples, samplecount);
     return MS_GENERROR;
   }

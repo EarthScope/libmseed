@@ -402,7 +402,7 @@ msr_encode_steim1 (int32_t *input, uint64_t samplecount, int32_t *output,
     ms_gswap4 (Xnp);
 
   if (byteswritten)
-    *byteswritten = frameidx * 64;
+    *byteswritten = (uint32_t)(frameidx * 64);
 
   return outputsamples;
 } /* End of msr_encode_steim1() */
@@ -718,7 +718,7 @@ msr_encode_steim2 (int32_t *input, uint64_t samplecount, int32_t *output,
     ms_gswap4 (Xnp);
 
   if (byteswritten)
-    *byteswritten = frameidx * 64;
+    *byteswritten = (uint32_t)(frameidx * 64);
 
   return outputsamples;
 } /* End of msr_encode_steim2() */

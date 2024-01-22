@@ -41,15 +41,15 @@ main (int argc, char **argv)
   char fileptrstr[30];
   uint32_t flags = 0;
   int8_t verbose = 0;
-  size_t idx;
+  uint64_t idx;
   int rv;
 
   char printdata = 0;
   int64_t unpacked;
   uint8_t samplesize;
   char sampletype;
-  size_t lineidx;
-  size_t lines;
+  uint64_t lineidx;
+  uint64_t lines;
   int col;
   void *sptr;
 
@@ -62,7 +62,7 @@ main (int argc, char **argv)
   mseedfile = argv[1];
 
   /* Simplistic argument parsing */
-  for (idx = 2; idx < argc; idx++)
+  for (idx = 2; (int)idx < argc; idx++)
   {
     if (strncmp (argv[idx], "-v", 2) == 0)
       verbose += strspn (&argv[idx][1], "v");
@@ -166,7 +166,7 @@ main (int argc, char **argv)
 
             for (idx = 0, lineidx = 0; lineidx < lines; lineidx++)
             {
-              for (col = 0; col < 6 && idx < seg->numsamples; col++)
+              for (col = 0; col < 6 && (int64_t)idx < seg->numsamples; col++)
               {
                 sptr = (char *)seg->datasamples + (idx * samplesize);
 
