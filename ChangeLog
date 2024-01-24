@@ -1,10 +1,12 @@
-2024.020: 3.0.19
-	Minor data structure and API changes:
-	- `ms3_detect()` now returns int64_t instead of int.
+2024.024: 3.1.0
+	BREAKING CHANGES, data structure and an API changes:
 	- `MS3Record.encoding` now int16_t instead of int8_t.
+	- `MS3Record.datalength` now uint32_t instead of uint16_t (change in 3.0.18).
 	- `MS3Record.datasize` and `MS3TraceSeg.datasize` now uint64_t instead of size_t.
-	These changes should not effect the vast amount, or any, usage but are important
-	for capability and portability.
+	- `ms3_detect()` now returns int64_t instead of int.
+	- `mstl3_unpack_recordlist()`'s `outputsize` argument is now uint64_t instead of size_t.
+	- `mseh_get_ptr_r()`'s `maxlength` is now uint32_t instead of size_t.
+
 	- Fix to handle full range of allowed encoding values from 0-255.
 	- Fix to handle detection of huge record lengths beyond MAXRECLEN gracefully.
 	- Add more checks to avoid writing impossible values to miniSEED v2 blockette fields.
