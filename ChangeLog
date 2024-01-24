@@ -1,3 +1,7 @@
+2024.024: 3.1.1
+	- Change library compatibility version in Makefile to MAJOR.1.0, as this is now
+	incompatible with the x.0.0 releases.
+
 2024.024: 3.1.0
 	BREAKING CHANGES, data structure and an API changes:
 	- `MS3Record.encoding` now int16_t instead of int8_t.
