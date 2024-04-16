@@ -988,11 +988,31 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
   /* Build fixed header */
   memcpy (pMS2FSDH_SEQNUM (record), "000000", 6);
 
+  /* Use DataQuality indicator in extra headers if present */
   if (yyjson_ptr_get_str (ehroot, "/FDSN/DataQuality", &header_string) &&
       MS2_ISDATAINDICATOR (header_string[0]))
+  {
     *pMS2FSDH_DATAQUALITY (record) = header_string[0];
+  }
+  /* Otherwise map publication version, defaulting to 'D' */
   else
-    *pMS2FSDH_DATAQUALITY (record) = 'D';
+  {
+    switch (msr->pubversion)
+    {
+    case 1:
+      *pMS2FSDH_DATAQUALITY (record) = 'R';
+      break;
+    case 3:
+      *pMS2FSDH_DATAQUALITY (record) = 'Q';
+      break;
+    case 4:
+      *pMS2FSDH_DATAQUALITY (record) = 'M';
+      break;
+    default:
+      *pMS2FSDH_DATAQUALITY (record) = 'D';
+      break;
+    }
+  }
 
   *pMS2FSDH_RESERVED (record) = ' ';
   ms_strncpopen (pMS2FSDH_STATION (record), station, 5);

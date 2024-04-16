@@ -1,3 +1,8 @@
+2024.106:
+	- When writing v2 derive the quality code from the publication version when the
+	extra-header "/FDSN/DataQuality" is not present.  Use quality indicator 'D' when
+	the publication version cannot be mapped, e.g. > 4.
+
 2024.024: 3.1.1
 	- Change library compatibility version in Makefile to MAJOR.1.0, as this is now
 	incompatible with the x.0.0 releases.
