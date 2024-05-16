@@ -409,6 +409,7 @@ extern nstime_t   msr3_endtime (const MS3Record *msr);
 extern void       msr3_print (const MS3Record *msr, int8_t details);
 extern int        msr3_resize_buffer (MS3Record *msr);
 extern double     msr3_sampratehz (const MS3Record *msr);
+extern nstime_t   msr3_nsperiod (const MS3Record *msr);
 extern double     msr3_host_latency (const MS3Record *msr);
 
 extern int64_t ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion);

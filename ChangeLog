@@ -1,3 +1,7 @@
+2024.137:
+	- Add msr3_nsperiod() to calculate the sample period in nanoseconds.
+	- Add tests for msr3 utility functions.
+
 2024.106:
 	- When writing v2 derive the quality code from the publication version when the
 	extra-header "/FDSN/DataQuality" is not present.  Use quality indicator 'D' when

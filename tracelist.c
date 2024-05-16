@@ -377,7 +377,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
   nstime_t postgap;
   nstime_t lastgap;
   nstime_t firstgap;
-  nstime_t nsdelta;
+  nstime_t nsperiod;
   nstime_t nstimetol = 0;
   nstime_t nnstimetol = 0;
 
@@ -445,19 +445,14 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
   /* Add data coverage to the matching MS3TraceID */
   else
   {
-    /* Calculate high-precision sample period, handling different rate notations */
-    if (msr->samprate > 0.0)
-      nsdelta = (nstime_t) (NSTMODULUS / msr->samprate); /* samples/second */
-    else if (msr->samprate < 0.0)
-      nsdelta = (nstime_t) (NSTMODULUS * -msr->samprate); /* period */
-    else
-      nsdelta = 0;
+    /* Calculate nanosecond sample period */
+    nsperiod = msr3_nsperiod (msr);
 
     /* Calculate high-precision time tolerance */
     if (tolerance && tolerance->time)
       nstimetol = (nstime_t) (NSTMODULUS * tolerance->time (msr));
     else
-      nstimetol = (nstime_t) (0.5 * nsdelta); /* Default time tolerance is 1/2 sample period */
+      nstimetol = (nstime_t) (0.5 * nsperiod); /* Default time tolerance is 1/2 sample period */
 
     nnstimetol = (nstimetol) ? -nstimetol : 0;
 
@@ -471,10 +466,10 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
      * segment and positive when there is a time gap. */
 
     /* Gap relative to the last segment */
-    lastgap = msr->starttime - id->last->endtime - nsdelta;
+    lastgap = msr->starttime - id->last->endtime - nsperiod;
 
     /* Gap relative to the first segment */
-    firstgap = id->first->starttime - endtime - nsdelta;
+    firstgap = id->first->starttime - endtime - nsperiod;
 
     /* Sample rate tolerance checks for first and last segments */
     if (tolerance && tolerance->samprate)
@@ -513,7 +508,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
         return NULL;
     }
     /* Record coverage is after all other coverage */
-    else if ((msr->starttime - nsdelta - nstimetol) > id->latest)
+    else if ((msr->starttime - nsperiod - nstimetol) > id->latest)
     {
       if (!(seg = mstl3_msr2seg (msr, endtime)))
         return NULL;
@@ -532,7 +527,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
         return NULL;
     }
     /* Record coverage is before all other coverage */
-    else if ((endtime + nsdelta + nstimetol) < id->earliest)
+    else if ((endtime + nsperiod + nstimetol) < id->earliest)
     {
       if (!(seg = mstl3_msr2seg (msr, endtime)))
         return NULL;
@@ -594,11 +589,11 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
 
         whence = 0;
 
-        postgap = msr->starttime - searchseg->endtime - nsdelta;
+        postgap = msr->starttime - searchseg->endtime - nsperiod;
         if (!segbefore && postgap <= nstimetol && postgap >= nnstimetol)
           whence = 1;
 
-        pregap = searchseg->starttime - endtime - nsdelta;
+        pregap = searchseg->starttime - endtime - nsperiod;
         if (!segafter && pregap <= nstimetol && pregap >= nnstimetol)
           whence = 2;
 

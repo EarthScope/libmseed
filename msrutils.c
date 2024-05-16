@@ -356,6 +356,29 @@ msr3_sampratehz (const MS3Record *msr)
 } /* End of msr3_sampratehz() */
 
 /**********************************************************************/ /**
+ * @brief Calculate sample period in nanoseconds/sample for a given ::MS3Record
+ *
+ * @param[in] msr ::MS3Record to calculate sample period for
+ *
+ * @returns Return sample period in nanoseconds (nanoseconds per sample)
+ ***************************************************************************/
+inline nstime_t
+msr3_nsperiod (const MS3Record *msr)
+{
+  if (!msr)
+    return 0;
+
+  /* Calculate sample period from sample rate or period.
+   * The value is rounded by adding 0.5 before truncation to an integer. */
+  if (msr->samprate > 0.0)
+    return (nstime_t)(NSTMODULUS / msr->samprate + 0.5); /* samples/second */
+  else if (msr->samprate < 0.0)
+    return (nstime_t)(NSTMODULUS * -msr->samprate + 0.5); /* period or seconds/sample */
+
+  return 0;
+} /* End of msr3_nsperiod() */
+
+/**********************************************************************/ /**
  * @brief Calculate data latency based on the host time
  *
  * Calculation is based on the time of the last sample in the record; in
