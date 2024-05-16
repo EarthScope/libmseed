@@ -23,6 +23,25 @@ TEST (msr3, utils)
   msr_dup = msr3_duplicate(msr, 1);
   REQUIRE (msr != NULL, "msr3_duplicate() did not complete sucessfully");
 
+  CHECK_EQ (msr->reclen, msr_dup->reclen);
+  CHECK_EQ (msr->swapflag, msr_dup->swapflag);
+  CHECK_STREQ (msr->sid, msr_dup->sid);
+  CHECK_EQ (msr->formatversion, msr_dup->formatversion);
+  CHECK_EQ (msr->flags, msr_dup->flags);
+  CHECK_EQ (msr->starttime, msr_dup->starttime);
+  CHECK_EQ (msr->samprate, msr_dup->samprate);
+  CHECK_EQ (msr->encoding, msr_dup->encoding);
+  CHECK_EQ (msr->pubversion, msr_dup->pubversion);
+  CHECK_EQ (msr->samplecnt, msr_dup->samplecnt);
+  CHECK_EQ (msr->crc, msr_dup->crc);
+  CHECK_EQ (msr->extralength, msr_dup->extralength);
+  CHECK_EQ (msr->datalength, msr_dup->datalength);
+  CHECK_STREQ (msr->extra, msr_dup->extra);
+  CHECK_EQ (msr->datasize, msr_dup->datasize);
+  CHECK_EQ (msr->numsamples, msr_dup->numsamples);
+  CHECK_EQ (msr->sampletype, msr_dup->sampletype);
+
+  /* Clean up original MS3Record and file reading parameters */
   ms3_readmsr(&msr, NULL, flags, 0);
 
   /* Test first and last 4 decoded sample values */
