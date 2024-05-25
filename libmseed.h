@@ -63,6 +63,7 @@ extern "C" {
 #include <time.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 
 /** @def PRIsize_t
     @brief A printf() macro for portably printing size_t values */
@@ -140,7 +141,7 @@ extern "C" {
 
 /** @def MS_ISRATETOLERABLE
     @brief Macro to test default sample rate tolerance: abs(1-sr1/sr2) < 0.0001 */
-#define MS_ISRATETOLERABLE(A,B) (ms_dabs (1.0 - ((A) / (B))) < 0.0001)
+#define MS_ISRATETOLERABLE(A,B) (fabs (1.0 - ((A) / (B))) < 0.0001)
 
 /** @def MS2_ISDATAINDICATOR
     @brief Macro to test a character for miniSEED 2.x data record/quality indicators */
@@ -1253,8 +1254,10 @@ extern const char *ms_encodingstr (uint8_t encoding);
 extern const char *ms_errorstr (int errorcode);
 
 extern nstime_t ms_sampletime (nstime_t time, int64_t offset, double samprate);
-extern double ms_dabs (double val);
 extern int ms_bigendianhost (void);
+
+/** DEPRECATED legacy implementation of fabs(), now a macro */
+#define ms_dabs(val) fabs(val)
 
 /** Portable version of POSIX ftello() to get file position in large files */
 extern int64_t lmp_ftell64 (FILE *stream);

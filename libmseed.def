@@ -92,7 +92,6 @@ EXPORTS
    ms_encodingstr
    ms_errorstr
    ms_sampletime
-   ms_dabs
    ms_bigendianhost
    ms_crc32c
    leapsecondlist

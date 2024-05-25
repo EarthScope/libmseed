@@ -1,3 +1,6 @@
+2024.146:
+	- Replace ms_dabs() with macro to use system fabs(), document as deprecated.
+
 2024.137:
 	- Add msr3_nsperiod() to calculate the sample period in nanoseconds.
 	- Add tests for msr3 utility functions.

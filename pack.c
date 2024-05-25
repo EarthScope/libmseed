@@ -1142,7 +1142,7 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
   }
 
   /* Add Blockette 100 if sample rate is not well represented by factor/multiplier */
-  if (ms_dabs(msr3_sampratehz(msr) - ms_nomsamprate(factor, multiplier)) > 0.0001)
+  if (fabs(msr3_sampratehz(msr) - ms_nomsamprate(factor, multiplier)) > 0.0001)
   {
     *next_blockette = HO2u ((uint16_t)written, swapflag);
     next_blockette = pMS2B100_NEXT (record + written);
@@ -1845,7 +1845,7 @@ ms_ratapprox (double real, int *num, int *den, int maxval, double precision)
   if (!pos)
     *num = -*num;
 
-  while (ms_dabs (preal - (double)Aj / (double)Bj) > precision &&
+  while (fabs (preal - (double)Aj / (double)Bj) > precision &&
          Aj < maxval && Bj < maxval)
   {
     Aj2   = Aj1;
@@ -1946,7 +1946,7 @@ ms_reduce_rate (double samprate, int16_t *factor1, int16_t *factor2)
   int32_t diff;
 
   /* Handle case of integer sample values. */
-  if (ms_dabs (samprate - intsamprate) < 0.0000001)
+  if (fabs (samprate - intsamprate) < 0.0000001)
   {
     /* If integer sample rate is less than range of 16-bit int set it directly */
     if (intsamprate <= 32767)

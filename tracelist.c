@@ -474,8 +474,8 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
     /* Sample rate tolerance checks for first and last segments */
     if (tolerance && tolerance->samprate)
     {
-      lastratecheck = (sampratetol < 0.0 || ms_dabs (sampratehz - id->last->samprate) > sampratetol) ? 0 : 1;
-      firstratecheck = (sampratetol < 0.0 || ms_dabs (sampratehz - id->first->samprate) > sampratetol) ? 0 : 1;
+      lastratecheck = (sampratetol < 0.0 || fabs (sampratehz - id->last->samprate) > sampratetol) ? 0 : 1;
+      firstratecheck = (sampratetol < 0.0 || fabs (sampratehz - id->first->samprate) > sampratetol) ? 0 : 1;
     }
     else
     {
@@ -605,7 +605,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
 
         if (tolerance && tolerance->samprate)
         {
-          if (sampratetol >= 0 && ms_dabs (sampratehz - searchseg->samprate) > sampratetol)
+          if (sampratetol >= 0 && fabs (sampratehz - searchseg->samprate) > sampratetol)
           {
             searchseg = searchseg->next;
             continue;
@@ -2412,7 +2412,7 @@ mstl3_printgaplist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
 
       if (printflag)
       {
-        nsamples = ms_dabs (gap) * seg->samprate;
+        nsamples = fabs (gap) * seg->samprate;
 
         if (gap > 0.0)
           nsamples -= 1.0;

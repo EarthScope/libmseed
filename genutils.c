@@ -1672,25 +1672,6 @@ ms_sampletime (nstime_t time, int64_t offset, double samprate)
 
 
 /**********************************************************************/ /**
- * @brief Determine the absolute value of an input double
- *
- * Actually just test if the input double is positive multiplying by
- * -1.0 if not and return it.
- *
- * @param[in] val Value for which to determine absolute value
- *
- * @returns the positive value of input double.
- ***************************************************************************/
-double
-ms_dabs (double val)
-{
-  if (val < 0.0)
-    val *= -1.0;
-  return val;
-} /* End of ms_dabs() */
-
-
-/**********************************************************************/ /**
  * @brief Runtime test for host endianess
  * @returns 0 if the host is little endian, otherwise 1.
  ***************************************************************************/
