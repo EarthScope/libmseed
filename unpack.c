@@ -134,8 +134,8 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr,
 
     if (header_crc != calculated_crc)
     {
-      ms_log (2, "%.*s: CRC is invalid, miniSEED record may be corrupt\n",
-              sidlength, pMS3FSDH_SID (record));
+      ms_log (2, "%.*s: CRC is invalid, miniSEED record may be corrupt, header: 0x%X calculated: 0x%X\n",
+              sidlength, pMS3FSDH_SID (record), header_crc, calculated_crc);
       return MS_INVALIDCRC;
     }
   }

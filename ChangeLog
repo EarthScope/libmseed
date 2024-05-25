@@ -1,5 +1,6 @@
 2024.146:
 	- Replace ms_dabs() with macro to use system fabs(), document as deprecated.
+	- Add CRC values to diagnostic message when header values does not match calculated.
 
 2024.137:
 	- Add msr3_nsperiod() to calculate the sample period in nanoseconds.
