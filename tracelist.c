@@ -34,6 +34,9 @@ MS3RecordPtr *mstl3_add_recordptr (MS3TraceSeg *seg, const MS3Record *msr, nstim
 static uint32_t lm_lcg_r (uint64_t *state);
 static uint8_t lm_random_height (uint8_t maximum, uint64_t *state);
 
+/* Test if two sample rates are similar using either specified tolerance (if positive) or default tolerance */
+#define IS_SAMPRATE_SIMILAR(SR1, SR2, SRT) ((SRT > 0.0) ? fabs (SR1 - SR2) > SRT : MS_ISRATETOLERABLE (SR1, SR2))
+
 /**********************************************************************/ /**
  * @brief Initialize a ::MS3TraceList container
  *
@@ -383,9 +386,6 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
 
   double sampratehz;
   double sampratetol = -1.0;
-  int8_t whence;
-  int8_t lastratecheck;
-  int8_t firstratecheck;
 
   if (!mstl || !msr)
   {
@@ -471,18 +471,6 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
     /* Gap relative to the first segment */
     firstgap = id->first->starttime - endtime - nsperiod;
 
-    /* Sample rate tolerance checks for first and last segments */
-    if (tolerance && tolerance->samprate)
-    {
-      lastratecheck = (sampratetol < 0.0 || fabs (sampratehz - id->last->samprate) > sampratetol) ? 0 : 1;
-      firstratecheck = (sampratetol < 0.0 || fabs (sampratehz - id->first->samprate) > sampratetol) ? 0 : 1;
-    }
-    else
-    {
-      lastratecheck = MS_ISRATETOLERABLE (sampratehz, id->last->samprate);
-      firstratecheck = MS_ISRATETOLERABLE (sampratehz, id->first->samprate);
-    }
-
     /* Search first for the simple scenarios in order of likelihood:
      * - Record fits at end of last segment
      * - Record fits after all coverage
@@ -493,7 +481,8 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
      */
 
     /* Record coverage fits at end of last segment */
-    if (lastgap <= nstimetol && lastgap >= nnstimetol && lastratecheck)
+    if (lastgap <= nstimetol && lastgap >= nnstimetol &&
+        IS_SAMPRATE_SIMILAR (sampratehz, id->last->samprate, sampratetol))
     {
       if (!mstl3_addmsrtoseg (id->last, msr, endtime, 1))
         return NULL;
@@ -546,7 +535,8 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
         return NULL;
     }
     /* Record coverage fits at beginning of first segment */
-    else if (firstgap <= nstimetol && firstgap >= nnstimetol && firstratecheck)
+    else if (firstgap <= nstimetol && firstgap >= nnstimetol &&
+             IS_SAMPRATE_SIMILAR (sampratehz, id->first->samprate, sampratetol))
     {
       if (!mstl3_addmsrtoseg (id->first, msr, endtime, 2))
         return NULL;
@@ -563,15 +553,14 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
     /* Search complete segment list for matches */
     else
     {
+      /* This search finds the following values if they exist: */
+      segbefore = NULL; /* The first segment end that matches the record start (within tolerance) */
+      segafter  = NULL; /* The first segment start that matches the record end (within tolerance) */
+      followseg = NULL; /* The segment with latest start time before the record start */
       searchseg = id->first;
-      segbefore = NULL; /* Find segment that record fits before */
-      segafter  = NULL; /* Find segment that record fits after */
-      followseg = NULL; /* Track segment that record follows in time order */
-
       while (searchseg)
       {
-        /* Done searching if autohealing and record exactly matches
-         * a segment.
+        /* Done searching if autohealing and record exactly matches a segment.
          *
          * Rationale: autohealing would have combined this segment
          * with another if that were possible, so this record will
@@ -587,50 +576,29 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
         if (msr->starttime > searchseg->starttime)
           followseg = searchseg;
 
-        whence = 0;
-
-        postgap = msr->starttime - searchseg->endtime - nsperiod;
-        if (!segbefore && postgap <= nstimetol && postgap >= nnstimetol)
-          whence = 1;
-
-        pregap = searchseg->starttime - endtime - nsperiod;
-        if (!segafter && pregap <= nstimetol && pregap >= nnstimetol)
-          whence = 2;
-
-        if (!whence)
+        if (!segbefore)
         {
-          searchseg = searchseg->next;
-          continue;
+          postgap = msr->starttime - searchseg->endtime - nsperiod;
+
+          if (postgap <= nstimetol && postgap >= nnstimetol &&
+              IS_SAMPRATE_SIMILAR (sampratehz, searchseg->samprate, sampratetol))
+            segbefore = searchseg;
         }
 
-        if (tolerance && tolerance->samprate)
+        if (!segafter)
         {
-          if (sampratetol >= 0 && fabs (sampratehz - searchseg->samprate) > sampratetol)
-          {
-            searchseg = searchseg->next;
-            continue;
-          }
-        }
-        else
-        {
-          if (!MS_ISRATETOLERABLE (sampratehz, searchseg->samprate))
-          {
-            searchseg = searchseg->next;
-            continue;
-          }
-        }
+          pregap = searchseg->starttime - endtime - nsperiod;
 
-        if (whence == 1)
-          segbefore = searchseg;
-        else
-          segafter = searchseg;
-
-        /* Done searching if not autohealing */
-        if (!autoheal)
-          break;
+          if (pregap <= nstimetol && pregap >= nnstimetol &&
+              IS_SAMPRATE_SIMILAR (sampratehz, searchseg->samprate, sampratetol))
+            segafter = searchseg;
+        }
 
         /* Done searching if both before and after segments are found */
         if (segbefore && segafter)
+          break;
+        /* Done searching if not autohealing and one match found */
+        else if (!autoheal && (segbefore || segafter))
           break;
 
         searchseg = searchseg->next;
