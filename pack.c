@@ -511,7 +511,7 @@ msr3_pack_header3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
   maxreclen = (msr->reclen < 0) ? MS_PACK_DEFAULT_RECLEN : msr->reclen;
   encoding = (msr->encoding < 0) ? MS_PACK_DEFAULT_ENCODING : msr->encoding;
 
-  if (maxreclen < MINRECLEN || maxreclen > MAXRECLEN)
+  if (maxreclen < MINRECLEN || maxreclen > MAXRECLENv2)
   {
     ms_log (2, "%s: Record length is out of range: %d\n", msr->sid, maxreclen);
     return -1;
