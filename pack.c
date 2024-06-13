@@ -511,7 +511,7 @@ msr3_pack_header3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
   maxreclen = (msr->reclen < 0) ? MS_PACK_DEFAULT_RECLEN : msr->reclen;
   encoding = (msr->encoding < 0) ? MS_PACK_DEFAULT_ENCODING : msr->encoding;
 
-  if (maxreclen < MINRECLEN || maxreclen > MAXRECLENv2)
+  if (maxreclen < MINRECLEN || maxreclen > MAXRECLEN)
   {
     ms_log (2, "%s: Record length is out of range: %d\n", msr->sid, maxreclen);
     return -1;
@@ -986,7 +986,25 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
   }
 
   /* Build fixed header */
-  memcpy (pMS2FSDH_SEQNUM (record), "000000", 6);
+
+  /* Use sequence number from extra headers if present */
+  if (yyjson_ptr_get_uint (ehroot, "/FDSN/Sequence", &header_uint))
+  {
+    if (header_uint <= 999999)
+    {
+      char seqnum[7];
+      snprintf (seqnum, sizeof (seqnum), "%06" PRIu64, header_uint);
+      memcpy (pMS2FSDH_SEQNUM (record), seqnum, 6);
+    }
+    else
+    {
+      memcpy (pMS2FSDH_SEQNUM (record), "999999", 6);
+    }
+  }
+  else
+  {
+    memcpy (pMS2FSDH_SEQNUM (record), "000000", 6);
+  }
 
   /* Use DataQuality indicator in extra headers if present */
   if (yyjson_ptr_get_str (ehroot, "/FDSN/DataQuality", &header_string) &&
