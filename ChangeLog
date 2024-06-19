@@ -1,3 +1,6 @@
+2024.171:
+	- msr3_print(): do not force high resolution printing of sample rate.
+
 2024.165: 3.1.3
 	- Use sequence number from extra headers (/FDSN/Sequence) if present when writing format v2.
 

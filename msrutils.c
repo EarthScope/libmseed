@@ -243,7 +243,7 @@ msr3_print (const MS3Record *msr, int8_t details)
             msr->sid, msr->pubversion, msr->reclen, msr->formatversion);
     ms_log (0, "             start time: %s\n", time);
     ms_log (0, "      number of samples: %" PRId64 "\n", msr->samplecnt);
-    ms_log (0, "       sample rate (Hz): %.10g\n", msr3_sampratehz(msr));
+    ms_log (0, "       sample rate (Hz): %g\n", msr3_sampratehz(msr));
 
     if (details > 1)
     {
@@ -283,7 +283,7 @@ msr3_print (const MS3Record *msr, int8_t details)
   }
   else
   {
-    ms_log (0, "%s, %d, %d, %" PRId64 " samples, %-.10g Hz, %s\n",
+    ms_log (0, "%s, %d, %d, %" PRId64 " samples, %g Hz, %s\n",
             msr->sid, msr->pubversion, msr->reclen,
             msr->samplecnt, msr3_sampratehz(msr), time);
   }
