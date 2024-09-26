@@ -4,7 +4,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2023 Chad Trabant, EarthScope Data Services
+ * Copyright (c) 2024 Chad Trabant, EarthScope Data Services
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,26 +19,26 @@
  * limitations under the License.
  ***************************************************************************/
 
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <sys/stat.h>
-#include <limits.h>
-#include <errno.h>
 
 #include <libmseed.h>
 
 int
 main (int argc, char **argv)
 {
-  MS3TraceList *mstl = NULL;
-  MS3TraceID *tid = NULL;
-  MS3TraceSeg *seg = NULL;
+  MS3TraceList *mstl   = NULL;
+  MS3TraceID *tid      = NULL;
+  MS3TraceSeg *seg     = NULL;
   MS3RecordPtr *recptr = NULL;
 
   char *mseedfile = NULL;
-  char starttimestr[30];
-  char endtimestr[30];
-  char bufferptrstr[30];
-  char fileptrstr[30];
+  char starttimestr[32];
+  char endtimestr[32];
+  char bufferptrstr[32];
+  char fileptrstr[32];
   uint32_t flags = 0;
   int8_t verbose = 0;
   uint64_t idx;
@@ -55,7 +55,7 @@ main (int argc, char **argv)
 
   if (argc < 2)
   {
-    ms_log (2, "Usage: %s <mseedfile> [-v] [-d] [-D]\n",argv[0]);
+    ms_log (2, "Usage: %s <mseedfile> [-v] [-d] [-D]\n", argv[0]);
     return -1;
   }
 
@@ -83,7 +83,7 @@ main (int argc, char **argv)
 
   if (rv != MS_NOERROR)
   {
-    ms_log (2, "Cannot read miniSEED from file: %s\n", ms_errorstr(rv));
+    ms_log (2, "Cannot read miniSEED from file: %s\n", ms_errorstr (rv));
     return -1;
   }
 
@@ -97,8 +97,8 @@ main (int argc, char **argv)
     seg = tid->first;
     while (seg)
     {
-      if (!ms_nstime2timestr (seg->starttime, starttimestr, ISOMONTHDAY, NANO) ||
-          !ms_nstime2timestr (seg->endtime, endtimestr, ISOMONTHDAY, NANO))
+      if (!ms_nstime2timestr (seg->starttime, starttimestr, ISOMONTHDAY_Z, NANO) ||
+          !ms_nstime2timestr (seg->endtime, endtimestr, ISOMONTHDAY_Z, NANO))
       {
         ms_log (2, "Cannot create time strings\n");
         starttimestr[0] = endtimestr[0] = '\0';
@@ -118,14 +118,14 @@ main (int argc, char **argv)
           if (recptr->bufferptr == NULL)
             strcpy (bufferptrstr, "NULL");
           else
-            snprintf (bufferptrstr, sizeof(bufferptrstr), "%" PRIu64, (uint64_t)recptr->bufferptr);
+            snprintf (bufferptrstr, sizeof (bufferptrstr), "%" PRIu64, (uint64_t)recptr->bufferptr);
 
           if (recptr->fileptr == NULL)
             strcpy (fileptrstr, "NULL");
           else
-            snprintf (fileptrstr, sizeof(fileptrstr), "%" PRIu64, (uint64_t)recptr->fileptr);
+            snprintf (fileptrstr, sizeof (fileptrstr), "%" PRIu64, (uint64_t)recptr->fileptr);
 
-          ms_log (0, "    RECORD: bufferptr: %s, fileptr: %s, filename: %s, fileoffset: %"PRId64"\n",
+          ms_log (0, "    RECORD: bufferptr: %s, fileptr: %s, filename: %s, fileoffset: %" PRId64 "\n",
                   bufferptrstr, fileptrstr, recptr->filename, recptr->fileoffset);
           ms_nstime2timestr (recptr->msr->starttime, starttimestr, ISOMONTHDAY_Z, NANO);
           ms_nstime2timestr (recptr->endtime, endtimestr, ISOMONTHDAY_Z, NANO);

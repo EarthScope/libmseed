@@ -5,7 +5,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2023 Chad Trabant, EarthScope Data Services
+ * Copyright (c) 2024 Chad Trabant, EarthScope Data Services
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,8 @@ main (int argc, char **argv)
 
   char *mseedfile = NULL;
   char *selectionfile = NULL;
-  char starttimestr[30];
-  char endtimestr[30];
+  char starttimestr[32];
+  char endtimestr[32];
   uint32_t flags = 0;
   int8_t verbose = 0;
   int rv;
@@ -76,8 +76,8 @@ main (int argc, char **argv)
   tid = mstl->traces.next[0];
   while (tid)
   {
-    if (!ms_nstime2timestr (tid->earliest, starttimestr, SEEDORDINAL, NANO_MICRO_NONE) ||
-        !ms_nstime2timestr (tid->latest, endtimestr, SEEDORDINAL, NANO_MICRO_NONE))
+    if (!ms_nstime2timestr (tid->earliest, starttimestr, ISOMONTHDAY_Z, NANO_MICRO_NONE) ||
+        !ms_nstime2timestr (tid->latest, endtimestr, ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       ms_log (2, "Cannot create time strings\n");
       starttimestr[0] = endtimestr[0] = '\0';
@@ -89,8 +89,8 @@ main (int argc, char **argv)
     seg = tid->first;
     while (seg)
     {
-      if (!ms_nstime2timestr (seg->starttime, starttimestr, SEEDORDINAL, NANO_MICRO_NONE) ||
-          !ms_nstime2timestr (seg->endtime, endtimestr, SEEDORDINAL, NANO_MICRO_NONE))
+      if (!ms_nstime2timestr (seg->starttime, starttimestr, ISOMONTHDAY_Z, NANO_MICRO_NONE) ||
+          !ms_nstime2timestr (seg->endtime, endtimestr, ISOMONTHDAY_Z, NANO_MICRO_NONE))
       {
         ms_log (2, "Cannot create time strings\n");
         starttimestr[0] = endtimestr[0] = '\0';
