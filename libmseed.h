@@ -270,11 +270,11 @@ typedef int64_t nstime_t;
 
     Formats values:
     - \b ISOMONTHDAY - \c "YYYY-MM-DDThh:mm:ss.sssssssss", ISO 8601 in month-day format
-    - \b ISOMONTHDAY_Z - \c "YYYY-MM-DDThh:mm:ss.sssssssss", ISO 8601 in month-day format with trailing Z
+    - \b ISOMONTHDAY_Z - \c "YYYY-MM-DDThh:mm:ss.sssssssssZ", ISO 8601 in month-day format with trailing Z
     - \b ISOMONTHDAY_DOY - \c "YYYY-MM-DD hh:mm:ss.sssssssss (doy)", ISOMONTHDAY with day-of-year
-    - \b ISOMONTHDAY_DOY_Z - \c "YYYY-MM-DD hh:mm:ss.sssssssss (doy)", ISOMONTHDAY with day-of-year and trailing Z
+    - \b ISOMONTHDAY_DOY_Z - \c "YYYY-MM-DD hh:mm:ss.sssssssssZ (doy)", ISOMONTHDAY with day-of-year and trailing Z
     - \b ISOMONTHDAY_SPACE - \c "YYYY-MM-DD hh:mm:ss.sssssssss", same as ISOMONTHDAY with space separator
-    - \b ISOMONTHDAY_SPACE_Z - \c "YYYY-MM-DD hh:mm:ss.sssssssss", same as ISOMONTHDAY with space separator and trailing Z
+    - \b ISOMONTHDAY_SPACE_Z - \c "YYYY-MM-DD hh:mm:ss.sssssssssZ", same as ISOMONTHDAY with space separator and trailing Z
     - \b SEEDORDINAL - \c "YYYY,DDD,hh:mm:ss.sssssssss", SEED day-of-year format
     - \b UNIXEPOCH - \c "ssssssssss.sssssssss", Unix epoch value
     - \b NANOSECONDEPOCH - \c "sssssssssssssssssss", Nanosecond epoch value
@@ -380,6 +380,31 @@ typedef struct MS3Record {
   int64_t         numsamples;        //!< Number of data samples in datasamples
   char            sampletype;        //!< Sample type code: t, i, f, d @ref sample-types
 } MS3Record;
+
+/** @def MS3Record_INITIALIZER
+    @brief Initialializer for a ::MS3Record */
+#define MS3Record_INITIALIZER \
+{                             \
+    .record = NULL,           \
+    .reclen = -1,             \
+    .swapflag = 0,            \
+    .sid = {0},               \
+    .formatversion = 0,       \
+    .flags = 0,               \
+    .starttime = NSTUNSET,    \
+    .samprate = 0.0,          \
+    .encoding = -1,           \
+    .pubversion = 0,          \
+    .samplecnt = -1,          \
+    .crc = 0,                 \
+    .extralength = 0,         \
+    .datalength = 0,          \
+    .extra = NULL,            \
+    .datasamples = NULL,      \
+    .datasize = 0,            \
+    .numsamples = 0,          \
+    .sampletype = 0           \
+}
 
 extern int msr3_parse (const char *record, uint64_t recbuflen, MS3Record **ppmsr,
                        uint32_t flags, int8_t verbose);

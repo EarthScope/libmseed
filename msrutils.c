@@ -43,6 +43,7 @@
 MS3Record *
 msr3_init (MS3Record *msr)
 {
+  MS3Record msr_initialized = MS3Record_INITIALIZER;
   void *datasamples = NULL;
   size_t datasize = 0;
 
@@ -65,14 +66,10 @@ msr3_init (MS3Record *msr)
     return NULL;
   }
 
-  memset (msr, 0, sizeof (MS3Record));
+  memcpy (msr, &msr_initialized, sizeof (MS3Record));
 
   msr->datasamples = datasamples;
   msr->datasize = datasize;
-
-  msr->reclen    = -1;
-  msr->samplecnt = -1;
-  msr->encoding  = -1;
 
   return msr;
 } /* End of msr3_init() */
