@@ -1892,7 +1892,9 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
  * record can be generated, which often leaves small amounts of data
  * in each segment buffer.  On completion or shutdown the caller
  * usually makes a final call to mst3_pack() with the ::MSF_FLUSHDATA
- * flag set to flush all data from the buffers.
+ * flag set to flush all data from the buffers.  Implementing finer
+ * control of when data records are generated, such as a time tolerance,
+ * can be done using mstraceseg3_pack() directly.
  *
  * As each record is filled and finished they are passed to \a
  * record_handler() which should expect 1) a \c char* to the record,
@@ -1905,7 +1907,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
  * The requested \a encoding value is currently only used for integer
  * data samples. The encoding is set automatially for text and
  * floating point data samples as there is only a single encoding for
- * them.  A value of \c -1 can be used to request the default.
+ * them.  A value of \c -1 can be used to use the default encoding.
  *
  * If \a extra is not NULL it is expected to contain extraheaders, a
  * string containing (compact) JSON, that will be added to each output
@@ -1930,6 +1932,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
  *
  * \ref MessageOnError - this function logs a message on error
  *
+ * \sa mstraceseg3_pack()
  * \sa msr3_pack()
  ***************************************************************************/
 int64_t
@@ -1938,17 +1941,13 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
             int64_t *packedsamples, uint32_t flags, int8_t verbose,
             char *extra)
 {
-  MS3Record *msr = NULL;
   MS3TraceID *id = NULL;
   MS3TraceSeg *seg = NULL;
 
   int64_t totalpackedrecords = 0;
   int64_t totalpackedsamples = 0;
-  int segpackedrecords = 0;
+  int64_t segpackedrecords = 0;
   int64_t segpackedsamples = 0;
-  int samplesize;
-  size_t bufsize;
-  size_t extralength;
 
   if (!mstl)
   {
@@ -1965,120 +1964,23 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
   if (packedsamples)
     *packedsamples = 0;
 
-  msr = msr3_init (NULL);
-
-  if (msr == NULL)
-  {
-    ms_log (2, "Error initializing msr, out of memory?\n");
-    return -1;
-  }
-
-  msr->reclen = reclen;
-  msr->encoding = encoding;
-
-  if (extra)
-  {
-    msr->extra = extra;
-    extralength = strlen(extra);
-
-    if (extralength > UINT16_MAX)
-    {
-      ms_log (2, "Extra headers are too long: %"PRIsize_t"\n", extralength);
-      return -1;
-    }
-
-    msr->extralength = (uint16_t)extralength;
-  }
-
   /* Loop through trace list */
   id = mstl->traces.next[0];
-  while (id)
+  while (id && totalpackedrecords >= 0)
   {
-    memcpy (msr->sid, id->sid, sizeof(msr->sid));
-    msr->pubversion = id->pubversion;
-
     /* Loop through segment list */
     seg = id->first;
     while (seg)
     {
-      msr->starttime = seg->starttime;
-      msr->samprate = seg->samprate;
-      msr->samplecnt = seg->samplecnt;
-      msr->datasamples = seg->datasamples;
-      msr->numsamples = seg->numsamples;
-      msr->sampletype = seg->sampletype;
+      segpackedrecords = mstraceseg3_pack (id, seg, record_handler, handlerdata,
+                                           reclen, encoding, &segpackedsamples, flags,
+                                           verbose, extra);
 
-      /* Set encoding for data types with only one encoding, otherwise requested */
-      switch (seg->sampletype)
+      if (segpackedrecords < 0)
       {
-      case 't':
-        msr->encoding = DE_TEXT;
+        ms_log (2, "%s: Error packing data from segment\n", id->sid);
+        totalpackedrecords = -1;
         break;
-      case 'f':
-        msr->encoding = DE_FLOAT32;
-        break;
-      case 'd':
-        msr->encoding = DE_FLOAT64;
-        break;
-      default:
-        msr->encoding = encoding;
-      }
-
-      segpackedsamples = 0;
-      segpackedrecords = msr3_pack (msr, record_handler, handlerdata, &segpackedsamples, flags, verbose);
-
-      if (verbose > 1)
-      {
-        ms_log (0, "Packed %d records for %s segment\n", segpackedrecords, msr->sid);
-      }
-
-      /* If MSF_MAINTAINMSTL not set, adjust segment start time and reduce data array and sample counts */
-      if (!(flags & MSF_MAINTAINMSTL) && segpackedsamples > 0)
-      {
-        /* Calculate new start time, shortcut when all samples have been packed */
-        if (segpackedsamples == seg->numsamples)
-          seg->starttime = seg->endtime;
-        else
-          seg->starttime = ms_sampletime (seg->starttime, segpackedsamples, seg->samprate);
-
-        if (!(samplesize = ms_samplesize (seg->sampletype)))
-        {
-          ms_log (2, "Unknown sample size for sample type: %c\n", seg->sampletype);
-          return -1;
-        }
-
-        bufsize = (seg->numsamples - segpackedsamples) * samplesize;
-
-        if (bufsize > 0)
-        {
-          memmove (seg->datasamples,
-                   (uint8_t *)seg->datasamples + (segpackedsamples * samplesize),
-                   bufsize);
-
-          /* Reallocate buffer for reduced size needed, only if not pre-allocating */
-          if (libmseed_prealloc_block_size == 0)
-          {
-            seg->datasamples = libmseed_memory.realloc (seg->datasamples, bufsize);
-
-            if (seg->datasamples == NULL)
-            {
-              ms_log (2, "Cannot (re)allocate datasamples buffer\n");
-              return -1;
-            }
-
-            seg->datasize = bufsize;
-          }
-        }
-        else
-        {
-          if (seg->datasamples)
-            libmseed_memory.free (seg->datasamples);
-          seg->datasamples = NULL;
-          seg->datasize = 0;
-        }
-
-        seg->samplecnt -= segpackedsamples;
-        seg->numsamples -= segpackedsamples;
       }
 
       totalpackedrecords += segpackedrecords;
@@ -2090,15 +1992,201 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
     id = id->next[0];
   }
 
-  /* The record structure never owns the actual data so it should not free it */
-  msr->datasamples = NULL;
-  msr3_free (&msr);
-
   if (packedsamples)
     *packedsamples = totalpackedsamples;
 
   return totalpackedrecords;
 } /* End of mstl3_pack() */
+
+/**********************************************************************/ /**
+ * @brief Pack a ::MS3TraceSeg data into miniSEED records
+ *
+ * The datasamples array, numsamples and starttime fields of each
+ * trace segment will be adjusted as data are packed unless the
+ * ::MSF_MAINTAINMSTL flag is specified in \a flags. If
+ * ::MSF_MAINTAINMSTL is specified a caller would also normally set
+ * the ::MSF_FLUSHDATA flag to pack all data in the trace list.
+ *
+ * As each record is filled and finished they are passed to \a
+ * record_handler() which should expect 1) a \c char* to the record,
+ * 2) the length of the record and 3) a pointer supplied by the
+ * original caller containing optional private data (\a handlerdata).
+ * It is the responsibility of \a record_handler() to process the
+ * record, the memory will be re-used or freed when \a
+ * record_handler() returns.
+ *
+ * The requested \a encoding value is currently only used for integer
+ * data samples. The encoding is set automatially for text and
+ * floating point data samples as there is only a single encoding for
+ * them.  A value of \c -1 can be used to use the default encoding.
+ *
+ * If \a extra is not NULL it is expected to contain extraheaders, a
+ * string containing (compact) JSON, that will be added to each output
+ * record.
+ *
+ * @param[in] id ::MS3TraceID for the relevant ::MS3TraceSeg
+ * @param[in] seg ::MS3TraceSeg containing data to pack
+ * @param[in] record_handler() Callback function called for each record
+ * @param[in] handlerdata A pointer that will be provided to the \a record_handler()
+ * @param[in] reclen Maximum record length to create
+ * @param[in] encoding Encoding for data samples, see msr3_pack()
+ * @param[out] packedsamples The number of samples packed, returned to caller
+ * @param[in] flags Bit flags to control packing:
+ * @parblock
+ *  - \c ::MSF_FLUSHDATA : Pack all data in the buffer
+ *  - \c ::MSF_MAINTAINMSTL : Do not remove packe data from the buffer
+ *  - \c ::MSF_PACKVER2 : Pack miniSEED version 2 instead of default 3
+ * @endparblock
+ * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
+ * @param[in] extra If not NULL, add this buffer of extra headers to all records
+ *
+ * @returns the number of records created on success and -1 on error.
+ *
+ * \ref MessageOnError - this function logs a message on error
+ *
+ * \sa mstl3_pack()
+ * \sa msr3_pack()
+ ***************************************************************************/
+int64_t
+mstraceseg3_pack (MS3TraceID *id, MS3TraceSeg *seg,
+                  void (*record_handler) (char *, int, void *),
+                  void *handlerdata, int reclen, int8_t encoding,
+                  int64_t *packedsamples, uint32_t flags, int8_t verbose,
+                  char *extra)
+{
+  MS3Record msr = MS3Record_INITIALIZER;
+
+  int64_t totalpackedrecords = 0;
+  int64_t totalpackedsamples = 0;
+  int segpackedrecords = 0;
+  int64_t segpackedsamples = 0;
+  int samplesize;
+  size_t bufsize;
+  size_t extralength;
+
+  if (!id || !seg)
+  {
+    ms_log (2, "%s(): Required input not defined: 'id' or 'seg'\n", __func__);
+    return -1;
+  }
+
+  if (!record_handler)
+  {
+    ms_log (2, "callback record_handler() function pointer not set!\n");
+    return -1;
+  }
+
+  if (packedsamples)
+    *packedsamples = 0;
+
+  msr.reclen = reclen;
+  msr.encoding = encoding;
+  memcpy (msr.sid, id->sid, sizeof(msr.sid));
+  msr.pubversion = id->pubversion;
+
+  if (extra)
+  {
+    msr.extra = extra;
+    extralength = strlen(extra);
+
+    if (extralength > UINT16_MAX)
+    {
+      ms_log (2, "Extra headers are too long: %"PRIsize_t"\n", extralength);
+      return -1;
+    }
+
+    msr.extralength = (uint16_t)extralength;
+  }
+
+  /* Pack segment data */
+  msr.starttime   = seg->starttime;
+  msr.samprate    = seg->samprate;
+  msr.samplecnt   = seg->samplecnt;
+  msr.datasamples = seg->datasamples;
+  msr.numsamples  = seg->numsamples;
+  msr.sampletype  = seg->sampletype;
+
+  /* Set encoding for data types with only one encoding, otherwise requested */
+  switch (seg->sampletype)
+  {
+  case 't':
+    msr.encoding = DE_TEXT;
+    break;
+  case 'f':
+    msr.encoding = DE_FLOAT32;
+    break;
+  case 'd':
+    msr.encoding = DE_FLOAT64;
+    break;
+  default:
+    msr.encoding = encoding;
+  }
+
+  segpackedsamples = 0;
+  segpackedrecords = msr3_pack (&msr, record_handler, handlerdata, &segpackedsamples, flags, verbose);
+
+  if (verbose > 1)
+  {
+    ms_log (0, "Packed %d records for %s segment\n", segpackedrecords, msr.sid);
+  }
+
+  /* If MSF_MAINTAINMSTL not set, adjust segment start time and reduce data array and sample counts */
+  if (!(flags & MSF_MAINTAINMSTL) && segpackedsamples > 0)
+  {
+    /* Calculate new start time, shortcut when all samples have been packed */
+    if (segpackedsamples == seg->numsamples)
+      seg->starttime = seg->endtime;
+    else
+      seg->starttime = ms_sampletime (seg->starttime, segpackedsamples, seg->samprate);
+
+    if (!(samplesize = ms_samplesize (seg->sampletype)))
+    {
+      ms_log (2, "Unknown sample size for sample type: %c\n", seg->sampletype);
+      return -1;
+    }
+
+    bufsize = (seg->numsamples - segpackedsamples) * samplesize;
+
+    if (bufsize > 0)
+    {
+      memmove (seg->datasamples,
+               (uint8_t *)seg->datasamples + (segpackedsamples * samplesize),
+               bufsize);
+
+      /* Reallocate buffer for reduced size needed, only if not pre-allocating */
+      if (libmseed_prealloc_block_size == 0)
+      {
+        seg->datasamples = libmseed_memory.realloc (seg->datasamples, bufsize);
+
+        if (seg->datasamples == NULL)
+        {
+          ms_log (2, "Cannot (re)allocate datasamples buffer\n");
+          return -1;
+        }
+
+        seg->datasize = bufsize;
+      }
+    }
+    else
+    {
+      if (seg->datasamples)
+        libmseed_memory.free (seg->datasamples);
+      seg->datasamples = NULL;
+      seg->datasize    = 0;
+    }
+
+    seg->samplecnt -= segpackedsamples;
+    seg->numsamples -= segpackedsamples;
+  }
+
+  totalpackedrecords += segpackedrecords;
+  totalpackedsamples += segpackedsamples;
+
+  if (packedsamples)
+    *packedsamples = totalpackedsamples;
+
+  return totalpackedrecords;
+} /* End of mstraceseg3_pack() */
 
 /**********************************************************************/ /**
  * @brief Print trace list summary information for a ::MS3TraceList
