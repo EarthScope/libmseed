@@ -1,4 +1,4 @@
-2025.113:
+2025.113: 3.1.4
 	- Fix msr3_duplicate() to properly terminate duplicated extra headers.
 	- Add mstraceseg3_pack() to individually packet MS3TraceSeg entries.
 	- Add lmp_systemtime() to return current system time as nstime_t.
