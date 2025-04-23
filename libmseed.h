@@ -805,7 +805,10 @@ extern MS3FileParam *ms3_mstl_init_fd (int fd);
     combination of the codes.
 
     @{ */
-extern int ms_sid2nslc (const char *sid, char *net, char *sta, char *loc, char *chan);
+extern int ms_sid2nslc_n (const char *sid,
+                          char *net, size_t netsize, char *sta, size_t stasize,
+                          char *loc, size_t locsize, char *chan, size_t chansize);
+DEPRECATED extern int ms_sid2nslc (const char *sid, char *net, char *sta, char *loc, char *chan);
 extern int ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
                         const char *net, const char *sta, const char *loc, const char *chan);
 extern int ms_seedchan2xchan (char *xchan, const char *seedchan);

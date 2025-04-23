@@ -143,9 +143,8 @@ static const int monthdays_leap[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30,
 
 /** @endcond */
 
-
 /**********************************************************************/ /**
- * @brief Parse network, station, location and channel from an FDSN Source ID
+ * @brief Parse network, station, location and channel codes from an FDSN Source ID
  *
  * FDSN Source Identifiers are defined at:
  *   https://docs.fdsn.org/projects/source-identifiers/
@@ -165,14 +164,21 @@ static const int monthdays_leap[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30,
  * as of this writing and support is included for specialized usage or
  * future identifier changes.
  *
- * Memory for each component must already be allocated.  If a specific
- * component is not desired set the appropriate argument to NULL.
+ * Memory for each component/code must already be allocated and the
+ * size of each buffer provided.  If any code is longer than the
+ * maximum size, the code will be truncated.
+ *
+ * If a specific code is not desired set the appropriate argument to NULL.
  *
  * @param[in] sid Source identifier
  * @param[out] net Network code
+ * @param[in] netsize Maximum length of \a net in bytes
  * @param[out] sta Station code
+ * @param[in] stasize Maximum length of \a sta in bytes
  * @param[out] loc Location code
+ * @param[in] locsize Maximum length of \a loc in bytes
  * @param[out] chan Channel code
+ * @param[in] chansize Maximum length of \a chan in bytes
  *
  * @retval 0 on success
  * @retval -1 on error
@@ -180,7 +186,9 @@ static const int monthdays_leap[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30,
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-ms_sid2nslc (const char *sid, char *net, char *sta, char *loc, char *chan)
+ms_sid2nslc_n (const char *sid,
+               char *net, size_t netsize, char *sta, size_t stasize,
+               char *loc, size_t locsize, char *chan, size_t chansize)
 {
   size_t idlen;
   const char *cid;
@@ -229,7 +237,10 @@ ms_sid2nslc (const char *sid, char *net, char *sta, char *loc, char *chan)
       *ptr = '\0';
 
       if (net)
-        strcpy (net, top);
+      {
+        strncpy (net, top, netsize - 1);
+        net[netsize - 1] = '\0';
+      }
 
       top = next;
     }
@@ -240,7 +251,10 @@ ms_sid2nslc (const char *sid, char *net, char *sta, char *loc, char *chan)
       *ptr = '\0';
 
       if (sta)
-        strcpy (sta, top);
+      {
+        strncpy (sta, top, stasize);
+        sta[stasize - 1] = '\0';
+      }
 
       top = next;
     }
@@ -251,7 +265,10 @@ ms_sid2nslc (const char *sid, char *net, char *sta, char *loc, char *chan)
       *ptr = '\0';
 
       if (loc)
-        strcpy (loc, top);
+      {
+        strncpy (loc, top, locsize);
+        loc[locsize - 1] = '\0';
+      }
 
       top = next;
     }
@@ -261,7 +278,8 @@ ms_sid2nslc (const char *sid, char *net, char *sta, char *loc, char *chan)
       /* Map extended channel to SEED channel if possible, otherwise direct copy */
       if (ms_xchan2seedchan(chan, top))
       {
-        strcpy (chan, top);
+        strncpy (chan, top, chansize);
+        chan[chansize - 1] = '\0';
       }
     }
 
@@ -276,6 +294,19 @@ ms_sid2nslc (const char *sid, char *net, char *sta, char *loc, char *chan)
   }
 
   return 0;
+} /* End of ms_sid2nslc_n() */
+
+/**********************************************************************/ /**
+ * @deprecated Use ms_sid2nslc_n() instead
+ *
+ * This deprecated function is provided for backwards compatibility.
+ * It will call ms_sid2nslc_n() while specifying the maximum sizes
+ * for each code as the maximum supported by SEED.
+ ***************************************************************************/
+int
+ms_sid2nslc (const char *sid, char *net, char *sta, char *loc, char *chan)
+{
+  return ms_sid2nslc_n (sid, net, 3, sta, 6, loc, 3, chan, 4);
 } /* End of ms_sid2nslc() */
 
 /**********************************************************************/ /**

@@ -932,7 +932,8 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
   }
 
   /* Parse identifier codes from full identifier */
-  if (ms_sid2nslc (msr->sid, network, station, location, channel))
+  if (ms_sid2nslc_n (msr->sid, network, sizeof (network), station, sizeof (station),
+                     location, sizeof (location), channel, sizeof (channel)))
   {
     ms_log (2, "%s: Cannot parse SEED identifier codes from full identifier\n", msr->sid);
     return -1;

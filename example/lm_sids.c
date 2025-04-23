@@ -31,7 +31,8 @@ map_sid (const char *original_sid)
   int rv;
 
   /* Parse network, station, location and channel from SID */
-  rv = ms_sid2nslc (original_sid, network, station, location, channel);
+  rv = ms_sid2nslc_n (original_sid, network, sizeof (network), station, sizeof (station),
+                      location, sizeof (location), channel, sizeof (channel));
 
   if (rv)
   {
@@ -79,7 +80,8 @@ map_nslc (const char *original_network, const char *original_station,
   }
 
   /* Parse network, station, location and channel from SID */
-  rv = ms_sid2nslc (sid, network, station, location, channel);
+  rv = ms_sid2nslc_n (sid, network, sizeof (network), station, sizeof (station),
+                      location, sizeof (location), channel, sizeof (channel));
 
   if (rv)
   {

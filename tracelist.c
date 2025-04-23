@@ -2386,7 +2386,8 @@ mstl3_printsynclist (const MS3TraceList *mstl, const char *dccid, ms_subseconds_
   id = mstl->traces.next[0];
   while (id)
   {
-    ms_sid2nslc (id->sid, net, sta, loc, chan);
+    ms_sid2nslc_n (id->sid, net, sizeof (net), sta, sizeof (sta),
+                   loc, sizeof (loc), chan, sizeof (chan));
 
     /* Loop through segment list */
     seg = id->first;
