@@ -1,7 +1,8 @@
 #include <tau/tau.h>
 #include <libmseed.h>
+#include <time.h>
 
-TEST (trace, read)
+TEST (tracelist, read)
 {
   MS3TraceList *mstl = NULL;
   MS3TraceID *id     = NULL;
@@ -43,7 +44,7 @@ TEST (trace, read)
   mstl3_free (&mstl, 1);
 }
 
-TEST (read, recptr_file)
+TEST (tracelist, read_recptr_file)
 {
   MS3TraceList *mstl   = NULL;
   MS3TraceID *id       = NULL;
@@ -106,7 +107,7 @@ TEST (read, recptr_file)
   mstl3_free (&mstl, 1);
 }
 
-TEST (read, recptr_buffer)
+TEST (tracelist, read_recptr_buffer)
 {
   char buffer[16256];
   FILE *fp = NULL;
@@ -179,6 +180,43 @@ TEST (read, recptr_buffer)
   CHECK (int32s[3949] == -9565, "Decoded sample value mismatch");
   CHECK (int32s[3950] == -71961, "Decoded sample value mismatch");
   CHECK (int32s[3951] == -146622, "Decoded sample value mismatch");
+
+  mstl3_free (&mstl, 1);
+}
+
+TEST (tracelist, read_ppupdatetime)
+{
+  MS3TraceList *mstl = NULL;
+  MS3TraceID *id     = NULL;
+  uint32_t flags;
+  nstime_t difference;
+  time_t timeval;
+  int rv;
+
+  char *path = "data/testdata-oneseries-mixedlengths-mixedorder.mseed2";
+
+  timeval = time(NULL);
+
+  /* Set bit flag to set segment prvtptr to nstime_t value of update time */
+  flags = MSF_PPUPDATETIME;
+
+  rv = ms3_readtracelist (&mstl, path, NULL, 0, flags, 0);
+
+  CHECK (rv == MS_NOERROR, "ms3_readtracelist() did not return expected MS_NOERROR");
+  REQUIRE (mstl != NULL, "ms3_readtracelist() did not populate 'mstl'");
+  CHECK (mstl->numtraceids == 1, "mstl->numtraceids is not expected 1");
+
+  id = mstl->traces.next[0];
+
+  REQUIRE (id != NULL, "mstl->traces.next[0] is not populated");
+  REQUIRE (id->first != NULL, "id->first is not populated");
+
+  CHECK (id->first->prvtptr != NULL, "id->first->prvtptr is not populated");
+
+  /* Check that update time is within 1 second of system time */
+  difference = *(nstime_t *)id->first->prvtptr - (nstime_t)timeval * NSTMODULUS;
+
+  CHECK (difference < 1 * NSTMODULUS, "update time at id->first->prvtptr is not within 1 second of system time");
 
   mstl3_free (&mstl, 1);
 }

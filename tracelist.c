@@ -774,6 +774,22 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
       id->last = segbefore;
   }
 
+  /* Store update time at seg.prvtptr, allocate if needed */
+  if (seg && flags & MSF_PPUPDATETIME)
+  {
+    if (!seg->prvtptr)
+    {
+      if (!(seg->prvtptr = libmseed_memory.malloc (sizeof (nstime_t))))
+      {
+        ms_log (2, "Error allocating memory\n");
+        return NULL;
+      }
+    }
+
+    /* Set to current time */
+    *(nstime_t *)seg->prvtptr = lmp_systemtime ();
+  }
+
   return seg;
 } /* End of mstl3_addmsr_recordptr() */
 

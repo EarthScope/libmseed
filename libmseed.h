@@ -1505,6 +1505,7 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
 #define MSF_PACKVER2      0x0080  //!< [Packing] Pack as miniSEED version 2 instead of 3
 #define MSF_RECORDLIST    0x0100  //!< [TraceList] Build a ::MS3RecordList for each ::MS3TraceSeg
 #define MSF_MAINTAINMSTL  0x0200  //!< [TraceList] Do not modify a trace list when packing
+#define MSF_PPUPDATETIME  0x0400  //!< [TraceList] Store update time (as nstime_t) at ::MS3TraceSeg.prvtptr
 /** @} */
 
 #ifdef __cplusplus
