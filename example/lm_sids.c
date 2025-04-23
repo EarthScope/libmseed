@@ -3,7 +3,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2024 Chad Trabant, EarthScope Data Services
+ * Copyright (c) 2025 Chad Trabant, EarthScope Data Services
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 #include <libmseed.h>
 
 int
-map_sid (char *original_sid)
+map_sid (const char *original_sid)
 {
   char sid[LM_SIDLEN];
   char network[11];
@@ -57,30 +57,73 @@ map_sid (char *original_sid)
 }
 
 int
-main (int argc, char **argv)
+map_nslc (const char *original_network, const char *original_station,
+          const char *original_location, const char *original_channel)
 {
-  char *sid;
-  int idx;
+  char sid[LM_SIDLEN];
+  char network[11];
+  char station[11];
+  char location[11];
+  char channel[31];
+  int rv;
 
-  sid = "FDSN:NET_STA_LOC_C_H_N";
+  /* Construct SID from network, station, location and channel */
+  rv = ms_nslc2sid (sid, sizeof (sid), 0,
+                    original_network, original_station,
+                    original_location, original_channel);
 
-  if (map_sid (sid))
+  if (rv <= 0)
   {
-    printf ("Error with map_sid()\n");
-    return 1;
+    printf ("Error returned ms_nslc2sid()\n");
+    return -1;
   }
 
-  /* Map each value give on the command line */
-  if (argc > 1)
+  /* Parse network, station, location and channel from SID */
+  rv = ms_sid2nslc (sid, network, station, location, channel);
+
+  if (rv)
   {
-    for (idx = 1; idx < argc; idx++)
+    printf ("Error returned ms_sid2nslc()\n");
+    return -1;
+  }
+
+  printf ("Original network: '%s', station: '%s', location: '%s', channel: '%s'\n",
+          original_network, original_station, original_location, original_channel);
+  printf ("  SID: '%s'\n", sid);
+  printf ("  network: '%s', station: '%s', location: '%s', channel: '%s'\n",
+          network, station, location, channel);
+
+  return 0;
+}
+
+int
+main (int argc, char **argv)
+{
+  /* A single argument is an FDSN SourceID */
+  if (argc == 2)
+  {
+    if (map_sid (argv[1]))
     {
-      if (map_sid (argv[idx]))
-      {
-        printf ("Error with map_sid()\n");
-        return 1;
-      }
+      printf ("Error with map_sid()\n");
+      return 1;
     }
+  }
+  /* Four arguments are network, station, location, and channel */
+  else if (argc == 5)
+  {
+    /* Four arguments are network, station, location and channel */
+    if (map_nslc (argv[1], argv[2], argv[3], argv[4]))
+    {
+      printf ("Error with map_nslc()\n");
+      return 1;
+    }
+  }
+  else
+  {
+    printf ("Usage: %s <SID> | <network> <station> <location> <channel>\n", argv[0]);
+    printf ("  <SID> is a FDSN SourceID, e.g. 'FDSN:NET_STA_LOC_C_H_N'\n");
+    printf ("  <network> <station> <location> <channel> are SEED codes\n");
+    return 1;
   }
 
   return 0;

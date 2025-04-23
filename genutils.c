@@ -318,6 +318,7 @@ ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
   char *sptr = sid;
   char xchan[6] = {0};
   int needed = 0;
+  int length = -1;
 
   if (!sid || !net || !sta || !chan)
   {
@@ -412,7 +413,21 @@ ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
     return -1;
   }
 
-  return (int)(sptr - sid);
+  /* Remove spaces from Source ID */
+  for (int in = 0, out = 0; in < sidlen; in++)
+  {
+    if (sid[in] != ' ')
+    {
+      sid[out++] = sid[in];
+    }
+    if (sid[in] == '\0')
+    {
+      length = out - 1;
+      break;
+    }
+  }
+
+  return length;
 } /* End of ms_nslc2sid() */
 
 /**********************************************************************/ /**
@@ -421,6 +436,9 @@ ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
  * The SEED 2.x channel at \a seedchan must be a 3-character string.
  * The \a xchan buffer must be at least 6 bytes, for the extended
  * channel (band,source,position) and the terminating NULL.
+ *
+ * As a special case, SEED codes that are (illegally) spaces will
+ * be skipped to avoid spaces in the extended channel.
  *
  * This functionality simply maps patterns, it does not check the
  * validity of any codes.
@@ -448,6 +466,19 @@ ms_seedchan2xchan (char *xchan, const char *seedchan)
     xchan[3] = '_';
     xchan[4] = seedchan[2]; /* Position (aka orientation) code */
     xchan[5] = '\0';
+
+    /* Remove spaces from extended channel */
+    for (int in = 0, out = 0; in < 6; in++)
+    {
+      if (xchan[in] != ' ')
+      {
+        xchan[out++] = xchan[in];
+      }
+      if (xchan[in] == '\0')
+      {
+        break;
+      }
+    }
 
     return 0;
   }
