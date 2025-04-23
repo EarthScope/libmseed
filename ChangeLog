@@ -1,4 +1,5 @@
 2025.113:
+	- Fix msr3_duplicate() to properly terminate duplicated extra headers.
 	- Add mstraceseg3_pack() to individually packet MS3TraceSeg entries.
 	- Add lmp_systemtime() to return current system time as nstime_t.
 	- Add MS3Record_INITIALIZER for efficient heap initialization of an MS3Record.
@@ -9,6 +10,7 @@
 	- Add support for generating SourceIDs from SEED codes with (illegal) spaces.
 	- Add ms_sid2nslc_n() with destination buffer sizes for memory safety.
 	- Deprecate ms_sid2nslc(), supports max buffers needed for SEED codes.
+	- Fix some potential undefined behavior due to load of unaligned values.
 
 2024.165: 3.1.3
 	- Use sequence number from extra headers (/FDSN/Sequence) if present when writing format v2.

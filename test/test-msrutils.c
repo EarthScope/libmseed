@@ -21,7 +21,7 @@ TEST (msr3, utils)
   REQUIRE (msr != NULL, "ms3_readmsr() did not populate 'msr'");
 
   msr_dup = msr3_duplicate(msr, 1);
-  REQUIRE (msr != NULL, "msr3_duplicate() did not complete sucessfully");
+  REQUIRE (msr_dup != NULL, "msr3_duplicate() did not complete successfully");
 
   CHECK_EQ (msr->reclen, msr_dup->reclen);
   CHECK_EQ (msr->swapflag, msr_dup->swapflag);
