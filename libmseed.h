@@ -77,6 +77,7 @@ extern "C" {
 #if defined(LMP_WIN)
   #include <windows.h>
   #include <sys/types.h>
+  #include <sys/timeb.h>
 
   /* Re-define print conversion for size_t values */
   #undef PRIsize_t
@@ -131,6 +132,7 @@ extern "C" {
 #else
   /* All other platforms */
   #include <inttypes.h>
+  #include <sys/time.h>
 #endif
 
 #define MINRECLEN 40       //!< Minimum miniSEED record length supported
@@ -581,7 +583,7 @@ typedef struct MS3TraceSeg {
   uint64_t        datasize;          //!< Size of datasamples buffer in bytes
   int64_t         numsamples;        //!< Number of data samples in datasamples
   char            sampletype;        //!< Sample type code, see @ref sample-types
-  void           *prvtptr;           //!< Private pointer for general use, unused by library
+  void           *prvtptr;           //!< Private pointer for general use, unused by library unless ::MSF_PPUPDATETIME is set
   struct MS3RecordList *recordlist;  //!< List of pointers to records that contributed
   struct MS3TraceSeg *prev;          //!< Pointer to previous segment
   struct MS3TraceSeg *next;          //!< Pointer to next segment, NULL if the last
@@ -1295,6 +1297,8 @@ extern int64_t lmp_ftell64 (FILE *stream);
 extern int lmp_fseek64 (FILE *stream, int64_t offset, int whence);
 /** Portable version of POSIX nanosleep() to sleep for nanoseconds */
 extern uint64_t lmp_nanosleep (uint64_t nanoseconds);
+/** Portable function to return the current system time */
+extern nstime_t lmp_systemtime (void);
 
 /** Return CRC32C value of supplied buffer, with optional starting CRC32C value */
 extern uint32_t ms_crc32c (const uint8_t *input, int length, uint32_t previousCRC32C);

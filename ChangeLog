@@ -1,12 +1,9 @@
-2025.110:
+2025.113:
 	- Add mstraceseg3_pack() to individually packet MS3TraceSeg entries.
-
-2025.107:
+	- Add lmp_systemtime() to return current system time as nstime_t.
 	- Add MS3Record_INITIALIZER for efficient heap initialization of an MS3Record.
 	- Change the default initialization for MS3Record.starttime to NSTUNSET.
 	Previously this was a value of 0, corresponding to 1970-01-01T00:00:00Z.
-
-2024.171:
 	- msr3_print(): do not force high resolution printing of sample rate.
 
 2024.165: 3.1.3

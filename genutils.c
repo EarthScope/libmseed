@@ -1851,3 +1851,109 @@ ms_readleapsecondfile (const char *filename)
 
   return count;
 } /* End of ms_readleapsecondfile() */
+
+/***************************************************************************
+ * lmp_ftell64:
+ *
+ * Return the current file position for the specified descriptor using
+ * the system's closest match to the POSIX ftello().
+ ***************************************************************************/
+int64_t
+lmp_ftell64 (FILE *stream)
+{
+#if defined(LMP_WIN)
+  return (int64_t)_ftelli64 (stream);
+#else
+  return (int64_t)ftello (stream);
+#endif
+} /* End of lmp_ftell64() */
+
+
+/***************************************************************************
+ * lmp_fseek64:
+ *
+ * Seek to a specific file position for the specified descriptor using
+ * the system's closest match to the POSIX fseeko().
+ ***************************************************************************/
+int
+lmp_fseek64 (FILE *stream, int64_t offset, int whence)
+{
+#if defined(LMP_WIN)
+  return (int)_fseeki64 (stream, offset, whence);
+#else
+  return (int)fseeko (stream, offset, whence);
+#endif
+} /* End of lmp_fseeko() */
+
+
+/***************************************************************************
+ * @brief Sleep for a specified number of nanoseconds
+ *
+ * Sleep for a given number of nanoseconds.  Under WIN use SleepEx()
+ * and is limited to millisecond resolution.  For all others use the
+ * POSIX.4 nanosleep(), which can be interrupted by signals.
+ *
+ * @param nanoseconds Nanoseconds to sleep
+ *
+ * @return On non-WIN: the remaining nanoseconds are returned if the
+ * requested interval is interrupted.
+ ***************************************************************************/
+uint64_t
+lmp_nanosleep (uint64_t nanoseconds)
+{
+#if defined(LMP_WIN)
+
+  /* SleepEx is limited to milliseconds */
+  SleepEx ((DWORD) (nanoseconds / 1e6), 1);
+
+  return 0;
+#else
+
+  struct timespec treq, trem;
+
+  treq.tv_sec  = (time_t) (nanoseconds / 1e9);
+  treq.tv_nsec = (long)(nanoseconds - (uint64_t)treq.tv_sec * 1e9);
+
+  nanosleep (&treq, &trem);
+
+  return trem.tv_sec * 1e9 + trem.tv_nsec;
+
+#endif
+} /* End of lmp_nanosleep() */
+
+/***************************************************************************
+ * @brief Return the current system time
+ *
+ * Current system time is returned as an nstime_t value.  Under WIN this
+ * has millisecond precision as returned by _ftime_s() and for all other
+ * platforms the precision returned by gettimeofday() up to microseconds.
+ *
+ * @return nstime_t Current system time on success, NSTERROR on error
+ ***************************************************************************/
+nstime_t
+lmp_systemtime (void)
+{
+#if defined(LMP_WIN)
+
+  struct _timeb timebuffer;
+
+  if (_ftime_s (&timebuffer) != 0)
+  {
+    return NSTERROR;
+  }
+
+  return (nstime_t)timebuffer.time * NSTMODULUS + (nstime_t)timebuffer.millitm * 1000000LL;
+
+#else
+
+  struct timeval tv;
+
+  if (gettimeofday (&tv, NULL) != 0)
+  {
+    return NSTERROR;
+  }
+
+  return (nstime_t)tv.tv_sec * NSTMODULUS + tv.tv_usec * 1000LL;
+
+#endif
+} /* End of lmp_systemtime() */

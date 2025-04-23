@@ -1,5 +1,6 @@
 #include <tau/tau.h>
 #include <libmseed.h>
+#include <time.h>
 
 TEST (time, nstime)
 {
@@ -111,4 +112,21 @@ TEST (time, nstime)
 
   nstime = ms_timestr2nstime ("20040512T000000");
   CHECK (nstime == NSTERROR, "Failed to produce error for time string: '20040512T000000'");
+}
+
+TEST (time, systemtime)
+{
+  time_t timeval;
+  nstime_t currenttime;
+  nstime_t difference;
+
+  currenttime = lmp_systemtime();
+  timeval = time (NULL);
+
+  CHECK (currenttime > 0, "lmp_systemtime() failed to get current time");
+
+  /* Check that the current time is within 1 second of the system time */
+  difference = currenttime - (nstime_t)timeval * NSTMODULUS;
+
+  CHECK (difference < 1 * NSTMODULUS, "lmp_systemtime() is not within 1 second of system time");
 }
