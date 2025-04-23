@@ -157,12 +157,15 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr,
   msr->flags = *pMS3FSDH_FLAGS (record);
 
   memcpy (msr->sid, pMS3FSDH_SID (record), sidlength);
+
+  uint32_t nanoseconds;
+  memcpy (&nanoseconds, pMS3FSDH_NSEC (record), sizeof (uint32_t));
   msr->starttime = ms_time2nstime (HO2u (*pMS3FSDH_YEAR (record), msr->swapflag),
                                    HO2u (*pMS3FSDH_DAY (record), msr->swapflag),
                                    *pMS3FSDH_HOUR (record),
                                    *pMS3FSDH_MIN (record),
                                    *pMS3FSDH_SEC (record),
-                                   HO4u (*pMS3FSDH_NSEC (record), msr->swapflag));
+                                   HO4u (nanoseconds, msr->swapflag));
   if (msr->starttime == NSTERROR)
   {
     ms_log (2, "%.*s: Cannot convert start time to internal time representation\n",
@@ -171,9 +174,19 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr,
   }
 
   msr->encoding = *pMS3FSDH_ENCODING (record);
-  msr->samprate = HO8f (*pMS3FSDH_SAMPLERATE (record), msr->swapflag);
-  msr->samplecnt = HO4u (*pMS3FSDH_NUMSAMPLES (record), msr->swapflag);
-  msr->crc = HO4u (*pMS3FSDH_CRC (record), msr->swapflag);
+
+  double samprate;
+  memcpy (&samprate, pMS3FSDH_SAMPLERATE (record), sizeof (double));
+  msr->samprate = HO8f (samprate, msr->swapflag);
+
+  uint32_t numsamples;
+  memcpy (&numsamples, pMS3FSDH_NUMSAMPLES (record), sizeof (uint32_t));
+  msr->samplecnt = HO4u (numsamples, msr->swapflag);
+
+  uint32_t crc;
+  memcpy (&crc, pMS3FSDH_CRC (record), sizeof (uint32_t));
+  msr->crc = HO4u (crc, msr->swapflag);
+
   msr->pubversion = *pMS3FSDH_PUBVERSION (record);
 
   /* Copy extra headers into a NULL-terminated string */
@@ -190,7 +203,9 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr,
     msr->extra[msr->extralength] = '\0';
   }
 
-  msr->datalength = HO4u (*pMS3FSDH_DATALENGTH (record), msr->swapflag);
+  uint32_t datalength;
+  memcpy (&datalength, pMS3FSDH_DATALENGTH (record), sizeof (uint32_t));
+  msr->datalength = HO4u (datalength, msr->swapflag);
 
   /* Determine data payload byte swapping.
      Steim encodings are big endian.

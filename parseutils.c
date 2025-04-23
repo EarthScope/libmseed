@@ -202,12 +202,20 @@ ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion)
   *formatversion = 0;
   if (MS3_ISVALIDHEADER (record))
   {
+    uint8_t sidlength;
+    uint16_t extralength;
+    uint32_t datalength;
+
     *formatversion = 3;
 
-    reclen = MS3FSDH_LENGTH                   /* Length of fixed portion of header */
-             + *pMS3FSDH_SIDLENGTH (record)   /* Length of source identifier */
-             + *pMS3FSDH_EXTRALENGTH (record) /* Length of extra headers */
-             + *pMS3FSDH_DATALENGTH (record); /* Length of data payload */
+    memcpy (&sidlength, pMS3FSDH_SIDLENGTH (record), sizeof (uint8_t));
+    memcpy (&extralength, pMS3FSDH_EXTRALENGTH (record), sizeof (uint16_t));
+    memcpy (&datalength, pMS3FSDH_DATALENGTH (record), sizeof (uint32_t));
+
+    reclen = MS3FSDH_LENGTH /* Length of fixed portion of header */
+             + sidlength    /* Length of source identifier */
+             + extralength  /* Length of extra headers */
+             + datalength;  /* Length of data payload */
 
     foundlen = 1;
   }
