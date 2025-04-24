@@ -45,6 +45,7 @@ EXPORTS
    mstl3_convertsamples
    mstl3_resize_buffers
    mstl3_pack
+   mstraceseg3_pack
    mstl3_printtracelist
    mstl3_printsynclist
    mstl3_printgaplist
@@ -62,6 +63,7 @@ EXPORTS
    mstl3_writemseed
    libmseed_url_support
    ms3_mstl_init_fd
+   ms_sid2nslc_n
    ms_sid2nslc
    ms_nslc2sid
    ms_seedchan2xchan
@@ -93,6 +95,7 @@ EXPORTS
    ms_errorstr
    ms_sampletime
    ms_bigendianhost
+   lmp_systemtime
    ms_crc32c
    leapsecondlist
    libmseed_memory

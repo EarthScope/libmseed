@@ -17,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (C) 2024:
+ * Copyright (C) 2025:
  * @author Chad Trabant, EarthScope Data Services
  ***************************************************************************/
 
@@ -28,8 +28,8 @@
 extern "C" {
 #endif
 
-#define LIBMSEED_VERSION "3.1.4"     //!< Library version
-#define LIBMSEED_RELEASE "2025.113"  //!< Library release date
+#define LIBMSEED_VERSION "3.1.5"     //!< Library version
+#define LIBMSEED_RELEASE "2025.114"  //!< Library release date
 
 /** @defgroup io-functions File and URL I/O */
 /** @defgroup miniseed-record Record Handling */
