@@ -29,11 +29,12 @@
 #define VERSION "[libmseed " LIBMSEED_VERSION " example]"
 #define PACKAGE "lm_pack"
 
-static flag verbose  = 0;
-static int reclen    = -1;
-static int encoding  = 10;
-static int msformat  = 3;
-static char *outfile = NULL;
+static flag verbose       = 0;
+static int reclen         = -1;
+static int encoding       = 10;
+static int msformat       = 3;
+static nstime_t starttime = NSTUNSET;
+static char *outfile      = NULL;
 
 static int parameter_proc (int argcount, char **argvec);
 static void usage (void);
@@ -171,6 +172,8 @@ main (int argc, char **argv)
   if (parameter_proc (argc, argv) < 0)
     return -1;
 
+  if (starttime == NSTUNSET)
+    starttime = ms_timestr2nstime ("2012-01-01T00:00:00Z");
 
   if (!(msr = msr3_init (msr)))
   {
@@ -182,7 +185,7 @@ main (int argc, char **argv)
   strcpy (msr->sid, "FDSN:XX_TEST__X_Y_Z");
   msr->reclen = reclen;
   msr->pubversion = 1;
-  msr->starttime = ms_timestr2nstime ("2012-01-01T00:00:00");
+  msr->starttime = starttime;
   msr->samprate = 1.0;
   msr->encoding = encoding;
 
@@ -296,6 +299,16 @@ parameter_proc (int argcount, char **argvec)
     {
       encoding = strtol (argvec[++optind], NULL, 10);
     }
+    else if (strcmp (argvec[optind], "-s") == 0)
+    {
+      starttime = ms_timestr2nstime (argvec[++optind]);
+
+      if (starttime == NSTERROR)
+      {
+        ms_log (2, "Invalid start time: %s\n", argvec[optind]);
+        exit (1);
+      }
+    }
     else if (strcmp (argvec[optind], "-o") == 0)
     {
       outfile = argvec[++optind];
@@ -345,6 +358,7 @@ usage (void)
            " -F format      Specify miniSEED version format, default is v3\n"
            " -r bytes       Specify maximum record length in bytes, default 4096\n"
            " -e encoding    Specify encoding format\n"
+           " -s starttime   Specify the start time, default is 2012-01-01T00:00:00Z\n"
            "\n"
            " -o outfile     Specify the output file, required\n"
            "\n"
