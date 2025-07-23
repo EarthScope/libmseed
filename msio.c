@@ -22,6 +22,7 @@
 #define _LARGEFILE_SOURCE 1
 
 #include <errno.h>
+#include <stddef.h>
 
 #include "msio.h"
 
@@ -102,11 +103,11 @@ header_callback (char *buffer, size_t size, size_t num, void *userdata)
 {
   struct header_callback_parameters *hcp = (struct header_callback_parameters *)userdata;
 
-  char startstr[21] = {0}; /* Maximum of 20 digit value */
-  char endstr[21]   = {0}; /* Maximum of 20 digit value */
-  int startdigits   = 0;
-  int enddigits     = 0;
-  char *dash        = NULL;
+  char startstr[21]   = {0}; /* Maximum of 20 digit value */
+  char endstr[21]     = {0}; /* Maximum of 20 digit value */
+  uint8_t startdigits = 0;
+  uint8_t enddigits   = 0;
+  char *dash          = NULL;
   char *ptr;
 
   if (!buffer || !userdata)
@@ -119,7 +120,7 @@ header_callback (char *buffer, size_t size, size_t num, void *userdata)
   if (size > 22 && strncasecmp (buffer, "Content-Range: bytes", 20) == 0)
   {
     /* Process each character, starting just afer "bytes" unit */
-    for (ptr = buffer + 20; *ptr != '\0' && (ptr - buffer) < size; ptr++)
+    for (ptr = buffer + 20; *ptr != '\0' && (ptr - buffer) < (ptrdiff_t)size; ptr++)
     {
       /* Skip spaces before start of range */
       if (*ptr == ' ' && startdigits == 0)
@@ -148,17 +149,16 @@ header_callback (char *buffer, size_t size, size_t num, void *userdata)
 
     /* Convert start and end values to numbers if non-zero length */
     if (hcp->startoffset && startdigits)
-      *hcp->startoffset = (int64_t) strtoull (startstr, NULL, 10);
+      *hcp->startoffset = (int64_t)strtoull (startstr, NULL, 10);
 
     if (hcp->endoffset && enddigits)
-      *hcp->endoffset = (int64_t) strtoull (endstr, NULL, 10);
+      *hcp->endoffset = (int64_t)strtoull (endstr, NULL, 10);
   }
 
   return size;
 }
 
 #endif /* defined(LIBMSEED_URL) */
-
 
 /***************************************************************************
  * msio_fopen:
@@ -181,7 +181,7 @@ header_callback (char *buffer, size_t size, size_t num, void *userdata)
  ***************************************************************************/
 int
 msio_fopen (LMIO *io, const char *path, const char *mode,
-          int64_t *startoffset, int64_t *endoffset)
+            int64_t *startoffset, int64_t *endoffset)
 {
   int knownfile = 0;
 
@@ -340,7 +340,7 @@ msio_fopen (LMIO *io, const char *path, const char *mode,
     if (startoffset || endoffset)
     {
       hcp.startoffset = startoffset;
-      hcp.endoffset = endoffset;
+      hcp.endoffset   = endoffset;
 
       /* Configure header callback */
       if (curl_easy_setopt (io->handle, CURLOPT_HEADERFUNCTION, header_callback) != CURLE_OK)
@@ -389,7 +389,7 @@ msio_fopen (LMIO *io, const char *path, const char *mode,
 
     if ((io->handle = fopen (path, mode)) == NULL)
     {
-      ms_log (2, "Cannot open: %s (%s)\n", path, strerror(errno));
+      ms_log (2, "Cannot open: %s (%s)\n", path, strerror (errno));
       return -1;
     }
 
@@ -405,7 +405,7 @@ msio_fopen (LMIO *io, const char *path, const char *mode,
   }
 
   return 0;
-}  /* End of msio_fopen() */
+} /* End of msio_fopen() */
 
 /*********************************************************************
  * msio_fclose:
@@ -452,13 +452,12 @@ msio_fclose (LMIO *io)
 #endif
   }
 
-  io->type = LMIO_NULL;
-  io->handle = NULL;
+  io->type    = LMIO_NULL;
+  io->handle  = NULL;
   io->handle2 = NULL;
 
   return 0;
 } /* End of msio_fclose() */
-
 
 /*********************************************************************
  * msio_fread:
