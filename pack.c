@@ -47,8 +47,10 @@ static int64_t msr_pack_data (void *dest, void *src, uint64_t maxsamples, uint64
 
 static int ms_genfactmult (double samprate, int16_t *factor, int16_t *multiplier);
 
-static int64_t ms_timestr2btime (const char *timestr, uint8_t *btime, const char *sid, int8_t swapflag);
+static nstime_t ms_timestr2btime (const char *timestr, uint8_t *btime, int8_t *usec_offset,
+                                  const char *sid, int8_t swapflag);
 
+static nstime_t nstime2fsec_usec_offset (nstime_t nstime, uint16_t *fsec, int8_t *usec_offset);
 
 /**********************************************************************/ /**
  * @brief Pack data into miniSEED records.
@@ -872,7 +874,6 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
   uint8_t hour;
   uint8_t min;
   uint8_t sec;
-  uint32_t nsec;
   uint16_t fsec;
   int8_t msec_offset;
 
@@ -953,16 +954,15 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
   if (verbose > 2 && swapflag)
     ms_log (0, "%s: Byte swapping needed for packing of header\n", msr->sid);
 
+  /* Calculate time at fractional 100usec resolution and microsecond offset */
+  nstime_t second_nstime = nstime2fsec_usec_offset (msr->starttime, &fsec, &msec_offset);
+
   /* Break down start time into individual components */
-  if (ms_nstime2time (msr->starttime, &year, &day, &hour, &min, &sec, &nsec))
+  if (ms_nstime2time (second_nstime, &year, &day, &hour, &min, &sec, NULL))
   {
     ms_log (2, "%s: Cannot convert starttime: %" PRId64 "\n", msr->sid, msr->starttime);
     return -1;
   }
-
-  /* Calculate time at fractional 100usec resolution and microsecond offset */
-  fsec = nsec / 100000;
-  msec_offset = ((nsec / 1000) - (fsec * 100));
 
   /* Generate factor & multipler representation of sample rate */
   if (ms_genfactmult (msr3_sampratehz(msr), &factor, &multiplier))
@@ -1208,24 +1208,17 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
 
       if (yyjson_ptr_get_str (ehiterval, "/Time", &header_string))
       {
-        int64_t l_nsec;
-        uint16_t l_fsec;
         int8_t l_msec_offset;
+        nstime_t l_nstime = ms_timestr2btime (header_string,
+                                              (uint8_t *)pMS2B500_YEAR (record + written),
+                                              &l_msec_offset, msr->sid, swapflag);
 
-        l_nsec = ms_timestr2btime (header_string,
-                                   (uint8_t *)pMS2B500_YEAR (record + written),
-                                   msr->sid, swapflag);
-
-        if (l_nsec == -1)
+        if (l_nstime == NSTERROR)
         {
           ms_log (2, "%s: Cannot convert B500 time: %s\n", msr->sid, header_string);
           yyjson_doc_free (ehdoc);
           return -1;
         }
-
-        /* Calculate time at fractional 100usec resolution and microsecond offset */
-        l_fsec        = (uint16_t)(l_nsec / 100000);
-        l_msec_offset = (int8_t)((l_nsec / 1000) - (l_fsec * 100));
 
         *pMS2B500_MICROSECOND (record + written) = l_msec_offset;
       }
@@ -1316,7 +1309,7 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
       if (yyjson_ptr_get_str (ehiterval, "/OnsetTime", &header_string))
       {
         if (ms_timestr2btime (header_string, (uint8_t *)pMS2B200_YEAR (record + written),
-                              msr->sid, swapflag) == -1)
+                              NULL, msr->sid, swapflag) == NSTERROR)
         {
           ms_log (2, "%s: Cannot convert B%u time: %s\n", msr->sid, blockette_type, header_string);
           yyjson_doc_free (ehdoc);
@@ -1435,7 +1428,7 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
         if (yyjson_ptr_get_str (ehiterval, "/BeginTime", &header_string))
         {
           if (ms_timestr2btime (header_string, (uint8_t *)pMS2B300_YEAR (record + written),
-                                msr->sid, swapflag) == -1)
+                                NULL, msr->sid, swapflag) == NSTERROR)
           {
             ms_log (2, "%s: Cannot convert B%u time: %s\n", msr->sid, blockette_type, header_string);
             yyjson_doc_free (ehdoc);
@@ -1600,7 +1593,7 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
         *pMS2B395_NEXT (record + written) = 0;
 
         if (ms_timestr2btime (header_string, (uint8_t *)pMS2B395_YEAR (record + written),
-                              msr->sid, swapflag) == -1)
+                              NULL, msr->sid, swapflag) == NSTERROR)
         {
           ms_log (2, "%s: Cannot convert B%u time: %s\n", msr->sid, blockette_type, header_string);
           yyjson_doc_free (ehdoc);
@@ -2090,8 +2083,8 @@ ms_genfactmult (double samprate, int16_t *factor, int16_t *multiplier)
 } /* End of ms_genfactmult() */
 
 /***************************************************************************
- * Convenience function to convert a month-day time string to a SEED
- * 2.x "BTIME" structure.
+ * Convenience function to convert a time string to a SEED 2.x "BTIME"
+ * structure, and a microsecond offset.
  *
  * The 10-byte BTIME structure layout:
  *
@@ -2104,33 +2097,41 @@ ms_genfactmult (double samprate, int16_t *factor, int16_t *multiplier)
  * unused uint8_t   7       Unused, included for alignment
  * fract  uint16_t  8       0.0001 seconds, i.e. 1/10ths of milliseconds (0—9999)
  *
- * Return nanoseconds on success and -1 on error.
+ * Return second-resolution nstime_t value on success and NSTERROR on error.
  *
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
-static inline int64_t
-ms_timestr2btime (const char *timestr, uint8_t *btime, const char *sid, int8_t swapflag)
+static inline nstime_t
+ms_timestr2btime (const char *timestr, uint8_t *btime, int8_t *usec_offset,
+                  const char *sid, int8_t swapflag)
 {
   uint16_t year;
   uint16_t day;
   uint8_t hour;
   uint8_t min;
   uint8_t sec;
-  uint32_t nsec;
+  uint16_t fsec;
+  int8_t l_usec_offset;
   nstime_t nstime;
+  nstime_t second_nstime;
 
   if (!timestr || !btime)
   {
     ms_log (2, "%s(%s): Required input not defined: 'timestr' or 'btime'\n",
             sid, __func__);
-    return -1;
+    return NSTERROR;
   }
 
   if ((nstime = ms_timestr2nstime (timestr)) == NSTERROR)
-    return -1;
+    return NSTERROR;
 
-  if (ms_nstime2time (nstime, &year, &day, &hour, &min, &sec, &nsec))
-    return -1;
+  if (ms_nstime2time (nstime, &year, &day, &hour, &min, &sec, NULL))
+    return NSTERROR;
+
+  second_nstime = nstime2fsec_usec_offset (nstime, &fsec, &l_usec_offset);
+
+  if (second_nstime == NSTERROR)
+    return NSTERROR;
 
   *((uint16_t *)(btime))     = HO2u (year, swapflag);
   *((uint16_t *)(btime + 2)) = HO2u (day, swapflag);
@@ -2138,7 +2139,73 @@ ms_timestr2btime (const char *timestr, uint8_t *btime, const char *sid, int8_t s
   *((uint8_t *)(btime + 5))  = min;
   *((uint8_t *)(btime + 6))  = sec;
   *((uint8_t *)(btime + 7))  = 0;
-  *((uint16_t *)(btime + 8)) = HO2u (nsec / 100000, swapflag);
+  *((uint16_t *)(btime + 8)) = HO2u (fsec, swapflag);
 
-  return nsec;
+  if (usec_offset)
+    *usec_offset = l_usec_offset;
+
+  return second_nstime;
 } /* End of timestr2btime() */
+
+/***************************************************************************
+ * nstime2fsec_usec_offset
+ *
+ * Convert a nstime_t value to a time value in tenths of milliseconds (fsec) and
+ * a microsecond offset (usec_offset) from the fsec value.
+ *
+ * The nstime_t value returned is the nstime_t value at second resolution and
+ * the appropriate value to be combined with fsec and usec_offset to recover the
+ * time value (in microseconds).  Nanosecond resolution is lost in this case.
+ *
+ * When converting nstime_t values with sub-microsecond resolution, the result
+ * will be rounded to the nearest microsecond to retain as much accuracy as
+ * possible.
+ *
+ * The tenths of milliseconds value will be rounded to the nearest value having
+ * a microsecond offset value between -50 to +49.
+ *
+ * Returns second-resolution nstime_t value on success and NSTERROR on error.
+ ***************************************************************************/
+static nstime_t
+nstime2fsec_usec_offset (nstime_t nstime, uint16_t *fsec, int8_t *usec_offset)
+{
+  if (fsec == NULL || usec_offset == NULL)
+    return NSTERROR;
+
+  /* Round to nearest microsecond (loses nanosecond precision) */
+  nstime_t usec_time = (nstime + (nstime >= 0 ? 500 : -500)) / 1000 * 1000;
+
+  /* Convert to microseconds and tenths of milliseconds */
+  int64_t total_usec = usec_time / 1000;
+  int64_t total_fsec = usec_time / 100000;
+
+  /* Calculate microsecond offset from tenths of milliseconds */
+  *usec_offset = (int8_t)(total_usec - total_fsec * 100);
+
+  /* Adjust to keep usec_offset in range [-50, +49] */
+  if (*usec_offset > 49)
+  {
+    total_fsec += 1;
+    *usec_offset -= 100;
+  }
+  else if (*usec_offset < -50)
+  {
+    total_fsec -= 1;
+    *usec_offset += 100;
+  }
+
+  /* Extract fsec within current second (0-9999) */
+  int64_t fsec_remainder = total_fsec % 10000;
+  int64_t seconds = total_fsec / 10000;
+
+  /* Handle negative modulo properly */
+  if (fsec_remainder < 0)
+  {
+    fsec_remainder += 10000;
+    seconds -= 1;
+  }
+  *fsec = (uint16_t)fsec_remainder;
+
+  /* Return second-resolution time */
+  return seconds * NSTMODULUS;
+} /* End of nstime2fsec_usec_offset() */

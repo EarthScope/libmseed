@@ -1,4 +1,5 @@
 # C build objects
+*.a
 *.so
 *.lo
 *.o
