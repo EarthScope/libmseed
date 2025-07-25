@@ -31,6 +31,7 @@
 
 static flag verbose       = 0;
 static int reclen         = -1;
+static double samprate    = 1.0;
 static int encoding       = 10;
 static int msformat       = 3;
 static nstime_t starttime = NSTUNSET;
@@ -186,7 +187,7 @@ main (int argc, char **argv)
   msr->reclen = reclen;
   msr->pubversion = 1;
   msr->starttime = starttime;
-  msr->samprate = 1.0;
+  msr->samprate = samprate;
   msr->encoding = encoding;
 
   if (encoding == DE_TEXT)
@@ -295,6 +296,10 @@ parameter_proc (int argcount, char **argvec)
     {
       reclen = strtol (argvec[++optind], NULL, 10);
     }
+    else if (strcmp (argvec[optind], "-R") == 0)
+    {
+      samprate = strtod (argvec[++optind], NULL);
+    }
     else if (strcmp (argvec[optind], "-e") == 0)
     {
       encoding = strtol (argvec[++optind], NULL, 10);
@@ -357,6 +362,7 @@ usage (void)
            " -v             Be more verbose, multiple flags can be used\n"
            " -F format      Specify miniSEED version format, default is v3\n"
            " -r bytes       Specify maximum record length in bytes, default 4096\n"
+           " -R samprate    Specify sample rate, default is 1.0\n"
            " -e encoding    Specify encoding format\n"
            " -s starttime   Specify the start time, default is 2012-01-01T00:00:00Z\n"
            "\n"
