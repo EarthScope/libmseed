@@ -1,4 +1,6 @@
-2025.206:
+2025.207:
+	- Properly propagate sub-fractional microseconds to v2 Blockette 1001
+  when packing more than one record.
 	- Round sub-fractional and sub-microsecond times for v2 record fields
   to retain accuracy.
 	- Ensure microsecond offsets in v2 record fields are -50 to +49, which
