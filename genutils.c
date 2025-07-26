@@ -1735,7 +1735,7 @@ ms_sampletime (nstime_t time, int64_t offset, double samprate)
 
 /**********************************************************************/ /**
  * @brief Runtime test for host endianess
- * @returns 0 if the host is little endian, otherwise 1.
+ * @returns 1 if the host is big endian, 0 otherwise.
  ***************************************************************************/
 inline int
 ms_bigendianhost (void)

@@ -5,6 +5,7 @@
   to retain accuracy.
 	- Ensure microsecond offsets in v2 record fields are -50 to +49, which
   matches previous major library version behavior and SEED recommendation.
+	- Add msr3_repack_mseed2() to repack v2 records efficiently.
 	- Add -s option to example/lm_pack.c to allow specifying start time.
   - Fix some pedantic compiler warnings in msio.c.
 

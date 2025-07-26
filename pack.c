@@ -416,14 +416,14 @@ msr3_repack_mseed3 (const MS3Record *msr, char *record, uint32_t recbuflen,
 
   if (recbuflen < (MS3FSDH_LENGTH + strlen(msr->sid) + msr->extralength))
   {
-    ms_log (2, "%s: Record length (%u) is not large enough for header (%u), SID (%"PRIsize_t"), and extra (%d)\n",
+    ms_log (2, "%s: Record buffer length (%u) is not large enough for header (%u), SID (%"PRIsize_t"), and extra (%d)\n",
             msr->sid, recbuflen, MS3FSDH_LENGTH, strlen(msr->sid), msr->extralength);
     return -1;
   }
 
   if (msr->samplecnt > UINT32_MAX)
   {
-    ms_log (2, "%s: Too many samples in input record (%" PRId64 " for a single record)\n",
+    ms_log (2, "%s: Too many samples in input record (%" PRId64 ") for a single record)\n",
             msr->sid, msr->samplecnt);
     return -1;
   }
@@ -860,6 +860,124 @@ msr3_pack_mseed2 (const MS3Record *msr, void (*record_handler) (char *, int, voi
 
   return recordcnt;
 } /* End of msr3_pack_mseed2() */
+
+/**********************************************************************/ /**
+ * @brief Repack a parsed miniSEED record into a version 2 record.
+ *
+ * Pack the parsed header into a version 2 header and copy the raw
+ * encoded data from the original record.  The original record must be
+ * available at the ::MS3Record.record pointer.
+ *
+ * The new record will be the same length as the original record and an
+ * error will be returned if the repacked record would not fit.
+ * If the new record is shorter than the original record, the extra space
+ * will be zeroed.
+ *
+ * This can be used to efficiently convert format versions or modify
+ * header values without unpacking the data samples.
+ *
+ * @param[in] msr ::MS3Record containing record to repack
+ * @param[out] record Destination buffer for repacked record
+ * @param[in] recbuflen Length of destination buffer
+ * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
+ *
+ * @returns record length on success and -1 on error.
+ *
+ * \ref MessageOnError - this function logs a message on error
+ ***************************************************************************/
+int
+msr3_repack_mseed2 (const MS3Record *msr, char *record, uint32_t recbuflen,
+                    int8_t verbose)
+{
+  int headerlen;
+  uint16_t dataoffset;
+  uint32_t origdataoffset;
+  uint32_t origdatasize;
+  uint32_t totalsize;
+  uint8_t swapflag;
+
+  if (!msr || !msr->record || !record)
+  {
+    ms_log (2, "%s(): Required input not defined: 'msr', 'msr->record', or 'record'\n",
+            __func__);
+    return -1;
+  }
+
+  if ((int64_t)recbuflen < msr->reclen)
+  {
+    ms_log (2, "%s: Record buffer length (%u) is not large enough for requested record length (%d)\n",
+            msr->sid, recbuflen, msr->reclen);
+    return -1;
+  }
+
+  if (msr->samplecnt > UINT16_MAX)
+  {
+    ms_log (2, "%s: Too many samples in input record (%" PRId64 ") for a single v2 record)\n",
+            msr->sid, msr->samplecnt);
+    return -1;
+  }
+
+  /* Pack fixed header and blockettes */
+  headerlen = msr3_pack_header2 (msr, record, recbuflen, verbose);
+
+  if (headerlen < 0)
+  {
+    ms_log (2, "%s: Cannot pack miniSEED version 2 header\n", msr->sid);
+    return -1;
+  }
+
+  /* Determine encoded data size */
+  if (msr3_data_bounds (msr, &origdataoffset, &origdatasize))
+  {
+    ms_log (2, "%s: Cannot determine original data bounds\n", msr->sid);
+    return -1;
+  }
+
+  /* Determine offset to encoded data */
+  if (msr->encoding == DE_STEIM1 || msr->encoding == DE_STEIM2)
+  {
+    dataoffset = 64;
+    while (dataoffset < headerlen)
+      dataoffset += 64;
+
+    /* Zero memory between blockettes and data if any */
+    memset (record + headerlen, 0, dataoffset - headerlen);
+  }
+  else
+  {
+    dataoffset = headerlen;
+  }
+
+  totalsize = dataoffset + origdatasize;
+
+  if (recbuflen < totalsize)
+  {
+    ms_log (2, "%s: Repacked minimum record length (%u) is larger than destination record buffer (%u)\n",
+            msr->sid, totalsize, recbuflen);
+    return -1;
+  }
+
+  /* Copy encoded data into record */
+  memcpy (record + dataoffset, msr->record + origdataoffset, origdatasize);
+
+  /* Check if byte swapping is needed, miniSEED 2 is written big endian */
+  swapflag = (ms_bigendianhost ()) ? 0 : 1;
+
+  /* Update number of samples and data offset */
+  *pMS2FSDH_NUMSAMPLES (record) = HO2u ((uint16_t)msr->samplecnt, swapflag);
+  *pMS2FSDH_DATAOFFSET (record) = HO2u (dataoffset, swapflag);
+
+  /* Zero any space between encoded data and end of record */
+  int32_t content = dataoffset + origdatasize;
+  if (content < msr->reclen)
+    memset (record + content, 0, msr->reclen - content);
+
+  if (verbose >= 1)
+    ms_log (0, "%s: Repacked %" PRId64 " samples into a %u byte record\n",
+            msr->sid, msr->samplecnt, msr->reclen);
+
+  return msr->reclen;
+} /* End of msr3_repack_mseed2() */
 
 /**********************************************************************/ /**
  * @brief Pack a miniSEED version 2 header into the specified buffer.

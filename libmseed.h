@@ -418,6 +418,8 @@ extern int msr3_pack (const MS3Record *msr,
 
 extern int msr3_repack_mseed3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
 
+extern int msr3_repack_mseed2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
+
 extern int msr3_pack_header3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
 
 extern int msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
