@@ -1,12 +1,12 @@
-2025.207:
-	- Properly propagate sub-fractional microseconds to v2 Blockette 1001
+2025.207: 3.1.6
+	- Properly propagate sub-fractional microseconds to v2 blockette 1001
   when packing more than one record.
 	- Round sub-fractional and sub-microsecond times for v2 record fields
   to retain accuracy.
 	- Ensure microsecond offsets in v2 record fields are -50 to +49, which
   matches previous major library version behavior and SEED recommendation.
 	- Add msr3_repack_mseed2() to repack v2 records efficiently.
-	- Add -s option to example/lm_pack.c to allow specifying start time.
+	- Add -s and -R options to example/lm_pack.c.
   - Fix some pedantic compiler warnings in msio.c.
 
 2025.114: 3.1.5
