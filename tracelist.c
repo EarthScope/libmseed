@@ -1428,7 +1428,8 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
           return -1;
         }
 
-        idata[idx] = (int32_t) (fdata[idx] + 0.5);
+        /* Round to nearest integer, handling positive and negative values */
+        idata[idx] = (int32_t) (fdata[idx] + (fdata[idx] >= 0 ? 0.5 : -0.5));
       }
     }
     else if (seg->sampletype == 'd') /* Convert doubles to integers with simple rounding */
@@ -1443,7 +1444,8 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
           return -1;
         }
 
-        idata[idx] = (int32_t) (ddata[idx] + 0.5);
+        /* Round to nearest integer, handling positive and negative values */
+        idata[idx] = (int32_t) (ddata[idx] + (ddata[idx] >= 0 ? 0.5 : -0.5));
       }
 
       /* Reallocate buffer for reduced size needed, only if not pre-allocating */

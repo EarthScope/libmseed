@@ -1,3 +1,7 @@
+2025.227:
+	- Properly round negative values when converting floats to integers
+	in mstl3_convertsamples().
+
 2025.207: 3.1.6
 	- Properly propagate sub-fractional microseconds to v2 blockette 1001
 	when packing more than one record.
