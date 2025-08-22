@@ -996,7 +996,7 @@ mseh_add_recenter_r (MS3Record *msr, const char *ptr, MSEHRecenter *recenter,
 int
 mseh_serialize (MS3Record *msr, LM_PARSED_JSON **parsestate)
 {
-  yyjson_write_flag flg = YYJSON_WRITE_NOFLAG;
+  yyjson_write_flag flg;
   yyjson_write_err err;
   yyjson_alc alc = {_priv_malloc, _priv_realloc, _priv_free, NULL};
 
@@ -1011,6 +1011,10 @@ mseh_serialize (MS3Record *msr, LM_PARSED_JSON **parsestate)
 
   if (!parsed || !parsed->mut_doc)
     return 0;
+
+  /* Limit float point values to single precision to avoid unrealistically
+   * high precision values in the output. */
+  flg = YYJSON_WRITE_FP_TO_FLOAT;
 
   /* Serialize new JSON string */
   serialized = yyjson_mut_write_opts (parsed->mut_doc, flg, &alc, &serialsize, &err);
