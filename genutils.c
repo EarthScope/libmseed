@@ -1005,6 +1005,18 @@ ms_nstime2timestr_n (nstime_t nstime, char *timestr, size_t timestrsize,
     return NULL;
   }
 
+  if (nstime == NSTERROR)
+  {
+    snprintf (timestr, timestrsize, "ERROR");
+    return timestr;
+  }
+
+  if (nstime == NSTUNSET)
+  {
+    snprintf (timestr, timestrsize, "UNSET");
+    return timestr;
+  }
+
   /* Reduce to Unix/POSIX epoch time and fractional nanoseconds */
   isec = rawisec = MS_NSTIME2EPOCH (nstime);
   nanosec = rawnanosec = (int)(nstime - (isec * NSTMODULUS));

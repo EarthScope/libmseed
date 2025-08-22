@@ -2,7 +2,7 @@
 #include <libmseed.h>
 #include <time.h>
 
-TEST (time, nstime)
+TEST (time, nstime2timestr)
 {
   char timestr[50];
   nstime_t nstime;
@@ -71,7 +71,18 @@ TEST (time, nstime)
   ms_nstime2timestr_n (nstime, timestr, sizeof(timestr), ISOMONTHDAY_Z, MICRO_NONE);
   CHECK_STREQ (timestr, "2004-05-12T07:08:09Z");
 
-  /* Time string variations */
+  /* Unset time */
+  ms_nstime2timestr_n (NSTUNSET, timestr, sizeof(timestr), ISOMONTHDAY_Z, NANO_MICRO_NONE);
+  CHECK_STREQ (timestr, "UNSET");
+
+  /* Error time */
+  ms_nstime2timestr_n (NSTERROR, timestr, sizeof(timestr), ISOMONTHDAY_Z, NANO_MICRO_NONE);
+  CHECK_STREQ (timestr, "ERROR");
+}
+
+TEST (time, timestr2nstime)
+{
+  nstime_t nstime;
 
   nstime = ms_timestr2nstime ("2004");
   CHECK (nstime == 1072915200000000000, "Failed to convert time string: '2004'");
