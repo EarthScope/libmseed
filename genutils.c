@@ -986,8 +986,8 @@ ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *yday,
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 char *
-ms_nstime2timestr (nstime_t nstime, char *timestr,
-                   ms_timeformat_t timeformat, ms_subseconds_t subseconds)
+ms_nstime2timestr_n (nstime_t nstime, char *timestr, size_t timestrsize,
+                     ms_timeformat_t timeformat, ms_subseconds_t subseconds)
 {
   struct tm tms = {0};
   int64_t rawisec;
@@ -1001,7 +1001,7 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
 
   if (!timestr)
   {
-    ms_log (2, "%s(): Required input not defined: 'timestr'\n", __func__);
+    ms_log (2, "%s(): Required argument not defined: 'timestr'\n", __func__);
     return NULL;
   }
 
@@ -1047,7 +1047,7 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
     case ISOMONTHDAY_SPACE:
     case ISOMONTHDAY_SPACE_Z:
       expected = (timeformat == ISOMONTHDAY_Z || timeformat == ISOMONTHDAY_SPACE_Z) ? 20 : 19;
-      printed  = snprintf (timestr, expected + 1, "%4d-%02d-%02d%c%02d:%02d:%02d%s",
+      printed  = snprintf (timestr, timestrsize, "%4d-%02d-%02d%c%02d:%02d:%02d%s",
                            tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
                           (timeformat == ISOMONTHDAY_SPACE || timeformat == ISOMONTHDAY_SPACE_Z) ? ' ' : 'T',
                            tms.tm_hour, tms.tm_min, tms.tm_sec,
@@ -1056,7 +1056,7 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
     case ISOMONTHDAY_DOY:
     case ISOMONTHDAY_DOY_Z:
       expected = (timeformat == ISOMONTHDAY_DOY_Z) ? 26 : 25;
-      printed  = snprintf (timestr, expected + 1, "%4d-%02d-%02dT%02d:%02d:%02d%s (%03d)",
+      printed  = snprintf (timestr, timestrsize, "%4d-%02d-%02dT%02d:%02d:%02d%s (%03d)",
                            tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
                            tms.tm_hour, tms.tm_min, tms.tm_sec,
                           (timeformat == ISOMONTHDAY_DOY_Z) ? "Z" : "",
@@ -1064,17 +1064,17 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
       break;
     case SEEDORDINAL:
       expected = 17;
-      printed  = snprintf (timestr, expected + 1, "%4d,%03d,%02d:%02d:%02d",
+      printed  = snprintf (timestr, timestrsize, "%4d,%03d,%02d:%02d:%02d",
                            tms.tm_year + 1900, tms.tm_yday + 1,
                            tms.tm_hour, tms.tm_min, tms.tm_sec);
       break;
     case UNIXEPOCH:
       expected = -1;
-      printed  = snprintf (timestr, 22, "%" PRId64, rawisec);
+      printed  = snprintf (timestr, timestrsize, "%" PRId64, rawisec);
       break;
     case NANOSECONDEPOCH:
       expected = -1;
-      printed  = snprintf (timestr, 22, "%" PRId64, nstime);
+      printed  = snprintf (timestr, timestrsize, "%" PRId64, nstime);
       break;
     }
   }
@@ -1091,7 +1091,7 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
     case ISOMONTHDAY_SPACE:
     case ISOMONTHDAY_SPACE_Z:
       expected = (timeformat == ISOMONTHDAY_Z || timeformat == ISOMONTHDAY_SPACE_Z) ? 27 : 26;
-      printed  = snprintf (timestr, expected + 1, "%4d-%02d-%02d%c%02d:%02d:%02d.%06d%s",
+      printed  = snprintf (timestr, timestrsize, "%4d-%02d-%02d%c%02d:%02d:%02d.%06d%s",
                            tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
                           (timeformat == ISOMONTHDAY_SPACE || timeformat == ISOMONTHDAY_SPACE_Z) ? ' ' : 'T',
                            tms.tm_hour, tms.tm_min, tms.tm_sec, microsec,
@@ -1100,7 +1100,7 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
     case ISOMONTHDAY_DOY:
     case ISOMONTHDAY_DOY_Z:
       expected = (timeformat == ISOMONTHDAY_DOY_Z) ? 33 : 32;
-      printed  = snprintf (timestr, expected + 1, "%4d-%02d-%02dT%02d:%02d:%02d.%06d%s (%03d)",
+      printed  = snprintf (timestr, timestrsize, "%4d-%02d-%02dT%02d:%02d:%02d.%06d%s (%03d)",
                            tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
                            tms.tm_hour, tms.tm_min, tms.tm_sec, microsec,
                           (timeformat == ISOMONTHDAY_DOY_Z) ? "Z" : "",
@@ -1108,17 +1108,17 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
       break;
     case SEEDORDINAL:
       expected = 24;
-      printed  = snprintf (timestr, expected + 1, "%4d,%03d,%02d:%02d:%02d.%06d",
+      printed  = snprintf (timestr, timestrsize, "%4d,%03d,%02d:%02d:%02d.%06d",
                            tms.tm_year + 1900, tms.tm_yday + 1,
                            tms.tm_hour, tms.tm_min, tms.tm_sec, microsec);
       break;
     case UNIXEPOCH:
       expected = -1;
-      printed  = snprintf (timestr, 22, "%" PRId64 ".%06d", rawisec, rawnanosec / 1000);
+      printed  = snprintf (timestr, timestrsize, "%" PRId64 ".%06d", rawisec, rawnanosec / 1000);
       break;
     case NANOSECONDEPOCH:
       expected = -1;
-      printed  = snprintf (timestr, 22, "%" PRId64, nstime);
+      printed  = snprintf (timestr, timestrsize, "%" PRId64, nstime);
       break;
     }
   }
@@ -1135,7 +1135,7 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
     case ISOMONTHDAY_SPACE:
     case ISOMONTHDAY_SPACE_Z:
       expected = (timeformat == ISOMONTHDAY_Z || timeformat == ISOMONTHDAY_SPACE_Z) ? 30 : 29;
-      printed  = snprintf (timestr, expected + 1, "%4d-%02d-%02d%c%02d:%02d:%02d.%09d%s",
+      printed  = snprintf (timestr, timestrsize, "%4d-%02d-%02d%c%02d:%02d:%02d.%09d%s",
                            tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
                           (timeformat == ISOMONTHDAY_SPACE || timeformat == ISOMONTHDAY_SPACE_Z) ? ' ' : 'T',
                            tms.tm_hour, tms.tm_min, tms.tm_sec, nanosec,
@@ -1144,7 +1144,7 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
     case ISOMONTHDAY_DOY:
     case ISOMONTHDAY_DOY_Z:
       expected = (timeformat == ISOMONTHDAY_DOY_Z) ? 36 : 35;
-      printed  = snprintf (timestr, expected + 1, "%4d-%02d-%02dT%02d:%02d:%02d.%09d%s (%03d)",
+      printed  = snprintf (timestr, timestrsize, "%4d-%02d-%02dT%02d:%02d:%02d.%09d%s (%03d)",
                            tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
                            tms.tm_hour, tms.tm_min, tms.tm_sec, nanosec,
                           (timeformat == ISOMONTHDAY_DOY_Z) ? "Z" : "",
@@ -1152,17 +1152,17 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
       break;
     case SEEDORDINAL:
       expected = 27;
-      printed  = snprintf (timestr, 28, "%4d,%03d,%02d:%02d:%02d.%09d",
+      printed  = snprintf (timestr, timestrsize, "%4d,%03d,%02d:%02d:%02d.%09d",
                            tms.tm_year + 1900, tms.tm_yday + 1,
                            tms.tm_hour, tms.tm_min, tms.tm_sec, nanosec);
       break;
     case UNIXEPOCH:
       expected = -1;
-      printed  = snprintf (timestr, 22, "%" PRId64 ".%09d", rawisec, rawnanosec);
+      printed  = snprintf (timestr, timestrsize, "%" PRId64 ".%09d", rawisec, rawnanosec);
       break;
     case NANOSECONDEPOCH:
       expected = -1;
-      printed  = snprintf (timestr, 22, "%" PRId64, nstime);
+      printed  = snprintf (timestr, timestrsize, "%" PRId64, nstime);
       break;
     }
   }
@@ -1183,24 +1183,28 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
   }
 
   return timestr;
+} /* End of ms_nstime2timestr_n() */
+
+/**********************************************************************/ /**
+ * @deprecated Use ms_nstime2timestr_n() instead
+ *
+ * This deprecated function is provided for backwards compatibility.
+ * It will call ms_nstime2timestr_n() specifying the maximum size of
+ * the time string as 36 bytes.
+ ***************************************************************************/
+char *
+ms_nstime2timestr (nstime_t nstime, char *timestr,
+                   ms_timeformat_t timeformat, ms_subseconds_t subseconds)
+{
+  return ms_nstime2timestr_n (nstime, timestr, 36, timeformat, subseconds);
 } /* End of ms_nstime2timestr() */
 
 /**********************************************************************/ /**
- * @brief Convert an ::nstime_t to a time string with 'Z' suffix
+ * @deprecated Use ms_nstime2timestr_n() instead
  *
- * @deprecated This function should be replaced with desired use of
- * timeformat values with the '_Z' designator.
- *
- * This function is a thin wrapper of @ref ms_nstime2timestr
- *
- * @param[in] nstime Time value to convert
- * @param[out] timestr Buffer for ISO time string
- * @param timeformat Time string format, one of @ref ms_timeformat_t
- * @param subseconds Inclusion of subseconds, one of @ref ms_subseconds_t
- *
- * @returns Pointer to the resulting string or NULL on error.
- *
- * \ref MessageOnError - this function logs a message on error
+ * This deprecated function is provided for backwards compatibility.
+ * It will call ms_nstime2timestr_n() specifying the maximum size of
+ * the time string as 36 bytes.
  ***************************************************************************/
 char *
 ms_nstime2timestrz (nstime_t nstime, char *timestr,
@@ -1213,7 +1217,7 @@ ms_nstime2timestrz (nstime_t nstime, char *timestr,
   else if (timeformat == ISOMONTHDAY_SPACE)
     timeformat = ISOMONTHDAY_SPACE_Z;
 
-  return ms_nstime2timestr (nstime, timestr, timeformat, subseconds);
+  return ms_nstime2timestr_n (nstime, timestr, 36, timeformat, subseconds);
 } /* End of ms_nstime2timestrz() */
 
 /***************************************************************************
@@ -1859,7 +1863,7 @@ ms_readleapsecondfile (const char *filename)
         if (time (NULL) > expires)
         {
           char timestr[100];
-          ms_nstime2timestr (MS_EPOCH2NSTIME (expires), timestr, 0, 0);
+          ms_nstime2timestr_n (MS_EPOCH2NSTIME (expires), timestr, sizeof(timestr), 0, 0);
           ms_log (1, "Warning: leap second file (%s) has expired as of %s\n",
                   filename, timestr);
         }

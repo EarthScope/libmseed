@@ -50,7 +50,7 @@ main (int argc, char **argv)
     }
 
     /* Convert epoch time to ISO month-day time string */
-    if (!ms_nstime2timestr (nstime, generated_timestr, ISOMONTHDAY, NANO_MICRO_NONE))
+    if (!ms_nstime2timestr_n (nstime, generated_timestr, sizeof(generated_timestr), ISOMONTHDAY, NANO_MICRO_NONE))
     {
       ms_log (2, "Cannot convert epoch to ISOMONTHDAY time string\n");
       return 1;
@@ -59,7 +59,7 @@ main (int argc, char **argv)
     printf ("ISOMONTH      : %s\n", generated_timestr);
 
     /* Convert epoch time to ISO month-day time string with Z designator */
-    if (!ms_nstime2timestr (nstime, generated_timestr, ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (!ms_nstime2timestr_n (nstime, generated_timestr, sizeof(generated_timestr), ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       ms_log (2, "Cannot convert epoch to ISOMONTHDAY_Z time string\n");
       return 1;
@@ -68,7 +68,7 @@ main (int argc, char **argv)
     printf ("ISOMONTH_Z    : %s\n", generated_timestr);
 
     /* Convert epoch time to ISO month-day with day-of-year time string */
-    if (!ms_nstime2timestr (nstime, generated_timestr, ISOMONTHDAY_DOY, NANO_MICRO_NONE))
+    if (!ms_nstime2timestr_n (nstime, generated_timestr, sizeof(generated_timestr), ISOMONTHDAY_DOY, NANO_MICRO_NONE))
     {
       ms_log (2, "Cannot convert epoch to ISOMONTHDAY_DOY time string\n");
       return 1;
@@ -77,7 +77,7 @@ main (int argc, char **argv)
     printf ("ISOMONTH_DOY  : %s\n", generated_timestr);
 
     /* Convert epoch time to ISO month-day with day-of-year time string with Z designator */
-    if (!ms_nstime2timestr (nstime, generated_timestr, ISOMONTHDAY_DOY_Z, NANO_MICRO_NONE))
+    if (!ms_nstime2timestr_n (nstime, generated_timestr, sizeof(generated_timestr), ISOMONTHDAY_DOY_Z, NANO_MICRO_NONE))
     {
       ms_log (2, "Cannot convert epoch to ISOMONTHDAY_DOY_Z time string\n");
       return 1;
@@ -86,7 +86,7 @@ main (int argc, char **argv)
     printf ("ISOMONTH_DOY_Z: %s\n", generated_timestr);
 
     /* Convert epoch time to SEED-style ordinal (day-of-year) time string */
-    if (!ms_nstime2timestr (nstime, generated_timestr, SEEDORDINAL, NANO_MICRO_NONE))
+    if (!ms_nstime2timestr_n (nstime, generated_timestr, sizeof(generated_timestr), SEEDORDINAL, NANO_MICRO_NONE))
     {
       ms_log (2, "Cannot convert epoch to SEEDORDINAL time string\n");
       return 1;
@@ -95,7 +95,7 @@ main (int argc, char **argv)
     printf ("SEEDORDINAL   : %s\n", generated_timestr);
 
     /* Convert epoch time to Unix epoch time string */
-    if (!ms_nstime2timestr (nstime, generated_timestr, UNIXEPOCH, NANO_MICRO_NONE))
+    if (!ms_nstime2timestr_n (nstime, generated_timestr, sizeof(generated_timestr), UNIXEPOCH, NANO_MICRO_NONE))
     {
       ms_log (2, "Cannot convert epoch to UNIXEPOCH time string\n");
       return 1;
@@ -104,7 +104,7 @@ main (int argc, char **argv)
     printf ("UNIXEPOCH     : %s\n", generated_timestr);
 
     /* Convert epoch time to nanosecond epoch time string */
-    if (!ms_nstime2timestr (nstime, generated_timestr, NANOSECONDEPOCH, NANO_MICRO_NONE))
+    if (!ms_nstime2timestr_n (nstime, generated_timestr, sizeof(generated_timestr), NANOSECONDEPOCH, NANO_MICRO_NONE))
     {
       ms_log (2, "Cannot convert epoch to NANOSECONDEPOCH time string\n");
       return 1;

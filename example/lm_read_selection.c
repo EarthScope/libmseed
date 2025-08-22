@@ -76,8 +76,8 @@ main (int argc, char **argv)
   tid = mstl->traces.next[0];
   while (tid)
   {
-    if (!ms_nstime2timestr (tid->earliest, starttimestr, ISOMONTHDAY_Z, NANO_MICRO_NONE) ||
-        !ms_nstime2timestr (tid->latest, endtimestr, ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (!ms_nstime2timestr_n (tid->earliest, starttimestr, sizeof (starttimestr), ISOMONTHDAY_Z, NANO_MICRO_NONE) ||
+        !ms_nstime2timestr_n (tid->latest, endtimestr, sizeof (endtimestr), ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       ms_log (2, "Cannot create time strings\n");
       starttimestr[0] = endtimestr[0] = '\0';
@@ -89,8 +89,8 @@ main (int argc, char **argv)
     seg = tid->first;
     while (seg)
     {
-      if (!ms_nstime2timestr (seg->starttime, starttimestr, ISOMONTHDAY_Z, NANO_MICRO_NONE) ||
-          !ms_nstime2timestr (seg->endtime, endtimestr, ISOMONTHDAY_Z, NANO_MICRO_NONE))
+      if (!ms_nstime2timestr_n (seg->starttime, starttimestr, sizeof (starttimestr), ISOMONTHDAY_Z, NANO_MICRO_NONE) ||
+          !ms_nstime2timestr_n (seg->endtime, endtimestr, sizeof (endtimestr), ISOMONTHDAY_Z, NANO_MICRO_NONE))
       {
         ms_log (2, "Cannot create time strings\n");
         starttimestr[0] = endtimestr[0] = '\0';

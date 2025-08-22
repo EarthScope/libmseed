@@ -232,7 +232,7 @@ msr3_print (const MS3Record *msr, int8_t details)
     return;
 
   /* Generate a start time string */
-  ms_nstime2timestr (msr->starttime, time, ISOMONTHDAY_DOY_Z, NANO_MICRO);
+  ms_nstime2timestr_n (msr->starttime, time, sizeof(time), ISOMONTHDAY_DOY_Z, NANO_MICRO);
 
   /* Report information in the fixed header */
   if (details > 0)

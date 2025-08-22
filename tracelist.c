@@ -2275,10 +2275,10 @@ mstl3_printtracelist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
     while (seg)
     {
       /* Create formatted time strings */
-      if (ms_nstime2timestr (seg->starttime, stime, timeformat, NANO_MICRO) == NULL)
+      if (ms_nstime2timestr_n (seg->starttime, stime, sizeof(stime), timeformat, NANO_MICRO) == NULL)
         return;
 
-      if (ms_nstime2timestr (seg->endtime, etime, timeformat, NANO_MICRO) == NULL)
+      if (ms_nstime2timestr_n (seg->endtime, etime, sizeof(etime), timeformat, NANO_MICRO) == NULL)
         return;
 
       /* Print segment info at varying levels */
@@ -2395,8 +2395,8 @@ mstl3_printsynclist (const MS3TraceList *mstl, const char *dccid, ms_subseconds_
     seg = id->first;
     while (seg)
     {
-      ms_nstime2timestr (seg->starttime, starttime, SEEDORDINAL, subseconds);
-      ms_nstime2timestr (seg->endtime, endtime, SEEDORDINAL, subseconds);
+      ms_nstime2timestr_n (seg->starttime, starttime, sizeof(starttime), SEEDORDINAL, subseconds);
+      ms_nstime2timestr_n (seg->endtime, endtime, sizeof(endtime), SEEDORDINAL, subseconds);
 
       /* Print SYNC line */
       ms_log (0, "%s|%s|%s|%s|%s|%s||%.10g|%" PRId64 "|||||||%s\n",
@@ -2505,10 +2505,10 @@ mstl3_printgaplist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
           snprintf (gapstr, sizeof (gapstr), "%-4.4g", gap);
 
         /* Create formatted time strings */
-        if (ms_nstime2timestr (seg->endtime, time1, timeformat, NANO_MICRO) == NULL)
+        if (ms_nstime2timestr_n (seg->endtime, time1, sizeof(time1), timeformat, NANO_MICRO) == NULL)
           ms_log (2, "Cannot convert trace start time for %s\n", id->sid);
 
-        if (ms_nstime2timestr (seg->next->starttime, time2, timeformat, NANO_MICRO) == NULL)
+        if (ms_nstime2timestr_n (seg->next->starttime, time2, sizeof(time2), timeformat, NANO_MICRO) == NULL)
           ms_log (2, "Cannot convert trace end time for %s\n", id->sid);
 
         ms_log (0, "%-27s %-28s %-28s %-4s %-.8g\n",

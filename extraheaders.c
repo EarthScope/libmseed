@@ -558,7 +558,7 @@ mseh_add_event_detection_r (MS3Record *msr, const char *ptr,
   }
   if (eventdetection->onsettime != NSTERROR && eventdetection->onsettime != NSTUNSET)
   {
-    if (ms_nstime2timestr (eventdetection->onsettime, timestring, ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (ms_nstime2timestr_n (eventdetection->onsettime, timestring, sizeof(timestring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       yyjson_mut_set_str (&onset_key, "OnsetTime");
       yyjson_mut_set_str (&onset, timestring);
@@ -671,7 +671,7 @@ mseh_add_calibration_r (MS3Record *msr, const char *ptr,
   }
   if (calibration->begintime != NSTERROR && calibration->begintime != NSTUNSET)
   {
-    if (ms_nstime2timestr (calibration->begintime, beginstring, ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (ms_nstime2timestr_n (calibration->begintime, beginstring, sizeof(beginstring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       yyjson_mut_set_str (&begintime_key, "BeginTime");
       yyjson_mut_set_str (&begintime, beginstring);
@@ -685,7 +685,7 @@ mseh_add_calibration_r (MS3Record *msr, const char *ptr,
   }
   if (calibration->endtime != NSTERROR && calibration->endtime != NSTUNSET)
   {
-    if (ms_nstime2timestr (calibration->endtime, endstring, ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (ms_nstime2timestr_n (calibration->endtime, endstring, sizeof(endstring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       yyjson_mut_set_str (&endtime_key, "EndTime");
       yyjson_mut_set_str (&endtime, endstring);
@@ -843,7 +843,7 @@ mseh_add_timing_exception_r (MS3Record *msr, const char *ptr,
   /* Add elements to new object */
   if (exception->time != NSTERROR && exception->time != NSTUNSET)
   {
-    if (ms_nstime2timestr (exception->time, timestring, ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (ms_nstime2timestr_n (exception->time, timestring, sizeof(timestring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       yyjson_mut_set_str (&etime_key, "Time");
       yyjson_mut_set_str (&etime, timestring);
@@ -938,7 +938,7 @@ mseh_add_recenter_r (MS3Record *msr, const char *ptr, MSEHRecenter *recenter,
   }
   if (recenter->begintime != NSTERROR && recenter->begintime != NSTUNSET)
   {
-    if (ms_nstime2timestr (recenter->begintime, beginstring, ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (ms_nstime2timestr_n (recenter->begintime, beginstring, sizeof(beginstring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       yyjson_mut_set_str (&begin_key, "BeginTime");
       yyjson_mut_set_str (&begin, beginstring);
@@ -952,7 +952,7 @@ mseh_add_recenter_r (MS3Record *msr, const char *ptr, MSEHRecenter *recenter,
   }
   if (recenter->endtime != NSTERROR && recenter->endtime != NSTUNSET)
   {
-    if (ms_nstime2timestr (recenter->endtime, endstring, ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (ms_nstime2timestr_n (recenter->endtime, endstring, sizeof(endstring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       yyjson_mut_set_str (&end_key, "EndTime");
       yyjson_mut_set_str (&end, endstring);

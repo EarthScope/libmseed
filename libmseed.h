@@ -319,8 +319,10 @@ typedef enum
 
 extern int ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *yday,
                            uint8_t *hour, uint8_t *min, uint8_t *sec, uint32_t *nsec);
-extern char* ms_nstime2timestr (nstime_t nstime, char *timestr,
+extern char* ms_nstime2timestr_n (nstime_t nstime, char *timestr, size_t timestrsize,
                                 ms_timeformat_t timeformat, ms_subseconds_t subsecond);
+DEPRECATED extern char *ms_nstime2timestr (nstime_t nstime, char *timestr,
+                                           ms_timeformat_t timeformat, ms_subseconds_t subsecond);
 DEPRECATED extern char* ms_nstime2timestrz (nstime_t nstime, char *timestr,
                                             ms_timeformat_t timeformat, ms_subseconds_t subsecond);
 extern nstime_t ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec);
@@ -792,7 +794,7 @@ extern int ms3_url_addheader (const char *header);
 extern void ms3_url_freeheaders (void);
 extern int64_t msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite,
                                 uint32_t flags, int8_t verbose);
-extern int64_t mstl3_writemseed (MS3TraceList *mst, const char *mspath, int8_t overwrite,
+extern int64_t mstl3_writemseed (MS3TraceList *mstl, const char *mspath, int8_t overwrite,
                                  int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose);
 extern int libmseed_url_support (void);
 extern MS3FileParam *ms3_mstl_init_fd (int fd);

@@ -724,12 +724,12 @@ ms3_printselections (const MS3Selections *selections)
     while (selecttime)
     {
       if (selecttime->starttime != NSTERROR && selecttime->starttime != NSTUNSET)
-        ms_nstime2timestr (selecttime->starttime, starttime, ISOMONTHDAY_Z, NANO_MICRO_NONE);
+        ms_nstime2timestr_n (selecttime->starttime, starttime, sizeof(starttime), ISOMONTHDAY_Z, NANO_MICRO_NONE);
       else
         strncpy (starttime, "No start time", sizeof (starttime) - 1);
 
       if (selecttime->endtime != NSTERROR && selecttime->endtime != NSTUNSET)
-        ms_nstime2timestr (selecttime->endtime, endtime, ISOMONTHDAY_Z, NANO_MICRO_NONE);
+        ms_nstime2timestr_n (selecttime->endtime, endtime, sizeof(endtime), ISOMONTHDAY_Z, NANO_MICRO_NONE);
       else
         strncpy (endtime, "No end time", sizeof (endtime) - 1);
 
