@@ -1,6 +1,7 @@
 2025.233:
 	- Add ms_nstime2timestr_n() with string size limit, deprecate ms_nstime2timestr().
 	- With ms_nstime2timestr_n() print "ERROR" for NSTERROR and "UNSET" for NSTUNSET.
+	- Avoid fatal errors when v2 record blockettes contain invalid time stamps.
 
 2025.227:
 	- Properly round negative values when converting floats to integers

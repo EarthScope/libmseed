@@ -491,8 +491,6 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
         strncpy (eventdetection.units, "COUNTS", sizeof (eventdetection.units));
 
       eventdetection.onsettime = ms_btime2nstime ((uint8_t*)pMS2B200_YEAR (record + blkt_offset), msr->swapflag);
-      if (eventdetection.onsettime == NSTERROR)
-        return MS_GENERROR;
 
       memset (eventdetection.medsnr, 0, 6);
       eventdetection.medlookback = -1;
@@ -524,8 +522,6 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
         strncpy (eventdetection.wave, "COMPRESSION", sizeof (eventdetection.wave));
 
       eventdetection.onsettime = ms_btime2nstime ((uint8_t*)pMS2B201_YEAR (record + blkt_offset), msr->swapflag);
-      if (eventdetection.onsettime == NSTERROR)
-        return MS_GENERROR;
 
       memcpy (eventdetection.medsnr, pMS2B201_MEDSNR (record + blkt_offset), 6);
       eventdetection.medlookback = *pMS2B201_LOOPBACK (record + blkt_offset);
@@ -547,10 +543,8 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       strncpy (calibration.type, "STEP", sizeof (calibration.type));
 
       calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B300_YEAR (record + blkt_offset), msr->swapflag);
-      if (calibration.begintime == NSTERROR)
-        return MS_GENERROR;
 
-      calibration.endtime = NSTERROR;
+      calibration.endtime = NSTUNSET;
       calibration.steps = *pMS2B300_NUMCALIBRATIONS (record + blkt_offset);
 
       /* If bit 0 is set, first puluse is positive */
@@ -602,10 +596,8 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       strncpy (calibration.type, "SINE", sizeof (calibration.type));
 
       calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B310_YEAR (record + blkt_offset), msr->swapflag);
-      if (calibration.begintime == NSTERROR)
-        return MS_GENERROR;
 
-      calibration.endtime = NSTERROR;
+      calibration.endtime = NSTUNSET;
       calibration.steps = -1;
       calibration.firstpulsepositive = -1;
       calibration.alternatesign = -1;
@@ -659,10 +651,8 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       strncpy (calibration.type, "PSEUDORANDOM", sizeof (calibration.type));
 
       calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B320_YEAR (record + blkt_offset), msr->swapflag);
-      if (calibration.begintime == NSTERROR)
-        return MS_GENERROR;
 
-      calibration.endtime = NSTERROR;
+      calibration.endtime = NSTUNSET;
       calibration.steps = -1;
       calibration.firstpulsepositive = -1;
       calibration.alternatesign = -1;
@@ -710,10 +700,8 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       strncpy (calibration.type, "GENERIC", sizeof (calibration.type));
 
       calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B390_YEAR (record + blkt_offset), msr->swapflag);
-      if (calibration.begintime == NSTERROR)
-        return MS_GENERROR;
 
-      calibration.endtime = NSTERROR;
+      calibration.endtime = NSTUNSET;
       calibration.steps = -1;
       calibration.firstpulsepositive = -1;
       calibration.alternatesign = -1;
@@ -756,11 +744,9 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
 
       strncpy (calibration.type, "ABORT", sizeof (calibration.type));
 
-      calibration.begintime = NSTERROR;
+      calibration.begintime = NSTUNSET;
 
       calibration.endtime = ms_btime2nstime ((uint8_t*)pMS2B395_YEAR (record + blkt_offset), msr->swapflag);
-      if (calibration.endtime == NSTERROR)
-        return MS_GENERROR;
 
       calibration.steps = -1;
       calibration.firstpulsepositive = -1;
@@ -807,8 +793,6 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       exception.vcocorrection = HO4f (*pMS2B500_VCOCORRECTION (record + blkt_offset), msr->swapflag);
 
       exception.time = ms_btime2nstime ((uint8_t*)pMS2B500_YEAR (record + blkt_offset), msr->swapflag);
-      if (exception.time == NSTERROR)
-        return MS_GENERROR;
 
       /* Apply microsecond precision if non-zero */
       if (*pMS2B500_MICROSECOND (record + blkt_offset) != 0)
