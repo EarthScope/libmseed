@@ -299,6 +299,9 @@ mstl3_addID (MS3TraceList *mstl, MS3TraceID *id, MS3TraceID **prev)
   return id;
 } /* End of mstl3_addID() */
 
+/* Test if a MS3TraceSeg represents time coverage */
+#define SEGMENT_HAS_TIME_COVERAGE(seg) ((seg)->samplecnt > 0 && \
+                                        (seg)->samprate != 0.0)
 
 /**********************************************************************/ /**
  * @brief Add data coverage from an ::MS3Record to a ::MS3TraceList
@@ -310,7 +313,7 @@ mstl3_addID (MS3TraceList *mstl, MS3TraceID *id, MS3TraceID **prev)
  * As this routine adds data to a trace list it constructs continuous
  * time series, merging segments when possible.  The \a tolerance
  * pointer to a ::MS3Tolerance identifies function pointers that are
- * expected to return time tolerace, in seconds, and sample rate
+ * expected to return time tolerance, in seconds, and sample rate
  * tolerance, in Hertz, for the given ::MS3Record.  If \a tolerance is
  * NULL, or the function pointers it identifies are NULL, default
  * tolerances will be used as follows: - Default time tolerance is 1/2
@@ -320,7 +323,7 @@ mstl3_addID (MS3TraceList *mstl, MS3TraceID *id, MS3TraceID **prev)
  * In recommended usage, the \a splitversion flag is \b 0 and
  * different publication versions of otherwise matching data are
  * merged.  If more than one version contributes to a given source
- * identifer's segments, its ::MS3TraceID.pubversion will be the set to
+ * identifier's segments, its ::MS3TraceID.pubversion will be the set to
  * the largest contributing version.  If the \a splitversion flag is
  * \b 1 the publication versions will be kept separate with each
  * version isolated in separate ::MS3TraceID entries.
@@ -482,7 +485,8 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
 
     /* Record coverage fits at end of last segment */
     if (lastgap <= nstimetol && lastgap >= nnstimetol &&
-        IS_SAMPRATE_SIMILAR (sampratehz, id->last->samprate, sampratetol))
+        IS_SAMPRATE_SIMILAR (sampratehz, id->last->samprate, sampratetol) &&
+        SEGMENT_HAS_TIME_COVERAGE(id->last))
     {
       if (!mstl3_addmsrtoseg (id->last, msr, endtime, 1))
         return NULL;
@@ -536,7 +540,8 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
     }
     /* Record coverage fits at beginning of first segment */
     else if (firstgap <= nstimetol && firstgap >= nnstimetol &&
-             IS_SAMPRATE_SIMILAR (sampratehz, id->first->samprate, sampratetol))
+             IS_SAMPRATE_SIMILAR (sampratehz, id->first->samprate, sampratetol) &&
+             SEGMENT_HAS_TIME_COVERAGE(id->first))
     {
       if (!mstl3_addmsrtoseg (id->first, msr, endtime, 2))
         return NULL;
@@ -560,6 +565,13 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
       searchseg = id->first;
       while (searchseg)
       {
+        /* Skip segments with no time coverage, these cannot be extended */
+        if (!SEGMENT_HAS_TIME_COVERAGE(searchseg))
+        {
+          searchseg = searchseg->next;
+          continue;
+        }
+
         /* Done searching if autohealing and record exactly matches a segment.
          *
          * Rationale: autohealing would have combined this segment

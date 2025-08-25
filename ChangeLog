@@ -1,11 +1,15 @@
+2025.237:
+	- mstl3_addmsr()/mstl3_addmsr_recordptr(): Ensure segments represent time
+	coverage before adding new samples.
+
 2025.234:
 	- Add ms_nstime2timestr_n() with string size limit, deprecate ms_nstime2timestr().
 	- With ms_nstime2timestr_n() print "ERROR" for NSTERROR and "UNSET" for NSTUNSET.
 	- Avoid fatal errors when v2 record blockettes contain invalid time stamps.
-  When SEED "btime" values are encountered they are now set to NSTERROR and
+	When SEED "btime" values are encountered they are now set to NSTERROR and
 	serialized in extra headers as "ERROR".
 	- Limit float point values in extra headers to single precision to avoid
-  unrealistically high precision values in the output
+	unrealistically high precision values in the output
 	- Update yyjson to v0.12.0
 
 2025.227:
