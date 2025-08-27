@@ -678,6 +678,7 @@ extern int mstl3_resize_buffers (MS3TraceList *mstl);
 extern int64_t mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
                            void *handlerdata, int reclen, int8_t encoding,
                            int64_t *packedsamples, uint32_t flags, int8_t verbose, char *extra);
+extern int mstraceseg3_remove (MS3TraceID *id, MS3TraceSeg *seg, int8_t freeprvtptr);
 extern int64_t mstraceseg3_pack (MS3TraceID *id, MS3TraceSeg *seg,
                                  void (*record_handler) (char *, int, void *),
                                  void *handlerdata, int reclen, int8_t encoding,

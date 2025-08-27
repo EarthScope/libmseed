@@ -31,6 +31,7 @@ MS3TraceSeg *mstl3_addmsrtoseg (MS3TraceSeg *seg, const MS3Record *msr, nstime_t
 MS3TraceSeg *mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2);
 MS3RecordPtr *mstl3_add_recordptr (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, int8_t whence);
 
+static void lm_seg3_free_memory (MS3TraceSeg *seg, int8_t freeprvtptr);
 static uint32_t lm_lcg_r (uint64_t *state);
 static uint8_t lm_random_height (uint8_t maximum, uint64_t *state);
 
@@ -92,8 +93,6 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
   MS3TraceID *nextid = 0;
   MS3TraceSeg *seg = 0;
   MS3TraceSeg *nextseg = 0;
-  MS3RecordPtr *recordptr;
-  MS3RecordPtr *nextrecordptr;
 
   if (!ppmstl)
     return;
@@ -110,37 +109,9 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
     {
       nextseg = seg->next;
 
-      /* Free private pointer data if present and requested */
-      if (freeprvtptr && seg->prvtptr)
-        libmseed_memory.free (seg->prvtptr);
+      /* Free all memory associated with the segment */
+      lm_seg3_free_memory (seg, freeprvtptr);
 
-      /* Free data array if allocated */
-      if (seg->datasamples)
-        libmseed_memory.free (seg->datasamples);
-
-      /* Free associated record list and related private pointers */
-      if (seg->recordlist)
-      {
-        recordptr = seg->recordlist->first;
-        while (recordptr)
-        {
-          nextrecordptr = recordptr->next;
-
-          if (recordptr->msr)
-            msr3_free (&recordptr->msr);
-
-          if (freeprvtptr && recordptr->prvtptr)
-            libmseed_memory.free (recordptr->prvtptr);
-
-          libmseed_memory.free (recordptr);
-
-          recordptr = nextrecordptr;
-        }
-
-        libmseed_memory.free (seg->recordlist);
-      }
-
-      libmseed_memory.free (seg);
       seg = nextseg;
     }
 
@@ -2028,6 +1999,92 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
   return totalpackedrecords;
 } /* End of mstl3_pack() */
 
+/***************************************************************************
+ * Free all memory associated with an MS3TraceSeg structure.
+ *
+ * This function frees the segment's data samples, record list, and the
+ * segment structure itself. Private pointers are only freed if requested.
+ *
+ * \ref MessageOnError - this function logs a message on error
+ ***************************************************************************/
+static void
+lm_seg3_free_memory (MS3TraceSeg *seg, int8_t freeprvtptr)
+{
+  MS3RecordPtr *recordptr;
+  MS3RecordPtr *nextrecordptr;
+
+  if (!seg)
+    return;
+
+  /* Free private pointer data if requested */
+  if (freeprvtptr)
+    libmseed_memory.free (seg->prvtptr);
+
+  /* Free data samples */
+  libmseed_memory.free (seg->datasamples);
+
+  /* Free associated record list and related private pointers */
+  if (seg->recordlist)
+  {
+    recordptr = seg->recordlist->first;
+    while (recordptr)
+    {
+      nextrecordptr = recordptr->next;
+
+      msr3_free (&recordptr->msr);
+
+      /* Free private pointer data if requested */
+      if (freeprvtptr)
+        libmseed_memory.free (recordptr->prvtptr);
+
+      libmseed_memory.free (recordptr);
+
+      recordptr = nextrecordptr;
+    }
+
+    libmseed_memory.free (seg->recordlist);
+  }
+
+  libmseed_memory.free (seg);
+} /* End of lm_seg3_free_memory() */
+
+/***************************************************************************
+ * Remove the target MS3TraceSeg structure from MS3TraceID.
+ *
+ * Return 0 on success and -1 on error.
+ *
+ * \ref MessageOnError - this function logs a message on error
+ ***************************************************************************/
+int
+mstraceseg3_remove (MS3TraceID *id, MS3TraceSeg *seg, int8_t freeprvtptr)
+{
+  if (!id || !seg)
+  {
+    ms_log (2, "%s(): Required input not defined: 'id' or 'seg'\n", __func__);
+    return -1;
+  }
+
+  /* Update previous segment's next pointer or first pointer */
+  if (seg->prev)
+    seg->prev->next = seg->next;
+  else
+    id->first = seg->next;
+
+  /* Update next segment's prev pointer or last pointer */
+  if (seg->next)
+    seg->next->prev = seg->prev;
+  else
+    id->last = seg->prev;
+
+  /* Decrement segment count */
+  id->numsegments--;
+
+  /* Free all memory associated with the segment */
+  lm_seg3_free_memory (seg, freeprvtptr);
+
+  return 0;
+}
+
 /**********************************************************************/ /**
  * @brief Pack a ::MS3TraceSeg data into miniSEED records
  *
@@ -2053,6 +2110,11 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
  * If \a extra is not NULL it is expected to contain extraheaders, a
  * string containing (compact) JSON, that will be added to each output
  * record.
+ *
+ * If all of the data from the segment is packed into miniSEED records
+ * and the ::MSF_MAINTAINMSTL is _not_ set the segment will be removed
+ * from the trace list.  All memmory referenced by the segment, including
+ * the `prvtptr`s, will also be freed.
  *
  * @param[in] id ::MS3TraceID for the relevant ::MS3TraceSeg
  * @param[in] seg ::MS3TraceSeg containing data to pack
@@ -2091,7 +2153,6 @@ mstraceseg3_pack (MS3TraceID *id, MS3TraceSeg *seg,
   int segpackedrecords = 0;
   int64_t segpackedsamples = 0;
   int samplesize;
-  size_t bufsize;
   size_t extralength;
 
   if (!id || !seg)
@@ -2108,6 +2169,11 @@ mstraceseg3_pack (MS3TraceID *id, MS3TraceSeg *seg,
 
   if (packedsamples)
     *packedsamples = 0;
+
+  if (seg->numsamples == 0)
+  {
+    return 0;
+  }
 
   msr.reclen = reclen;
   msr.encoding = encoding;
@@ -2160,7 +2226,7 @@ mstraceseg3_pack (MS3TraceID *id, MS3TraceSeg *seg,
     ms_log (0, "Packed %d records for %s segment\n", segpackedrecords, msr.sid);
   }
 
-  /* If MSF_MAINTAINMSTL not set, adjust segment start time and reduce data array and sample counts */
+  /* If MSF_MAINTAINMSTL not set, modify or remove segment accordingly */
   if (!(flags & MSF_MAINTAINMSTL) && segpackedsamples > 0)
   {
     /* Calculate new start time, shortcut when all samples have been packed */
@@ -2175,10 +2241,14 @@ mstraceseg3_pack (MS3TraceID *id, MS3TraceSeg *seg,
       return -1;
     }
 
-    bufsize = (seg->numsamples - segpackedsamples) * samplesize;
+    seg->samplecnt -= segpackedsamples;
+    seg->numsamples -= segpackedsamples;
 
-    if (bufsize > 0)
+    /* Resize data buffer if samples remain */
+    if (seg->numsamples > 0)
     {
+      size_t bufsize = seg->numsamples * samplesize;
+
       memmove (seg->datasamples,
                (uint8_t *)seg->datasamples + (segpackedsamples * samplesize),
                bufsize);
@@ -2194,19 +2264,14 @@ mstraceseg3_pack (MS3TraceID *id, MS3TraceSeg *seg,
           return -1;
         }
 
-        seg->datasize = bufsize;
+        seg->datasize = (uint64_t)bufsize;
       }
     }
+    /* Remove segment if no samples remain */
     else
     {
-      if (seg->datasamples)
-        libmseed_memory.free (seg->datasamples);
-      seg->datasamples = NULL;
-      seg->datasize    = 0;
+      mstraceseg3_remove (id, seg, 1);
     }
-
-    seg->samplecnt -= segpackedsamples;
-    seg->numsamples -= segpackedsamples;
   }
 
   totalpackedrecords += segpackedrecords;

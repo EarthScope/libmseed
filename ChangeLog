@@ -1,6 +1,11 @@
-2025.237:
+2025.238:
 	- mstl3_addmsr()/mstl3_addmsr_recordptr(): Ensure segments represent time
 	coverage before adding new samples.
+	- mstraceseg3_pack(): Do not pack empty records and remove segments when all
+	data are packed (they are empty).
+	- mstraceseg3_pack(): Remove trace segment if all data has been packed
+	and the MSF_MAINTAINMSTL flag is not set.
+	- Add mstraceseg3_remove() to remove a segment from a trace listing.
 
 2025.234:
 	- Add ms_nstime2timestr_n() with string size limit, deprecate ms_nstime2timestr().
