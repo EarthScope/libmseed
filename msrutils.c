@@ -117,7 +117,7 @@ msr3_free (MS3Record **ppmsr)
 MS3Record *
 msr3_duplicate (const MS3Record *msr, int8_t datadup)
 {
-  MS3Record *dupmsr = 0;
+  MS3Record *dupmsr = NULL;
 
   if (!msr)
   {

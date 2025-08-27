@@ -1,9 +1,9 @@
 /***************************************************************************
- * CRC-32C calculation routines, clean and simple.  Orignal file was named
+ * CRC-32C calculation routines, clean and simple.  Original file was named
  * 'crc_sw.c' and found at: https://github.com/awslabs/aws-checksums
  *
  * All copyrights and license notifications have been retained.
- * Unecessary routines have been removed for use in this code base.
+ * Unnecessary routines have been removed for use in this code base.
  ***************************************************************************/
 
 /*

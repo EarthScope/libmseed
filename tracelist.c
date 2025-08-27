@@ -89,10 +89,10 @@ mstl3_init (MS3TraceList *mstl)
 void
 mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
 {
-  MS3TraceID *id = 0;
-  MS3TraceID *nextid = 0;
-  MS3TraceSeg *seg = 0;
-  MS3TraceSeg *nextseg = 0;
+  MS3TraceID *id = NULL;
+  MS3TraceID *nextid = NULL;
+  MS3TraceSeg *seg = NULL;
+  MS3TraceSeg *nextseg = NULL;
 
   if (!ppmstl)
     return;
@@ -340,14 +340,14 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
                         const MS3Tolerance *tolerance)
 {
   (void)flags; /* Unused */
-  MS3TraceID *id = 0;
+  MS3TraceID *id = NULL;
   MS3TraceID *previd[MSTRACEID_SKIPLIST_HEIGHT] = {NULL};
 
-  MS3TraceSeg *seg = 0;
-  MS3TraceSeg *searchseg = 0;
-  MS3TraceSeg *segbefore = 0;
-  MS3TraceSeg *segafter = 0;
-  MS3TraceSeg *followseg = 0;
+  MS3TraceSeg *seg = NULL;
+  MS3TraceSeg *searchseg = NULL;
+  MS3TraceSeg *segbefore = NULL;
+  MS3TraceSeg *segafter = NULL;
+  MS3TraceSeg *followseg = NULL;
 
   nstime_t endtime;
   nstime_t pregap;
@@ -986,7 +986,7 @@ mstl3_readbuffer_selection (MS3TraceList **ppmstl, const char *buffer, uint64_t 
 MS3TraceSeg *
 mstl3_msr2seg (const MS3Record *msr, nstime_t endtime)
 {
-  MS3TraceSeg *seg = 0;
+  MS3TraceSeg *seg = NULL;
   size_t datasize = 0;
   int samplesize;
 
@@ -2303,8 +2303,8 @@ void
 mstl3_printtracelist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
                       int8_t details, int8_t gaps, int8_t versions)
 {
-  const MS3TraceID *id = 0;
-  const MS3TraceSeg *seg = 0;
+  const MS3TraceID *id = NULL;
+  const MS3TraceSeg *seg = NULL;
   char stime[40];
   char etime[40];
   char gapstr[40];
@@ -2434,8 +2434,8 @@ mstl3_printtracelist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
 void
 mstl3_printsynclist (const MS3TraceList *mstl, const char *dccid, ms_subseconds_t subseconds)
 {
-  const MS3TraceID *id = 0;
-  const MS3TraceSeg *seg = 0;
+  const MS3TraceID *id = NULL;
+  const MS3TraceSeg *seg = NULL;
   char starttime[40];
   char endtime[40];
   char yearday[32];
@@ -2509,8 +2509,8 @@ void
 mstl3_printgaplist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
                     double *mingap, double *maxgap)
 {
-  const MS3TraceID *id = 0;
-  const MS3TraceSeg *seg = 0;
+  const MS3TraceID *id = NULL;
+  const MS3TraceSeg *seg = NULL;
 
   char time1[40], time2[40];
   char gapstr[40];

@@ -224,7 +224,7 @@ ms3_addselect (MS3Selections **ppselections, const char *sidpattern,
   else
   {
     MS3Selections *findsl = *ppselections;
-    MS3Selections *matchsl = 0;
+    MS3Selections *matchsl = NULL;
 
     /* Search for matching MS3Selections entry */
     while (findsl)
