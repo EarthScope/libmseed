@@ -26,12 +26,12 @@
 
 #include "libmseed.h"
 
-MS3TraceSeg *mstl3_msr2seg (const MS3Record *msr, nstime_t endtime);
-MS3TraceSeg *mstl3_addmsrtoseg (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime,
-                                int8_t whence);
-MS3TraceSeg *mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2);
-MS3RecordPtr *mstl3_add_recordptr (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime,
-                                   int8_t whence);
+static MS3TraceSeg *lm_msr2seg (const MS3Record *msr, nstime_t endtime);
+static MS3TraceSeg *lm_addmsrtoseg (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime,
+                                    int8_t whence);
+static MS3TraceSeg *lm_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2);
+static MS3RecordPtr *lm_add_recordptr (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime,
+                                       int8_t whence);
 
 static void lm_free_segment_memory (MS3TraceSeg *seg, int8_t freeprvtptr);
 static int lm_remove_segment (MS3TraceList *mstl, MS3TraceID *id, MS3TraceSeg *seg,
@@ -397,14 +397,14 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
     id->latest = endtime;
     id->numsegments = 1;
 
-    if (!(seg = mstl3_msr2seg (msr, endtime)))
+    if (!(seg = lm_msr2seg (msr, endtime)))
     {
       return NULL;
     }
     id->first = id->last = seg;
 
     /* Add MS3RecordPtr if requested */
-    if (pprecptr && !(*pprecptr = mstl3_add_recordptr (seg, msr, endtime, 1)))
+    if (pprecptr && !(*pprecptr = lm_add_recordptr (seg, msr, endtime, 1)))
     {
       return NULL;
     }
@@ -459,7 +459,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
         IS_SAMPRATE_SIMILAR (sampratehz, id->last->samprate, sampratetol) &&
         SEGMENT_HAS_TIME_COVERAGE (id->last))
     {
-      if (!mstl3_addmsrtoseg (id->last, msr, endtime, 1))
+      if (!lm_addmsrtoseg (id->last, msr, endtime, 1))
         return NULL;
 
       seg = id->last;
@@ -468,13 +468,13 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
         id->latest = endtime;
 
       /* Add MS3RecordPtr if requested */
-      if (pprecptr && !(*pprecptr = mstl3_add_recordptr (seg, msr, endtime, 1)))
+      if (pprecptr && !(*pprecptr = lm_add_recordptr (seg, msr, endtime, 1)))
         return NULL;
     }
     /* Record coverage is after all other coverage */
     else if ((msr->starttime - nsperiod - nstimetol) > id->latest)
     {
-      if (!(seg = mstl3_msr2seg (msr, endtime)))
+      if (!(seg = lm_msr2seg (msr, endtime)))
         return NULL;
 
       /* Add to end of list */
@@ -487,13 +487,13 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
         id->latest = endtime;
 
       /* Add MS3RecordPtr if requested */
-      if (pprecptr && !(*pprecptr = mstl3_add_recordptr (seg, msr, endtime, 0)))
+      if (pprecptr && !(*pprecptr = lm_add_recordptr (seg, msr, endtime, 0)))
         return NULL;
     }
     /* Record coverage is before all other coverage */
     else if ((endtime + nsperiod + nstimetol) < id->earliest)
     {
-      if (!(seg = mstl3_msr2seg (msr, endtime)))
+      if (!(seg = lm_msr2seg (msr, endtime)))
         return NULL;
 
       /* Add to beginning of list */
@@ -506,7 +506,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
         id->earliest = msr->starttime;
 
       /* Add MS3RecordPtr if requested */
-      if (pprecptr && !(*pprecptr = mstl3_add_recordptr (seg, msr, endtime, 0)))
+      if (pprecptr && !(*pprecptr = lm_add_recordptr (seg, msr, endtime, 0)))
         return NULL;
     }
     /* Record coverage fits at beginning of first segment */
@@ -514,7 +514,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
              IS_SAMPRATE_SIMILAR (sampratehz, id->first->samprate, sampratetol) &&
              SEGMENT_HAS_TIME_COVERAGE (id->first))
     {
-      if (!mstl3_addmsrtoseg (id->first, msr, endtime, 2))
+      if (!lm_addmsrtoseg (id->first, msr, endtime, 2))
         return NULL;
 
       seg = id->first;
@@ -523,7 +523,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
         id->earliest = msr->starttime;
 
       /* Add MS3RecordPtr if requested */
-      if (pprecptr && !(*pprecptr = mstl3_add_recordptr (seg, msr, endtime, 2)))
+      if (pprecptr && !(*pprecptr = lm_add_recordptr (seg, msr, endtime, 2)))
         return NULL;
     }
     /* Search complete segment list for matches */
@@ -588,13 +588,13 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
       /* Add MS3Record coverage to end of segment before */
       if (segbefore)
       {
-        if (!mstl3_addmsrtoseg (segbefore, msr, endtime, 1))
+        if (!lm_addmsrtoseg (segbefore, msr, endtime, 1))
         {
           return NULL;
         }
 
         /* Add MS3RecordPtr if requested */
-        if (pprecptr && !(*pprecptr = mstl3_add_recordptr (segbefore, msr, endtime, 1)))
+        if (pprecptr && !(*pprecptr = lm_add_recordptr (segbefore, msr, endtime, 1)))
         {
           return NULL;
         }
@@ -603,7 +603,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
         if (autoheal && segafter && segbefore != segafter)
         {
           /* Add segafter coverage to segbefore */
-          if (!mstl3_addsegtoseg (segbefore, segafter))
+          if (!lm_addsegtoseg (segbefore, segafter))
           {
             return NULL;
           }
@@ -638,13 +638,13 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
       /* Add MS3Record coverage to beginning of segment after */
       else if (segafter)
       {
-        if (!mstl3_addmsrtoseg (segafter, msr, endtime, 2))
+        if (!lm_addmsrtoseg (segafter, msr, endtime, 2))
         {
           return NULL;
         }
 
         /* Add MS3RecordPtr if requested */
-        if (pprecptr && !(*pprecptr = mstl3_add_recordptr (segafter, msr, endtime, 2)))
+        if (pprecptr && !(*pprecptr = lm_add_recordptr (segafter, msr, endtime, 2)))
         {
           return NULL;
         }
@@ -655,13 +655,13 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
       else
       {
         /* Create new segment */
-        if (!(seg = mstl3_msr2seg (msr, endtime)))
+        if (!(seg = lm_msr2seg (msr, endtime)))
         {
           return NULL;
         }
 
         /* Add MS3RecordPtr if requested */
-        if (pprecptr && !(*pprecptr = mstl3_add_recordptr (seg, msr, endtime, 0)))
+        if (pprecptr && !(*pprecptr = lm_add_recordptr (seg, msr, endtime, 0)))
         {
           return NULL;
         }
@@ -980,8 +980,8 @@ mstl3_readbuffer_selection (MS3TraceList **ppmstl, const char *buffer, uint64_t 
  *
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
-MS3TraceSeg *
-mstl3_msr2seg (const MS3Record *msr, nstime_t endtime)
+static MS3TraceSeg *
+lm_msr2seg (const MS3Record *msr, nstime_t endtime)
 {
   MS3TraceSeg *seg = NULL;
   size_t datasize = 0;
@@ -1031,7 +1031,7 @@ mstl3_msr2seg (const MS3Record *msr, nstime_t endtime)
   }
 
   return seg;
-} /* End of mstl3_msr2seg() */
+} /* End of lm_msr2seg() */
 
 /***************************************************************************
  * Add data coverage from a MS3Record structure to a MS3TraceSeg structure.
@@ -1045,8 +1045,8 @@ mstl3_msr2seg (const MS3Record *msr, nstime_t endtime)
  *
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
-MS3TraceSeg *
-mstl3_addmsrtoseg (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, int8_t whence)
+static MS3TraceSeg *
+lm_addmsrtoseg (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, int8_t whence)
 {
   int samplesize = 0;
   void *newdatasamples = NULL;
@@ -1135,7 +1135,7 @@ mstl3_addmsrtoseg (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, int
   }
 
   return seg;
-} /* End of mstl3_addmsrtoseg() */
+} /* End of lm_addmsrtoseg() */
 
 /***************************************************************************
  * Add data coverage from seg2 to seg1.
@@ -1144,8 +1144,8 @@ mstl3_addmsrtoseg (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, int
  *
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
-MS3TraceSeg *
-mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
+static MS3TraceSeg *
+lm_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
 {
   int samplesize = 0;
   void *newdatasamples = NULL;
@@ -1226,7 +1226,7 @@ mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
   }
 
   return seg1;
-} /* End of mstl3_addsegtoseg() */
+} /* End of lm_addsegtoseg() */
 
 /** ************************************************************************
  * @brief Add a ::MS3RecordPtr to the ::MS3RecordList of a ::MS3TraceSeg
@@ -1253,8 +1253,8 @@ mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
  * \sa ms3_readtracelist_selection()
  * \sa mstl3_addmsr()
  ***************************************************************************/
-MS3RecordPtr *
-mstl3_add_recordptr (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, int8_t whence)
+static MS3RecordPtr *
+lm_add_recordptr (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, int8_t whence)
 {
   MS3RecordPtr *recordptr = NULL;
 
@@ -1325,7 +1325,7 @@ mstl3_add_recordptr (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, i
   }
 
   return recordptr;
-} /* End of mstl3_add_recordptr() */
+} /* End of lm_add_recordptr() */
 
 /** ************************************************************************
  * @brief Convert the data samples associated with an MS3TraceSeg to another
