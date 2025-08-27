@@ -39,7 +39,7 @@ static nstime_t ms_btime2nstime (uint8_t *btime, int8_t swapflag);
 
 /* Test POINTER for alignment with BYTE_COUNT sized quantities */
 #define is_aligned(POINTER, BYTE_COUNT) \
-  (((uintptr_t) (const void *)(POINTER)) % (BYTE_COUNT) == 0)
+  (((uintptr_t)(const void *)(POINTER)) % (BYTE_COUNT) == 0)
 
 /***************************************************************************
  * Unpack a miniSEED 3.x data record and populate a MS3Record struct.
@@ -128,9 +128,9 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr,
   {
     /* Save header CRC, set value to 0, calculate CRC, restore CRC */
     header_crc = HO4u (*pMS3FSDH_CRC (record), swapflag);
-    memset (pMS3FSDH_CRC(record), 0, sizeof(uint32_t));
-    calculated_crc = ms_crc32c ((const uint8_t*)record, reclen, 0);
-    *pMS3FSDH_CRC(record) = HO4u (header_crc, swapflag);
+    memset (pMS3FSDH_CRC (record), 0, sizeof (uint32_t));
+    calculated_crc = ms_crc32c ((const uint8_t *)record, reclen, 0);
+    *pMS3FSDH_CRC (record) = HO4u (header_crc, swapflag);
 
     if (header_crc != calculated_crc)
     {
@@ -212,7 +212,7 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr,
      All other encodings are little endian, matching the header. */
   if (msr->encoding == DE_STEIM1 || msr->encoding == DE_STEIM2)
   {
-    if (! bigendianhost)
+    if (!bigendianhost)
       msr->swapflag |= MSSWAP_PAYLOAD;
   }
   else if (msr->swapflag & MSSWAP_HEADER)
@@ -466,7 +466,7 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
     /* Blockette 200, generic event detection */
     else if (blkt_type == 200)
     {
-      memset (&eventdetection, 0, sizeof(eventdetection));
+      memset (&eventdetection, 0, sizeof (eventdetection));
 
       strncpy (eventdetection.type, "GENERIC", sizeof (eventdetection.type));
       ms_strncpcleantail (eventdetection.detector, pMS2B200_DETECTOR (record + blkt_offset), 24);
@@ -490,7 +490,7 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       else
         strncpy (eventdetection.units, "COUNTS", sizeof (eventdetection.units));
 
-      eventdetection.onsettime = ms_btime2nstime ((uint8_t*)pMS2B200_YEAR (record + blkt_offset), msr->swapflag);
+      eventdetection.onsettime = ms_btime2nstime ((uint8_t *)pMS2B200_YEAR (record + blkt_offset), msr->swapflag);
 
       memset (eventdetection.medsnr, 0, 6);
       eventdetection.medlookback = -1;
@@ -507,7 +507,7 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
     /* Blockette 201, Murdock event detection */
     else if (blkt_type == 201)
     {
-      memset (&eventdetection, 0, sizeof(eventdetection));
+      memset (&eventdetection, 0, sizeof (eventdetection));
 
       strncpy (eventdetection.type, "MURDOCK", sizeof (eventdetection.type));
       ms_strncpcleantail (eventdetection.detector, pMS2B201_DETECTOR (record + blkt_offset), 24);
@@ -521,7 +521,7 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       else
         strncpy (eventdetection.wave, "COMPRESSION", sizeof (eventdetection.wave));
 
-      eventdetection.onsettime = ms_btime2nstime ((uint8_t*)pMS2B201_YEAR (record + blkt_offset), msr->swapflag);
+      eventdetection.onsettime = ms_btime2nstime ((uint8_t *)pMS2B201_YEAR (record + blkt_offset), msr->swapflag);
 
       memcpy (eventdetection.medsnr, pMS2B201_MEDSNR (record + blkt_offset), 6);
       eventdetection.medlookback = *pMS2B201_LOOPBACK (record + blkt_offset);
@@ -538,11 +538,11 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
     /* Blockette 300, step calibration */
     else if (blkt_type == 300)
     {
-      memset (&calibration, 0, sizeof(calibration));
+      memset (&calibration, 0, sizeof (calibration));
 
       strncpy (calibration.type, "STEP", sizeof (calibration.type));
 
-      calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B300_YEAR (record + blkt_offset), msr->swapflag);
+      calibration.begintime = ms_btime2nstime ((uint8_t *)pMS2B300_YEAR (record + blkt_offset), msr->swapflag);
 
       calibration.endtime = NSTUNSET;
       calibration.steps = *pMS2B300_NUMCALIBRATIONS (record + blkt_offset);
@@ -591,11 +591,11 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
     /* Blockette 310, sine calibration */
     else if (blkt_type == 310)
     {
-      memset (&calibration, 0, sizeof(calibration));
+      memset (&calibration, 0, sizeof (calibration));
 
       strncpy (calibration.type, "SINE", sizeof (calibration.type));
 
-      calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B310_YEAR (record + blkt_offset), msr->swapflag);
+      calibration.begintime = ms_btime2nstime ((uint8_t *)pMS2B310_YEAR (record + blkt_offset), msr->swapflag);
 
       calibration.endtime = NSTUNSET;
       calibration.steps = -1;
@@ -646,11 +646,11 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
     /* Blockette 320, pseudo-random calibration */
     else if (blkt_type == 320)
     {
-      memset (&calibration, 0, sizeof(calibration));
+      memset (&calibration, 0, sizeof (calibration));
 
       strncpy (calibration.type, "PSEUDORANDOM", sizeof (calibration.type));
 
-      calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B320_YEAR (record + blkt_offset), msr->swapflag);
+      calibration.begintime = ms_btime2nstime ((uint8_t *)pMS2B320_YEAR (record + blkt_offset), msr->swapflag);
 
       calibration.endtime = NSTUNSET;
       calibration.steps = -1;
@@ -695,11 +695,11 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
     /* Blockette 390, generic calibration */
     else if (blkt_type == 390)
     {
-      memset (&calibration, 0, sizeof(calibration));
+      memset (&calibration, 0, sizeof (calibration));
 
       strncpy (calibration.type, "GENERIC", sizeof (calibration.type));
 
-      calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B390_YEAR (record + blkt_offset), msr->swapflag);
+      calibration.begintime = ms_btime2nstime ((uint8_t *)pMS2B390_YEAR (record + blkt_offset), msr->swapflag);
 
       calibration.endtime = NSTUNSET;
       calibration.steps = -1;
@@ -740,13 +740,13 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
     /* Blockette 395, calibration abort */
     else if (blkt_type == 395)
     {
-      memset (&calibration, 0, sizeof(calibration));
+      memset (&calibration, 0, sizeof (calibration));
 
       strncpy (calibration.type, "ABORT", sizeof (calibration.type));
 
       calibration.begintime = NSTUNSET;
 
-      calibration.endtime = ms_btime2nstime ((uint8_t*)pMS2B395_YEAR (record + blkt_offset), msr->swapflag);
+      calibration.endtime = ms_btime2nstime ((uint8_t *)pMS2B395_YEAR (record + blkt_offset), msr->swapflag);
 
       calibration.steps = -1;
       calibration.firstpulsepositive = -1;
@@ -788,11 +788,11 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
     /* Blockette 500, timing blockette */
     else if (blkt_type == 500)
     {
-      memset (&exception, 0, sizeof(exception));
+      memset (&exception, 0, sizeof (exception));
 
       exception.vcocorrection = HO4f (*pMS2B500_VCOCORRECTION (record + blkt_offset), msr->swapflag);
 
-      exception.time = ms_btime2nstime ((uint8_t*)pMS2B500_YEAR (record + blkt_offset), msr->swapflag);
+      exception.time = ms_btime2nstime ((uint8_t *)pMS2B500_YEAR (record + blkt_offset), msr->swapflag);
 
       /* Apply microsecond precision if non-zero */
       if (*pMS2B500_MICROSECOND (record + blkt_offset) != 0)
@@ -840,7 +840,7 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       /* Optimization: if no other extra headers yet, directly print this common value */
       if (parsestate == NULL)
       {
-        length = snprintf (sval, sizeof(sval), "{\"FDSN\":{\"Time\":{\"Quality\":%d}}}",
+        length = snprintf (sval, sizeof (sval), "{\"FDSN\":{\"Time\":{\"Quality\":%d}}}",
                            *pMS2B1001_TIMINGQUALITY (record + blkt_offset));
 
         if (!(msr->extra = (char *)libmseed_memory.malloc (length + 1)))
@@ -924,7 +924,7 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
   }
 
   /* Calculate start time */
-  msr->starttime = ms_btime2nstime ((uint8_t*)pMS2FSDH_YEAR (record), msr->swapflag);
+  msr->starttime = ms_btime2nstime ((uint8_t *)pMS2FSDH_YEAR (record), msr->swapflag);
   if (msr->starttime == NSTERROR)
   {
     ms_log (2, "%s: Cannot convert start time to internal time stamp\n", msr->sid);
@@ -993,7 +993,7 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
   return MS_NOERROR;
 } /* End of msr3_unpack_mseed2() */
 
-/*******************************************************************/ /**
+/** ************************************************************************
  * @brief Determine the data payload bounds for a MS3Record
  *
  * Bounds are the starting offset in record and size.  For miniSEED
@@ -1015,7 +1015,7 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
  * @return 0 on success or negative library error code.
  *
  * \ref MessageOnError - this function logs a message on error
- ************************************************************************/
+ ***************************************************************************/
 int
 msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize)
 {
@@ -1091,7 +1091,7 @@ msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize
   return 0;
 } /* End of msr3_data_bounds() */
 
-/*******************************************************************/ /**
+/** ************************************************************************
  * @brief Unpack data samples for a ::MS3Record
  *
  * This routine can be used to unpack the data samples for a
@@ -1114,13 +1114,13 @@ msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize
  * @return number of samples unpacked or negative libmseed error code.
  *
  * \ref MessageOnError - this function logs a message on error
- ************************************************************************/
+ ***************************************************************************/
 int64_t
 msr3_unpack_data (MS3Record *msr, int8_t verbose)
 {
-  uint32_t datasize; /* length of data payload in bytes */
-  int64_t nsamples; /* number of samples unpacked */
-  size_t unpacksize; /* byte size of unpacked samples */
+  uint32_t datasize;      /* length of data payload in bytes */
+  int64_t nsamples;       /* number of samples unpacked */
+  size_t unpacksize;      /* byte size of unpacked samples */
   uint8_t samplesize = 0; /* size of the data samples in bytes */
   uint32_t dataoffset = 0;
   const char *encoded = NULL;
@@ -1179,7 +1179,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
     msr->encoding = DE_STEIM1;
   }
 
-  if (ms_encoding_sizetype((uint8_t)msr->encoding, &samplesize, NULL))
+  if (ms_encoding_sizetype ((uint8_t)msr->encoding, &samplesize, NULL))
   {
     ms_log (2, "%s: Cannot determine sample size for encoding: %u\n", msr->sid, msr->encoding);
     return MS_GENERROR;
@@ -1190,7 +1190,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   /* Copy encoded data to aligned/malloc'd buffer if not aligned for sample size */
   if (samplesize && !is_aligned (encoded, samplesize))
   {
-    if ((encoded_allocated = (char *) libmseed_memory.malloc (datasize)) == NULL)
+    if ((encoded_allocated = (char *)libmseed_memory.malloc (datasize)) == NULL)
     {
       ms_log (2, "Cannot allocate memory for encoded data\n");
       return MS_GENERROR;
@@ -1208,7 +1208,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   {
     if (libmseed_prealloc_block_size)
     {
-      size_t current_size  = msr->datasize;
+      size_t current_size = msr->datasize;
       msr->datasamples = libmseed_memory_prealloc (msr->datasamples, unpacksize, &current_size);
       msr->datasize = current_size;
     }
@@ -1252,7 +1252,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   return nsamples;
 } /* End of msr3_unpack_data() */
 
-/*******************************************************************/ /**
+/** ************************************************************************
  * @brief Decode data samples to a supplied buffer
  *
  * @param[in] input Encoded data
@@ -1269,14 +1269,14 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
  * @return number of samples decoded or negative libmseed error code.
  *
  * \ref MessageOnError - this function logs a message on error
- ************************************************************************/
+ ***************************************************************************/
 int64_t
 ms_decode_data (const void *input, uint64_t inputsize, uint8_t encoding,
                 uint64_t samplecount, void *output, uint64_t outputsize,
                 char *sampletype, int8_t swapflag, const char *sid, int8_t verbose)
 {
-  uint64_t decodedsize; /* byte size of decodeded samples */
-  int64_t nsamples; /* number of samples unpacked */
+  uint64_t decodedsize;   /* byte size of decodeded samples */
+  int64_t nsamples;       /* number of samples unpacked */
   uint8_t samplesize = 0; /* size of the data samples in bytes */
 
   if (!input || !output || !sampletype)
@@ -1289,7 +1289,7 @@ ms_decode_data (const void *input, uint64_t inputsize, uint8_t encoding,
   if (samplecount == 0)
     return 0;
 
-  if (ms_encoding_sizetype(encoding, &samplesize, sampletype))
+  if (ms_encoding_sizetype (encoding, &samplesize, sampletype))
     samplesize = 0;
 
   /* Calculate buffer size needed for unpacked samples */
@@ -1297,7 +1297,7 @@ ms_decode_data (const void *input, uint64_t inputsize, uint8_t encoding,
 
   if (decodedsize > outputsize)
   {
-    ms_log (2, "%s: Output buffer (%"PRIu64" bytes) is not large enought for decoded data (%"PRIu64" bytes)\n",
+    ms_log (2, "%s: Output buffer (%" PRIu64 " bytes) is not large enought for decoded data (%" PRIu64 " bytes)\n",
             (sid) ? sid : "", decodedsize, outputsize);
     return MS_GENERROR;
   }
@@ -1649,7 +1649,7 @@ ms_btime2nstime (uint8_t *btime, int8_t swapflag)
     return NSTERROR;
   }
 
-  year = HO2u (*((uint16_t*)(btime)), swapflag);
+  year = HO2u (*((uint16_t *)(btime)), swapflag);
 
   /* Special case, if year 0 return unset value */
   if (year == 0)

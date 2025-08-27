@@ -22,7 +22,7 @@
 
 #include "libmseed.h"
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Determine data sample size for each type
  *
  * @param[in] sampletype Library sample type code:
@@ -57,7 +57,7 @@ ms_samplesize (char sampletype)
 
 } /* End of ms_samplesize() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Return sample size and/or type for given encoding value
  *
  * Determine the decoded sample size and/or type based on data
@@ -115,7 +115,7 @@ ms_encoding_sizetype (uint8_t encoding, uint8_t *samplesize, char *sampletype)
   return 0;
 } /* End of ms_encodingstr_sizetype() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Descriptive string for data encodings
  *
  * @param[in] encoding Data sample encoding code
@@ -193,7 +193,7 @@ ms_encodingstr (uint8_t encoding)
 
 } /* End of ms_encodingstr() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Descriptive string for library @ref return-values
  *
  * @param[in] errorcode Library error code

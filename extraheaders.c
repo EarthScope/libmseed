@@ -18,24 +18,30 @@
  * limitations under the License.
  ***************************************************************************/
 
-#include "libmseed.h"
 #include "extraheaders.h"
+#include "libmseed.h"
 
 /* Private allocation wrappers for yyjson's allocator definition */
-void *_priv_malloc(void *ctx, size_t size) {
-    UNUSED(ctx);
-    return libmseed_memory.malloc(size);
+void *
+_priv_malloc (void *ctx, size_t size)
+{
+  UNUSED (ctx);
+  return libmseed_memory.malloc (size);
 }
 
-void *_priv_realloc(void *ctx, void *ptr, size_t oldsize, size_t size) {
-    UNUSED(ctx);
-    UNUSED(oldsize);
-    return libmseed_memory.realloc(ptr, size);
+void *
+_priv_realloc (void *ctx, void *ptr, size_t oldsize, size_t size)
+{
+  UNUSED (ctx);
+  UNUSED (oldsize);
+  return libmseed_memory.realloc (ptr, size);
 }
 
-void _priv_free(void *ctx, void *ptr) {
-    UNUSED(ctx);
-    libmseed_memory.free(ptr);
+void
+_priv_free (void *ctx, void *ptr)
+{
+  UNUSED (ctx);
+  libmseed_memory.free (ptr);
 }
 
 /***************************************************************************
@@ -52,7 +58,7 @@ void _priv_free(void *ctx, void *ptr) {
  *
  * \sa mseh_free_parsestate()
  ***************************************************************************/
-static LM_PARSED_JSON*
+static LM_PARSED_JSON *
 parse_json (char *jsonstring, size_t length, LM_PARSED_JSON *parsed)
 {
   yyjson_read_flag flg = YYJSON_READ_NOFLAG;
@@ -69,7 +75,7 @@ parse_json (char *jsonstring, size_t length, LM_PARSED_JSON *parsed)
     }
     else
     {
-      parsed->doc     = NULL;
+      parsed->doc = NULL;
       parsed->mut_doc = NULL;
     }
   }
@@ -84,7 +90,7 @@ parse_json (char *jsonstring, size_t length, LM_PARSED_JSON *parsed)
   if (parsed->doc)
   {
     yyjson_doc_free (parsed->doc);
-    parsed->doc     = NULL;
+    parsed->doc = NULL;
   }
 
   /* Free existing mutable document */
@@ -105,7 +111,7 @@ parse_json (char *jsonstring, size_t length, LM_PARSED_JSON *parsed)
   return parsed;
 }
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Search for and return an extra header value.
  *
  * The extra header value is specified as a JSON Pointer (RFC 6901), e.g.
@@ -148,13 +154,13 @@ parse_json (char *jsonstring, size_t length, LM_PARSED_JSON *parsed)
  ***************************************************************************/
 int
 mseh_get_ptr_r (const MS3Record *msr, const char *ptr,
-                 void *value, char type, uint32_t maxlength,
-                 LM_PARSED_JSON **parsestate)
+                void *value, char type, uint32_t maxlength,
+                LM_PARSED_JSON **parsestate)
 {
-  LM_PARSED_JSON *parsed  = (parsestate) ? *parsestate : NULL;
+  LM_PARSED_JSON *parsed = (parsestate) ? *parsestate : NULL;
 
   yyjson_alc alc = {_priv_malloc, _priv_realloc, _priv_free, NULL};
-  yyjson_val *extravalue  = NULL;
+  yyjson_val *extravalue = NULL;
   const char *stringvalue = NULL;
 
   int retval = 0;
@@ -188,7 +194,7 @@ mseh_get_ptr_r (const MS3Record *msr, const char *ptr,
   if (parsed == NULL)
   {
     /* Parse to immutable state */
-    parsed = parse_json(msr->extra, msr->extralength, parsed);
+    parsed = parse_json (msr->extra, msr->extralength, parsed);
 
     if (parsed == NULL)
     {
@@ -219,7 +225,7 @@ mseh_get_ptr_r (const MS3Record *msr, const char *ptr,
   }
 
   /* Get target value */
-  extravalue = yyjson_doc_ptr_get(parsed->doc, ptr);
+  extravalue = yyjson_doc_ptr_get (parsed->doc, ptr);
 
   if (extravalue == NULL)
   {
@@ -244,7 +250,7 @@ mseh_get_ptr_r (const MS3Record *msr, const char *ptr,
       ((char *)value)[maxlength - 1] = '\0';
     }
   }
-  else if (type == 'b' && yyjson_is_bool(extravalue))
+  else if (type == 'b' && yyjson_is_bool (extravalue))
   {
     if (value)
       *((int *)value) = (unsafe_yyjson_get_bool (extravalue)) ? 1 : 0;
@@ -264,7 +270,7 @@ mseh_get_ptr_r (const MS3Record *msr, const char *ptr,
   return retval;
 } /* End of mseh_get_ptr_r() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Set the value of extra header values
  *
  * The extra header value is specified as a JSON Pointer (RFC 6901), e.g.
@@ -310,8 +316,8 @@ mseh_get_ptr_r (const MS3Record *msr, const char *ptr,
  ***************************************************************************/
 int
 mseh_set_ptr_r (MS3Record *msr, const char *ptr,
-                 void *value, char type,
-                 LM_PARSED_JSON **parsestate)
+                void *value, char type,
+                LM_PARSED_JSON **parsestate)
 {
   LM_PARSED_JSON *parsed = (parsestate) ? *parsestate : NULL;
   yyjson_alc alc = {_priv_malloc, _priv_realloc, _priv_free, NULL};
@@ -429,7 +435,7 @@ mseh_set_ptr_r (MS3Record *msr, const char *ptr,
       ms_log (2, "%s() Cannot parse JSON Merge Patch: %s'\n", __func__, (char *)value);
     }
 
-    yyjson_doc_free(patch_idoc);
+    yyjson_doc_free (patch_idoc);
     yyjson_mut_doc_free (patch_doc);
 
     break;
@@ -466,7 +472,7 @@ mseh_set_ptr_r (MS3Record *msr, const char *ptr,
     mseh_free_parsestate (&parsed);
   }
   /* If changes were applied, the immutable form of the document is now invalid */
-  else if (rv ==true && parsed->doc != NULL)
+  else if (rv == true && parsed->doc != NULL)
   {
     yyjson_doc_free (parsed->doc);
     parsed->doc = NULL;
@@ -475,7 +481,7 @@ mseh_set_ptr_r (MS3Record *msr, const char *ptr,
   return (rv == true) ? 0 : MS_GENERROR;
 } /* End of mseh_set_ptr_r() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Add event detection to the extra headers of the given record.
  *
  * If \a ptr is NULL, the default is \c '/FDSN/Event/Detection'.
@@ -558,7 +564,7 @@ mseh_add_event_detection_r (MS3Record *msr, const char *ptr,
   }
   if (eventdetection->onsettime != NSTUNSET)
   {
-    if (ms_nstime2timestr_n (eventdetection->onsettime, timestring, sizeof(timestring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (ms_nstime2timestr_n (eventdetection->onsettime, timestring, sizeof (timestring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       yyjson_mut_set_str (&onset_key, "OnsetTime");
       yyjson_mut_set_str (&onset, timestring);
@@ -566,7 +572,7 @@ mseh_add_event_detection_r (MS3Record *msr, const char *ptr,
     }
     else
     {
-      ms_log (2, "%s() Cannot create time string for %"PRId64"\n", __func__, eventdetection->onsettime);
+      ms_log (2, "%s() Cannot create time string for %" PRId64 "\n", __func__, eventdetection->onsettime);
       return MS_GENERROR;
     }
   }
@@ -611,7 +617,7 @@ mseh_add_event_detection_r (MS3Record *msr, const char *ptr,
   return 0;
 } /* End of mseh_add_event_detection_r() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Add calibration to the extra headers of the given record.
  *
  * If \a ptr is NULL, the default is \c '/FDSN/Calibration/Sequence'.
@@ -671,7 +677,7 @@ mseh_add_calibration_r (MS3Record *msr, const char *ptr,
   }
   if (calibration->begintime != NSTUNSET)
   {
-    if (ms_nstime2timestr_n (calibration->begintime, beginstring, sizeof(beginstring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (ms_nstime2timestr_n (calibration->begintime, beginstring, sizeof (beginstring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       yyjson_mut_set_str (&begintime_key, "BeginTime");
       yyjson_mut_set_str (&begintime, beginstring);
@@ -685,7 +691,7 @@ mseh_add_calibration_r (MS3Record *msr, const char *ptr,
   }
   if (calibration->endtime != NSTUNSET)
   {
-    if (ms_nstime2timestr_n (calibration->endtime, endstring, sizeof(endstring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (ms_nstime2timestr_n (calibration->endtime, endstring, sizeof (endstring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       yyjson_mut_set_str (&endtime_key, "EndTime");
       yyjson_mut_set_str (&endtime, endstring);
@@ -773,7 +779,8 @@ mseh_add_calibration_r (MS3Record *msr, const char *ptr,
   {
     yyjson_mut_set_str (&refamp_key, "ReferenceAmplitude");
     yyjson_mut_set_real (&refamp, calibration->refamplitude);
-    yyjson_mut_obj_add (&entry, &refamp_key, &refamp);;
+    yyjson_mut_obj_add (&entry, &refamp_key, &refamp);
+    ;
   }
   if (calibration->coupling[0])
   {
@@ -803,7 +810,7 @@ mseh_add_calibration_r (MS3Record *msr, const char *ptr,
   return 0;
 } /* End of mseh_add_calibration_r() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Add timing exception to the extra headers of the given record.
  *
  * If \a ptr is NULL, the default is \c '/FDSN/Time/Exception'.
@@ -843,7 +850,7 @@ mseh_add_timing_exception_r (MS3Record *msr, const char *ptr,
   /* Add elements to new object */
   if (exception->time != NSTUNSET)
   {
-    if (ms_nstime2timestr_n (exception->time, timestring, sizeof(timestring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (ms_nstime2timestr_n (exception->time, timestring, sizeof (timestring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       yyjson_mut_set_str (&etime_key, "Time");
       yyjson_mut_set_str (&etime, timestring);
@@ -895,7 +902,7 @@ mseh_add_timing_exception_r (MS3Record *msr, const char *ptr,
   return 0;
 } /* End of mseh_add_timing_exception_r() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Add recenter event to the extra headers of the given record.
  *
  * If \a ptr is NULL, the default is \c '/FDSN/Recenter/Sequence'.
@@ -938,7 +945,7 @@ mseh_add_recenter_r (MS3Record *msr, const char *ptr, MSEHRecenter *recenter,
   }
   if (recenter->begintime != NSTUNSET)
   {
-    if (ms_nstime2timestr_n (recenter->begintime, beginstring, sizeof(beginstring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (ms_nstime2timestr_n (recenter->begintime, beginstring, sizeof (beginstring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       yyjson_mut_set_str (&begin_key, "BeginTime");
       yyjson_mut_set_str (&begin, beginstring);
@@ -952,7 +959,7 @@ mseh_add_recenter_r (MS3Record *msr, const char *ptr, MSEHRecenter *recenter,
   }
   if (recenter->endtime != NSTUNSET)
   {
-    if (ms_nstime2timestr_n (recenter->endtime, endstring, sizeof(endstring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (ms_nstime2timestr_n (recenter->endtime, endstring, sizeof (endstring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       yyjson_mut_set_str (&end_key, "EndTime");
       yyjson_mut_set_str (&end, endstring);
@@ -980,7 +987,7 @@ mseh_add_recenter_r (MS3Record *msr, const char *ptr, MSEHRecenter *recenter,
   return 0;
 } /* End of mseh_add_recenter_r() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Generate extra headers string (serialize) from internal state
  *
  * Generate the extra headers JSON string from the internal parse state
@@ -1001,8 +1008,8 @@ mseh_serialize (MS3Record *msr, LM_PARSED_JSON **parsestate)
   yyjson_alc alc = {_priv_malloc, _priv_realloc, _priv_free, NULL};
 
   LM_PARSED_JSON *parsed = NULL;
-  char *serialized    = NULL;
-  size_t serialsize   = 0;
+  char *serialized = NULL;
+  size_t serialsize = 0;
 
   if (!msr || !parsestate)
     return MS_GENERROR;
@@ -1030,20 +1037,20 @@ mseh_serialize (MS3Record *msr, LM_PARSED_JSON **parsestate)
   {
     ms_log (2, "%s() New serialization size exceeds limit of %d bytes: %" PRIu64 "\n",
             __func__, UINT16_MAX, (uint64_t)serialsize);
-    libmseed_memory.free(serialized);
+    libmseed_memory.free (serialized);
     return MS_GENERROR;
   }
 
   /* Set new extra headers, replacing existing headers */
   if (msr->extra)
     libmseed_memory.free (msr->extra);
-  msr->extra       = serialized;
+  msr->extra = serialized;
   msr->extralength = (uint16_t)serialsize;
 
   return msr->extralength;
 }
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Free internally parsed (deserialized) JSON data
  *
  * Free the memory associated with JSON data parsed by mseh_get_ptr_r()
@@ -1070,12 +1077,12 @@ mseh_free_parsestate (LM_PARSED_JSON **parsestate)
   if (parsed->mut_doc)
     yyjson_mut_doc_free (parsed->mut_doc);
 
-  libmseed_memory.free(parsed);
+  libmseed_memory.free (parsed);
 
   *parsestate = NULL;
 }
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Replace extra headers with supplied JSON
  *
  * Parse the supplied JSON string, re-serialize into compact form, and replace
@@ -1101,7 +1108,7 @@ mseh_replace (MS3Record *msr, char *jsonstring)
   yyjson_alc alc = {_priv_malloc, _priv_realloc, _priv_free, NULL};
   yyjson_doc *doc = NULL;
 
-  char *serialized  = NULL;
+  char *serialized = NULL;
   size_t serialsize = 0;
 
   if (!msr)
@@ -1139,13 +1146,13 @@ mseh_replace (MS3Record *msr, char *jsonstring)
   /* Set new extra headers, replacing existing headers */
   if (msr->extra)
     libmseed_memory.free (msr->extra);
-  msr->extra       = serialized;
+  msr->extra = serialized;
   msr->extralength = (uint16_t)serialsize;
 
   return msr->extralength;
 }
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Print the extra header structure for the specified MS3Record.
  *
  * Output is printed in a pretty, formatted form for readability and

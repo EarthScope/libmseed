@@ -204,7 +204,8 @@ msr_decode_steim1 (int32_t *input, uint64_t inputlength, uint64_t samplecount,
   int widx;
   int idx;
 
-  union dword {
+  union dword
+  {
     int8_t d8[4];
     int16_t d16[2];
     int32_t d32;
@@ -225,7 +226,7 @@ msr_decode_steim1 (int32_t *input, uint64_t inputlength, uint64_t samplecount,
   }
 
 #if DECODE_DEBUG
-  ms_log (0, "Decoding %"PRIu64" Steim1 frames, swapflag: %d, srcname: %s\n",
+  ms_log (0, "Decoding %" PRIu64 " Steim1 frames, swapflag: %d, srcname: %s\n",
           maxframes, swapflag, (srcname) ? srcname : "");
 #endif
 
@@ -254,7 +255,7 @@ msr_decode_steim1 (int32_t *input, uint64_t inputlength, uint64_t samplecount,
       startnibble = 3; /* First frame: skip nibbles, X0, and Xn */
 
 #if DECODE_DEBUG
-      ms_log (0, "Frame %"PRIu64": X0=%d  Xn=%d\n", frameidx, output[0], Xn);
+      ms_log (0, "Frame %" PRIu64 ": X0=%d  Xn=%d\n", frameidx, output[0], Xn);
 #endif
     }
     else
@@ -262,7 +263,7 @@ msr_decode_steim1 (int32_t *input, uint64_t inputlength, uint64_t samplecount,
       startnibble = 1; /* Subsequent frames: skip nibbles */
 
 #if DECODE_DEBUG
-      ms_log (0, "Frame %"PRIu64"\n", frameidx);
+      ms_log (0, "Frame %" PRIu64 "\n", frameidx);
 #endif
     }
 
@@ -275,7 +276,7 @@ msr_decode_steim1 (int32_t *input, uint64_t inputlength, uint64_t samplecount,
     {
       /* W0: the first 32-bit contains 16 x 2-bit nibbles for each word */
       nibble = EXTRACTBITRANGE (frame[0], (30 - (2 * widx)), 2);
-      word   = (union dword *)&frame[widx];
+      word = (union dword *)&frame[widx];
 
       switch (nibble)
       {
@@ -327,7 +328,7 @@ msr_decode_steim1 (int32_t *input, uint64_t inputlength, uint64_t samplecount,
 #endif
         break;
       } /* Done with decoding 32-bit word based on nibble */
-    }   /* Done looping over nibbles and 32-bit words */
+    } /* Done looping over nibbles and 32-bit words */
 
     /* Apply differences in this frame to calculate output samples,
      * ignoring first difference for first frame */
@@ -375,18 +376,37 @@ msr_decode_steim2 (int32_t *input, uint64_t inputlength, uint64_t samplecount,
   int dnib;
   int idx;
 
-  union dword {
+  union dword
+  {
     int8_t d8[4];
     int32_t d32;
   } *word;
 
   /* Bitfield specifications for sign extension of various bit-width values */
-  struct {signed int x:4;} s4;
-  struct {signed int x:5;} s5;
-  struct {signed int x:6;} s6;
-  struct {signed int x:10;} s10;
-  struct {signed int x:15;} s15;
-  struct {signed int x:30;} s30;
+  struct
+  {
+    signed int x : 4;
+  } s4;
+  struct
+  {
+    signed int x : 5;
+  } s5;
+  struct
+  {
+    signed int x : 6;
+  } s6;
+  struct
+  {
+    signed int x : 10;
+  } s10;
+  struct
+  {
+    signed int x : 15;
+  } s15;
+  struct
+  {
+    signed int x : 30;
+  } s30;
 
   if (maxframes == 0)
     return 0;
@@ -403,7 +423,7 @@ msr_decode_steim2 (int32_t *input, uint64_t inputlength, uint64_t samplecount,
   }
 
 #if DECODE_DEBUG
-  ms_log (0, "Decoding %"PRIu64" Steim2 frames, swapflag: %d, srcname: %s\n",
+  ms_log (0, "Decoding %" PRIu64 " Steim2 frames, swapflag: %d, srcname: %s\n",
           maxframes, swapflag, (srcname) ? srcname : "");
 #endif
 
@@ -432,7 +452,7 @@ msr_decode_steim2 (int32_t *input, uint64_t inputlength, uint64_t samplecount,
       startnibble = 3; /* First frame: skip nibbles, X0, and Xn */
 
 #if DECODE_DEBUG
-      ms_log (0, "Frame %"PRIu64": X0=%d  Xn=%d\n", frameidx, output[0], Xn);
+      ms_log (0, "Frame %" PRIu64 ": X0=%d  Xn=%d\n", frameidx, output[0], Xn);
 #endif
     }
     else
@@ -440,7 +460,7 @@ msr_decode_steim2 (int32_t *input, uint64_t inputlength, uint64_t samplecount,
       startnibble = 1; /* Subsequent frames: skip nibbles */
 
 #if DECODE_DEBUG
-      ms_log (0, "Frame %"PRIu64"\n", frameidx);
+      ms_log (0, "Frame %" PRIu64 "\n", frameidx);
 #endif
     }
 
@@ -577,7 +597,7 @@ msr_decode_steim2 (int32_t *input, uint64_t inputlength, uint64_t samplecount,
 
         break;
       } /* Done with decoding 32-bit word based on nibble */
-    }   /* Done looping over nibbles and 32-bit words */
+    } /* Done looping over nibbles and 32-bit words */
 
     /* Apply differences in this frame to calculate output samples,
      * ignoring first difference for first frame */
@@ -629,7 +649,8 @@ msr_decode_geoscope (char *input, uint64_t samplecount, float *output,
   int16_t sint;
   double dsample = 0.0;
 
-  union {
+  union
+  {
     uint8_t b[4];
     uint32_t i;
   } sample32;
@@ -679,7 +700,7 @@ msr_decode_geoscope (char *input, uint64_t samplecount, float *output,
         ms_gswap2 (&sint);
 
       /* Recover mantissa and gain range factor */
-      mantissa  = (sint & GEOSCOPE_MANTISSA_MASK);
+      mantissa = (sint & GEOSCOPE_MANTISSA_MASK);
       gainrange = (sint & GEOSCOPE_GAIN3_MASK) >> GEOSCOPE_SHIFT;
 
       /* Exponent is just gainrange for GEOSCOPE */
@@ -696,7 +717,7 @@ msr_decode_geoscope (char *input, uint64_t samplecount, float *output,
         ms_gswap2 (&sint);
 
       /* Recover mantissa and gain range factor */
-      mantissa  = (sint & GEOSCOPE_MANTISSA_MASK);
+      mantissa = (sint & GEOSCOPE_MANTISSA_MASK);
       gainrange = (sint & GEOSCOPE_GAIN4_MASK) >> GEOSCOPE_SHIFT;
 
       /* Exponent is just gainrange for GEOSCOPE */
@@ -795,7 +816,7 @@ msr_decode_cdsn (int16_t *input, uint64_t samplecount, int32_t *output,
       ms_gswap2 (&sint);
 
     /* Recover mantissa and gain range factor */
-    mantissa  = (sint & CDSN_MANTISSA_MASK);
+    mantissa = (sint & CDSN_MANTISSA_MASK);
     gainrange = (sint & CDSN_GAINRANGE_MASK) >> CDSN_SHIFT;
 
     /* Determine multiplier from the gain range factor and format definition
@@ -880,8 +901,8 @@ msr_decode_sro (int16_t *input, uint64_t samplecount, int32_t *output,
   if (!input || !output || outputlength == 0)
     return -1;
 
-  add2gr     = 0;
-  mult       = -1;
+  add2gr = 0;
+  mult = -1;
   add2result = 10;
 
   for (idx = 0; idx < samplecount && outputlength >= sizeof (int32_t); idx++)
@@ -891,7 +912,7 @@ msr_decode_sro (int16_t *input, uint64_t samplecount, int32_t *output,
       ms_gswap2 (&sint);
 
     /* Recover mantissa and gain range factor */
-    mantissa  = (sint & SRO_MANTISSA_MASK);
+    mantissa = (sint & SRO_MANTISSA_MASK);
     gainrange = (sint & SRO_GAINRANGE_MASK) >> SRO_SHIFT;
 
     /* Take 2's complement for mantissa */

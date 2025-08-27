@@ -51,18 +51,18 @@ void print_message_int (MSLogParam *logp, int level, const char *message,
  */
 #if !defined(LIBMSEED_NO_THREADING)
 #if defined(LMP_WIN)
-  #define lm_thread_local __declspec( thread )
+#define lm_thread_local __declspec (thread)
 #elif __STDC_VERSION__ >= 201112L
-  #define lm_thread_local _Thread_local
+#define lm_thread_local _Thread_local
 #else
-  #define lm_thread_local __thread
+#define lm_thread_local __thread
 #endif
 lm_thread_local MSLogParam gMSLogParam = MSLogParam_INITIALIZER;
 #else
 MSLogParam gMSLogParam = MSLogParam_INITIALIZER;
 #endif
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Initialize the global logging parameters.
  *
  * Any message printing functions indicated must except a single
@@ -97,7 +97,7 @@ ms_rloginit (void (*log_print) (const char *), const char *logprefix,
                 diag_print, errprefix, maxmessages);
 } /* End of ms_rloginit() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Initialize specified ::MSLogParam logging parameters.
  *
  * If the logging parameters have not been initialized (logp == NULL),
@@ -167,7 +167,7 @@ ms_rloginit_l (MSLogParam *logp,
   return llog;
 } /* End of ms_rloginit_l() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Initialize the logging subsystem.
  *
  * This function modifies the logging parameters in the supplied
@@ -222,7 +222,7 @@ rloginit_int (MSLogParam *logp,
   return;
 } /* End of rloginit_int() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Register log message using global logging parameters.
  *
  * It is convenient to call this function via the ms_log() macro,
@@ -269,7 +269,7 @@ ms_rlog (const char *function, int level, const char *format, ...)
   return retval;
 } /* End of ms_rlog() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Register log message using specified logging parameters.
  *
  * It is convenient to call this function via the ms_log_l() macro,
@@ -324,7 +324,7 @@ ms_rlog_l (MSLogParam *logp, const char *function, int level, const char *format
   return retval;
 } /* End of ms_rlog_l() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Log message using specified logging parameters and \c va_list
  *
  * Trailing newline character is removed when added messages to the
@@ -426,7 +426,7 @@ rlog_int (MSLogParam *logp, const char *function, int level,
   return printed;
 } /* End of rlog_int() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Add message to registry
  *
  * Add a message to the specified log registry.  Earliest entries are
@@ -501,8 +501,7 @@ add_message_int (MSLogRegistry *logreg, const char *function, int level,
   return 0;
 } /* End of add_message_int() */
 
-
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Send message to print functions
  *
  * @param[in] logp Pointer to ::MSLogParam appropriate for this message
@@ -542,8 +541,7 @@ print_message_int (MSLogParam *logp, int level, const char *message,
   }
 } /* End of print_message_int() */
 
-
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Emit, aka send to print functions, messages from log registry
  *
  * Emit messages from the log registry, using the printing functions
@@ -603,9 +601,9 @@ ms_rlog_emit (MSLogParam *logp, int count, int context)
     /* Add function name to message if requested and present */
     if (context && logprint->function[0] != '\0')
     {
-      snprintf (local_message, sizeof(local_message), "%s() %.*s",
+      snprintf (local_message, sizeof (local_message), "%s() %.*s",
                 logprint->function,
-                (int)(MAX_LOG_MSG_LENGTH - sizeof(logprint->function) - 3),
+                (int)(MAX_LOG_MSG_LENGTH - sizeof (logprint->function) - 3),
                 logprint->message);
       message = local_message;
     }
@@ -624,8 +622,7 @@ ms_rlog_emit (MSLogParam *logp, int count, int context)
   return 0;
 } /* End of ms_rlog_emit() */
 
-
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Free, without emitting, all messages from log registry
  *
  * @param[in] logp ::MSLogParam for this message or NULL for global parameters

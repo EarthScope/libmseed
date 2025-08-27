@@ -29,7 +29,7 @@
 static int ms_isinteger (const char *string);
 static int ms_globmatch (const char *string, const char *pattern);
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Test the specified parameters for a matching selection entry
  *
  * Search the ::MS3Selections for an entry matching the provided
@@ -121,7 +121,7 @@ ms3_matchselect (const MS3Selections *selections, const char *sid, nstime_t star
   return (matchst) ? findsl : NULL;
 } /* End of ms3_matchselect() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Test the ::MS3Record for a matching selection entry
  *
  * Search the ::MS3Selections for an entry matching the provided
@@ -156,7 +156,7 @@ msr3_matchselect (const MS3Selections *selections, const MS3Record *msr,
                           msr->pubversion, ppselecttime);
 } /* End of msr3_matchselect() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Add selection parameters to selection list.
  *
  * The \a sidpattern may contain globbing characters.
@@ -268,7 +268,7 @@ ms3_addselect (MS3Selections **ppselections, const char *sidpattern,
   return 0;
 } /* End of ms3_addselect() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Add selection parameters to a selection list based on
  * separate source name codes
  *
@@ -388,7 +388,7 @@ ms3_addselect_comp (MS3Selections **ppselections, char *network, char *station,
 
 #define MAX_SELECTION_FIELDS 8
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Read data selections from a file
  *
  * Selections from a file are added to the specified selections list.
@@ -485,7 +485,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, const char *filename)
       cp++;
     }
     cp--;
-    while (cp >= line && isspace((int)(*cp)))
+    while (cp >= line && isspace ((int)(*cp)))
     {
       *cp = '\0';
       cp--;
@@ -493,9 +493,9 @@ ms3_readselectionsfile (MS3Selections **ppselections, const char *filename)
 
     /* Trim leading whitespace if any */
     cp = line;
-    while (isspace((int)(*cp)))
+    while (isspace ((int)(*cp)))
     {
-      line = cp = cp+1;
+      line = cp = cp + 1;
     }
 
     /* Skip empty lines */
@@ -508,7 +508,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, const char *filename)
 
     /* Set fields array to whitespace delimited fields */
     cp = line;
-    next = 0;  /* For this loop: 0 = whitespace, 1 = non-whitespace */
+    next = 0; /* For this loop: 0 = whitespace, 1 = non-whitespace */
     fieldidx = 0;
     while (*cp && fieldidx < MAX_SELECTION_FIELDS)
     {
@@ -581,7 +581,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, const char *filename)
     if (fieldidx == 1 ||
         (fieldidx == 2 && isstart2) ||
         (fieldidx == 3 && isstart2 && isend3) ||
-        (fieldidx == 4 && isstart2 && isend3 && ms_isinteger(fields[3])))
+        (fieldidx == 4 && isstart2 && isend3 && ms_isinteger (fields[3])))
     {
       /* Convert publication version to integer */
       pubversion = 0;
@@ -591,14 +591,14 @@ ms3_readselectionsfile (MS3Selections **ppselections, const char *filename)
 
         longpver = strtol (fields[3], NULL, 10);
 
-        if (longpver < 0 || longpver > 255 )
+        if (longpver < 0 || longpver > 255)
         {
           ms_log (2, "Cannot convert publication version (line %d): %s\n", linecount, fields[3]);
           return -1;
         }
         else
         {
-          pubversion = (uint8_t) longpver;
+          pubversion = (uint8_t)longpver;
         }
       }
 
@@ -616,20 +616,20 @@ ms3_readselectionsfile (MS3Selections **ppselections, const char *filename)
     {
       /* Convert quality field to publication version if integer */
       pubversion = 0;
-      if (fields[4] && ms_isinteger(fields[4]))
+      if (fields[4] && ms_isinteger (fields[4]))
       {
         long int longpver;
 
         longpver = strtol (fields[4], NULL, 10);
 
-        if (longpver < 0 || longpver > 255 )
+        if (longpver < 0 || longpver > 255)
         {
           ms_log (2, "Cannot convert publication version (line %d): %s\n", linecount, fields[4]);
           return -1;
         }
         else
         {
-          pubversion = (uint8_t) longpver;
+          pubversion = (uint8_t)longpver;
         }
       }
 
@@ -654,7 +654,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, const char *filename)
   return selectcount;
 } /* End of ms_readselectionsfile() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Free all memory associated with a ::MS3Selections
  *
  * All memory from one or more ::MS3Selections (in a linked list) are freed.
@@ -696,7 +696,7 @@ ms3_freeselections (MS3Selections *selections)
 
 } /* End of ms3_freeselections() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Print the selections list using the ms_log() facility.
  *
  * All selections are printed with simple formatting.
@@ -724,12 +724,12 @@ ms3_printselections (const MS3Selections *selections)
     while (selecttime)
     {
       if (selecttime->starttime != NSTERROR && selecttime->starttime != NSTUNSET)
-        ms_nstime2timestr_n (selecttime->starttime, starttime, sizeof(starttime), ISOMONTHDAY_Z, NANO_MICRO_NONE);
+        ms_nstime2timestr_n (selecttime->starttime, starttime, sizeof (starttime), ISOMONTHDAY_Z, NANO_MICRO_NONE);
       else
         strncpy (starttime, "No start time", sizeof (starttime) - 1);
 
       if (selecttime->endtime != NSTERROR && selecttime->endtime != NSTUNSET)
-        ms_nstime2timestr_n (selecttime->endtime, endtime, sizeof(endtime), ISOMONTHDAY_Z, NANO_MICRO_NONE);
+        ms_nstime2timestr_n (selecttime->endtime, endtime, sizeof (endtime), ISOMONTHDAY_Z, NANO_MICRO_NONE);
       else
         strncpy (endtime, "No end time", sizeof (endtime) - 1);
 
@@ -754,7 +754,7 @@ ms_isinteger (const char *string)
 {
   while (*string)
   {
-    if (!isdigit((int)(*string)))
+    if (!isdigit ((int)(*string)))
       return 0;
     string++;
   }
@@ -762,7 +762,7 @@ ms_isinteger (const char *string)
   return 1;
 }
 
-/***********************************************************************
+/**************************************************************************
  * robust glob pattern matcher
  * ozan s. yigit/dec 1994
  * public domain
@@ -800,19 +800,19 @@ ms_isinteger (const char *string)
  *
  * Revision 1.1  94/12/08  12:45:23  oz
  * Initial revision
- ***********************************************************************/
+ ***************************************************************************/
 
 #define GLOBMATCH_TRUE 1
 #define GLOBMATCH_FALSE 0
 #define GLOBMATCH_NEGATE '^' /* std char set negation char */
 
-/***********************************************************************
+/***************************************************************************
  * ms_globmatch:
  *
  * Check if a string matches a globbing pattern.
  *
  * Return 0 if string does not match pattern and non-zero otherwise.
- **********************************************************************/
+ ***************************************************************************/
 static int
 ms_globmatch (const char *string, const char *pattern)
 {

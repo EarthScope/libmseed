@@ -38,7 +38,7 @@ static uint8_t lm_random_height (uint8_t maximum, uint64_t *state);
 /* Test if two sample rates are similar using either specified tolerance (if positive) or default tolerance */
 #define IS_SAMPRATE_SIMILAR(SR1, SR2, SRT) ((SRT > 0.0) ? fabs (SR1 - SR2) > SRT : MS_ISRATETOLERABLE (SR1, SR2))
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Initialize a ::MS3TraceList container
  *
  * A new ::MS3TraceList is allocated if needed. If the supplied
@@ -76,7 +76,7 @@ mstl3_init (MS3TraceList *mstl)
   return mstl;
 } /* End of mstl3_init() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Free all memory associated with a ::MS3TraceList
  *
  * The pointer to the target ::MS3TraceList will be set to NULL.
@@ -131,7 +131,7 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
   return;
 } /* End of mstl3_free() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Find matching ::MS3TraceID in a ::MS3TraceList
  *
  * Return the ::MS3TraceID matching the \a sid in the specified ::MS3TraceList.
@@ -177,7 +177,7 @@ mstl3_findID (MS3TraceList *mstl, const char *sid, uint8_t pubversion, MS3TraceI
     }
     else
     {
-      cmp = strcmp(id->next[level]->sid, sid);
+      cmp = strcmp (id->next[level]->sid, sid);
 
       /* If source IDs match, check publication if matching requested */
       if (!cmp && pubversion && id->next[level]->pubversion != pubversion)
@@ -203,7 +203,7 @@ mstl3_findID (MS3TraceList *mstl, const char *sid, uint8_t pubversion, MS3TraceI
   return NULL;
 } /* End of mstl3_findID() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Add ::MS3TraceID to a ::MS3TraceList
  *
  * The \a prev array is the list of pointers to previous entries at different
@@ -274,7 +274,7 @@ mstl3_addID (MS3TraceList *mstl, MS3TraceID *id, MS3TraceID **prev)
 #define SEGMENT_HAS_TIME_COVERAGE(seg) ((seg)->samplecnt > 0 && \
                                         (seg)->samprate != 0.0)
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Add data coverage from an ::MS3Record to a ::MS3TraceList
  *
  * Searching the list for the appropriate ::MS3TraceID and
@@ -391,7 +391,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
     memset (id, 0, sizeof (MS3TraceID));
 
     /* Populate MS3TraceID */
-    memcpy (id->sid, msr->sid, sizeof(id->sid));
+    memcpy (id->sid, msr->sid, sizeof (id->sid));
     id->pubversion = msr->pubversion;
     id->earliest = msr->starttime;
     id->latest = endtime;
@@ -424,9 +424,9 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
 
     /* Calculate high-precision time tolerance */
     if (tolerance && tolerance->time)
-      nstimetol = (nstime_t) (NSTMODULUS * tolerance->time (msr));
+      nstimetol = (nstime_t)(NSTMODULUS * tolerance->time (msr));
     else
-      nstimetol = (nstime_t) (0.5 * nsperiod); /* Default time tolerance is 1/2 sample period */
+      nstimetol = (nstime_t)(0.5 * nsperiod); /* Default time tolerance is 1/2 sample period */
 
     nnstimetol = (nstimetol) ? -nstimetol : 0;
 
@@ -434,7 +434,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
     if (tolerance && tolerance->samprate)
       sampratetol = tolerance->samprate (msr);
 
-    sampratehz = msr3_sampratehz(msr);
+    sampratehz = msr3_sampratehz (msr);
 
     /* last/firstgap are negative when the record overlaps the trace
      * segment and positive when there is a time gap. */
@@ -457,7 +457,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
     /* Record coverage fits at end of last segment */
     if (lastgap <= nstimetol && lastgap >= nnstimetol &&
         IS_SAMPRATE_SIMILAR (sampratehz, id->last->samprate, sampratetol) &&
-        SEGMENT_HAS_TIME_COVERAGE(id->last))
+        SEGMENT_HAS_TIME_COVERAGE (id->last))
     {
       if (!mstl3_addmsrtoseg (id->last, msr, endtime, 1))
         return NULL;
@@ -512,7 +512,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
     /* Record coverage fits at beginning of first segment */
     else if (firstgap <= nstimetol && firstgap >= nnstimetol &&
              IS_SAMPRATE_SIMILAR (sampratehz, id->first->samprate, sampratetol) &&
-             SEGMENT_HAS_TIME_COVERAGE(id->first))
+             SEGMENT_HAS_TIME_COVERAGE (id->first))
     {
       if (!mstl3_addmsrtoseg (id->first, msr, endtime, 2))
         return NULL;
@@ -531,13 +531,13 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
     {
       /* This search finds the following values if they exist: */
       segbefore = NULL; /* The first segment end that matches the record start (within tolerance) */
-      segafter  = NULL; /* The first segment start that matches the record end (within tolerance) */
+      segafter = NULL;  /* The first segment start that matches the record end (within tolerance) */
       followseg = NULL; /* The segment with latest start time before the record start */
       searchseg = id->first;
       while (searchseg)
       {
         /* Skip segments with no time coverage, these cannot be extended */
-        if (!SEGMENT_HAS_TIME_COVERAGE(searchseg))
+        if (!SEGMENT_HAS_TIME_COVERAGE (searchseg))
         {
           searchseg = searchseg->next;
           continue;
@@ -776,8 +776,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
   return seg;
 } /* End of mstl3_addmsr_recordptr() */
 
-
-/****************************************************************/ /**
+/** ************************************************************************
  * @brief Parse miniSEED from a buffer and populate a ::MS3TraceList
  *
  * For a full description of \a tolerance see mstl3_addmsr().
@@ -810,7 +809,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
  * \ref MessageOnError - this function logs a message on error
  *
  * \sa mstl3_addmsr()
- *********************************************************************/
+ ***************************************************************************/
 int64_t
 mstl3_readbuffer (MS3TraceList **ppmstl, const char *buffer, uint64_t bufferlength,
                   int8_t splitversion, uint32_t flags,
@@ -821,7 +820,7 @@ mstl3_readbuffer (MS3TraceList **ppmstl, const char *buffer, uint64_t bufferleng
                                      NULL, verbose);
 } /* End of mstl3_readbuffer() */
 
-/****************************************************************/ /**
+/** ************************************************************************
  * @brief Parse miniSEED from a buffer and populate a ::MS3TraceList
  *
  * For a full description of \a tolerance see mstl3_addmsr().
@@ -859,20 +858,20 @@ mstl3_readbuffer (MS3TraceList **ppmstl, const char *buffer, uint64_t bufferleng
  * \ref MessageOnError - this function logs a message on error
  *
  * \sa mstl3_addmsr()
- *********************************************************************/
+ ***************************************************************************/
 int64_t
 mstl3_readbuffer_selection (MS3TraceList **ppmstl, const char *buffer, uint64_t bufferlength,
                             int8_t splitversion, uint32_t flags,
                             const MS3Tolerance *tolerance, const MS3Selections *selections,
                             int8_t verbose)
 {
-  MS3Record *msr   = NULL;
+  MS3Record *msr = NULL;
   MS3TraceSeg *seg = NULL;
   MS3RecordPtr *recordptr = NULL;
   uint32_t dataoffset;
   uint32_t datasize;
-  uint64_t offset  = 0;
-  uint32_t pflags  = flags;
+  uint64_t offset = 0;
+  uint32_t pflags = flags;
   int64_t reccount = 0;
   int parsevalue;
 
@@ -958,12 +957,12 @@ mstl3_readbuffer_selection (MS3TraceList **ppmstl, const char *buffer, uint64_t 
       if (msr3_data_bounds (msr, &dataoffset, &datasize))
         return MS_GENERROR;
 
-      recordptr->bufferptr  = buffer + offset;
-      recordptr->fileptr    = NULL;
-      recordptr->filename   = NULL;
+      recordptr->bufferptr = buffer + offset;
+      recordptr->fileptr = NULL;
+      recordptr->filename = NULL;
       recordptr->fileoffset = 0;
       recordptr->dataoffset = dataoffset;
-      recordptr->prvtptr    = NULL;
+      recordptr->prvtptr = NULL;
     }
 
     reccount += 1;
@@ -1006,7 +1005,7 @@ mstl3_msr2seg (const MS3Record *msr, nstime_t endtime)
   /* Populate MS3TraceSeg */
   seg->starttime = msr->starttime;
   seg->endtime = endtime;
-  seg->samprate = msr3_sampratehz(msr);
+  seg->samprate = msr3_sampratehz (msr);
   seg->samplecnt = msr->samplecnt;
   seg->sampletype = msr->sampletype;
   seg->numsamples = msr->numsamples;
@@ -1022,7 +1021,7 @@ mstl3_msr2seg (const MS3Record *msr, nstime_t endtime)
 
     datasize = samplesize * msr->numsamples;
 
-    if (!(seg->datasamples = libmseed_memory.malloc ((size_t) (datasize))))
+    if (!(seg->datasamples = libmseed_memory.malloc ((size_t)(datasize))))
     {
       ms_log (2, "Error allocating memory\n");
       return NULL;
@@ -1111,7 +1110,7 @@ mstl3_addmsrtoseg (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, int
     {
       memcpy ((char *)seg->datasamples + (seg->numsamples * samplesize),
               msr->datasamples,
-              (size_t) (msr->numsamples * samplesize));
+              (size_t)(msr->numsamples * samplesize));
 
       seg->numsamples += msr->numsamples;
     }
@@ -1126,11 +1125,11 @@ mstl3_addmsrtoseg (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, int
     {
       memmove ((char *)seg->datasamples + (msr->numsamples * samplesize),
                seg->datasamples,
-               (size_t) (seg->numsamples * samplesize));
+               (size_t)(seg->numsamples * samplesize));
 
       memcpy (seg->datasamples,
               msr->datasamples,
-              (size_t) (msr->numsamples * samplesize));
+              (size_t)(msr->numsamples * samplesize));
 
       seg->numsamples += msr->numsamples;
     }
@@ -1212,7 +1211,7 @@ mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
   {
     memcpy ((char *)seg1->datasamples + (seg1->numsamples * samplesize),
             seg2->datasamples,
-            (size_t) (seg2->numsamples * samplesize));
+            (size_t)(seg2->numsamples * samplesize));
 
     seg1->numsamples += seg2->numsamples;
   }
@@ -1236,7 +1235,7 @@ mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
   return seg1;
 } /* End of mstl3_addsegtoseg() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Add a ::MS3RecordPtr to the ::MS3RecordList of a ::MS3TraceSeg
  *
  * @param[in] seg ::MS3TraceSeg to add record to
@@ -1286,8 +1285,8 @@ mstl3_add_recordptr (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, i
     return NULL;
   }
 
-  memset (recordptr, 0, sizeof(MS3RecordPtr));
-  recordptr->msr     = msr3_duplicate (msr, 0);
+  memset (recordptr, 0, sizeof (MS3RecordPtr));
+  recordptr->msr = msr3_duplicate (msr, 0);
   recordptr->endtime = endtime;
 
   if (recordptr->msr == NULL)
@@ -1310,8 +1309,8 @@ mstl3_add_recordptr (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, i
     }
 
     seg->recordlist->recordcnt = 1;
-    seg->recordlist->first     = recordptr;
-    seg->recordlist->last      = recordptr;
+    seg->recordlist->first = recordptr;
+    seg->recordlist->last = recordptr;
   }
   /* Otherwise, add record pointer to existing list */
   else
@@ -1335,7 +1334,7 @@ mstl3_add_recordptr (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, i
   return recordptr;
 } /* End of mstl3_add_recordptr() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Convert the data samples associated with an MS3TraceSeg to another
  * data type
  *
@@ -1412,7 +1411,7 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
         }
 
         /* Round to nearest integer, handling positive and negative values */
-        idata[idx] = (int32_t) (fdata[idx] + (fdata[idx] >= 0 ? 0.5 : -0.5));
+        idata[idx] = (int32_t)(fdata[idx] + (fdata[idx] >= 0 ? 0.5 : -0.5));
       }
     }
     else if (seg->sampletype == 'd') /* Convert doubles to integers with simple rounding */
@@ -1428,14 +1427,14 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
         }
 
         /* Round to nearest integer, handling positive and negative values */
-        idata[idx] = (int32_t) (ddata[idx] + (ddata[idx] >= 0 ? 0.5 : -0.5));
+        idata[idx] = (int32_t)(ddata[idx] + (ddata[idx] >= 0 ? 0.5 : -0.5));
       }
 
       /* Reallocate buffer for reduced size needed, only if not pre-allocating */
       if (libmseed_prealloc_block_size == 0)
       {
         if (!(seg->datasamples = libmseed_memory.realloc (seg->datasamples,
-                                                          (size_t) (seg->numsamples * sizeof (int32_t)))))
+                                                          (size_t)(seg->numsamples * sizeof (int32_t)))))
         {
           ms_log (2, "Cannot re-allocate buffer for sample conversion\n");
           return -1;
@@ -1464,7 +1463,7 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
       if (libmseed_prealloc_block_size == 0)
       {
         if (!(seg->datasamples = libmseed_memory.realloc (seg->datasamples,
-                                                          (size_t) (seg->numsamples * sizeof (float)))))
+                                                          (size_t)(seg->numsamples * sizeof (float)))))
         {
           ms_log (2, "Cannot re-allocate buffer after sample conversion\n");
           return -1;
@@ -1479,7 +1478,7 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
   /* Convert to 64-bit doubles */
   else if (type == 'd')
   {
-    if (!(ddata = (double *)libmseed_memory.malloc ((size_t) (seg->numsamples * sizeof (double)))))
+    if (!(ddata = (double *)libmseed_memory.malloc ((size_t)(seg->numsamples * sizeof (double)))))
     {
       ms_log (2, "Cannot allocate buffer for sample conversion to doubles\n");
       return -1;
@@ -1508,7 +1507,7 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
   return 0;
 } /* End of mstl3_convertsamples() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Resize data sample buffers of ::MS3TraceList to what is needed
  *
  * This routine should only be used if pre-allocation of memory, via
@@ -1541,11 +1540,11 @@ mstl3_resize_buffers (MS3TraceList *mstl)
     seg = id->first;
     while (seg)
     {
-      samplesize = ms_samplesize(seg->sampletype);
+      samplesize = ms_samplesize (seg->sampletype);
 
       if (samplesize && seg->datasamples && seg->numsamples > 0)
       {
-        datasize = (size_t) seg->numsamples * samplesize;
+        datasize = (size_t)seg->numsamples * samplesize;
 
         if (seg->datasize > datasize)
         {
@@ -1570,7 +1569,7 @@ mstl3_resize_buffers (MS3TraceList *mstl)
   return 0;
 } /* End of mstl3_resize_buffers() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Unpack data samples in a @ref record-list associated with a ::MS3TraceList
  *
  * Normally a record list is created calling by ms3_readtracelist() or
@@ -1632,7 +1631,8 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
   const char *input = NULL;
 
   /* Linked list of open file pointers */
-  struct filelist_s {
+  struct filelist_s
+  {
     const char *filename;
     FILE *fileptr;
     struct filelist_s *next;
@@ -1654,7 +1654,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
 
   recordptr = seg->recordlist->first;
 
-  if (ms_encoding_sizetype((uint8_t)recordptr->msr->encoding, &samplesize, &sampletype))
+  if (ms_encoding_sizetype ((uint8_t)recordptr->msr->encoding, &samplesize, &sampletype))
   {
     ms_log (2, "%s: Cannot determine sample size and type for encoding: %u\n",
             id->sid, recordptr->msr->encoding);
@@ -1704,7 +1704,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
       continue;
     }
 
-    if (ms_encoding_sizetype((uint8_t)recordptr->msr->encoding, NULL, &recsampletype))
+    if (ms_encoding_sizetype ((uint8_t)recordptr->msr->encoding, NULL, &recsampletype))
     {
       ms_log (2, "%s: Cannot determine sample type for encoding: %u\n", id->sid, recordptr->msr->encoding);
 
@@ -1757,7 +1757,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
 
           if ((filelistptr->fileptr = fopen (recordptr->filename, "rb")) == NULL)
           {
-            ms_log (2, "%s: Cannot open file (%s): %s\n", id->sid, recordptr->filename, strerror(errno));
+            ms_log (2, "%s: Cannot open file (%s): %s\n", id->sid, recordptr->filename, strerror (errno));
 
             totalunpackedsamples = -1;
             break;
@@ -1808,7 +1808,6 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
 
         totalunpackedsamples = -1;
         break;
-
       }
 
       input = filebuffer + recordptr->dataoffset;
@@ -1860,7 +1859,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
     {
       libmseed_memory.free (output);
       seg->datasamples = NULL;
-      seg->datasize    = 0;
+      seg->datasize = 0;
     }
     else
     {
@@ -1874,7 +1873,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
   return totalunpackedsamples;
 } /* End of mstl3_unpack_recordlist() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Pack ::MS3TraceList data into miniSEED records
  *
  * The datasamples array, numsamples and starttime fields of each
@@ -2048,12 +2047,18 @@ lm_seg3_free_memory (MS3TraceSeg *seg, int8_t freeprvtptr)
   libmseed_memory.free (seg);
 } /* End of lm_seg3_free_memory() */
 
-/***************************************************************************
- * Remove the target MS3TraceSeg structure from MS3TraceID.
+/** ************************************************************************
+ * @brief Remove the target MS3TraceSeg structure from MS3TraceID.
  *
- * Return 0 on success and -1 on error.
+ * @param[in] id ::MS3TraceID containing the segment to remove
+ * @param[in] seg ::MS3TraceSeg segment to remove
+ * @param[in] freeprvtptr If true, free the private pointer data
+ *
+ * @returns 0 on success and -1 on error.
  *
  * \ref MessageOnError - this function logs a message on error
+ *
+ * \sa mstl3_free()
  ***************************************************************************/
 int
 mstraceseg3_remove (MS3TraceID *id, MS3TraceSeg *seg, int8_t freeprvtptr)
@@ -2085,7 +2090,7 @@ mstraceseg3_remove (MS3TraceID *id, MS3TraceSeg *seg, int8_t freeprvtptr)
   return 0;
 }
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Pack a ::MS3TraceSeg data into miniSEED records
  *
  * The datasamples array, numsamples and starttime fields of each
@@ -2177,17 +2182,17 @@ mstraceseg3_pack (MS3TraceID *id, MS3TraceSeg *seg,
 
   msr.reclen = reclen;
   msr.encoding = encoding;
-  memcpy (msr.sid, id->sid, sizeof(msr.sid));
+  memcpy (msr.sid, id->sid, sizeof (msr.sid));
   msr.pubversion = id->pubversion;
 
   if (extra)
   {
     msr.extra = extra;
-    extralength = strlen(extra);
+    extralength = strlen (extra);
 
     if (extralength > UINT16_MAX)
     {
-      ms_log (2, "Extra headers are too long: %"PRIsize_t"\n", extralength);
+      ms_log (2, "Extra headers are too long: %" PRIsize_t "\n", extralength);
       return -1;
     }
 
@@ -2195,12 +2200,12 @@ mstraceseg3_pack (MS3TraceID *id, MS3TraceSeg *seg,
   }
 
   /* Pack segment data */
-  msr.starttime   = seg->starttime;
-  msr.samprate    = seg->samprate;
-  msr.samplecnt   = seg->samplecnt;
+  msr.starttime = seg->starttime;
+  msr.samprate = seg->samprate;
+  msr.samplecnt = seg->samplecnt;
   msr.datasamples = seg->datasamples;
-  msr.numsamples  = seg->numsamples;
-  msr.sampletype  = seg->sampletype;
+  msr.numsamples = seg->numsamples;
+  msr.sampletype = seg->sampletype;
 
   /* Set encoding for data types with only one encoding, otherwise requested */
   switch (seg->sampletype)
@@ -2283,7 +2288,7 @@ mstraceseg3_pack (MS3TraceID *id, MS3TraceSeg *seg,
   return totalpackedrecords;
 } /* End of mstraceseg3_pack() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Print trace list summary information for a ::MS3TraceList
  *
  * By default only print the source ID, starttime and endtime for each
@@ -2339,7 +2344,7 @@ mstl3_printtracelist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
     /* Generated versioned SID if requested */
     if (versions)
     {
-      snprintf (versioned_sid, sizeof(versioned_sid), "%s#%u", id->sid, id->pubversion);
+      snprintf (versioned_sid, sizeof (versioned_sid), "%s#%u", id->sid, id->pubversion);
       display_sid = versioned_sid;
     }
     else
@@ -2352,10 +2357,10 @@ mstl3_printtracelist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
     while (seg)
     {
       /* Create formatted time strings */
-      if (ms_nstime2timestr_n (seg->starttime, stime, sizeof(stime), timeformat, NANO_MICRO) == NULL)
+      if (ms_nstime2timestr_n (seg->starttime, stime, sizeof (stime), timeformat, NANO_MICRO) == NULL)
         return;
 
-      if (ms_nstime2timestr_n (seg->endtime, etime, sizeof(etime), timeformat, NANO_MICRO) == NULL)
+      if (ms_nstime2timestr_n (seg->endtime, etime, sizeof (etime), timeformat, NANO_MICRO) == NULL)
         return;
 
       /* Print segment info at varying levels */
@@ -2417,7 +2422,7 @@ mstl3_printtracelist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
   return;
 } /* End of mstl3_printtracelist() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Print SYNC trace list summary information for a ::MS3TraceList
  *
  * The SYNC header line will be created using the supplied dccid, if
@@ -2472,8 +2477,8 @@ mstl3_printsynclist (const MS3TraceList *mstl, const char *dccid, ms_subseconds_
     seg = id->first;
     while (seg)
     {
-      ms_nstime2timestr_n (seg->starttime, starttime, sizeof(starttime), SEEDORDINAL, subseconds);
-      ms_nstime2timestr_n (seg->endtime, endtime, sizeof(endtime), SEEDORDINAL, subseconds);
+      ms_nstime2timestr_n (seg->starttime, starttime, sizeof (starttime), SEEDORDINAL, subseconds);
+      ms_nstime2timestr_n (seg->endtime, endtime, sizeof (endtime), SEEDORDINAL, subseconds);
 
       /* Print SYNC line */
       ms_log (0, "%s|%s|%s|%s|%s|%s||%.10g|%" PRId64 "|||||||%s\n",
@@ -2491,7 +2496,7 @@ mstl3_printsynclist (const MS3TraceList *mstl, const char *dccid, ms_subseconds_
   return;
 } /* End of mstl3_printsynclist() */
 
-/**********************************************************************/ /**
+/** ************************************************************************
  * @brief Print gap/overlap list summary information for a ::MS3TraceList.
  *
  * Overlaps are printed as negative gaps.
@@ -2582,10 +2587,10 @@ mstl3_printgaplist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
           snprintf (gapstr, sizeof (gapstr), "%-4.4g", gap);
 
         /* Create formatted time strings */
-        if (ms_nstime2timestr_n (seg->endtime, time1, sizeof(time1), timeformat, NANO_MICRO) == NULL)
+        if (ms_nstime2timestr_n (seg->endtime, time1, sizeof (time1), timeformat, NANO_MICRO) == NULL)
           ms_log (2, "Cannot convert trace start time for %s\n", id->sid);
 
-        if (ms_nstime2timestr_n (seg->next->starttime, time2, sizeof(time2), timeformat, NANO_MICRO) == NULL)
+        if (ms_nstime2timestr_n (seg->next->starttime, time2, sizeof (time2), timeformat, NANO_MICRO) == NULL)
           ms_log (2, "Cannot convert trace end time for %s\n", id->sid);
 
         ms_log (0, "%-27s %-28s %-28s %-4s %-.8g\n",

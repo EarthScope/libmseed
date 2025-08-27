@@ -103,11 +103,11 @@ header_callback (char *buffer, size_t size, size_t num, void *userdata)
 {
   struct header_callback_parameters *hcp = (struct header_callback_parameters *)userdata;
 
-  char startstr[21]   = {0}; /* Maximum of 20 digit value */
-  char endstr[21]     = {0}; /* Maximum of 20 digit value */
+  char startstr[21] = {0}; /* Maximum of 20 digit value */
+  char endstr[21] = {0};   /* Maximum of 20 digit value */
   uint8_t startdigits = 0;
-  uint8_t enddigits   = 0;
-  char *dash          = NULL;
+  uint8_t enddigits = 0;
+  char *dash = NULL;
   char *ptr;
 
   if (!buffer || !userdata)
@@ -142,7 +142,7 @@ header_callback (char *buffer, size_t size, size_t num, void *userdata)
       if (startdigits >= sizeof (startstr) || enddigits >= sizeof (endstr))
       {
         startdigits = 0;
-        enddigits   = 0;
+        enddigits = 0;
         break;
       }
     }
@@ -314,7 +314,7 @@ msio_fopen (LMIO *io, const char *path, const char *mode,
     if ((startoffset && *startoffset > 0) || (endoffset && *endoffset > 0))
     {
       char startstr[21] = {0};
-      char endstr[21]   = {0};
+      char endstr[21] = {0};
       char rangestr[42];
 
       /* Build Range header value.
@@ -340,7 +340,7 @@ msio_fopen (LMIO *io, const char *path, const char *mode,
     if (startoffset || endoffset)
     {
       hcp.startoffset = startoffset;
-      hcp.endoffset   = endoffset;
+      hcp.endoffset = endoffset;
 
       /* Configure header callback */
       if (curl_easy_setopt (io->handle, CURLOPT_HEADERFUNCTION, header_callback) != CURLE_OK)
@@ -452,8 +452,8 @@ msio_fclose (LMIO *io)
 #endif
   }
 
-  io->type    = LMIO_NULL;
-  io->handle  = NULL;
+  io->type = LMIO_NULL;
+  io->handle = NULL;
   io->handle2 = NULL;
 
   return 0;
@@ -506,7 +506,7 @@ msio_fread (LMIO *io, void *buffer, size_t size)
     fd_set fdwrite;
     fd_set fdexcep;
     long curl_timeo = -1;
-    int maxfd       = -1;
+    int maxfd = -1;
     int rc;
 
     if (!io->still_running)
@@ -514,7 +514,7 @@ msio_fread (LMIO *io, void *buffer, size_t size)
 
     /* Set up destination buffer in write callback parameters */
     rcp.buffer = buffer;
-    rcp.size   = size;
+    rcp.size = size;
     if (curl_easy_setopt (io->handle, CURLOPT_WRITEDATA, (void *)&rcp) != CURLE_OK)
     {
       ms_log (2, "Cannot set CURLOPT_WRITEDATA\n");
@@ -530,7 +530,7 @@ msio_fread (LMIO *io, void *buffer, size_t size)
     do
     {
       /* Default timeout for read failure */
-      timeout.tv_sec  = 60;
+      timeout.tv_sec = 60;
       timeout.tv_usec = 0;
 
       curl_multi_timeout (io->handle2, &curl_timeo);
