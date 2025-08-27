@@ -63,7 +63,8 @@ static const int64_t years_in_gregorian_cycle = 400;
 #define CHEAT_YEARS 108
 
 /* IS_LEAP is used all over the place to index on arrays, so make sure it always returns 0 or 1. */
-#define IS_LEAP(n) ((!(((n) + 1900) % 400) || (!(((n) + 1900) % 4) && (((n) + 1900) % 100))) ? 1 : 0)
+#define IS_LEAP(n) \
+  ((!(((n) + 1900) % 400) || (!(((n) + 1900) % 4) && (((n) + 1900) % 100))) ? 1 : 0)
 
 /* Allegedly, some <termios.h> define a macro called WRAP, so use a longer name like WRAP_TIME64. */
 #define WRAP_TIME64(a, b, m) ((a) = ((a) < 0) ? ((b)--, (a) + (m)) : (a))

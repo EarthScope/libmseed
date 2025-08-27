@@ -103,8 +103,8 @@ parse_json (char *jsonstring, size_t length, LM_PARSED_JSON *parsed)
   /* Parse JSON into immutable form */
   if ((parsed->doc = yyjson_read_opts (jsonstring, length, flg, &alc, &err)) == NULL)
   {
-    ms_log (2, "%s() Cannot parse extra header JSON: %s\n",
-            __func__, (err.msg) ? err.msg : "Unknown error");
+    ms_log (2, "%s() Cannot parse extra header JSON: %s\n", __func__,
+            (err.msg) ? err.msg : "Unknown error");
     return NULL;
   }
 
@@ -153,8 +153,7 @@ parse_json (char *jsonstring, size_t length, LM_PARSED_JSON *parsed)
  * \sa mseh_free_parsestate()
  ***************************************************************************/
 int
-mseh_get_ptr_r (const MS3Record *msr, const char *ptr,
-                void *value, char type, uint32_t maxlength,
+mseh_get_ptr_r (const MS3Record *msr, const char *ptr, void *value, char type, uint32_t maxlength,
                 LM_PARSED_JSON **parsestate)
 {
   LM_PARSED_JSON *parsed = (parsestate) ? *parsestate : NULL;
@@ -315,8 +314,7 @@ mseh_get_ptr_r (const MS3Record *msr, const char *ptr,
  * \sa mseh_serialize()
  ***************************************************************************/
 int
-mseh_set_ptr_r (MS3Record *msr, const char *ptr,
-                void *value, char type,
+mseh_set_ptr_r (MS3Record *msr, const char *ptr, void *value, char type,
                 LM_PARSED_JSON **parsestate)
 {
   LM_PARSED_JSON *parsed = (parsestate) ? *parsestate : NULL;
@@ -420,8 +418,7 @@ mseh_set_ptr_r (MS3Record *msr, const char *ptr,
         if ((target_val = yyjson_mut_doc_ptr_get (parsed->mut_doc, ptr)))
         {
           /* Generate merged value */
-          if ((merged_val = yyjson_mut_merge_patch (parsed->mut_doc,
-                                                    target_val,
+          if ((merged_val = yyjson_mut_merge_patch (parsed->mut_doc, target_val,
                                                     yyjson_mut_doc_get_root (patch_doc))))
           {
             /* Replace value at pointer with merged value */
@@ -440,8 +437,8 @@ mseh_set_ptr_r (MS3Record *msr, const char *ptr,
 
     break;
   case 'V':
-    rv = yyjson_mut_doc_ptr_set (parsed->mut_doc, ptr,
-                                 yyjson_mut_val_mut_copy (parsed->mut_doc, (yyjson_mut_val *)value));
+    rv = yyjson_mut_doc_ptr_set (
+        parsed->mut_doc, ptr, yyjson_mut_val_mut_copy (parsed->mut_doc, (yyjson_mut_val *)value));
     break;
   case 'A':
     /* Search for existing array, create if necessary */
@@ -496,8 +493,7 @@ mseh_set_ptr_r (MS3Record *msr, const char *ptr,
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-mseh_add_event_detection_r (MS3Record *msr, const char *ptr,
-                            MSEHEventDetection *eventdetection,
+mseh_add_event_detection_r (MS3Record *msr, const char *ptr, MSEHEventDetection *eventdetection,
                             LM_PARSED_JSON **parsestate)
 {
   yyjson_mut_val entry;
@@ -564,7 +560,8 @@ mseh_add_event_detection_r (MS3Record *msr, const char *ptr,
   }
   if (eventdetection->onsettime != NSTUNSET)
   {
-    if (ms_nstime2timestr_n (eventdetection->onsettime, timestring, sizeof (timestring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (ms_nstime2timestr_n (eventdetection->onsettime, timestring, sizeof (timestring),
+                             ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       yyjson_mut_set_str (&onset_key, "OnsetTime");
       yyjson_mut_set_str (&onset, timestring);
@@ -572,7 +569,8 @@ mseh_add_event_detection_r (MS3Record *msr, const char *ptr,
     }
     else
     {
-      ms_log (2, "%s() Cannot create time string for %" PRId64 "\n", __func__, eventdetection->onsettime);
+      ms_log (2, "%s() Cannot create time string for %" PRId64 "\n", __func__,
+              eventdetection->onsettime);
       return MS_GENERROR;
     }
   }
@@ -632,8 +630,7 @@ mseh_add_event_detection_r (MS3Record *msr, const char *ptr,
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-mseh_add_calibration_r (MS3Record *msr, const char *ptr,
-                        MSEHCalibration *calibration,
+mseh_add_calibration_r (MS3Record *msr, const char *ptr, MSEHCalibration *calibration,
                         LM_PARSED_JSON **parsestate)
 {
   yyjson_mut_val entry;
@@ -677,7 +674,8 @@ mseh_add_calibration_r (MS3Record *msr, const char *ptr,
   }
   if (calibration->begintime != NSTUNSET)
   {
-    if (ms_nstime2timestr_n (calibration->begintime, beginstring, sizeof (beginstring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (ms_nstime2timestr_n (calibration->begintime, beginstring, sizeof (beginstring),
+                             ISOMONTHDAY_Z, NANO_MICRO_NONE))
     {
       yyjson_mut_set_str (&begintime_key, "BeginTime");
       yyjson_mut_set_str (&begintime, beginstring);
@@ -685,13 +683,15 @@ mseh_add_calibration_r (MS3Record *msr, const char *ptr,
     }
     else
     {
-      ms_log (2, "%s() Cannot create time string for %" PRId64 "\n", __func__, calibration->begintime);
+      ms_log (2, "%s() Cannot create time string for %" PRId64 "\n", __func__,
+              calibration->begintime);
       return MS_GENERROR;
     }
   }
   if (calibration->endtime != NSTUNSET)
   {
-    if (ms_nstime2timestr_n (calibration->endtime, endstring, sizeof (endstring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (ms_nstime2timestr_n (calibration->endtime, endstring, sizeof (endstring), ISOMONTHDAY_Z,
+                             NANO_MICRO_NONE))
     {
       yyjson_mut_set_str (&endtime_key, "EndTime");
       yyjson_mut_set_str (&endtime, endstring);
@@ -699,7 +699,8 @@ mseh_add_calibration_r (MS3Record *msr, const char *ptr,
     }
     else
     {
-      ms_log (2, "%s() Cannot create time string for %" PRId64 "\n", __func__, calibration->endtime);
+      ms_log (2, "%s() Cannot create time string for %" PRId64 "\n", __func__,
+              calibration->endtime);
       return MS_GENERROR;
     }
   }
@@ -825,8 +826,7 @@ mseh_add_calibration_r (MS3Record *msr, const char *ptr,
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-mseh_add_timing_exception_r (MS3Record *msr, const char *ptr,
-                             MSEHTimingException *exception,
+mseh_add_timing_exception_r (MS3Record *msr, const char *ptr, MSEHTimingException *exception,
                              LM_PARSED_JSON **parsestate)
 {
   yyjson_mut_val entry;
@@ -850,7 +850,8 @@ mseh_add_timing_exception_r (MS3Record *msr, const char *ptr,
   /* Add elements to new object */
   if (exception->time != NSTUNSET)
   {
-    if (ms_nstime2timestr_n (exception->time, timestring, sizeof (timestring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (ms_nstime2timestr_n (exception->time, timestring, sizeof (timestring), ISOMONTHDAY_Z,
+                             NANO_MICRO_NONE))
     {
       yyjson_mut_set_str (&etime_key, "Time");
       yyjson_mut_set_str (&etime, timestring);
@@ -945,7 +946,8 @@ mseh_add_recenter_r (MS3Record *msr, const char *ptr, MSEHRecenter *recenter,
   }
   if (recenter->begintime != NSTUNSET)
   {
-    if (ms_nstime2timestr_n (recenter->begintime, beginstring, sizeof (beginstring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (ms_nstime2timestr_n (recenter->begintime, beginstring, sizeof (beginstring), ISOMONTHDAY_Z,
+                             NANO_MICRO_NONE))
     {
       yyjson_mut_set_str (&begin_key, "BeginTime");
       yyjson_mut_set_str (&begin, beginstring);
@@ -959,7 +961,8 @@ mseh_add_recenter_r (MS3Record *msr, const char *ptr, MSEHRecenter *recenter,
   }
   if (recenter->endtime != NSTUNSET)
   {
-    if (ms_nstime2timestr_n (recenter->endtime, endstring, sizeof (endstring), ISOMONTHDAY_Z, NANO_MICRO_NONE))
+    if (ms_nstime2timestr_n (recenter->endtime, endstring, sizeof (endstring), ISOMONTHDAY_Z,
+                             NANO_MICRO_NONE))
     {
       yyjson_mut_set_str (&end_key, "EndTime");
       yyjson_mut_set_str (&end, endstring);
@@ -1028,15 +1031,15 @@ mseh_serialize (MS3Record *msr, LM_PARSED_JSON **parsestate)
 
   if (serialized == NULL)
   {
-    ms_log (2, "%s() Cannot write extra header JSON: %s\n",
-            __func__, (err.msg) ? err.msg : "Unknown error");
+    ms_log (2, "%s() Cannot write extra header JSON: %s\n", __func__,
+            (err.msg) ? err.msg : "Unknown error");
     return MS_GENERROR;
   }
 
   if (serialsize > UINT16_MAX)
   {
-    ms_log (2, "%s() New serialization size exceeds limit of %d bytes: %" PRIu64 "\n",
-            __func__, UINT16_MAX, (uint64_t)serialsize);
+    ms_log (2, "%s() New serialization size exceeds limit of %d bytes: %" PRIu64 "\n", __func__,
+            UINT16_MAX, (uint64_t)serialsize);
     libmseed_memory.free (serialized);
     return MS_GENERROR;
   }
@@ -1117,10 +1120,11 @@ mseh_replace (MS3Record *msr, char *jsonstring)
   if (jsonstring != NULL)
   {
     /* Parse JSON into immutable form */
-    if ((doc = yyjson_read_opts (jsonstring, strlen (jsonstring), read_flg, &alc, &read_err)) == NULL)
+    if ((doc = yyjson_read_opts (jsonstring, strlen (jsonstring), read_flg, &alc, &read_err)) ==
+        NULL)
     {
-      ms_log (2, "%s() Cannot parse extra header JSON: %s\n",
-              __func__, (read_err.msg) ? read_err.msg : "Unknown error");
+      ms_log (2, "%s() Cannot parse extra header JSON: %s\n", __func__,
+              (read_err.msg) ? read_err.msg : "Unknown error");
       return MS_GENERROR;
     }
 
@@ -1129,15 +1133,15 @@ mseh_replace (MS3Record *msr, char *jsonstring)
 
     if (serialized == NULL)
     {
-      ms_log (2, "%s() Cannot write extra header JSON: %s\n",
-              __func__, (write_err.msg) ? write_err.msg : "Unknown error");
+      ms_log (2, "%s() Cannot write extra header JSON: %s\n", __func__,
+              (write_err.msg) ? write_err.msg : "Unknown error");
       return MS_GENERROR;
     }
 
     if (serialsize > UINT16_MAX)
     {
-      ms_log (2, "%s() New serialization size exceeds limit of %d bytes: %" PRIu64 "\n",
-              __func__, UINT16_MAX, (uint64_t)serialsize);
+      ms_log (2, "%s() New serialization size exceeds limit of %d bytes: %" PRIu64 "\n", __func__,
+              UINT16_MAX, (uint64_t)serialsize);
       libmseed_memory.free (serialized);
       return MS_GENERROR;
     }
@@ -1180,7 +1184,8 @@ mseh_print (const MS3Record *msr, int indent)
 
   if (extra[0] != '{' || extra[msr->extralength - 1] != '}')
   {
-    ms_log (1, "%s() Warning, something is wrong, extra headers are not a clean {object}\n", __func__);
+    ms_log (1, "%s() Warning, something is wrong, extra headers are not a clean {object}\n",
+            __func__);
   }
 
   /* Print JSON character-by-character, inserting

@@ -27,8 +27,7 @@
 #include "gmtime64.h"
 #include "libmseed.h"
 
-static nstime_t ms_time2nstime_int (int year, int day, int hour,
-                                    int min, int sec, uint32_t nsec);
+static nstime_t ms_time2nstime_int (int year, int day, int hour, int min, int sec, uint32_t nsec);
 
 /** @cond UNDOCUMENTED */
 
@@ -78,33 +77,87 @@ libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsize)
 
 /* Embedded leap second list, good through: 28 December 2023 */
 static LeapSecond embedded_leapsecondlist[] = {
-    {.leapsecond = NTPEPOCH2NSTIME (2272060800), .TAIdelta = 10, .next = &embedded_leapsecondlist[1]},
-    {.leapsecond = NTPEPOCH2NSTIME (2287785600), .TAIdelta = 11, .next = &embedded_leapsecondlist[2]},
-    {.leapsecond = NTPEPOCH2NSTIME (2303683200), .TAIdelta = 12, .next = &embedded_leapsecondlist[3]},
-    {.leapsecond = NTPEPOCH2NSTIME (2335219200), .TAIdelta = 13, .next = &embedded_leapsecondlist[4]},
-    {.leapsecond = NTPEPOCH2NSTIME (2366755200), .TAIdelta = 14, .next = &embedded_leapsecondlist[5]},
-    {.leapsecond = NTPEPOCH2NSTIME (2398291200), .TAIdelta = 15, .next = &embedded_leapsecondlist[6]},
-    {.leapsecond = NTPEPOCH2NSTIME (2429913600), .TAIdelta = 16, .next = &embedded_leapsecondlist[7]},
-    {.leapsecond = NTPEPOCH2NSTIME (2461449600), .TAIdelta = 17, .next = &embedded_leapsecondlist[8]},
-    {.leapsecond = NTPEPOCH2NSTIME (2492985600), .TAIdelta = 18, .next = &embedded_leapsecondlist[9]},
-    {.leapsecond = NTPEPOCH2NSTIME (2524521600), .TAIdelta = 19, .next = &embedded_leapsecondlist[10]},
-    {.leapsecond = NTPEPOCH2NSTIME (2571782400), .TAIdelta = 20, .next = &embedded_leapsecondlist[11]},
-    {.leapsecond = NTPEPOCH2NSTIME (2603318400), .TAIdelta = 21, .next = &embedded_leapsecondlist[12]},
-    {.leapsecond = NTPEPOCH2NSTIME (2634854400), .TAIdelta = 22, .next = &embedded_leapsecondlist[13]},
-    {.leapsecond = NTPEPOCH2NSTIME (2698012800), .TAIdelta = 23, .next = &embedded_leapsecondlist[14]},
-    {.leapsecond = NTPEPOCH2NSTIME (2776982400), .TAIdelta = 24, .next = &embedded_leapsecondlist[15]},
-    {.leapsecond = NTPEPOCH2NSTIME (2840140800), .TAIdelta = 25, .next = &embedded_leapsecondlist[16]},
-    {.leapsecond = NTPEPOCH2NSTIME (2871676800), .TAIdelta = 26, .next = &embedded_leapsecondlist[17]},
-    {.leapsecond = NTPEPOCH2NSTIME (2918937600), .TAIdelta = 27, .next = &embedded_leapsecondlist[18]},
-    {.leapsecond = NTPEPOCH2NSTIME (2950473600), .TAIdelta = 28, .next = &embedded_leapsecondlist[19]},
-    {.leapsecond = NTPEPOCH2NSTIME (2982009600), .TAIdelta = 29, .next = &embedded_leapsecondlist[20]},
-    {.leapsecond = NTPEPOCH2NSTIME (3029443200), .TAIdelta = 30, .next = &embedded_leapsecondlist[21]},
-    {.leapsecond = NTPEPOCH2NSTIME (3076704000), .TAIdelta = 31, .next = &embedded_leapsecondlist[22]},
-    {.leapsecond = NTPEPOCH2NSTIME (3124137600), .TAIdelta = 32, .next = &embedded_leapsecondlist[23]},
-    {.leapsecond = NTPEPOCH2NSTIME (3345062400), .TAIdelta = 33, .next = &embedded_leapsecondlist[24]},
-    {.leapsecond = NTPEPOCH2NSTIME (3439756800), .TAIdelta = 34, .next = &embedded_leapsecondlist[25]},
-    {.leapsecond = NTPEPOCH2NSTIME (3550089600), .TAIdelta = 35, .next = &embedded_leapsecondlist[26]},
-    {.leapsecond = NTPEPOCH2NSTIME (3644697600), .TAIdelta = 36, .next = &embedded_leapsecondlist[27]},
+    {.leapsecond = NTPEPOCH2NSTIME (2272060800),
+     .TAIdelta = 10,
+     .next = &embedded_leapsecondlist[1]},
+    {.leapsecond = NTPEPOCH2NSTIME (2287785600),
+     .TAIdelta = 11,
+     .next = &embedded_leapsecondlist[2]},
+    {.leapsecond = NTPEPOCH2NSTIME (2303683200),
+     .TAIdelta = 12,
+     .next = &embedded_leapsecondlist[3]},
+    {.leapsecond = NTPEPOCH2NSTIME (2335219200),
+     .TAIdelta = 13,
+     .next = &embedded_leapsecondlist[4]},
+    {.leapsecond = NTPEPOCH2NSTIME (2366755200),
+     .TAIdelta = 14,
+     .next = &embedded_leapsecondlist[5]},
+    {.leapsecond = NTPEPOCH2NSTIME (2398291200),
+     .TAIdelta = 15,
+     .next = &embedded_leapsecondlist[6]},
+    {.leapsecond = NTPEPOCH2NSTIME (2429913600),
+     .TAIdelta = 16,
+     .next = &embedded_leapsecondlist[7]},
+    {.leapsecond = NTPEPOCH2NSTIME (2461449600),
+     .TAIdelta = 17,
+     .next = &embedded_leapsecondlist[8]},
+    {.leapsecond = NTPEPOCH2NSTIME (2492985600),
+     .TAIdelta = 18,
+     .next = &embedded_leapsecondlist[9]},
+    {.leapsecond = NTPEPOCH2NSTIME (2524521600),
+     .TAIdelta = 19,
+     .next = &embedded_leapsecondlist[10]},
+    {.leapsecond = NTPEPOCH2NSTIME (2571782400),
+     .TAIdelta = 20,
+     .next = &embedded_leapsecondlist[11]},
+    {.leapsecond = NTPEPOCH2NSTIME (2603318400),
+     .TAIdelta = 21,
+     .next = &embedded_leapsecondlist[12]},
+    {.leapsecond = NTPEPOCH2NSTIME (2634854400),
+     .TAIdelta = 22,
+     .next = &embedded_leapsecondlist[13]},
+    {.leapsecond = NTPEPOCH2NSTIME (2698012800),
+     .TAIdelta = 23,
+     .next = &embedded_leapsecondlist[14]},
+    {.leapsecond = NTPEPOCH2NSTIME (2776982400),
+     .TAIdelta = 24,
+     .next = &embedded_leapsecondlist[15]},
+    {.leapsecond = NTPEPOCH2NSTIME (2840140800),
+     .TAIdelta = 25,
+     .next = &embedded_leapsecondlist[16]},
+    {.leapsecond = NTPEPOCH2NSTIME (2871676800),
+     .TAIdelta = 26,
+     .next = &embedded_leapsecondlist[17]},
+    {.leapsecond = NTPEPOCH2NSTIME (2918937600),
+     .TAIdelta = 27,
+     .next = &embedded_leapsecondlist[18]},
+    {.leapsecond = NTPEPOCH2NSTIME (2950473600),
+     .TAIdelta = 28,
+     .next = &embedded_leapsecondlist[19]},
+    {.leapsecond = NTPEPOCH2NSTIME (2982009600),
+     .TAIdelta = 29,
+     .next = &embedded_leapsecondlist[20]},
+    {.leapsecond = NTPEPOCH2NSTIME (3029443200),
+     .TAIdelta = 30,
+     .next = &embedded_leapsecondlist[21]},
+    {.leapsecond = NTPEPOCH2NSTIME (3076704000),
+     .TAIdelta = 31,
+     .next = &embedded_leapsecondlist[22]},
+    {.leapsecond = NTPEPOCH2NSTIME (3124137600),
+     .TAIdelta = 32,
+     .next = &embedded_leapsecondlist[23]},
+    {.leapsecond = NTPEPOCH2NSTIME (3345062400),
+     .TAIdelta = 33,
+     .next = &embedded_leapsecondlist[24]},
+    {.leapsecond = NTPEPOCH2NSTIME (3439756800),
+     .TAIdelta = 34,
+     .next = &embedded_leapsecondlist[25]},
+    {.leapsecond = NTPEPOCH2NSTIME (3550089600),
+     .TAIdelta = 35,
+     .next = &embedded_leapsecondlist[26]},
+    {.leapsecond = NTPEPOCH2NSTIME (3644697600),
+     .TAIdelta = 36,
+     .next = &embedded_leapsecondlist[27]},
     {.leapsecond = NTPEPOCH2NSTIME (3692217600), .TAIdelta = 37, .next = NULL}};
 
 /* Global variable to hold a leap second list */
@@ -124,7 +177,8 @@ static const int monthdays_leap[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30,
 #define VALIDMONTH(month) (month >= 1 && month <= 12)
 
 /* Check that a day-of-month is in a valid range */
-#define VALIDMONTHDAY(year, month, mday) (mday >= 0 && mday <= (LEAPYEAR (year) ? monthdays_leap[month - 1] : monthdays[month - 1]))
+#define VALIDMONTHDAY(year, month, mday) \
+  (mday >= 0 && mday <= (LEAPYEAR (year) ? monthdays_leap[month - 1] : monthdays[month - 1]))
 
 /* Check that a day-of-year is in a valid range */
 #define VALIDYEARDAY(year, yday) (yday >= 1 && yday <= (365 + (LEAPYEAR (year) ? 1 : 0)))
@@ -186,9 +240,8 @@ static const int monthdays_leap[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30,
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-ms_sid2nslc_n (const char *sid,
-               char *net, size_t netsize, char *sta, size_t stasize,
-               char *loc, size_t locsize, char *chan, size_t chansize)
+ms_sid2nslc_n (const char *sid, char *net, size_t netsize, char *sta, size_t stasize, char *loc,
+               size_t locsize, char *chan, size_t chansize)
 {
   size_t idlen;
   const char *cid;
@@ -342,8 +395,8 @@ ms_sid2nslc (const char *sid, char *net, char *sta, char *loc, char *chan)
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
-             const char *net, const char *sta, const char *loc, const char *chan)
+ms_nslc2sid (char *sid, int sidlen, uint16_t flags, const char *net, const char *sta,
+             const char *loc, const char *chan)
 {
   (void)flags; /* Unused */
   char *sptr = sid;
@@ -486,10 +539,7 @@ ms_seedchan2xchan (char *xchan, const char *seedchan)
   if (!seedchan || !xchan)
     return -1;
 
-  if (seedchan[0] &&
-      seedchan[1] &&
-      seedchan[2] &&
-      seedchan[3] == '\0')
+  if (seedchan[0] && seedchan[1] && seedchan[2] && seedchan[3] == '\0')
   {
     xchan[0] = seedchan[0]; /* Band code */
     xchan[1] = '_';
@@ -544,12 +594,7 @@ ms_xchan2seedchan (char *seedchan, const char *xchan)
   if (!xchan)
     return -1;
 
-  if (xchan[0] &&
-      xchan[1] == '_' &&
-      xchan[2] &&
-      xchan[3] == '_' &&
-      xchan[4] &&
-      xchan[5] == '\0')
+  if (xchan[0] && xchan[1] == '_' && xchan[2] && xchan[3] == '_' && xchan[4] && xchan[5] == '\0')
   {
     if (seedchan)
     {
@@ -570,20 +615,31 @@ ms_xchan2seedchan (char *seedchan, const char *xchan)
 // See http://bjoern.hoehrmann.de/utf-8/decoder/dfa/ for details.
 
 static const uint8_t utf8d[] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 00..1f
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 20..3f
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 40..5f
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 60..7f
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, // 80..9f
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // a0..bf
-    8, 8, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // c0..df
-    0xa, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x4, 0x3, 0x3,                 // e0..ef
-    0xb, 0x6, 0x6, 0x6, 0x5, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8,                 // f0..ff
-    0x0, 0x1, 0x2, 0x3, 0x5, 0x8, 0x7, 0x1, 0x1, 0x1, 0x4, 0x6, 0x1, 0x1, 0x1, 0x1,                 // s0..s0
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, // s1..s2
-    1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, // s3..s4
-    1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 1, // s5..s6
-    1, 3, 1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // s7..s8
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, // 00..1f
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, // 20..3f
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, // 40..5f
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, // 60..7f
+    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
+    9,   9,   9,   9,   9,   9,   9,   9,   9,   9,   9,   9,   9,   9,   9,   9, // 80..9f
+    7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,
+    7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7, // a0..bf
+    8,   8,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,
+    2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   // c0..df
+    0xa, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x4, 0x3, 0x3, // e0..ef
+    0xb, 0x6, 0x6, 0x6, 0x5, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, // f0..ff
+    0x0, 0x1, 0x2, 0x3, 0x5, 0x8, 0x7, 0x1, 0x1, 0x1, 0x4, 0x6, 0x1, 0x1, 0x1, 0x1, // s0..s0
+    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
+    1,   0,   1,   1,   1,   1,   1,   0,   1,   0,   1,   1,   1,   1,   1,   1, // s1..s2
+    1,   2,   1,   1,   1,   1,   1,   2,   1,   2,   1,   1,   1,   1,   1,   1,
+    1,   1,   1,   1,   1,   1,   1,   2,   1,   1,   1,   1,   1,   1,   1,   1, // s3..s4
+    1,   2,   1,   1,   1,   1,   1,   1,   1,   2,   1,   1,   1,   1,   1,   1,
+    1,   1,   1,   1,   1,   1,   1,   3,   1,   3,   1,   1,   1,   1,   1,   1, // s5..s6
+    1,   3,   1,   1,   1,   1,   1,   3,   1,   3,   1,   1,   1,   1,   1,   1,
+    1,   3,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1, // s7..s8
 };
 
 /***************************************************************************
@@ -918,8 +974,8 @@ ms_md2doy (int year, int month, int mday, int *yday)
  * @retval -1 on error
  ***************************************************************************/
 int
-ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *yday,
-                uint8_t *hour, uint8_t *min, uint8_t *sec, uint32_t *nsec)
+ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *yday, uint8_t *hour, uint8_t *min,
+                uint8_t *sec, uint32_t *nsec)
 {
   struct tm tms;
   int64_t isec;
@@ -986,8 +1042,8 @@ ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *yday,
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 char *
-ms_nstime2timestr_n (nstime_t nstime, char *timestr, size_t timestrsize,
-                     ms_timeformat_t timeformat, ms_subseconds_t subseconds)
+ms_nstime2timestr_n (nstime_t nstime, char *timestr, size_t timestrsize, ms_timeformat_t timeformat,
+                     ms_subseconds_t subseconds)
 {
   struct tm tms = {0};
   int64_t rawisec;
@@ -1034,10 +1090,9 @@ ms_nstime2timestr_n (nstime_t nstime, char *timestr, size_t timestrsize,
   submicro = nanosec - (microsec * 1000);
 
   /* Calculate date-time parts if needed by format */
-  if (timeformat == ISOMONTHDAY || timeformat == ISOMONTHDAY_Z ||
-      timeformat == ISOMONTHDAY_DOY || timeformat == ISOMONTHDAY_DOY_Z ||
-      timeformat == ISOMONTHDAY_SPACE || timeformat == ISOMONTHDAY_SPACE_Z ||
-      timeformat == SEEDORDINAL)
+  if (timeformat == ISOMONTHDAY || timeformat == ISOMONTHDAY_Z || timeformat == ISOMONTHDAY_DOY ||
+      timeformat == ISOMONTHDAY_DOY_Z || timeformat == ISOMONTHDAY_SPACE ||
+      timeformat == ISOMONTHDAY_SPACE_Z || timeformat == SEEDORDINAL)
   {
     if (!(ms_gmtime64_r (&isec, &tms)))
     {
@@ -1047,10 +1102,8 @@ ms_nstime2timestr_n (nstime_t nstime, char *timestr, size_t timestrsize,
   }
 
   /* Print no subseconds */
-  if (subseconds == NONE ||
-      (subseconds == MICRO_NONE && microsec == 0) ||
-      (subseconds == NANO_NONE && nanosec == 0) ||
-      (subseconds == NANO_MICRO_NONE && nanosec == 0))
+  if (subseconds == NONE || (subseconds == MICRO_NONE && microsec == 0) ||
+      (subseconds == NANO_NONE && nanosec == 0) || (subseconds == NANO_MICRO_NONE && nanosec == 0))
   {
     switch (timeformat)
     {
@@ -1059,26 +1112,25 @@ ms_nstime2timestr_n (nstime_t nstime, char *timestr, size_t timestrsize,
     case ISOMONTHDAY_SPACE:
     case ISOMONTHDAY_SPACE_Z:
       expected = (timeformat == ISOMONTHDAY_Z || timeformat == ISOMONTHDAY_SPACE_Z) ? 20 : 19;
-      printed = snprintf (timestr, timestrsize, "%4d-%02d-%02d%c%02d:%02d:%02d%s",
-                          tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
-                          (timeformat == ISOMONTHDAY_SPACE || timeformat == ISOMONTHDAY_SPACE_Z) ? ' ' : 'T',
-                          tms.tm_hour, tms.tm_min, tms.tm_sec,
-                          (timeformat == ISOMONTHDAY_Z || timeformat == ISOMONTHDAY_SPACE_Z) ? "Z" : "");
+      printed = snprintf (
+          timestr, timestrsize, "%4d-%02d-%02d%c%02d:%02d:%02d%s", tms.tm_year + 1900,
+          tms.tm_mon + 1, tms.tm_mday,
+          (timeformat == ISOMONTHDAY_SPACE || timeformat == ISOMONTHDAY_SPACE_Z) ? ' ' : 'T',
+          tms.tm_hour, tms.tm_min, tms.tm_sec,
+          (timeformat == ISOMONTHDAY_Z || timeformat == ISOMONTHDAY_SPACE_Z) ? "Z" : "");
       break;
     case ISOMONTHDAY_DOY:
     case ISOMONTHDAY_DOY_Z:
       expected = (timeformat == ISOMONTHDAY_DOY_Z) ? 26 : 25;
-      printed = snprintf (timestr, timestrsize, "%4d-%02d-%02dT%02d:%02d:%02d%s (%03d)",
-                          tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
-                          tms.tm_hour, tms.tm_min, tms.tm_sec,
-                          (timeformat == ISOMONTHDAY_DOY_Z) ? "Z" : "",
-                          tms.tm_yday + 1);
+      printed =
+          snprintf (timestr, timestrsize, "%4d-%02d-%02dT%02d:%02d:%02d%s (%03d)",
+                    tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday, tms.tm_hour, tms.tm_min,
+                    tms.tm_sec, (timeformat == ISOMONTHDAY_DOY_Z) ? "Z" : "", tms.tm_yday + 1);
       break;
     case SEEDORDINAL:
       expected = 17;
-      printed = snprintf (timestr, timestrsize, "%4d,%03d,%02d:%02d:%02d",
-                          tms.tm_year + 1900, tms.tm_yday + 1,
-                          tms.tm_hour, tms.tm_min, tms.tm_sec);
+      printed = snprintf (timestr, timestrsize, "%4d,%03d,%02d:%02d:%02d", tms.tm_year + 1900,
+                          tms.tm_yday + 1, tms.tm_hour, tms.tm_min, tms.tm_sec);
       break;
     case UNIXEPOCH:
       expected = -1;
@@ -1091,8 +1143,7 @@ ms_nstime2timestr_n (nstime_t nstime, char *timestr, size_t timestrsize,
     }
   }
   /* Print microseconds */
-  else if (subseconds == MICRO ||
-           (subseconds == MICRO_NONE && microsec) ||
+  else if (subseconds == MICRO || (subseconds == MICRO_NONE && microsec) ||
            (subseconds == NANO_MICRO && submicro == 0) ||
            (subseconds == NANO_MICRO_NONE && submicro == 0))
   {
@@ -1103,26 +1154,25 @@ ms_nstime2timestr_n (nstime_t nstime, char *timestr, size_t timestrsize,
     case ISOMONTHDAY_SPACE:
     case ISOMONTHDAY_SPACE_Z:
       expected = (timeformat == ISOMONTHDAY_Z || timeformat == ISOMONTHDAY_SPACE_Z) ? 27 : 26;
-      printed = snprintf (timestr, timestrsize, "%4d-%02d-%02d%c%02d:%02d:%02d.%06d%s",
-                          tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
-                          (timeformat == ISOMONTHDAY_SPACE || timeformat == ISOMONTHDAY_SPACE_Z) ? ' ' : 'T',
-                          tms.tm_hour, tms.tm_min, tms.tm_sec, microsec,
-                          (timeformat == ISOMONTHDAY_Z || timeformat == ISOMONTHDAY_SPACE_Z) ? "Z" : "");
+      printed = snprintf (
+          timestr, timestrsize, "%4d-%02d-%02d%c%02d:%02d:%02d.%06d%s", tms.tm_year + 1900,
+          tms.tm_mon + 1, tms.tm_mday,
+          (timeformat == ISOMONTHDAY_SPACE || timeformat == ISOMONTHDAY_SPACE_Z) ? ' ' : 'T',
+          tms.tm_hour, tms.tm_min, tms.tm_sec, microsec,
+          (timeformat == ISOMONTHDAY_Z || timeformat == ISOMONTHDAY_SPACE_Z) ? "Z" : "");
       break;
     case ISOMONTHDAY_DOY:
     case ISOMONTHDAY_DOY_Z:
       expected = (timeformat == ISOMONTHDAY_DOY_Z) ? 33 : 32;
       printed = snprintf (timestr, timestrsize, "%4d-%02d-%02dT%02d:%02d:%02d.%06d%s (%03d)",
-                          tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
-                          tms.tm_hour, tms.tm_min, tms.tm_sec, microsec,
-                          (timeformat == ISOMONTHDAY_DOY_Z) ? "Z" : "",
+                          tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday, tms.tm_hour, tms.tm_min,
+                          tms.tm_sec, microsec, (timeformat == ISOMONTHDAY_DOY_Z) ? "Z" : "",
                           tms.tm_yday + 1);
       break;
     case SEEDORDINAL:
       expected = 24;
-      printed = snprintf (timestr, timestrsize, "%4d,%03d,%02d:%02d:%02d.%06d",
-                          tms.tm_year + 1900, tms.tm_yday + 1,
-                          tms.tm_hour, tms.tm_min, tms.tm_sec, microsec);
+      printed = snprintf (timestr, timestrsize, "%4d,%03d,%02d:%02d:%02d.%06d", tms.tm_year + 1900,
+                          tms.tm_yday + 1, tms.tm_hour, tms.tm_min, tms.tm_sec, microsec);
       break;
     case UNIXEPOCH:
       expected = -1;
@@ -1135,10 +1185,8 @@ ms_nstime2timestr_n (nstime_t nstime, char *timestr, size_t timestrsize,
     }
   }
   /* Print nanoseconds */
-  else if (subseconds == NANO ||
-           (subseconds == NANO_NONE && nanosec) ||
-           (subseconds == NANO_MICRO && submicro) ||
-           (subseconds == NANO_MICRO_NONE && submicro))
+  else if (subseconds == NANO || (subseconds == NANO_NONE && nanosec) ||
+           (subseconds == NANO_MICRO && submicro) || (subseconds == NANO_MICRO_NONE && submicro))
   {
     switch (timeformat)
     {
@@ -1147,26 +1195,25 @@ ms_nstime2timestr_n (nstime_t nstime, char *timestr, size_t timestrsize,
     case ISOMONTHDAY_SPACE:
     case ISOMONTHDAY_SPACE_Z:
       expected = (timeformat == ISOMONTHDAY_Z || timeformat == ISOMONTHDAY_SPACE_Z) ? 30 : 29;
-      printed = snprintf (timestr, timestrsize, "%4d-%02d-%02d%c%02d:%02d:%02d.%09d%s",
-                          tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
-                          (timeformat == ISOMONTHDAY_SPACE || timeformat == ISOMONTHDAY_SPACE_Z) ? ' ' : 'T',
-                          tms.tm_hour, tms.tm_min, tms.tm_sec, nanosec,
-                          (timeformat == ISOMONTHDAY_Z || timeformat == ISOMONTHDAY_SPACE_Z) ? "Z" : "");
+      printed = snprintf (
+          timestr, timestrsize, "%4d-%02d-%02d%c%02d:%02d:%02d.%09d%s", tms.tm_year + 1900,
+          tms.tm_mon + 1, tms.tm_mday,
+          (timeformat == ISOMONTHDAY_SPACE || timeformat == ISOMONTHDAY_SPACE_Z) ? ' ' : 'T',
+          tms.tm_hour, tms.tm_min, tms.tm_sec, nanosec,
+          (timeformat == ISOMONTHDAY_Z || timeformat == ISOMONTHDAY_SPACE_Z) ? "Z" : "");
       break;
     case ISOMONTHDAY_DOY:
     case ISOMONTHDAY_DOY_Z:
       expected = (timeformat == ISOMONTHDAY_DOY_Z) ? 36 : 35;
       printed = snprintf (timestr, timestrsize, "%4d-%02d-%02dT%02d:%02d:%02d.%09d%s (%03d)",
-                          tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
-                          tms.tm_hour, tms.tm_min, tms.tm_sec, nanosec,
-                          (timeformat == ISOMONTHDAY_DOY_Z) ? "Z" : "",
+                          tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday, tms.tm_hour, tms.tm_min,
+                          tms.tm_sec, nanosec, (timeformat == ISOMONTHDAY_DOY_Z) ? "Z" : "",
                           tms.tm_yday + 1);
       break;
     case SEEDORDINAL:
       expected = 27;
-      printed = snprintf (timestr, timestrsize, "%4d,%03d,%02d:%02d:%02d.%09d",
-                          tms.tm_year + 1900, tms.tm_yday + 1,
-                          tms.tm_hour, tms.tm_min, tms.tm_sec, nanosec);
+      printed = snprintf (timestr, timestrsize, "%4d,%03d,%02d:%02d:%02d.%09d", tms.tm_year + 1900,
+                          tms.tm_yday + 1, tms.tm_hour, tms.tm_min, tms.tm_sec, nanosec);
       break;
     case UNIXEPOCH:
       expected = -1;
@@ -1182,7 +1229,8 @@ ms_nstime2timestr_n (nstime_t nstime, char *timestr, size_t timestrsize,
   else
   {
     ms_log (2, "Unhandled combination of timeformat and subseconds, please report!\n");
-    ms_log (2, "   nstime: %" PRId64 ", isec: %" PRId64 ", nanosec: %d, mirosec: %d, submicro: %d\n",
+    ms_log (2,
+            "   nstime: %" PRId64 ", isec: %" PRId64 ", nanosec: %d, mirosec: %d, submicro: %d\n",
             nstime, isec, nanosec, microsec, submicro);
     ms_log (2, "   timeformat: %d, subseconds: %d\n", (int)timeformat, (int)subseconds);
     return NULL;
@@ -1205,8 +1253,8 @@ ms_nstime2timestr_n (nstime_t nstime, char *timestr, size_t timestrsize,
  * the time string as 36 bytes.
  ***************************************************************************/
 char *
-ms_nstime2timestr (nstime_t nstime, char *timestr,
-                   ms_timeformat_t timeformat, ms_subseconds_t subseconds)
+ms_nstime2timestr (nstime_t nstime, char *timestr, ms_timeformat_t timeformat,
+                   ms_subseconds_t subseconds)
 {
   return ms_nstime2timestr_n (nstime, timestr, 36, timeformat, subseconds);
 } /* End of ms_nstime2timestr() */
@@ -1219,8 +1267,8 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
  * the time string as 36 bytes.
  ***************************************************************************/
 char *
-ms_nstime2timestrz (nstime_t nstime, char *timestr,
-                    ms_timeformat_t timeformat, ms_subseconds_t subseconds)
+ms_nstime2timestrz (nstime_t nstime, char *timestr, ms_timeformat_t timeformat,
+                    ms_subseconds_t subseconds)
 {
   if (timeformat == ISOMONTHDAY)
     timeformat = ISOMONTHDAY_Z;
@@ -1454,7 +1502,8 @@ ms_timestr2nstime (const char *timestr)
   {
     if (firstdelimiter)
     {
-      /* ISO month-day "YYYY-MM-DD[THH:MM:SS.FFFFFFFFF]", allow for a colloquial forward-slash flavor */
+      /* ISO month-day "YYYY-MM-DD[THH:MM:SS.FFFFFFFFF]", allow for a colloquial forward-slash
+       * flavor */
       if ((*firstdelimiter == '-' || *firstdelimiter == '/') && delimiters == 2)
       {
         return ms_mdtimestr2nstime (timestr);
@@ -1628,8 +1677,8 @@ ms_seedtimestr2nstime (const char *seedtimestr)
     return NSTERROR;
   }
 
-  fields = sscanf (seedtimestr, "%d%*[-,:.]%d%*[-,:.Tt ]%d%*[-,:.]%d%*[-,:.]%d%lf",
-                   &year, &yday, &hour, &min, &sec, &fsec);
+  fields = sscanf (seedtimestr, "%d%*[-,:.]%d%*[-,:.Tt ]%d%*[-,:.]%d%*[-,:.]%d%lf", &year, &yday,
+                   &hour, &min, &sec, &fsec);
 
   /* Convert fractional seconds to nanoseconds */
   if (fsec != 0.0)
@@ -1729,8 +1778,7 @@ ms_sampletime (nstime_t time, int64_t offset, double samprate)
   {
     while (lslist)
     {
-      if (lslist->leapsecond > time &&
-          lslist->leapsecond <= (time + span - NSTMODULUS))
+      if (lslist->leapsecond > time && lslist->leapsecond <= (time + span - NSTMODULUS))
       {
         span -= NSTMODULUS;
         break;
@@ -1869,8 +1917,7 @@ ms_readleapsecondfile (const char *filename)
         {
           char timestr[100];
           ms_nstime2timestr_n (MS_EPOCH2NSTIME (expires), timestr, sizeof (timestr), 0, 0);
-          ms_log (1, "Warning: leap second file (%s) has expired as of %s\n",
-                  filename, timestr);
+          ms_log (1, "Warning: leap second file (%s) has expired as of %s\n", filename, timestr);
         }
       }
 

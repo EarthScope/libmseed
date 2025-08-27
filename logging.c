@@ -25,18 +25,14 @@
 
 #include "libmseed.h"
 
-void rloginit_int (MSLogParam *logp,
-                   void (*log_print) (const char *), const char *logprefix,
-                   void (*diag_print) (const char *), const char *errprefix,
-                   int maxmessages);
+void rloginit_int (MSLogParam *logp, void (*log_print) (const char *), const char *logprefix,
+                   void (*diag_print) (const char *), const char *errprefix, int maxmessages);
 
-int rlog_int (MSLogParam *logp, const char *function, int level,
-              const char *format, va_list *varlist);
+int rlog_int (MSLogParam *logp, const char *function, int level, const char *format,
+              va_list *varlist);
 
-int add_message_int (MSLogRegistry *logreg, const char *function, int level,
-                     const char *message);
-void print_message_int (MSLogParam *logp, int level, const char *message,
-                        char *terminator);
+int add_message_int (MSLogRegistry *logreg, const char *function, int level, const char *message);
+void print_message_int (MSLogParam *logp, int level, const char *message, char *terminator);
 
 /* Initialize the global logging parameters
  *
@@ -90,11 +86,9 @@ MSLogParam gMSLogParam = MSLogParam_INITIALIZER;
  ***************************************************************************/
 void
 ms_rloginit (void (*log_print) (const char *), const char *logprefix,
-             void (*diag_print) (const char *), const char *errprefix,
-             int maxmessages)
+             void (*diag_print) (const char *), const char *errprefix, int maxmessages)
 {
-  rloginit_int (&gMSLogParam, log_print, logprefix,
-                diag_print, errprefix, maxmessages);
+  rloginit_int (&gMSLogParam, log_print, logprefix, diag_print, errprefix, maxmessages);
 } /* End of ms_rloginit() */
 
 /** ************************************************************************
@@ -131,10 +125,8 @@ ms_rloginit (void (*log_print) (const char *), const char *logprefix,
  * \sa ms_rlog_free()
  ***************************************************************************/
 MSLogParam *
-ms_rloginit_l (MSLogParam *logp,
-               void (*log_print) (const char *), const char *logprefix,
-               void (*diag_print) (const char *), const char *errprefix,
-               int maxmessages)
+ms_rloginit_l (MSLogParam *logp, void (*log_print) (const char *), const char *logprefix,
+               void (*diag_print) (const char *), const char *errprefix, int maxmessages)
 {
   MSLogParam *llog;
 
@@ -161,8 +153,7 @@ ms_rloginit_l (MSLogParam *logp,
     llog = logp;
   }
 
-  rloginit_int (llog, log_print, logprefix,
-                diag_print, errprefix, maxmessages);
+  rloginit_int (llog, log_print, logprefix, diag_print, errprefix, maxmessages);
 
   return llog;
 } /* End of ms_rloginit_l() */
@@ -176,10 +167,8 @@ ms_rloginit_l (MSLogParam *logp,
  *
  ***************************************************************************/
 void
-rloginit_int (MSLogParam *logp,
-              void (*log_print) (const char *), const char *logprefix,
-              void (*diag_print) (const char *), const char *errprefix,
-              int maxmessages)
+rloginit_int (MSLogParam *logp, void (*log_print) (const char *), const char *logprefix,
+              void (*diag_print) (const char *), const char *errprefix, int maxmessages)
 {
   if (!logp)
     return;
@@ -339,8 +328,7 @@ ms_rlog_l (MSLogParam *logp, const char *function, int level, const char *format
  * negative value on error.
  ***************************************************************************/
 int
-rlog_int (MSLogParam *logp, const char *function, int level,
-          const char *format, va_list *varlist)
+rlog_int (MSLogParam *logp, const char *function, int level, const char *format, va_list *varlist)
 {
   char message[MAX_LOG_MSG_LENGTH];
   int presize = 0;
@@ -367,9 +355,7 @@ rlog_int (MSLogParam *logp, const char *function, int level,
     }
 
     presize = (int)strlen (message);
-    printed = vsnprintf (&message[presize],
-                         MAX_LOG_MSG_LENGTH - presize,
-                         format, *varlist);
+    printed = vsnprintf (&message[presize], MAX_LOG_MSG_LENGTH - presize, format, *varlist);
 
     message[MAX_LOG_MSG_LENGTH - 1] = '\0';
   }
@@ -382,9 +368,7 @@ rlog_int (MSLogParam *logp, const char *function, int level,
     }
 
     presize = (int)strlen (message);
-    printed = vsnprintf (&message[presize],
-                         MAX_LOG_MSG_LENGTH - presize,
-                         format, *varlist);
+    printed = vsnprintf (&message[presize], MAX_LOG_MSG_LENGTH - presize, format, *varlist);
 
     message[MAX_LOG_MSG_LENGTH - 1] = '\0';
   }
@@ -397,9 +381,7 @@ rlog_int (MSLogParam *logp, const char *function, int level,
     }
 
     presize = (int)strlen (message);
-    printed = vsnprintf (&message[presize],
-                         MAX_LOG_MSG_LENGTH - presize,
-                         format, *varlist);
+    printed = vsnprintf (&message[presize], MAX_LOG_MSG_LENGTH - presize, format, *varlist);
 
     message[MAX_LOG_MSG_LENGTH - 1] = '\0';
   }
@@ -440,8 +422,7 @@ rlog_int (MSLogParam *logp, const char *function, int level,
  * @returns Zero on sucess and non-zero on error
  ***************************************************************************/
 int
-add_message_int (MSLogRegistry *logreg, const char *function, int level,
-                 const char *message)
+add_message_int (MSLogRegistry *logreg, const char *function, int level, const char *message)
 {
   MSLogEntry *logentry = NULL;
   MSLogEntry *lognext = NULL;
@@ -511,8 +492,7 @@ add_message_int (MSLogRegistry *logreg, const char *function, int level,
  * @returns Zero on success, and a negative value on error.
  ***************************************************************************/
 void
-print_message_int (MSLogParam *logp, int level, const char *message,
-                   char *terminator)
+print_message_int (MSLogParam *logp, int level, const char *message, char *terminator)
 {
   if (!logp || !message)
     return;
@@ -601,10 +581,8 @@ ms_rlog_emit (MSLogParam *logp, int count, int context)
     /* Add function name to message if requested and present */
     if (context && logprint->function[0] != '\0')
     {
-      snprintf (local_message, sizeof (local_message), "%s() %.*s",
-                logprint->function,
-                (int)(MAX_LOG_MSG_LENGTH - sizeof (logprint->function) - 3),
-                logprint->message);
+      snprintf (local_message, sizeof (local_message), "%s() %.*s", logprint->function,
+                (int)(MAX_LOG_MSG_LENGTH - sizeof (logprint->function) - 3), logprint->message);
       message = local_message;
     }
     else

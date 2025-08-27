@@ -180,8 +180,7 @@ header_callback (char *buffer, size_t size, size_t num, void *userdata)
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-msio_fopen (LMIO *io, const char *path, const char *mode,
-            int64_t *startoffset, int64_t *endoffset)
+msio_fopen (LMIO *io, const char *path, const char *mode, int64_t *startoffset, int64_t *endoffset)
 {
   int knownfile = 0;
 
@@ -650,10 +649,8 @@ msio_url_useragent (const char *program, const char *version)
 
   /* Build User-Agent header and add internal versions */
   snprintf (header, sizeof (header),
-            "User-Agent: %s%s%s libmseed/" LIBMSEED_VERSION " libcurl/" LIBCURL_VERSION,
-            program,
-            (version) ? "/" : "",
-            (version) ? version : "");
+            "User-Agent: %s%s%s libmseed/" LIBMSEED_VERSION " libcurl/" LIBCURL_VERSION, program,
+            (version) ? "/" : "", (version) ? version : "");
 
   return msio_url_addheader (header);
 #endif

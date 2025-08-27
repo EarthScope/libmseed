@@ -114,13 +114,11 @@ ms3_mstl_init_fd (int fd)
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-ms3_readmsr (MS3Record **ppmsr, const char *mspath,
-             uint32_t flags, int8_t verbose)
+ms3_readmsr (MS3Record **ppmsr, const char *mspath, uint32_t flags, int8_t verbose)
 {
   MS3FileParam *msfp = &gMS3FileParam;
 
-  return ms3_readmsr_selection (&msfp, ppmsr, mspath,
-                                flags, NULL, verbose);
+  return ms3_readmsr_selection (&msfp, ppmsr, mspath, flags, NULL, verbose);
 } /* End of ms3_readmsr() */
 
 /** ************************************************************************
@@ -141,11 +139,10 @@ ms3_readmsr (MS3Record **ppmsr, const char *mspath,
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
-               uint32_t flags, int8_t verbose)
+ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath, uint32_t flags,
+               int8_t verbose)
 {
-  return ms3_readmsr_selection (ppmsfp, ppmsr, mspath,
-                                flags, NULL, verbose);
+  return ms3_readmsr_selection (ppmsfp, ppmsr, mspath, flags, NULL, verbose);
 } /* End of ms_readmsr_r() */
 
 /***************************************************************************
@@ -167,8 +164,8 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
 
   if (shift <= 0 && shift > msfp->readlength)
   {
-    ms_log (2, "Cannot shift buffer, shift: %d, readlength: %d, readoffset: %d\n",
-            shift, msfp->readlength, msfp->readoffset);
+    ms_log (2, "Cannot shift buffer, shift: %d, readlength: %d, readoffset: %d\n", shift,
+            msfp->readlength, msfp->readoffset);
     return;
   }
 
@@ -254,8 +251,8 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
-                       uint32_t flags, const MS3Selections *selections, int8_t verbose)
+ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath, uint32_t flags,
+                       const MS3Selections *selections, int8_t verbose)
 {
   MS3FileParam *msfp;
   uint32_t pflags = flags;
@@ -430,14 +427,14 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
       if (parseval == 0)
       {
         /* Test against selections if supplied */
-        if (selections &&
-            !ms3_matchselect (selections, (*ppmsr)->sid, (*ppmsr)->starttime,
-                              msr3_endtime (*ppmsr), (*ppmsr)->pubversion, NULL))
+        if (selections && !ms3_matchselect (selections, (*ppmsr)->sid, (*ppmsr)->starttime,
+                                            msr3_endtime (*ppmsr), (*ppmsr)->pubversion, NULL))
         {
           if (verbose > 1)
           {
-            ms_log (0, "Skipping (selection) record for %s (%d bytes) starting at offset %" PRId64 "\n",
-                    (*ppmsr)->sid, (*ppmsr)->reclen, msfp->streampos);
+            ms_log (
+                0, "Skipping (selection) record for %s (%d bytes) starting at offset %" PRId64 "\n",
+                (*ppmsr)->sid, (*ppmsr)->reclen, msfp->streampos);
           }
 
           /* Skip record length bytes, update reading offset and file position */
@@ -478,8 +475,8 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
         {
           if (verbose > 1)
           {
-            ms_log (0, "Skipped %d bytes of non-data record at byte offset %" PRId64 "\n",
-                    SKIPLEN, msfp->streampos);
+            ms_log (0, "Skipped %d bytes of non-data record at byte offset %" PRId64 "\n", SKIPLEN,
+                    msfp->streampos);
           }
 
           /* Skip SKIPLEN bytes, update reading offset and file position */
@@ -497,7 +494,9 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
         }
         else if (parseval == MS_OUTOFRANGE)
         {
-          ms_log (2, "miniSEED record length out of supported range in %s (at byte offset %" PRId64 ")\n",
+          ms_log (2,
+                  "miniSEED record length out of supported range in %s (at byte offset %" PRId64
+                  ")\n",
                   msfp->path, msfp->streampos);
 
           retcode = parseval;
@@ -522,7 +521,9 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
           }
           else
           {
-            ms_log (2, "miniSEED record length out of supported range in %s (at byte offset %" PRId64 ")\n",
+            ms_log (2,
+                    "miniSEED record length out of supported range in %s (at byte offset %" PRId64
+                    ")\n",
                     msfp->path, msfp->streampos);
 
             retcode = MS_OUTOFRANGE;
@@ -584,12 +585,11 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
  * \sa @ref trace-list
  ***************************************************************************/
 int
-ms3_readtracelist (MS3TraceList **ppmstl, const char *mspath,
-                   const MS3Tolerance *tolerance, int8_t splitversion,
-                   uint32_t flags, int8_t verbose)
+ms3_readtracelist (MS3TraceList **ppmstl, const char *mspath, const MS3Tolerance *tolerance,
+                   int8_t splitversion, uint32_t flags, int8_t verbose)
 {
-  return ms3_readtracelist_selection (ppmstl, mspath, tolerance, NULL,
-                                      splitversion, flags, verbose);
+  return ms3_readtracelist_selection (ppmstl, mspath, tolerance, NULL, splitversion, flags,
+                                      verbose);
 } /* End of ms3_readtracelist() */
 
 /** ************************************************************************
@@ -609,10 +609,9 @@ ms3_readtracelist (MS3TraceList **ppmstl, const char *mspath,
  * \sa @ref trace-list
  ***************************************************************************/
 int
-ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath,
-                           const MS3Tolerance *tolerance,
-                           nstime_t starttime, nstime_t endtime,
-                           int8_t splitversion, uint32_t flags, int8_t verbose)
+ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath, const MS3Tolerance *tolerance,
+                           nstime_t starttime, nstime_t endtime, int8_t splitversion,
+                           uint32_t flags, int8_t verbose)
 {
   MS3Selections selection;
   MS3SelectTime selecttime;
@@ -627,8 +626,7 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath,
   selecttime.endtime = endtime;
   selecttime.next = NULL;
 
-  return ms3_readtracelist_selection (ppmstl, mspath, tolerance,
-                                      &selection, splitversion, flags,
+  return ms3_readtracelist_selection (ppmstl, mspath, tolerance, &selection, splitversion, flags,
                                       verbose);
 } /* End of ms3_readtracelist_timewin() */
 
@@ -704,8 +702,8 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath,
   }
 
   /* Loop over the input file and add each record to trace list */
-  while ((retcode = ms3_readmsr_selection (&msfp, &msr, mspath,
-                                           flags, selections, verbose)) == MS_NOERROR)
+  while ((retcode = ms3_readmsr_selection (&msfp, &msr, mspath, flags, selections, verbose)) ==
+         MS_NOERROR)
   {
     seg = mstl3_addmsr_recordptr (*ppmstl, msr, (flags & MSF_RECORDLIST) ? &recordptr : NULL,
                                   splitversion, 1, flags, tolerance);
@@ -895,8 +893,8 @@ ms_record_handler_int (char *record, int reclen, void *ofp)
  * \sa msr3_pack()
  ***************************************************************************/
 int64_t
-msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite,
-                 uint32_t flags, int8_t verbose)
+msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite, uint32_t flags,
+                 int8_t verbose)
 {
   FILE *ofp;
   const char *perms = (overwrite) ? "wb" : "ab";
@@ -956,8 +954,8 @@ msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite,
  * \sa msr3_pack()
  ***************************************************************************/
 int64_t
-mstl3_writemseed (MS3TraceList *mstl, const char *mspath, int8_t overwrite,
-                  int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose)
+mstl3_writemseed (MS3TraceList *mstl, const char *mspath, int8_t overwrite, int maxreclen,
+                  int8_t encoding, uint32_t flags, int8_t verbose)
 {
   FILE *ofp;
   const char *perms = (overwrite) ? "wb" : "ab";
@@ -986,8 +984,8 @@ mstl3_writemseed (MS3TraceList *mstl, const char *mspath, int8_t overwrite,
   /* Pack all data */
   flags |= MSF_FLUSHDATA;
 
-  packedrecords = mstl3_pack (mstl, &ms_record_handler_int, ofp, maxreclen,
-                              encoding, NULL, flags, verbose, NULL);
+  packedrecords = mstl3_pack (mstl, &ms_record_handler_int, ofp, maxreclen, encoding, NULL, flags,
+                              verbose, NULL);
 
   /* Close file and return record count */
   fclose (ofp);

@@ -34,8 +34,7 @@
  * Return number of samples in output buffer on success, -1 on failure.
  ************************************************************************/
 int64_t
-msr_encode_text (char *input, uint64_t samplecount, char *output,
-                 uint64_t outputlength)
+msr_encode_text (char *input, uint64_t samplecount, char *output, uint64_t outputlength)
 {
   uint64_t length;
 
@@ -62,8 +61,8 @@ msr_encode_text (char *input, uint64_t samplecount, char *output,
  * Return number of samples in output buffer on success, -1 on failure.
  ************************************************************************/
 int64_t
-msr_encode_int16 (int32_t *input, uint64_t samplecount, int16_t *output,
-                  uint64_t outputlength, int swapflag)
+msr_encode_int16 (int32_t *input, uint64_t samplecount, int16_t *output, uint64_t outputlength,
+                  int swapflag)
 {
   uint64_t idx;
 
@@ -95,8 +94,8 @@ msr_encode_int16 (int32_t *input, uint64_t samplecount, int16_t *output,
  * Return number of samples in output buffer on success, -1 on failure.
  ************************************************************************/
 int64_t
-msr_encode_int32 (int32_t *input, uint64_t samplecount, int32_t *output,
-                  uint64_t outputlength, int swapflag)
+msr_encode_int32 (int32_t *input, uint64_t samplecount, int32_t *output, uint64_t outputlength,
+                  int swapflag)
 {
   uint64_t idx;
 
@@ -128,8 +127,8 @@ msr_encode_int32 (int32_t *input, uint64_t samplecount, int32_t *output,
  * Return number of samples in output buffer on success, -1 on failure.
  ************************************************************************/
 int64_t
-msr_encode_float32 (float *input, uint64_t samplecount, float *output,
-                    uint64_t outputlength, int swapflag)
+msr_encode_float32 (float *input, uint64_t samplecount, float *output, uint64_t outputlength,
+                    int swapflag)
 {
   uint64_t idx;
 
@@ -161,8 +160,8 @@ msr_encode_float32 (float *input, uint64_t samplecount, float *output,
  * Return number of samples in output buffer on success, -1 on failure.
  ************************************************************************/
 int64_t
-msr_encode_float64 (double *input, uint64_t samplecount, double *output,
-                    uint64_t outputlength, int swapflag)
+msr_encode_float64 (double *input, uint64_t samplecount, double *output, uint64_t outputlength,
+                    int swapflag)
 {
   uint64_t idx;
 
@@ -222,9 +221,8 @@ msr_encode_float64 (double *input, uint64_t samplecount, double *output,
  * \ref MessageOnError - this function logs a message on error
  ************************************************************************/
 int64_t
-msr_encode_steim1 (int32_t *input, uint64_t samplecount, int32_t *output,
-                   uint64_t outputlength, int32_t diff0, uint32_t *byteswritten,
-                   int swapflag)
+msr_encode_steim1 (int32_t *input, uint64_t samplecount, int32_t *output, uint64_t outputlength,
+                   int32_t diff0, uint32_t *byteswritten, int swapflag)
 {
   int32_t *frameptr;   /* Frame pointer in output */
   int32_t *Xnp = NULL; /* Reverse integration constant, aka last sample */
@@ -258,7 +256,8 @@ msr_encode_steim1 (int32_t *input, uint64_t samplecount, int32_t *output,
   }
 
 #if ENCODE_DEBUG
-  ms_log (0, "Encoding Steim1 frames, samples: %" PRIu64 ", max frames: %" PRIu64 ", swapflag: %d\n",
+  ms_log (0,
+          "Encoding Steim1 frames, samples: %" PRIu64 ", max frames: %" PRIu64 ", swapflag: %d\n",
           samplecount, maxframes, swapflag);
 #endif
 
@@ -328,13 +327,12 @@ msr_encode_steim1 (int32_t *input, uint64_t samplecount, int32_t *output,
       packedsamples = 0;
 
       /* 4 x 8-bit differences */
-      if (diffcount == 4 &&
-          bitwidth[0] <= 8 && bitwidth[1] <= 8 &&
-          bitwidth[2] <= 8 && bitwidth[3] <= 8)
+      if (diffcount == 4 && bitwidth[0] <= 8 && bitwidth[1] <= 8 && bitwidth[2] <= 8 &&
+          bitwidth[3] <= 8)
       {
 #if ENCODE_DEBUG
-        ms_log (0, "  W%02d: 01=4x8b  %d  %d  %d  %d\n",
-                widx, diffs[0], diffs[1], diffs[2], diffs[3]);
+        ms_log (0, "  W%02d: 01=4x8b  %d  %d  %d  %d\n", widx, diffs[0], diffs[1], diffs[2],
+                diffs[3]);
 #endif
 
         word->d8[0] = diffs[0];
@@ -348,8 +346,7 @@ msr_encode_steim1 (int32_t *input, uint64_t samplecount, int32_t *output,
         packedsamples = 4;
       }
       /* 2 x 16-bit differences */
-      else if (diffcount >= 2 &&
-               bitwidth[0] <= 16 && bitwidth[1] <= 16)
+      else if (diffcount >= 2 && bitwidth[0] <= 16 && bitwidth[1] <= 16)
       {
 #if ENCODE_DEBUG
         ms_log (0, "  W%02d: 2=2x16b  %d  %d\n", widx, diffs[0], diffs[1]);
@@ -423,9 +420,8 @@ msr_encode_steim1 (int32_t *input, uint64_t samplecount, int32_t *output,
  * \ref MessageOnError - this function logs a message on error
  ************************************************************************/
 int64_t
-msr_encode_steim2 (int32_t *input, uint64_t samplecount, int32_t *output,
-                   uint64_t outputlength, int32_t diff0, uint32_t *byteswritten,
-                   const char *sid, int swapflag)
+msr_encode_steim2 (int32_t *input, uint64_t samplecount, int32_t *output, uint64_t outputlength,
+                   int32_t diff0, uint32_t *byteswritten, const char *sid, int swapflag)
 {
   uint32_t *frameptr;  /* Frame pointer in output */
   int32_t *Xnp = NULL; /* Reverse integration constant, aka last sample */
@@ -459,7 +455,8 @@ msr_encode_steim2 (int32_t *input, uint64_t samplecount, int32_t *output,
   }
 
 #if ENCODE_DEBUG
-  ms_log (0, "Encoding Steim2 frames, samples: %" PRIu64 ", max frames: %" PRIu64 ", swapflag: %d\n",
+  ms_log (0,
+          "Encoding Steim2 frames, samples: %" PRIu64 ", max frames: %" PRIu64 ", swapflag: %d\n",
           samplecount, maxframes, swapflag);
 #endif
 
@@ -533,13 +530,12 @@ msr_encode_steim2 (int32_t *input, uint64_t samplecount, int32_t *output,
       packedsamples = 0;
 
       /* 7 x 4-bit differences */
-      if (diffcount == 7 && bitwidth[0] <= 4 &&
-          bitwidth[1] <= 4 && bitwidth[2] <= 4 && bitwidth[3] <= 4 &&
-          bitwidth[4] <= 4 && bitwidth[5] <= 4 && bitwidth[6] <= 4)
+      if (diffcount == 7 && bitwidth[0] <= 4 && bitwidth[1] <= 4 && bitwidth[2] <= 4 &&
+          bitwidth[3] <= 4 && bitwidth[4] <= 4 && bitwidth[5] <= 4 && bitwidth[6] <= 4)
       {
 #if ENCODE_DEBUG
-        ms_log (0, "  W%02d: 11,10=7x4b  %d  %d  %d  %d  %d  %d  %d\n",
-                widx, diffs[0], diffs[1], diffs[2], diffs[3], diffs[4], diffs[5], diffs[6]);
+        ms_log (0, "  W%02d: 11,10=7x4b  %d  %d  %d  %d  %d  %d  %d\n", widx, diffs[0], diffs[1],
+                diffs[2], diffs[3], diffs[4], diffs[5], diffs[6]);
 #endif
 
         /* Mask the values, shift to proper location and set in word */
@@ -560,13 +556,12 @@ msr_encode_steim2 (int32_t *input, uint64_t samplecount, int32_t *output,
         packedsamples = 7;
       }
       /* 6 x 5-bit differences */
-      else if (diffcount >= 6 &&
-               bitwidth[0] <= 5 && bitwidth[1] <= 5 && bitwidth[2] <= 5 &&
+      else if (diffcount >= 6 && bitwidth[0] <= 5 && bitwidth[1] <= 5 && bitwidth[2] <= 5 &&
                bitwidth[3] <= 5 && bitwidth[4] <= 5 && bitwidth[5] <= 5)
       {
 #if ENCODE_DEBUG
-        ms_log (0, "  W%02d: 11,01=6x5b  %d  %d  %d  %d  %d  %d\n",
-                widx, diffs[0], diffs[1], diffs[2], diffs[3], diffs[4], diffs[5]);
+        ms_log (0, "  W%02d: 11,01=6x5b  %d  %d  %d  %d  %d  %d\n", widx, diffs[0], diffs[1],
+                diffs[2], diffs[3], diffs[4], diffs[5]);
 #endif
 
         /* Mask the values, shift to proper location and set in word */
@@ -586,13 +581,12 @@ msr_encode_steim2 (int32_t *input, uint64_t samplecount, int32_t *output,
         packedsamples = 6;
       }
       /* 5 x 6-bit differences */
-      else if (diffcount >= 5 &&
-               bitwidth[0] <= 6 && bitwidth[1] <= 6 && bitwidth[2] <= 6 &&
+      else if (diffcount >= 5 && bitwidth[0] <= 6 && bitwidth[1] <= 6 && bitwidth[2] <= 6 &&
                bitwidth[3] <= 6 && bitwidth[4] <= 6)
       {
 #if ENCODE_DEBUG
-        ms_log (0, "  W%02d: 11,00=5x6b  %d  %d  %d  %d  %d\n",
-                widx, diffs[0], diffs[1], diffs[2], diffs[3], diffs[4]);
+        ms_log (0, "  W%02d: 11,00=5x6b  %d  %d  %d  %d  %d\n", widx, diffs[0], diffs[1], diffs[2],
+                diffs[3], diffs[4]);
 #endif
 
         /* Mask the values, shift to proper location and set in word */
@@ -610,13 +604,12 @@ msr_encode_steim2 (int32_t *input, uint64_t samplecount, int32_t *output,
         packedsamples = 5;
       }
       /* 4 x 8-bit differences */
-      else if (diffcount >= 4 &&
-               bitwidth[0] <= 8 && bitwidth[1] <= 8 &&
-               bitwidth[2] <= 8 && bitwidth[3] <= 8)
+      else if (diffcount >= 4 && bitwidth[0] <= 8 && bitwidth[1] <= 8 && bitwidth[2] <= 8 &&
+               bitwidth[3] <= 8)
       {
 #if ENCODE_DEBUG
-        ms_log (0, "  W%02d: 01=4x8b  %d  %d  %d  %d\n",
-                widx, diffs[0], diffs[1], diffs[2], diffs[3]);
+        ms_log (0, "  W%02d: 01=4x8b  %d  %d  %d  %d\n", widx, diffs[0], diffs[1], diffs[2],
+                diffs[3]);
 #endif
 
         word = (union dword *)&frameptr[widx];
@@ -632,12 +625,10 @@ msr_encode_steim2 (int32_t *input, uint64_t samplecount, int32_t *output,
         packedsamples = 4;
       }
       /* 3 x 10-bit differences */
-      else if (diffcount >= 3 &&
-               bitwidth[0] <= 10 && bitwidth[1] <= 10 && bitwidth[2] <= 10)
+      else if (diffcount >= 3 && bitwidth[0] <= 10 && bitwidth[1] <= 10 && bitwidth[2] <= 10)
       {
 #if ENCODE_DEBUG
-        ms_log (0, "  W%02d: 10,11=3x10b  %d  %d  %d\n",
-                widx, diffs[0], diffs[1], diffs[2]);
+        ms_log (0, "  W%02d: 10,11=3x10b  %d  %d  %d\n", widx, diffs[0], diffs[1], diffs[2]);
 #endif
 
         /* Mask the values, shift to proper location and set in word */
@@ -654,12 +645,10 @@ msr_encode_steim2 (int32_t *input, uint64_t samplecount, int32_t *output,
         packedsamples = 3;
       }
       /* 2 x 15-bit differences */
-      else if (diffcount >= 2 &&
-               bitwidth[0] <= 15 && bitwidth[1] <= 15)
+      else if (diffcount >= 2 && bitwidth[0] <= 15 && bitwidth[1] <= 15)
       {
 #if ENCODE_DEBUG
-        ms_log (0, "  W%02d: 10,10=2x15b  %d  %d\n",
-                widx, diffs[0], diffs[1]);
+        ms_log (0, "  W%02d: 10,10=2x15b  %d  %d\n", widx, diffs[0], diffs[1]);
 #endif
 
         /* Mask the values, shift to proper location and set in word */
@@ -675,12 +664,10 @@ msr_encode_steim2 (int32_t *input, uint64_t samplecount, int32_t *output,
         packedsamples = 2;
       }
       /* 1 x 30-bit difference */
-      else if (diffcount >= 1 &&
-               bitwidth[0] <= 30)
+      else if (diffcount >= 1 && bitwidth[0] <= 30)
       {
 #if ENCODE_DEBUG
-        ms_log (0, "  W%02d: 10,01=1x30b  %d\n",
-                widx, diffs[0]);
+        ms_log (0, "  W%02d: 10,01=1x30b  %d\n", widx, diffs[0]);
 #endif
 
         /* Mask the value and set in word */

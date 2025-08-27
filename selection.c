@@ -88,16 +88,18 @@ ms3_matchselect (const MS3Selections *selections, const char *sid, nstime_t star
         findst = findsl->timewindows;
         while (findst)
         {
-          if (starttime != NSTERROR && starttime != NSTUNSET &&
-              findst->starttime != NSTERROR && findst->starttime != NSTUNSET &&
-              (starttime < findst->starttime && !(starttime <= findst->starttime && endtime >= findst->starttime)))
+          if (starttime != NSTERROR && starttime != NSTUNSET && findst->starttime != NSTERROR &&
+              findst->starttime != NSTUNSET &&
+              (starttime < findst->starttime &&
+               !(starttime <= findst->starttime && endtime >= findst->starttime)))
           {
             findst = findst->next;
             continue;
           }
-          else if (endtime != NSTERROR && endtime != NSTUNSET &&
-                   findst->endtime != NSTERROR && findst->endtime != NSTUNSET &&
-                   (endtime > findst->endtime && !(starttime <= findst->endtime && endtime >= findst->endtime)))
+          else if (endtime != NSTERROR && endtime != NSTUNSET && findst->endtime != NSTERROR &&
+                   findst->endtime != NSTUNSET &&
+                   (endtime > findst->endtime &&
+                    !(starttime <= findst->endtime && endtime >= findst->endtime)))
           {
             findst = findst->next;
             continue;
@@ -152,8 +154,8 @@ msr3_matchselect (const MS3Selections *selections, const MS3Record *msr,
 
   endtime = msr3_endtime (msr);
 
-  return ms3_matchselect (selections, msr->sid, msr->starttime, endtime,
-                          msr->pubversion, ppselecttime);
+  return ms3_matchselect (selections, msr->sid, msr->starttime, endtime, msr->pubversion,
+                          ppselecttime);
 } /* End of msr3_matchselect() */
 
 /** ************************************************************************
@@ -178,16 +180,15 @@ msr3_matchselect (const MS3Selections *selections, const MS3Record *msr,
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-ms3_addselect (MS3Selections **ppselections, const char *sidpattern,
-               nstime_t starttime, nstime_t endtime, uint8_t pubversion)
+ms3_addselect (MS3Selections **ppselections, const char *sidpattern, nstime_t starttime,
+               nstime_t endtime, uint8_t pubversion)
 {
   MS3Selections *newsl = NULL;
   MS3SelectTime *newst = NULL;
 
   if (!ppselections || !sidpattern)
   {
-    ms_log (2, "%s(): Required input not defined: 'ppselections' or 'sidpattern'\n",
-            __func__);
+    ms_log (2, "%s(): Required input not defined: 'ppselections' or 'sidpattern'\n", __func__);
     return -1;
   }
 
@@ -302,9 +303,8 @@ ms3_addselect (MS3Selections **ppselections, const char *sidpattern,
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
-ms3_addselect_comp (MS3Selections **ppselections, char *network, char *station,
-                    char *location, char *channel, nstime_t starttime,
-                    nstime_t endtime, uint8_t pubversion)
+ms3_addselect_comp (MS3Selections **ppselections, char *network, char *station, char *location,
+                    char *channel, nstime_t starttime, nstime_t endtime, uint8_t pubversion)
 {
   char sidpattern[100];
   char selnet[20];
@@ -375,8 +375,7 @@ ms3_addselect_comp (MS3Selections **ppselections, char *network, char *station,
   }
 
   /* Create the source identifier globbing match for this entry */
-  if (ms_nslc2sid (sidpattern, sizeof (sidpattern), 0,
-                   selnet, selsta, selloc, selchan) < 0)
+  if (ms_nslc2sid (sidpattern, sizeof (sidpattern), 0, selnet, selsta, selloc, selchan) < 0)
     return -1;
 
   /* Add selection to list */
@@ -446,8 +445,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, const char *filename)
 
   if (!ppselections || !filename)
   {
-    ms_log (2, "%s(): Required input not defined: 'ppselections' or 'filename'\n",
-            __func__);
+    ms_log (2, "%s(): Required input not defined: 'ppselections' or 'filename'\n", __func__);
     return -1;
   }
 
@@ -578,9 +576,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, const char *filename)
     }
 
     /* Test for "SourceID  [Starttime  [Endtime  [Pubversion]]]" */
-    if (fieldidx == 1 ||
-        (fieldidx == 2 && isstart2) ||
-        (fieldidx == 3 && isstart2 && isend3) ||
+    if (fieldidx == 1 || (fieldidx == 2 && isstart2) || (fieldidx == 3 && isstart2 && isend3) ||
         (fieldidx == 4 && isstart2 && isend3 && ms_isinteger (fields[3])))
     {
       /* Convert publication version to integer */
@@ -610,8 +606,7 @@ ms3_readselectionsfile (MS3Selections **ppselections, const char *filename)
       }
     }
     /* Test for "Network  Station  Location  Channel  [Quality  [Starttime  [Endtime]]]" */
-    else if (fieldidx == 4 || fieldidx == 5 ||
-             (fieldidx == 6 && isstart6) ||
+    else if (fieldidx == 4 || fieldidx == 5 || (fieldidx == 6 && isstart6) ||
              (fieldidx == 7 && isstart6 && isend7))
     {
       /* Convert quality field to publication version if integer */
@@ -633,8 +628,8 @@ ms3_readselectionsfile (MS3Selections **ppselections, const char *filename)
         }
       }
 
-      if (ms3_addselect_comp (ppselections, fields[0], fields[1], fields[2], fields[3],
-                              starttime, endtime, pubversion))
+      if (ms3_addselect_comp (ppselections, fields[0], fields[1], fields[2], fields[3], starttime,
+                              endtime, pubversion))
       {
         ms_log (2, "%s: Error adding selection on line %d\n", filename, linecount);
         return -1;
@@ -717,19 +712,20 @@ ms3_printselections (const MS3Selections *selections)
   select = selections;
   while (select)
   {
-    ms_log (0, "Selection: %s  pubversion: %d\n",
-            select->sidpattern, select->pubversion);
+    ms_log (0, "Selection: %s  pubversion: %d\n", select->sidpattern, select->pubversion);
 
     selecttime = select->timewindows;
     while (selecttime)
     {
       if (selecttime->starttime != NSTERROR && selecttime->starttime != NSTUNSET)
-        ms_nstime2timestr_n (selecttime->starttime, starttime, sizeof (starttime), ISOMONTHDAY_Z, NANO_MICRO_NONE);
+        ms_nstime2timestr_n (selecttime->starttime, starttime, sizeof (starttime), ISOMONTHDAY_Z,
+                             NANO_MICRO_NONE);
       else
         strncpy (starttime, "No start time", sizeof (starttime) - 1);
 
       if (selecttime->endtime != NSTERROR && selecttime->endtime != NSTUNSET)
-        ms_nstime2timestr_n (selecttime->endtime, endtime, sizeof (endtime), ISOMONTHDAY_Z, NANO_MICRO_NONE);
+        ms_nstime2timestr_n (selecttime->endtime, endtime, sizeof (endtime), ISOMONTHDAY_Z,
+                             NANO_MICRO_NONE);
       else
         strncpy (endtime, "No end time", sizeof (endtime) - 1);
 
@@ -878,8 +874,7 @@ ms_globmatch (const char *string, const char *pattern)
             return GLOBMATCH_FALSE;
           if (*pattern != ']')
           {
-            if (*string == c || *string == *pattern ||
-                (*string > c && *string < *pattern))
+            if (*string == c || *string == *pattern || (*string > c && *string < *pattern))
               match = GLOBMATCH_TRUE;
           }
           else

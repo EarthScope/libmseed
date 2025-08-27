@@ -236,8 +236,8 @@ msr3_print (const MS3Record *msr, int8_t details)
   /* Report information in the fixed header */
   if (details > 0)
   {
-    ms_log (0, "%s, version %d, %d bytes (format: %d)\n",
-            msr->sid, msr->pubversion, msr->reclen, msr->formatversion);
+    ms_log (0, "%s, version %d, %d bytes (format: %d)\n", msr->sid, msr->pubversion, msr->reclen,
+            msr->formatversion);
     ms_log (0, "             start time: %s\n", time);
     ms_log (0, "      number of samples: %" PRId64 "\n", msr->samplecnt);
     ms_log (0, "       sample rate (Hz): %g\n", msr3_sampratehz (msr));
@@ -245,9 +245,9 @@ msr3_print (const MS3Record *msr, int8_t details)
     if (details > 1)
     {
       b = msr->flags;
-      ms_log (0, "                  flags: [%d%d%d%d%d%d%d%d] 8 bits\n",
-              bit (b, 0x80), bit (b, 0x40), bit (b, 0x20), bit (b, 0x10),
-              bit (b, 0x08), bit (b, 0x04), bit (b, 0x02), bit (b, 0x01));
+      ms_log (0, "                  flags: [%d%d%d%d%d%d%d%d] 8 bits\n", bit (b, 0x80),
+              bit (b, 0x40), bit (b, 0x20), bit (b, 0x10), bit (b, 0x08), bit (b, 0x04),
+              bit (b, 0x02), bit (b, 0x01));
       if (b & 0x01)
         ms_log (0, "                         [Bit 0] Calibration signals present\n");
       if (b & 0x02)
@@ -280,9 +280,8 @@ msr3_print (const MS3Record *msr, int8_t details)
   }
   else
   {
-    ms_log (0, "%s, %d, %d, %" PRId64 " samples, %g Hz, %s\n",
-            msr->sid, msr->pubversion, msr->reclen,
-            msr->samplecnt, msr3_sampratehz (msr), time);
+    ms_log (0, "%s, %d, %d, %" PRId64 " samples, %g Hz, %s\n", msr->sid, msr->pubversion,
+            msr->reclen, msr->samplecnt, msr3_sampratehz (msr), time);
   }
 } /* End of msr3_print() */
 
