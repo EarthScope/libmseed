@@ -1,13 +1,10 @@
-2025.238:
+2025.239:
+	- Add mstl3_pack_segment()
+	- Deprecate mstraceseg3_pack()
 	- mstl3_addmsr()/mstl3_addmsr_recordptr(): Ensure segments represent time
 	coverage before adding new samples.
-	- mstraceseg3_pack(): Do not pack empty records and remove segments when all
-	data are packed (they are empty).
-	- mstraceseg3_pack(): Remove trace segment if all data has been packed
-	and the MSF_MAINTAINMSTL flag is not set.
-	- Add mstraceseg3_remove() to remove a segment from a trace listing.
 
-2025.234:
+2025.234: 3.1.7
 	- Add ms_nstime2timestr_n() with string size limit, deprecate ms_nstime2timestr().
 	- With ms_nstime2timestr_n() print "ERROR" for NSTERROR and "UNSET" for NSTUNSET.
 	- Avoid fatal errors when v2 record blockettes contain invalid time stamps.

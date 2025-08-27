@@ -31,12 +31,18 @@ MS3TraceSeg *mstl3_addmsrtoseg (MS3TraceSeg *seg, const MS3Record *msr, nstime_t
 MS3TraceSeg *mstl3_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2);
 MS3RecordPtr *mstl3_add_recordptr (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime, int8_t whence);
 
-static void lm_seg3_free_memory (MS3TraceSeg *seg, int8_t freeprvtptr);
+static void lm_free_segment_memory (MS3TraceSeg *seg, int8_t freeprvtptr);
+static int lm_remove_segment (MS3TraceList *mstl, MS3TraceID *id, MS3TraceSeg *seg, int8_t freeprvtptr);
 static uint32_t lm_lcg_r (uint64_t *state);
 static uint8_t lm_random_height (uint8_t maximum, uint64_t *state);
 
-/* Test if two sample rates are similar using either specified tolerance (if positive) or default tolerance */
-#define IS_SAMPRATE_SIMILAR(SR1, SR2, SRT) ((SRT > 0.0) ? fabs (SR1 - SR2) > SRT : MS_ISRATETOLERABLE (SR1, SR2))
+/* Test if two sample rates are similar using either specified tolerance (if positive) or default
+ * tolerance */
+#define IS_SAMPRATE_SIMILAR(SR1, SR2, SRT) \
+  ((SRT > 0.0) ? fabs (SR1 - SR2) > SRT : MS_ISRATETOLERABLE (SR1, SR2))
+
+/* Test if a MS3TraceSeg represents time coverage */
+#define SEGMENT_HAS_TIME_COVERAGE(seg) ((seg)->samplecnt > 0 && (seg)->samprate != 0.0)
 
 /** ************************************************************************
  * @brief Initialize a ::MS3TraceList container
@@ -97,7 +103,10 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
   if (!ppmstl)
     return;
 
-  /* Free any associated traces */
+  /* Free any associated traces
+   * Note: This is a bulk destruction operation that walks the skip list
+   * at level 0 only for efficiency, unlike lm_remove_segment() which
+   * maintains skip list structure for individual removals */
   id = (*ppmstl)->traces.next[0];
   while (id)
   {
@@ -110,7 +119,7 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
       nextseg = seg->next;
 
       /* Free all memory associated with the segment */
-      lm_seg3_free_memory (seg, freeprvtptr);
+      lm_free_segment_memory (seg, freeprvtptr);
 
       seg = nextseg;
     }
@@ -269,10 +278,6 @@ mstl3_addID (MS3TraceList *mstl, MS3TraceID *id, MS3TraceID **prev)
 
   return id;
 } /* End of mstl3_addID() */
-
-/* Test if a MS3TraceSeg represents time coverage */
-#define SEGMENT_HAS_TIME_COVERAGE(seg) ((seg)->samplecnt > 0 && \
-                                        (seg)->samprate != 0.0)
 
 /** ************************************************************************
  * @brief Add data coverage from an ::MS3Record to a ::MS3TraceList
@@ -1972,9 +1977,8 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
     seg = id->first;
     while (seg)
     {
-      segpackedrecords = mstraceseg3_pack (id, seg, record_handler, handlerdata,
-                                           reclen, encoding, &segpackedsamples, flags,
-                                           verbose, extra);
+      segpackedrecords = mstl3_pack_segment (mstl, id, seg, record_handler, handlerdata, reclen,
+                                             encoding, &segpackedsamples, flags, verbose, extra);
 
       if (segpackedrecords < 0)
       {
@@ -1997,98 +2001,6 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
 
   return totalpackedrecords;
 } /* End of mstl3_pack() */
-
-/***************************************************************************
- * Free all memory associated with an MS3TraceSeg structure.
- *
- * This function frees the segment's data samples, record list, and the
- * segment structure itself. Private pointers are only freed if requested.
- *
- * \ref MessageOnError - this function logs a message on error
- ***************************************************************************/
-static void
-lm_seg3_free_memory (MS3TraceSeg *seg, int8_t freeprvtptr)
-{
-  MS3RecordPtr *recordptr;
-  MS3RecordPtr *nextrecordptr;
-
-  if (!seg)
-    return;
-
-  /* Free private pointer data if requested */
-  if (freeprvtptr)
-    libmseed_memory.free (seg->prvtptr);
-
-  /* Free data samples */
-  libmseed_memory.free (seg->datasamples);
-
-  /* Free associated record list and related private pointers */
-  if (seg->recordlist)
-  {
-    recordptr = seg->recordlist->first;
-    while (recordptr)
-    {
-      nextrecordptr = recordptr->next;
-
-      msr3_free (&recordptr->msr);
-
-      /* Free private pointer data if requested */
-      if (freeprvtptr)
-        libmseed_memory.free (recordptr->prvtptr);
-
-      libmseed_memory.free (recordptr);
-
-      recordptr = nextrecordptr;
-    }
-
-    libmseed_memory.free (seg->recordlist);
-  }
-
-  libmseed_memory.free (seg);
-} /* End of lm_seg3_free_memory() */
-
-/** ************************************************************************
- * @brief Remove the target MS3TraceSeg structure from MS3TraceID.
- *
- * @param[in] id ::MS3TraceID containing the segment to remove
- * @param[in] seg ::MS3TraceSeg segment to remove
- * @param[in] freeprvtptr If true, free the private pointer data
- *
- * @returns 0 on success and -1 on error.
- *
- * \ref MessageOnError - this function logs a message on error
- *
- * \sa mstl3_free()
- ***************************************************************************/
-int
-mstraceseg3_remove (MS3TraceID *id, MS3TraceSeg *seg, int8_t freeprvtptr)
-{
-  if (!id || !seg)
-  {
-    ms_log (2, "%s(): Required input not defined: 'id' or 'seg'\n", __func__);
-    return -1;
-  }
-
-  /* Update previous segment's next pointer or first pointer */
-  if (seg->prev)
-    seg->prev->next = seg->next;
-  else
-    id->first = seg->next;
-
-  /* Update next segment's prev pointer or last pointer */
-  if (seg->next)
-    seg->next->prev = seg->prev;
-  else
-    id->last = seg->prev;
-
-  /* Decrement segment count */
-  id->numsegments--;
-
-  /* Free all memory associated with the segment */
-  lm_seg3_free_memory (seg, freeprvtptr);
-
-  return 0;
-}
 
 /** ************************************************************************
  * @brief Pack a ::MS3TraceSeg data into miniSEED records
@@ -2145,11 +2057,10 @@ mstraceseg3_remove (MS3TraceID *id, MS3TraceSeg *seg, int8_t freeprvtptr)
  * \sa msr3_pack()
  ***************************************************************************/
 int64_t
-mstraceseg3_pack (MS3TraceID *id, MS3TraceSeg *seg,
-                  void (*record_handler) (char *, int, void *),
-                  void *handlerdata, int reclen, int8_t encoding,
-                  int64_t *packedsamples, uint32_t flags, int8_t verbose,
-                  char *extra)
+mstl3_pack_segment (MS3TraceList *mstl, MS3TraceID *id, MS3TraceSeg *seg,
+                    void (*record_handler) (char *, int, void *), void *handlerdata, int reclen,
+                    int8_t encoding, int64_t *packedsamples, uint32_t flags, int8_t verbose,
+                    char *extra)
 {
   MS3Record msr = MS3Record_INITIALIZER;
 
@@ -2275,7 +2186,7 @@ mstraceseg3_pack (MS3TraceID *id, MS3TraceSeg *seg,
     /* Remove segment if no samples remain */
     else
     {
-      mstraceseg3_remove (id, seg, 1);
+      lm_remove_segment (mstl, id, seg, 1);
     }
   }
 
@@ -2286,6 +2197,29 @@ mstraceseg3_pack (MS3TraceID *id, MS3TraceSeg *seg,
     *packedsamples = totalpackedsamples;
 
   return totalpackedrecords;
+} /* End of mstl3_pack_segment() */
+
+/** ************************************************************************
+ * @deprecated Use ms_sid2nslc_n() instead
+ *
+ * This deprecated function is provided for backwards compatibility.
+ * It will call ms_sid2nslc_n() while specifying the maximum sizes
+ * for each code as the maximum supported by SEED.
+ ***************************************************************************/
+int64_t
+mstraceseg3_pack (MS3TraceID *id, MS3TraceSeg *seg, void (*record_handler) (char *, int, void *),
+                  void *handlerdata, int reclen, int8_t encoding, int64_t *packedsamples,
+                  uint32_t flags, int8_t verbose, char *extra)
+{
+  if (!(flags & MSF_MAINTAINMSTL))
+  {
+    ms_log (2, "%s() is deprecated, use mstl3_pack_segment() instead\n", __func__);
+    ms_log (2, "%s() cannot operate without the MSF_MAINTAINMSTL flag\n", __func__);
+    return -1;
+  }
+
+  return mstl3_pack_segment (NULL, id, seg, record_handler, handlerdata, reclen, encoding,
+                             packedsamples, flags, verbose, extra);
 } /* End of mstraceseg3_pack() */
 
 /** ************************************************************************
@@ -2609,6 +2543,153 @@ mstl3_printgaplist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
 
   return;
 } /* End of mstl3_printgaplist() */
+
+/***************************************************************************
+ * Free all memory associated with an MS3TraceSeg structure.
+ *
+ * This function frees the segment's data samples, record list, and the
+ * segment structure itself. Private pointers are only freed if requested.
+ *
+ * \ref MessageOnError - this function logs a message on error
+ ***************************************************************************/
+static void
+lm_free_segment_memory (MS3TraceSeg *seg, int8_t freeprvtptr)
+{
+  MS3RecordPtr *recordptr;
+  MS3RecordPtr *nextrecordptr;
+
+  if (!seg)
+    return;
+
+  /* Free private pointer data if requested */
+  if (freeprvtptr)
+    libmseed_memory.free (seg->prvtptr);
+
+  /* Free data samples */
+  libmseed_memory.free (seg->datasamples);
+
+  /* Free associated record list and related private pointers */
+  if (seg->recordlist)
+  {
+    recordptr = seg->recordlist->first;
+    while (recordptr)
+    {
+      nextrecordptr = recordptr->next;
+
+      msr3_free (&recordptr->msr);
+
+      /* Free private pointer data if requested */
+      if (freeprvtptr)
+        libmseed_memory.free (recordptr->prvtptr);
+
+      libmseed_memory.free (recordptr);
+
+      recordptr = nextrecordptr;
+    }
+
+    libmseed_memory.free (seg->recordlist);
+  }
+
+  libmseed_memory.free (seg);
+} /* End of lm_seg3_free_memory() */
+
+/** ************************************************************************
+ * @brief Remove the target MS3TraceSeg structure from MS3TraceID.
+ *
+ * If the segment is the only segment in the trace ID, the trace ID will be
+ * removed from the trace list as well.
+ *
+ * @param[in] mstl ::MS3TraceList containing the segment to remove
+ * @param[in] id ::MS3TraceID containing the segment to remove
+ * @param[in] seg ::MS3TraceSeg segment to remove
+ * @param[in] freeprvtptr If true, free the private pointer data
+ *
+ * @returns 0 on success and -1 on error.
+ *
+ * \ref MessageOnError - this function logs a message on error
+ *
+ * \sa mstl3_free()
+ ***************************************************************************/
+static int
+lm_remove_segment (MS3TraceList *mstl, MS3TraceID *id, MS3TraceSeg *seg, int8_t freeprvtptr)
+{
+  MS3TraceID *searchid = NULL;
+  MS3TraceID *previd[MSTRACEID_SKIPLIST_HEIGHT] = {NULL};
+  int level;
+
+  if (!mstl || !id || !seg)
+  {
+    ms_log (2, "%s(): Required input not defined: 'mstl', 'id' or 'seg'\n", __func__);
+    return -1;
+  }
+
+  /* Update previous segment's next pointer or first pointer */
+  if (seg->prev)
+    seg->prev->next = seg->next;
+  else
+    id->first = seg->next;
+
+  /* Update next segment's next pointer or last pointer */
+  if (seg->next)
+    seg->next->prev = seg->prev;
+  else
+    id->last = seg->prev;
+
+  /* Decrement segment count */
+  id->numsegments--;
+
+  /* Free all memory associated with the segment */
+  lm_free_segment_memory (seg, freeprvtptr);
+
+  /* If this was the last segment, remove the TraceID from the trace list */
+  if (id->numsegments == 0)
+  {
+    /* Find previous nodes at each level for this TraceID */
+    level = MSTRACEID_SKIPLIST_HEIGHT - 1;
+    searchid = &(mstl->traces);
+
+    while (searchid != NULL && level >= 0)
+    {
+      previd[level] = searchid;
+
+      if (searchid->next[level] == NULL)
+      {
+        level -= 1;
+      }
+      else if (searchid->next[level] == id)
+      {
+        /* Found the TraceID at this level */
+        level -= 1;
+      }
+      else
+      {
+        /* Continue searching at this level */
+        searchid = searchid->next[level];
+      }
+    }
+
+    /* Remove TraceID from skip list by updating previous node pointers */
+    for (level = id->height - 1; level >= 0; level--)
+    {
+      if (previd[level] && previd[level]->next[level] == id)
+      {
+        previd[level]->next[level] = id->next[level];
+      }
+    }
+
+    /* Free private pointer data if requested */
+    if (freeprvtptr && id->prvtptr)
+      libmseed_memory.free (id->prvtptr);
+
+    /* Free the TraceID */
+    libmseed_memory.free (id);
+
+    /* Decrement trace count */
+    mstl->numtraceids--;
+  }
+
+  return 0;
+}
 
 /* Pseudo random number generator, as a linear congruential generator (LCG):
  * https://en.wikipedia.org/wiki/Linear_congruential_generator

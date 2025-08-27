@@ -30,6 +30,8 @@ discovered.
 A code snippet for reading miniSEED from a file record-by-record:
 @anchor msr3-readmsr-snippet
 @code
+#include "libmseed.h"
+
 int main ()
 {
   char *filename = "datafile.mseed";
@@ -73,6 +75,8 @@ returned in ordered, continuous segments ready for processing.
 A code snippet for reading miniSEED from a file into a @ref trace-list :
 @anchor msr3-readtracelist-snippet
 @code
+#include "libmseed.h"
+
 int main ()
 {
   char *filename1    = "datafile1.mseed";
@@ -149,6 +153,8 @@ mstl3_writemseed() respectively.
 A code snippet for writing miniSEED to a file from an MS3Record using msr3_writemseed():
 @anchor msr3-writemseed-snippet
 @code
+#include "libmseed.h"
+
 int main()
 {
   int packedrecords;
