@@ -106,10 +106,7 @@ mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr)
   if (!ppmstl)
     return;
 
-  /* Free any associated traces
-   * Note: This is a bulk destruction operation that walks the skip list
-   * at level 0 only for efficiency, unlike lm_remove_segment() which
-   * maintains skip list structure for individual removals */
+  /* Free any associated traces */
   id = (*ppmstl)->traces.next[0];
   while (id)
   {
@@ -618,17 +615,8 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
           if (segafter->next)
             segafter->next->prev = segafter->prev;
 
-          /* Free data samples, record list, private data and segment structure */
-          if (segafter->datasamples)
-            libmseed_memory.free (segafter->datasamples);
-
-          if (segafter->recordlist)
-            libmseed_memory.free (segafter->recordlist);
-
-          if (segafter->prvtptr)
-            libmseed_memory.free (segafter->prvtptr);
-
-          libmseed_memory.free (segafter);
+          /* Free all memory associated with the segment after that has been merged */
+          lm_free_segment_memory (segafter, 1);
 
           id->numsegments -= 1;
         }
@@ -1215,14 +1203,18 @@ lm_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2)
     if (seg1->recordlist == NULL)
     {
       seg1->recordlist = seg2->recordlist;
-      seg2->recordlist = NULL;
     }
     else
     {
       seg1->recordlist->last->next = seg2->recordlist->first;
       seg1->recordlist->last = seg2->recordlist->last;
       seg1->recordlist->recordcnt += seg2->recordlist->recordcnt;
+
+      /* Free record list container */
+      libmseed_memory.free (seg2->recordlist);
     }
+
+    seg2->recordlist = NULL;
   }
 
   return seg1;
@@ -1935,9 +1927,6 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *), vo
             int reclen, int8_t encoding, int64_t *packedsamples, uint32_t flags, int8_t verbose,
             char *extra)
 {
-  MS3TraceID *id = NULL;
-  MS3TraceSeg *seg = NULL;
-
   int64_t totalpackedrecords = 0;
   int64_t totalpackedsamples = 0;
   int64_t segpackedrecords = 0;
@@ -1959,13 +1948,17 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *), vo
     *packedsamples = 0;
 
   /* Loop through trace list */
-  id = mstl->traces.next[0];
+  MS3TraceID *id = mstl->traces.next[0];
   while (id && totalpackedrecords >= 0)
   {
+    MS3TraceID *nextid = id->next[0]; /* Save next pointer before potential removal */
+
     /* Loop through segment list */
-    seg = id->first;
+    MS3TraceSeg *seg = id->first;
     while (seg)
     {
+      MS3TraceSeg *nextseg = seg->next; /* Save next pointer before potential removal */
+
       segpackedrecords = mstl3_pack_segment (mstl, id, seg, record_handler, handlerdata, reclen,
                                              encoding, &segpackedsamples, flags, verbose, extra);
 
@@ -1979,10 +1972,10 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *), vo
       totalpackedrecords += segpackedrecords;
       totalpackedsamples += segpackedsamples;
 
-      seg = seg->next;
+      seg = nextseg;
     }
 
-    id = id->next[0];
+    id = nextid;
   }
 
   if (packedsamples)
@@ -2032,7 +2025,7 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *), vo
  * @param[in] flags Bit flags to control packing:
  * @parblock
  *  - \c ::MSF_FLUSHDATA : Pack all data in the buffer
- *  - \c ::MSF_MAINTAINMSTL : Do not remove packe data from the buffer
+ *  - \c ::MSF_MAINTAINMSTL : Do not remove packed data from the buffer
  *  - \c ::MSF_PACKVER2 : Pack miniSEED version 2 instead of default 3
  * @endparblock
  * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
@@ -2189,11 +2182,10 @@ mstl3_pack_segment (MS3TraceList *mstl, MS3TraceID *id, MS3TraceSeg *seg,
 } /* End of mstl3_pack_segment() */
 
 /** ************************************************************************
- * @deprecated Use ms_sid2nslc_n() instead
+ * @deprecated Use mstl3_pack_segment() instead
  *
  * This deprecated function is provided for backwards compatibility.
- * It will call ms_sid2nslc_n() while specifying the maximum sizes
- * for each code as the maximum supported by SEED.
+ * It will call mstl3_pack_segment() as long as the MSF_MAINTAINMSTL flag is set.
  ***************************************************************************/
 int64_t
 mstraceseg3_pack (MS3TraceID *id, MS3TraceSeg *seg, void (*record_handler) (char *, int, void *),
@@ -2462,8 +2454,8 @@ mstl3_printgaplist (const MS3TraceList *mstl, ms_timeformat_t timeformat, double
     seg = id->first;
     while (seg->next)
     {
-      /* Skip segments with 0 sample rate, usually from SOH records */
-      if (seg->samprate == 0.0)
+      /* Skip segments with no time coverage, usually from SOH records */
+      if (!SEGMENT_HAS_TIME_COVERAGE (seg))
       {
         seg = seg->next;
         continue;
@@ -2614,7 +2606,6 @@ lm_remove_segment (MS3TraceList *mstl, MS3TraceID *id, MS3TraceSeg *seg, int8_t 
     ms_log (2, "%s(): Required input not defined: 'mstl', 'id' or 'seg'\n", __func__);
     return -1;
   }
-
   /* Update previous segment's next pointer or first pointer */
   if (seg->prev)
     seg->prev->next = seg->next;
@@ -2628,7 +2619,7 @@ lm_remove_segment (MS3TraceList *mstl, MS3TraceID *id, MS3TraceSeg *seg, int8_t 
     id->last = seg->prev;
 
   /* Decrement segment count */
-  id->numsegments--;
+  id->numsegments -= 1;
 
   /* Free all memory associated with the segment */
   lm_free_segment_memory (seg, freeprvtptr);
@@ -2640,18 +2631,21 @@ lm_remove_segment (MS3TraceList *mstl, MS3TraceID *id, MS3TraceSeg *seg, int8_t 
     level = MSTRACEID_SKIPLIST_HEIGHT - 1;
     searchid = &(mstl->traces);
 
-    while (searchid != NULL && level >= 0)
+    while (level >= 0)
     {
-      previd[level] = searchid;
-
-      if (searchid->next[level] == NULL)
+      if (searchid == NULL || searchid->next[level] == NULL)
       {
+        /* No more nodes at this level, record predecessor and drop level */
+        previd[level] = (searchid != NULL) ? searchid : &(mstl->traces);
         level -= 1;
+        searchid = &(mstl->traces); /* Reset search position for next level */
       }
       else if (searchid->next[level] == id)
       {
-        /* Found the TraceID at this level */
+        /* Found the TraceID at this level, record predecessor and drop level */
+        previd[level] = searchid;
         level -= 1;
+        searchid = &(mstl->traces); /* Reset search position for next level */
       }
       else
       {

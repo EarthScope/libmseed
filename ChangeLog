@@ -1,3 +1,6 @@
+2025.257:
+  - Fix segment removal from MS3TraceList when packing
+
 2025.239:
 	- Add mstl3_pack_segment()
 	- Deprecate mstraceseg3_pack()
