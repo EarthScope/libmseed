@@ -1,4 +1,4 @@
-2025.257:
+2025.257: v3.1.8
   - Fix segment removal from MS3TraceList when packing
 
 2025.239:
