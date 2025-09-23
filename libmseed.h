@@ -691,6 +691,12 @@ extern int mstl3_resize_buffers (MS3TraceList *mstl);
 extern int64_t mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
                            void *handlerdata, int reclen, int8_t encoding, int64_t *packedsamples,
                            uint32_t flags, int8_t verbose, char *extra);
+extern int64_t mstl3_pack_ppupdate_flushidle (MS3TraceList *mstl,
+                                              void (*record_handler) (char *, int, void *),
+                                              void *handlerdata, int reclen, int8_t encoding,
+                                              int64_t *packedsamples, uint32_t flags,
+                                              int8_t verbose, char *extra,
+                                              uint32_t flush_idle_seconds);
 extern int64_t mstl3_pack_segment (MS3TraceList *mstl, MS3TraceID *id, MS3TraceSeg *seg,
                                    void (*record_handler) (char *, int, void *), void *handlerdata,
                                    int reclen, int8_t encoding, int64_t *packedsamples,

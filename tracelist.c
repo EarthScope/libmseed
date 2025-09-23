@@ -1860,6 +1860,93 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output, uint64_
   return totalunpackedsamples;
 } /* End of mstl3_unpack_recordlist() */
 
+/***************************************************************************
+ * Implementation of MS3TraceList packing functions
+ *
+ * \sa msr3_pack()
+ * \sa mstl3_pack_ppupdate_flushidle()
+ ***************************************************************************/
+int64_t
+_mstl3_pack_impl (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
+                  void *handlerdata, int reclen, int8_t encoding, int64_t *packedsamples,
+                  uint32_t flags, int8_t verbose, char *extra, uint32_t flush_idle_seconds)
+{
+  int64_t totalpackedrecords = 0;
+  int64_t totalpackedsamples = 0;
+  int64_t segpackedrecords = 0;
+  int64_t segpackedsamples = 0;
+  nstime_t flush_idle_nanoseconds = (nstime_t)flush_idle_seconds * NSTMODULUS;
+
+  if (!mstl)
+  {
+    ms_log (2, "%s(): Required input not defined: 'mstl'\n", __func__);
+    return -1;
+  }
+
+  if (!record_handler)
+  {
+    ms_log (2, "callback record_handler() function pointer not set!\n");
+    return -1;
+  }
+
+  if (packedsamples)
+    *packedsamples = 0;
+
+  /* Loop through trace list */
+  MS3TraceID *id = mstl->traces.next[0];
+  while (id && totalpackedrecords >= 0)
+  {
+    MS3TraceID *nextid = id->next[0]; /* Save next pointer before potential removal */
+
+    /* Loop through segment list */
+    MS3TraceSeg *seg = id->first;
+    while (seg)
+    {
+      MS3TraceSeg *nextseg = seg->next; /* Save next pointer before potential removal */
+
+      /* If flush_idle_seconds is set and the segment has a prvtptr with an
+       * update time set during parsing with the ::MSF_PPUPDATE flag, check if
+       * the segement has been updated within the specified number of seconds.
+       * If it has not, force the flushing of the segment by setting the
+       * ::MSF_FLUSHDATA flag. */
+      if (flush_idle_nanoseconds > 0 && seg->prvtptr)
+      {
+        nstime_t *update_time = (nstime_t *)seg->prvtptr;
+        nstime_t update_latency = lmp_systemtime () - *update_time;
+
+        if (update_latency > flush_idle_nanoseconds)
+        {
+          ms_log (0, "DEBUG %s: Flushing segment due to idle time: %" PRIu64 " seconds\n", id->sid,
+                  update_latency / NSTMODULUS);
+          flags |= MSF_FLUSHDATA;
+        }
+      }
+
+      segpackedrecords = mstl3_pack_segment (mstl, id, seg, record_handler, handlerdata, reclen,
+                                             encoding, &segpackedsamples, flags, verbose, extra);
+
+      if (segpackedrecords < 0)
+      {
+        ms_log (2, "%s: Error packing data from segment\n", id->sid);
+        totalpackedrecords = -1;
+        break;
+      }
+
+      totalpackedrecords += segpackedrecords;
+      totalpackedsamples += segpackedsamples;
+
+      seg = nextseg;
+    }
+
+    id = nextid;
+  }
+
+  if (packedsamples)
+    *packedsamples = totalpackedsamples;
+
+  return totalpackedrecords;
+} /* End of _mstl3_pack_impl() */
+
 /** ************************************************************************
  * @brief Pack ::MS3TraceList data into miniSEED records
  *
@@ -1919,7 +2006,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output, uint64_
  *
  * \ref MessageOnError - this function logs a message on error
  *
- * \sa mstraceseg3_pack()
+ * \sa mstl3_pack_segment()
  * \sa msr3_pack()
  ***************************************************************************/
 int64_t
@@ -1927,62 +2014,29 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *), vo
             int reclen, int8_t encoding, int64_t *packedsamples, uint32_t flags, int8_t verbose,
             char *extra)
 {
-  int64_t totalpackedrecords = 0;
-  int64_t totalpackedsamples = 0;
-  int64_t segpackedrecords = 0;
-  int64_t segpackedsamples = 0;
-
-  if (!mstl)
-  {
-    ms_log (2, "%s(): Required input not defined: 'mstl'\n", __func__);
-    return -1;
-  }
-
-  if (!record_handler)
-  {
-    ms_log (2, "callback record_handler() function pointer not set!\n");
-    return -1;
-  }
-
-  if (packedsamples)
-    *packedsamples = 0;
-
-  /* Loop through trace list */
-  MS3TraceID *id = mstl->traces.next[0];
-  while (id && totalpackedrecords >= 0)
-  {
-    MS3TraceID *nextid = id->next[0]; /* Save next pointer before potential removal */
-
-    /* Loop through segment list */
-    MS3TraceSeg *seg = id->first;
-    while (seg)
-    {
-      MS3TraceSeg *nextseg = seg->next; /* Save next pointer before potential removal */
-
-      segpackedrecords = mstl3_pack_segment (mstl, id, seg, record_handler, handlerdata, reclen,
-                                             encoding, &segpackedsamples, flags, verbose, extra);
-
-      if (segpackedrecords < 0)
-      {
-        ms_log (2, "%s: Error packing data from segment\n", id->sid);
-        totalpackedrecords = -1;
-        break;
-      }
-
-      totalpackedrecords += segpackedrecords;
-      totalpackedsamples += segpackedsamples;
-
-      seg = nextseg;
-    }
-
-    id = nextid;
-  }
-
-  if (packedsamples)
-    *packedsamples = totalpackedsamples;
-
-  return totalpackedrecords;
+  return _mstl3_pack_impl (mstl, record_handler, handlerdata, reclen, encoding, packedsamples,
+                           flags, verbose, extra, 0);
 } /* End of mstl3_pack() */
+
+/** ************************************************************************
+ * @copydoc mstl3_pack()
+ *
+ * This function is identical to mstl3_pack() but with the additional \a
+ * flush_idle_seconds parameter:
+ *
+ * @param[in] flush_idle_seconds If > 0, forces flushing of data segments that
+ *                               have not been updated within the specified
+ *                               number of seconds.
+ ***************************************************************************/
+int64_t
+mstl3_pack_ppupdate_flushidle (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
+                               void *handlerdata, int reclen, int8_t encoding,
+                               int64_t *packedsamples, uint32_t flags, int8_t verbose, char *extra,
+                               uint32_t flush_idle_seconds)
+{
+  return _mstl3_pack_impl (mstl, record_handler, handlerdata, reclen, encoding, packedsamples,
+                           flags, verbose, extra, flush_idle_seconds);
+} /* End of mstl3_pack_ppupdate_flushidle() */
 
 /** ************************************************************************
  * @brief Pack a ::MS3TraceSeg data into miniSEED records

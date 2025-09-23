@@ -1,3 +1,7 @@
+Unreleased
+  - Add mstl3_pack_ppupdate_flushidle() for packing idle streams in combination
+  with the use of MSF_PPUPDATETIME during trace list additions
+
 2025.257: v3.1.8
   - Fix segment removal from MS3TraceList when packing
 
@@ -200,7 +204,7 @@
   WARNING: API changes as follows:
   1. mstl3_printtracelist() now takes an additional `versions` argument.
   When non-zero the routine will decorate SIDs with publication versions.
-  2. The MS3TraceID structure is no longer a simple linked list.  Instead
+  1. The MS3TraceID structure is no longer a simple linked list.  Instead
   it is a skip list, slightly changing the syntax for traversing the list
   as illustrated in the examples.
 
