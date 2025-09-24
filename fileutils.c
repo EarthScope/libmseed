@@ -100,51 +100,6 @@ ms3_mstl_init_fd (int fd)
   return msfp;
 }
 
-/** ************************************************************************
- * @brief Read miniSEED records from a file or URL
- *
- * This routine is a wrapper for ms3_readmsr_selection() that uses the
- * global file reading parameters.  This routine is _not_ thread safe
- * and cannot be used to read more than one stream at a time.
- *
- * See ms3_readmsr_selection() for a further description of arguments.
- *
- * @returns Return value from ms3_readmsr_selection()
- *
- * \ref MessageOnError - this function logs a message on error
- ***************************************************************************/
-int
-ms3_readmsr (MS3Record **ppmsr, const char *mspath, uint32_t flags, int8_t verbose)
-{
-  MS3FileParam *msfp = &gMS3FileParam;
-
-  return ms3_readmsr_selection (&msfp, ppmsr, mspath, flags, NULL, verbose);
-} /* End of ms3_readmsr() */
-
-/** ************************************************************************
- * @brief Read miniSEED records from a file or URL in a thread-safe way
- *
- * This routine is a wrapper for ms3_readmsr_selection() that uses the
- * re-entrant capabilities.  This routine is thread safe and can be
- * used to read more than one stream at a time as long as separate
- * MS3FileParam containers are used for each stream.
- *
- * A ::MS3FileParam container will be allocated if \c *ppmsfp is \c
- * NULL.
- *
- * See ms3_readmsr_selection() for a further description of arguments.
- *
- * @returns Return value from ms3_readmsr_selection()
- *
- * \ref MessageOnError - this function logs a message on error
- ***************************************************************************/
-int
-ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath, uint32_t flags,
-               int8_t verbose)
-{
-  return ms3_readmsr_selection (ppmsfp, ppmsr, mspath, flags, NULL, verbose);
-} /* End of ms_readmsr_r() */
-
 /***************************************************************************
  *
  * A helper routine to shift (remove bytes from the beginning of) the
@@ -191,68 +146,16 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
 /* Macro to return current reading position */
 #define MSFPREADPTR(MSFP) (MSFP->readbuffer + MSFP->readoffset)
 
-/** ************************************************************************
- * @brief Read miniSEED records from a file or URL with optional selection
+/***************************************************************************
+ * Implementation of MS3Record reading functions
  *
- * This routine will open and read, with subsequent calls, all
- * miniSEED records in specified stream (file or URL).
- *
- * All stream reading parameters are stored in a ::MS3FileParam
- * container and returned (via a pointer to a pointer) for the calling
- * routine to use in subsequent calls.  A ::MS3FileParam container
- * will be allocated if \c *ppmsfp is \c NULL.  This routine is thread
- * safe and can be used to read multiple streams in parallel as long as
- * the stream reading parameters are managed appropriately.
- *
- * The \a flags argument are bit flags used to control the reading
- * process.  The following flags are supported:
- *  - ::MSF_SKIPNOTDATA - skip input that cannot be identified as miniSEED
- *  - ::MSF_UNPACKDATA data samples will be unpacked
- *  - ::MSF_VALIDATECRC Validate CRC (if present in format)
- *  - ::MSF_PNAMERANGE Parse byte range suffix from \a mspath
- *
- * If ::MSF_PNAMERANGE is set in \a flags, the \a mspath will be
- * searched for start and end byte offsets for the file or URL in the
- * following format: '\c PATH@@\c START-\c END', where \c START and \c
- * END are both optional and specified in bytes.
- *
- * If \a selections is not NULL, the ::MS3Selections will be used to
- * limit what is returned to the caller.  Any data not matching the
- * selections will be skipped.
- *
- * After reading all the records in a stream the calling program should
- * call this routine a final time with \a mspath set to NULL.  This
- * will close the input stream and free allocated memory.
- *
- * @param[out] ppmsfp Pointer-to-pointer of an ::MS3FileParam, which
- * contains the state of stream reading across iterative calls of this
- * function.
- *
- * @param[out] ppmsr Pointer-to-pointer of an ::MS3Record, which will
- * contain a parsed record on success.
- *
- * @param[in] mspath File or URL to read
- *
- * @param[in] flags Flags used to control parsing, see @ref
- * control-flags
- *
- * @param[in] selections Specify limits to which data should be
- * returned, see @ref data-selections
- *
- * @param[in] verbose Controls verbosity, 0 means no diagnostic output
- *
- * @returns ::MS_NOERROR and populates an ::MS3Record struct, at \a
- * *ppmsr, on successful read.  On error, a (negative) libmseed error
- * code is returned and *ppmsr is set to NULL.
- * @retval ::MS_ENDOFFILE on reaching the end of a stream
- *
- * \sa @ref data-selections
- *
- * \ref MessageOnError - this function logs a message on error
+ * \sa ms3_readmsr()
+ * \sa ms3_readmsr_r()
+ * \sa ms3_readmsr_selection()
  ***************************************************************************/
 int
-ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath, uint32_t flags,
-                       const MS3Selections *selections, int8_t verbose)
+_ms3_readmsr_impl (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath, uint32_t flags,
+                   const MS3Selections *selections, int8_t verbose)
 {
   MS3FileParam *msfp;
   uint32_t pflags = flags;
@@ -568,6 +471,106 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
 
   return retcode;
 } /* End of ms3_readmsr_selection() */
+
+/** ************************************************************************
+ * @brief Read miniSEED records from a file or URL
+ *
+ * This routine will open and read, with subsequent calls, all
+ * miniSEED records in specified stream (file or URL).
+ *
+ * All stream reading parameters are stored in a ::MS3FileParam
+ * container and returned (via a pointer to a pointer) for the calling
+ * routine to use in subsequent calls.  A ::MS3FileParam container
+ * will be allocated if \c *ppmsfp is \c NULL.  This routine is thread
+ * safe and can be used to read multiple streams in parallel as long as
+ * the stream reading parameters are managed appropriately.
+ *
+ * The \a flags argument are bit flags used to control the reading
+ * process.  The following flags are supported:
+ *  - ::MSF_SKIPNOTDATA - skip input that cannot be identified as miniSEED
+ *  - ::MSF_UNPACKDATA data samples will be unpacked
+ *  - ::MSF_VALIDATECRC Validate CRC (if present in format)
+ *  - ::MSF_PNAMERANGE Parse byte range suffix from \a mspath
+ *
+ * If ::MSF_PNAMERANGE is set in \a flags, the \a mspath will be
+ * searched for start and end byte offsets for the file or URL in the
+ * following format: '\c PATH@@\c START-\c END', where \c START and \c
+ * END are both optional and specified in bytes.
+ *
+ * After reading all the records in a stream the calling program should
+ * call this routine a final time with \a mspath set to NULL.  This
+ * will close the input stream and free allocated memory.
+ *
+ * @param[out] ppmsr Pointer-to-pointer of an ::MS3Record, which will
+ * contain a parsed record on success.
+ *
+ * @param[in] mspath File or URL to read
+ *
+ * @param[in] flags Flags used to control parsing, see @ref
+ * control-flags
+ *
+ * @param[in] verbose Controls verbosity, 0 means no diagnostic output
+ *
+ * @returns ::MS_NOERROR and populates an ::MS3Record struct, at \a
+ * *ppmsr, on successful read.  On error, a (negative) libmseed error
+ * code is returned and *ppmsr is set to NULL.
+ * @retval ::MS_ENDOFFILE on reaching the end of a stream
+ *
+ * \sa @ref data-selections
+ *
+ * \ref MessageOnError - this function logs a message on error
+ *
+ * \sa ms3_readmsr_r()
+ * \sa ms3_readmsr_selection()
+ ***************************************************************************/
+int
+ms3_readmsr (MS3Record **ppmsr, const char *mspath, uint32_t flags, int8_t verbose)
+{
+  MS3FileParam *msfp = &gMS3FileParam;
+
+  return ms3_readmsr_selection (&msfp, ppmsr, mspath, flags, NULL, verbose);
+} /* End of ms3_readmsr() */
+
+/** ************************************************************************
+ * @copydoc ms3_readmsr()
+ *
+ * This function is identical to ms3_readmsr() but with the additonal \a ppmsfp
+ * parameter enabling re-entrant capabilities. This function is thread safe and
+ * can be used to read more than one stream at a time as long as separate
+ * ::MS3FileParam instances are used for each stream.
+ *
+ * @param[out] ppmsfp Pointer-to-pointer of an ::MS3FileParam, which
+ * contains the state of stream reading across iterative calls of this
+ * function.
+ *
+ * A ::MS3FileParam container will be allocated if \c *ppmsfp is \c NULL.
+ ***************************************************************************/
+int
+ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath, uint32_t flags,
+               int8_t verbose)
+{
+  return ms3_readmsr_selection (ppmsfp, ppmsr, mspath, flags, NULL, verbose);
+} /* End of ms_readmsr_r() */
+
+/** ************************************************************************
+ * @copydoc ms3_readmsr()
+ *
+ * This function is identical to ms3_readmsr() but with the additonal \a ppmsfp
+ * and \a selections parameters:
+ *
+ * @param[out] ppmsfp Pointer-to-pointer of an ::MS3FileParam, which contains
+ * the state of stream reading across iterative calls of this function. A
+ * ::MS3FileParam container will be allocated if \c *ppmsfp is \c NULL.
+ *
+ * @param[in] selections Specify limits to which data should be
+ * returned, see @ref data-selections
+ ***************************************************************************/
+int
+ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath, uint32_t flags,
+                       const MS3Selections *selections, int8_t verbose)
+{
+  return _ms3_readmsr_impl (ppmsfp, ppmsr, mspath, flags, selections, verbose);
+}
 
 /** ************************************************************************
  * @brief Read miniSEED from a file into a trace list
