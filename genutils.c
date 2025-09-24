@@ -1034,6 +1034,7 @@ ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *yday, uint8_t *hour, 
  *
  * @param[in] nstime Time value to convert
  * @param[out] timestr Buffer for ISO time string
+ * @param[in] timestrsize Size of the \a timestr buffer in bytes
  * @param timeformat Time string format, one of @ref ms_timeformat_t
  * @param subseconds Inclusion of subseconds, one of @ref ms_subseconds_t
  *

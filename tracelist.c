@@ -712,43 +712,37 @@ _mstl3_addmsr_impl (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **ppr
 /** ************************************************************************
  * @brief Add data coverage from an ::MS3Record to a ::MS3TraceList
  *
- * Searching the list for the appropriate ::MS3TraceID and
- * ::MS3TraceSeg and either add data to existing entries or create new
- * ones as needed.
+ * Searching the list for the appropriate ::MS3TraceID and ::MS3TraceSeg and
+ * either add data to existing entries or create new ones as needed.
  *
- * As this routine adds data to a trace list it constructs continuous
- * time series, merging segments when possible.  The \a tolerance
- * pointer to a ::MS3Tolerance identifies function pointers that are
- * expected to return time tolerance, in seconds, and sample rate
- * tolerance, in Hertz, for the given ::MS3Record.  If \a tolerance is
- * NULL, or the function pointers it identifies are NULL, default
- * tolerances will be used as follows: - Default time tolerance is 1/2
- * the sampling period - Default sample rate (sr) tolerance is
+ * As this routine adds data to a trace list it constructs continuous time
+ * series, merging segments when possible.  The \a tolerance pointer to a
+ * ::MS3Tolerance identifies function pointers that are expected to return time
+ * tolerance, in seconds, and sample rate tolerance, in Hertz, for the given
+ * ::MS3Record.  If \a tolerance is NULL, or the function pointers it identifies
+ * are NULL, default tolerances will be used as follows: - Default time
+ * tolerance is 1/2 the sampling period - Default sample rate (sr) tolerance is
  * abs(1‐sr1/sr2) < 0.0001
  *
- * In recommended usage, the \a splitversion flag is \b 0 and
- * different publication versions of otherwise matching data are
- * merged.  If more than one version contributes to a given source
- * identifier's segments, its ::MS3TraceID.pubversion will be the set to
- * the largest contributing version.  If the \a splitversion flag is
- * \b 1 the publication versions will be kept separate with each
- * version isolated in separate ::MS3TraceID entries.
+ * In recommended usage, the \a splitversion flag is \b 0 and different
+ * publication versions of otherwise matching data are merged.  If more than one
+ * version contributes to a given source identifier's segments, its
+ * ::MS3TraceID.pubversion will be the set to the largest contributing version.
+ * If the \a splitversion flag is \b 1 the publication versions will be kept
+ * separate with each version isolated in separate ::MS3TraceID entries.
  *
- * If the \a autoheal flag is true, extra processing is invoked to
- * conjoin trace segments that fit together after the ::MS3Record
- * coverage is added.  For segments that are removed, any memory at
- * the ::MS3TraceSeg.prvtptr will be freed.
+ * @note The ::MS3TraceList data structure is designed as a container of data
+ * sample payloads (integers, floats, text) unrelated to miniSEED records.  Many
+ * of the details in a miniSEED record that are not relevant to represent the
+ * series are not stored in the trace list, and therefore, will not be included
+ * in an output such as miniSEED produced by mstl3_pack().
  *
- * The lists are always maintained in a sorted order.  An
- * ::MS3TraceList is maintained with the ::MS3TraceID entries in
- * ascending alphanumeric order of SID. If repeated SIDs are present
- * due to splitting on publication version, they are maintained in
- * order of ascending version.  A ::MS3TraceID is always maintained
- * with ::MS3TraceSeg entries in data time time order.
+ * While header-only miniSEED records, with no data payload, can be added to a
+ * trace list they will be represented as empty segments with no time coverage
+ * for informational purposes.
  *
  * @param[in] mstl Destination ::MS3TraceList to add data to
  * @param[in] msr ::MS3Record containing the data to add to list
- * @param[in] pprecptr Pointer to pointer to a ::MS3RecordPtr for @ref record-list
  * @param[in] splitversion Flag to control splitting of version/quality
  * @param[in] autoheal Flag to control automatic merging of segments
  * @param[in] flags Flags to control optional functionality (unused)
@@ -756,9 +750,7 @@ _mstl3_addmsr_impl (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **ppr
  *
  * @returns a pointer to the ::MS3TraceSeg updated or NULL on error.
  *
- * \sa mstl3_addmsr_recordptr()
- * \sa mstl3_readbuffer()
- * \sa ms3_readtracelist()
+ * \sa mstl3_addmsr_recordptr() \sa mstl3_readbuffer() \sa ms3_readtracelist()
  *
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
@@ -770,7 +762,7 @@ mstl3_addmsr (MS3TraceList *mstl, const MS3Record *msr, int8_t splitversion, int
 }
 
 /** ************************************************************************
- * @copydoc mstl3_pack()
+ * @copydoc mstl3_addmsr()
  *
  * This function is identical to mstl3_addmsr() but with the additional \a
  * pprecptr parameter:

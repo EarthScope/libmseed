@@ -556,8 +556,8 @@ typedef struct MS3RecordList
 
     Trace lists are a container to organize continuous segments of
     data.  By combining miniSEED data records into trace lists, the
-    time series is reconstructed and ready for processing or
-    summarization.
+    time series is reconstructed and ready for processing, conversion,
+    summarization, etc.
 
     A trace list container starts with an ::MS3TraceList, which
     contains one or more ::MS3TraceID entries, which each contain one
@@ -575,6 +575,10 @@ typedef struct MS3RecordList
           - MS3TraceSeg
           - ...
         - ...
+
+    @note A trace list does not contain all of the details of a miniSEED
+    record.  In particular details that are not relevant to represent the series
+    such as header flags, extra headers like event detections, etc.
 
     \sa ms3_readtracelist()
     \sa ms3_readtracelist_timewin()

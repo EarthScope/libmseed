@@ -84,6 +84,11 @@ An input file of miniSEED is used as a convenient data source.
 ::MS3Record containers can be constructed for any arbitrary data and
 follow the same pattern of record generation.
 
+@note The ::MS3TraceList data structure is designed as a container of data
+sample payloads (integers, floats, text). A trace list does not contain all of
+the details of miniSEED records and cannot be used to represent and create
+header-only miniSEED records or records with custom header flags.
+
 @include lm_pack_rollingbuffer.c
 
 @section example-lm_sids Working with Source Identifiers
