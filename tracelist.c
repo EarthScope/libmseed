@@ -1945,8 +1945,6 @@ _mstl3_pack_impl (MS3TraceList *mstl, void (*record_handler) (char *, int, void 
 
         if (update_latency > flush_idle_nanoseconds)
         {
-          ms_log (0, "DEBUG %s: Flushing segment due to idle time: %" PRIu64 " seconds\n", id->sid,
-                  update_latency / NSTMODULUS);
           flags |= MSF_FLUSHDATA;
         }
       }
