@@ -1,7 +1,7 @@
-Unreleased
+2025.267: v3.1.9
   - Add mstl3_pack_ppupdate_flushidle() for packing idle streams in combination
   with the use of MSF_PPUPDATETIME during trace list additions.
-	- Convert mstl3_addmsr() from a macro to a real (thin) function.
+  - Convert mstl3_addmsr() from a macro to a real (thin) function.
 
 2025.257: v3.1.8
   - Fix segment removal from MS3TraceList when packing
