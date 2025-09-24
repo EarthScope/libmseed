@@ -1964,6 +1964,12 @@ _mstl3_pack_impl (MS3TraceList *mstl, void (*record_handler) (char *, int, void 
       totalpackedrecords += segpackedrecords;
       totalpackedsamples += segpackedsamples;
 
+      /* Remove segment if no samples remain and the MSF_MAINTAINMSTL flag is not set */
+      if ((flags & MSF_MAINTAINMSTL) == 0 && seg->numsamples == 0)
+      {
+        lm_remove_segment (mstl, id, seg, 1);
+      }
+
       seg = nextseg;
     }
 
@@ -2098,6 +2104,7 @@ mstl3_pack_ppupdate_flushidle (MS3TraceList *mstl, void (*record_handler) (char 
  * from the trace list.  All memmory referenced by the segment, including
  * the `prvtptr`s, will also be freed.
  *
+ * @param[in] mstl ::MS3TraceList for the relevent ::MS3TraceID (unused for now)
  * @param[in] id ::MS3TraceID for the relevant ::MS3TraceSeg
  * @param[in] seg ::MS3TraceSeg containing data to pack
  * @param[in] record_handler() Callback function called for each record
@@ -2127,6 +2134,7 @@ mstl3_pack_segment (MS3TraceList *mstl, MS3TraceID *id, MS3TraceSeg *seg,
                     int8_t encoding, int64_t *packedsamples, uint32_t flags, int8_t verbose,
                     char *extra)
 {
+  (void)mstl;
   MS3Record msr = MS3Record_INITIALIZER;
 
   int64_t totalpackedrecords = 0;
@@ -2209,7 +2217,7 @@ mstl3_pack_segment (MS3TraceList *mstl, MS3TraceID *id, MS3TraceSeg *seg,
   }
 
   /* If MSF_MAINTAINMSTL not set, modify or remove segment accordingly */
-  if (!(flags & MSF_MAINTAINMSTL) && segpackedsamples > 0)
+  if ((flags & MSF_MAINTAINMSTL) == 0 && segpackedsamples > 0)
   {
     /* Calculate new start time, shortcut when all samples have been packed */
     if (segpackedsamples == seg->numsamples)
@@ -2247,11 +2255,6 @@ mstl3_pack_segment (MS3TraceList *mstl, MS3TraceID *id, MS3TraceSeg *seg,
 
         seg->datasize = (uint64_t)bufsize;
       }
-    }
-    /* Remove segment if no samples remain */
-    else
-    {
-      lm_remove_segment (mstl, id, seg, 1);
     }
   }
 
