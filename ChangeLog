@@ -16,7 +16,7 @@
   - Add ms_nstime2timestr_n() with string size limit, deprecate ms_nstime2timestr().
   - With ms_nstime2timestr_n() print "ERROR" for NSTERROR and "UNSET" for NSTUNSET.
   - Avoid fatal errors when v2 record blockettes contain invalid time stamps.
-  When SEED "btime" values are encountered they are now set to NSTERROR and
+  When invalid SEED "btime" values are encountered they are now set to NSTERROR and
   serialized in extra headers as "ERROR".
   - Limit float point values in extra headers to single precision to avoid
   unrealistically high precision values in the output

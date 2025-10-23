@@ -1,6 +1,7 @@
 LIBRARY libmseed.dll
 EXPORTS
    ms_nstime2time
+   ms_nstime2timestr_n
    ms_nstime2timestr
    ms_nstime2timestrz
    ms_time2nstime
@@ -12,6 +13,7 @@ EXPORTS
    msr3_parse
    msr3_pack
    msr3_repack_mseed3
+   msr3_repack_mseed2
    msr3_pack_header3
    msr3_pack_header2
    msr3_unpack_data
@@ -45,7 +47,8 @@ EXPORTS
    mstl3_convertsamples
    mstl3_resize_buffers
    mstl3_pack
-   mstraceseg3_pack
+   mstl3_pack_segment
+   mstl3_pack_ppupdate_flushidle
    mstl3_printtracelist
    mstl3_printsynclist
    mstl3_printgaplist
