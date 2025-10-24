@@ -506,8 +506,7 @@ _ms3_readmsr_impl (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
  *
  * @param[in] mspath File or URL to read
  *
- * @param[in] flags Flags used to control parsing, see @ref
- * control-flags
+ * @param[in] flags Flags used to control parsing, see @ref control-flags
  *
  * @param[in] verbose Controls verbosity, 0 means no diagnostic output
  *
@@ -662,7 +661,12 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath, const MS3T
  * @param[in] tolerance Tolerance function pointers as ::MS3Tolerance
  * @param[in] selections Pointer to ::MS3Selections for limiting data
  * @param[in] splitversion Flag to control splitting of version/quality
- * @param[in] flags Flags to control reading, see ms3_readmsr_selection()
+ * @param[in] flags
+ * @parblock
+ *  - \c ::MSF_RECORDLIST : Build a ::MS3RecordList for each ::MS3TraceSeg
+ *  - Flags supported by msr3_parse()
+ *  - Flags supported by mstl3_addmsr()
+ * @endparblock
  * @param[in] verbose Controls verbosity, 0 means no diagnostic output
  *
  * @returns ::MS_NOERROR and populates an ::MS3TraceList struct at *ppmstl

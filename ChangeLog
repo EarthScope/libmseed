@@ -1,3 +1,7 @@
+2025.297:
+  - Add MSF_SPLITISVERSION flag to control using the splitversion value as the
+  version instead the record publication version for mstl3_addmsr() and variants.
+
 2025.267: v3.1.9
   - Add mstl3_pack_ppupdate_flushidle() for packing idle streams in combination
   with the use of MSF_PPUPDATETIME during trace list additions.

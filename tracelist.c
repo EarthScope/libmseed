@@ -285,7 +285,6 @@ _mstl3_addmsr_impl (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **ppr
                     int8_t splitversion, int8_t autoheal, uint32_t flags,
                     const MS3Tolerance *tolerance)
 {
-  (void)flags; /* Unused */
   MS3TraceID *id = NULL;
   MS3TraceID *previd[MSTRACEID_SKIPLIST_HEIGHT] = {NULL};
 
@@ -320,8 +319,12 @@ _mstl3_addmsr_impl (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **ppr
     return NULL;
   }
 
+  /* If splitversion is true and MSF_SPLITISVERSION is set in flags, use splitversion
+   * as the version, otherwise use msr->pubversion */
+  int8_t pubversion = (flags & MSF_SPLITISVERSION) ? splitversion : msr->pubversion;
+
   /* Search for matching trace ID */
-  id = mstl3_findID (mstl, msr->sid, (splitversion) ? msr->pubversion : 0, previd);
+  id = mstl3_findID (mstl, msr->sid, (splitversion) ? pubversion : 0, previd);
 
   /* If no matching ID was found create new MS3TraceID and MS3TraceSeg entries */
   if (!id)
@@ -335,7 +338,7 @@ _mstl3_addmsr_impl (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **ppr
 
     /* Populate MS3TraceID */
     memcpy (id->sid, msr->sid, sizeof (id->sid));
-    id->pubversion = msr->pubversion;
+    id->pubversion = pubversion;
     id->earliest = msr->starttime;
     id->latest = endtime;
     id->numsegments = 1;
@@ -627,8 +630,8 @@ _mstl3_addmsr_impl (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **ppr
     } /* End of searching segment list */
 
     /* Track largest publication version */
-    if (msr->pubversion > id->pubversion)
-      id->pubversion = msr->pubversion;
+    if (pubversion > id->pubversion)
+      id->pubversion = pubversion;
 
     /* Track earliest and latest times */
     if (msr->starttime < id->earliest)
@@ -707,7 +710,7 @@ _mstl3_addmsr_impl (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **ppr
   }
 
   return seg;
-} /* End of mstl3_addmsr_recordptr() */
+} /* End of _mstl3_addmsr_impl() */
 
 /** ************************************************************************
  * @brief Add data coverage from an ::MS3Record to a ::MS3TraceList
@@ -745,12 +748,18 @@ _mstl3_addmsr_impl (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **ppr
  * @param[in] msr ::MS3Record containing the data to add to list
  * @param[in] splitversion Flag to control splitting of version/quality
  * @param[in] autoheal Flag to control automatic merging of segments
- * @param[in] flags Flags to control optional functionality (unused)
+ * @param[in] flags Flags to control optional functionality
+ * @parblock
+ *  - \c ::MSF_PPUPDATETIME : Store update time (as nstime_t) at ::MS3TraceSeg.prvtptr
+ *  - \c ::MSF_SPLITISVERSION : Use \a splitversion as the version, otherwise use msr->pubversion
+ * @endparblock
  * @param[in] tolerance Tolerance function pointers as ::MS3Tolerance
  *
  * @returns a pointer to the ::MS3TraceSeg updated or NULL on error.
  *
- * \sa mstl3_addmsr_recordptr() \sa mstl3_readbuffer() \sa ms3_readtracelist()
+ * \sa mstl3_addmsr_recordptr()
+ * \sa mstl3_readbuffer()
+ * \sa ms3_readtracelist()
  *
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/

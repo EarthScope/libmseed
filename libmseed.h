@@ -1559,6 +1559,8 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
 #define MSF_MAINTAINMSTL 0x0200 //!< [TraceList] Do not modify a trace list when packing
 #define MSF_PPUPDATETIME                                                                           \
   0x0400 //!< [TraceList] Store update time (as nstime_t) at ::MS3TraceSeg.prvtptr
+#define MSF_SPLITISVERSION \
+  0x0800 //!< [TraceList] Use the splitversion value as version instead of record version
 /** @} */
 
 #ifdef __cplusplus

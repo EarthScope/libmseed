@@ -220,3 +220,31 @@ TEST (tracelist, read_ppupdatetime)
 
   mstl3_free (&mstl, 1);
 }
+
+TEST (tracelist, read_splitisversion)
+{
+  MS3TraceList *mstl = NULL;
+  MS3TraceID *id     = NULL;
+  uint32_t flags;
+  int rv;
+
+  char *path = "data/testdata-oneseries-mixedlengths-mixedorder.mseed3";
+
+  /* Set bit flag to use the value of splitversion as the version
+   * instead of the record publication version. */
+  flags = MSF_SPLITISVERSION;
+
+  rv = ms3_readtracelist (&mstl, path, NULL, 99, flags, 0);
+
+  CHECK (rv == MS_NOERROR, "ms3_readtracelist() did not return expected MS_NOERROR");
+  REQUIRE (mstl != NULL, "ms3_readtracelist() did not populate 'mstl'");
+  CHECK (mstl->numtraceids == 1, "mstl->numtraceids is not expected 1");
+
+  id = mstl->traces.next[0];
+
+  REQUIRE (id != NULL, "mstl->traces.next[0] is not populated");
+
+  CHECK (id->pubversion == 99, "id->pubversion is not expected 99");
+
+  mstl3_free (&mstl, 1);
+}
