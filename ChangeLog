@@ -1,6 +1,7 @@
-2025.297:
+2025.298: v3.1.10
   - Add MSF_SPLITISVERSION flag to control using the splitversion value as the
   version instead the record publication version for mstl3_addmsr() and variants.
+  - Add missing functions to libmseed.def for Windows library exports.
 
 2025.267: v3.1.9
   - Add mstl3_pack_ppupdate_flushidle() for packing idle streams in combination
