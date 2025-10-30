@@ -203,9 +203,18 @@ ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion)
 
     *formatversion = 3;
 
+    /* Check to see if byte swapping is needed, v3 is little-endian */
+    swapflag = (ms_bigendianhost()) ? 1 : 0;
+
     memcpy (&sidlength, pMS3FSDH_SIDLENGTH (record), sizeof (uint8_t));
     memcpy (&extralength, pMS3FSDH_EXTRALENGTH (record), sizeof (uint16_t));
     memcpy (&datalength, pMS3FSDH_DATALENGTH (record), sizeof (uint32_t));
+
+    if (swapflag)
+    {
+      ms_gswap2 (&extralength);
+      ms_gswap4 (&datalength);
+    }
 
     reclen = MS3FSDH_LENGTH /* Length of fixed portion of header */
              + sidlength    /* Length of source identifier */
