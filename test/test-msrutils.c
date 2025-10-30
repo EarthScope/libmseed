@@ -1,8 +1,6 @@
 #include <tau/tau.h>
 #include <libmseed.h>
 
-#include "testdata.h"
-
 TEST (msr3, utils)
 {
   MS3Record *msr = NULL;

@@ -1,8 +1,6 @@
 #include <libmseed.h>
 #include <tau/tau.h>
 
-#include "testdata.h"
-
 extern int cmpfiles (char *fileA, char *fileB);
 
 /* Write test output files.  Reference files are at "data/reference-<name>" */
