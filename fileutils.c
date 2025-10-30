@@ -664,6 +664,7 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath, const MS3T
  * @param[in] flags
  * @parblock
  *  - \c ::MSF_RECORDLIST : Build a ::MS3RecordList for each ::MS3TraceSeg
+ *  - \c ::MSF_SKIPADJACENTDUPLICATES : Skip adjacent duplicate records
  *  - Flags supported by msr3_parse()
  *  - Flags supported by mstl3_addmsr()
  * @endparblock
@@ -688,6 +689,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath,
   MS3RecordPtr *recordptr = NULL;
   uint32_t dataoffset;
   uint32_t datasize;
+  uint32_t previous_crc = 0;
   int retcode;
 
   if (!ppmstl)
@@ -712,6 +714,18 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath,
   while ((retcode = ms3_readmsr_selection (&msfp, &msr, mspath, flags, selections, verbose)) ==
          MS_NOERROR)
   {
+    if (flags & MSF_SKIPADJACENTDUPLICATES)
+    {
+      uint32_t crc = ms_crc32c ((const uint8_t *)msr->record, msr->reclen, 0);
+
+      if (crc == previous_crc)
+      {
+        continue;
+      }
+
+      previous_crc = crc;
+    }
+
     seg = mstl3_addmsr_recordptr (*ppmstl, msr, (flags & MSF_RECORDLIST) ? &recordptr : NULL,
                                   splitversion, 1, flags, tolerance);
 

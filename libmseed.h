@@ -1561,6 +1561,7 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
   0x0400 //!< [TraceList] Store update time (as nstime_t) at ::MS3TraceSeg.prvtptr
 #define MSF_SPLITISVERSION \
   0x0800 //!< [TraceList] Use the splitversion value as version instead of record version
+#define MSF_SKIPADJACENTDUPLICATES 0x1000 //!< [TraceList] Skip adjacent duplicate records
 /** @} */
 
 #ifdef __cplusplus
