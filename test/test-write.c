@@ -140,10 +140,10 @@ TEST (write, msr)
   REQUIRE (rv > 0, "msr3_writemseed() return unexpected value");
   CHECK (!cmpfiles (TESTFILE_DEFAULTS_V3, "data/reference-" TESTFILE_DEFAULTS_V3), "Default encoding/reclen write mismatch");
 
-  /* Nanosecond time resolution with Int32 data and a timing exception and 4096 max record length */
+  /* Nanosecond time resolution with Int32 data and a timing exception and 512 max record length */
   msr->starttime = ms_timestr2nstime ("2012-05-12T00:00:00.123456789Z");
   msr->encoding = DE_INT32;
-  msr->reclen = 4096;
+  msr->reclen = 512;
   msr->numsamples  = SINE_DATA_SAMPLES;
   msr->datasamples = sinedata;
   msr->sampletype  = 'i';
@@ -284,10 +284,10 @@ TEST (write, msr)
   REQUIRE (rv > 0, "msr3_writemseed() return unexpected value");
   CHECK (!cmpfiles (TESTFILE_DEFAULTS_V2, "data/reference-" TESTFILE_DEFAULTS_V2), "Default encoding/reclen write mismatch");
 
-  /* Nanosecond time resolution with Int32 data and a timing exception and 4096 record length */
+  /* Nanosecond time resolution with Int32 data and a timing exception and 512 record length */
   msr->starttime = ms_timestr2nstime ("2012-05-12T00:00:00.123456789Z");
   msr->encoding = DE_INT32;
-  msr->reclen = 4096;
+  msr->reclen = 512;
   msr->numsamples  = SINE_DATA_SAMPLES;
   msr->datasamples = sinedata;
   msr->sampletype  = 'i';
