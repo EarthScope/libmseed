@@ -16,6 +16,7 @@ extern int cmpfiles (char *fileA, char *fileB);
 #define TESTFILE_DEFAULTS_V2  "testdata-defaults.mseed2"
 #define TESTFILE_NSEC_V2    "testdata-nsec.mseed2"
 #define TESTFILE_OLDEN_V2   "testdata-olden.mseed2"
+#define TESTFILE_ODDRATE_V2 "testdata-oddrate.mseed2"
 #define TESTFILE_MSTLPACK_V2  "testdata-mstlpack.mseed2"
 
 #define TESTFILE_TEXT_V3    "testdata-text.mseed3"
@@ -28,6 +29,7 @@ extern int cmpfiles (char *fileA, char *fileB);
 #define TESTFILE_DEFAULTS_V3  "testdata-defaults.mseed3"
 #define TESTFILE_NSEC_V3    "testdata-nsec.mseed3"
 #define TESTFILE_OLDEN_V3   "testdata-olden.mseed3"
+#define TESTFILE_ODDRATE_V3 "testdata-oddrate.mseed3"
 #define TESTFILE_MSTLPACK_V3  "testdata-mstlpack.mseed3"
 
 TEST (write, msr3_writemseed_encodings)
@@ -397,6 +399,54 @@ TEST (write, msr3_writemseed_olden)
   msr->datasamples = NULL;
   msr3_free (&msr);
 }
+
+TEST (write, msr3_writemseed_oddrate)
+{
+  MS3Record *msr = NULL;
+  uint32_t flags = MSF_FLUSHDATA; /* Set data flush flag */
+  int32_t sinedata[SINE_DATA_SAMPLES];
+  int idx;
+  int rv;
+
+  /* Create integer sine data set */
+  for (idx = 0; idx < SINE_DATA_SAMPLES; idx++)
+  {
+    sinedata[idx] = (int32_t)(fsinedata[idx]);
+  }
+
+  msr = msr3_init (msr);
+  REQUIRE (msr != NULL, "msr3_init() returned unexpected NULL");
+
+  strcpy (msr->sid, "FDSN:XX_TEST__B_H_Z");
+  msr->pubversion = 1;
+  msr->starttime = ms_timestr2nstime ("2025-05-12T21:11:24.987654321Z");
+  msr->encoding = DE_INT32;
+  msr->reclen = 512;
+  msr->numsamples  = SINE_DATA_SAMPLES;
+  msr->datasamples = sinedata;
+  msr->sampletype  = 'i';
+
+  /* Odd rate (1080.0) with an irrational period */
+  msr->samprate = 1080.0;
+
+  /* V3 */
+  msr->formatversion = 3;
+
+  rv = msr3_writemseed (msr, TESTFILE_ODDRATE_V3, 1, flags, 0);
+  REQUIRE (rv > 0, "msr3_writemseed() return unexpected value");
+  CHECK (!cmpfiles (TESTFILE_ODDRATE_V3, "data/reference-" TESTFILE_ODDRATE_V3), "Odd rate write mismatch");
+
+  /* V2 */
+  msr->formatversion = 2;
+
+  rv = msr3_writemseed (msr, TESTFILE_ODDRATE_V2, 1, flags, 0);
+  REQUIRE (rv > 0, "msr3_writemseed() return unexpected value");
+  CHECK (!cmpfiles (TESTFILE_ODDRATE_V2, "data/reference-" TESTFILE_ODDRATE_V2), "Odd rate write mismatch");
+
+  msr->datasamples = NULL;
+  msr3_free (&msr);
+}
+
 
 TEST (write, tracelist)
 {
