@@ -30,7 +30,7 @@ extern int cmpfiles (char *fileA, char *fileB);
 #define TESTFILE_OLDEN_V3   "testdata-olden.mseed3"
 #define TESTFILE_MSTLPACK_V3  "testdata-mstlpack.mseed3"
 
-TEST (write, msr)
+TEST (write, msr3_writemseed_encodings)
 {
   MS3Record *msr = NULL;
   uint32_t flags = MSF_FLUSHDATA; /* Set data flush flag */
@@ -140,56 +140,6 @@ TEST (write, msr)
   REQUIRE (rv > 0, "msr3_writemseed() return unexpected value");
   CHECK (!cmpfiles (TESTFILE_DEFAULTS_V3, "data/reference-" TESTFILE_DEFAULTS_V3), "Default encoding/reclen write mismatch");
 
-  /* Nanosecond time resolution with Int32 data and a timing exception and 512 max record length */
-  msr->starttime = ms_timestr2nstime ("2012-05-12T00:00:00.123456789Z");
-  msr->encoding = DE_INT32;
-  msr->reclen = 512;
-  msr->numsamples  = SINE_DATA_SAMPLES;
-  msr->datasamples = sinedata;
-  msr->sampletype  = 'i';
-  msr->extra       = "{\"FDSN\":{"
-                     "\"Time\":{"
-                     "\"Exception\":[{"
-                     "\"Time\":\"2012-05-12T00:00:26.987654321Z\","
-                     "\"VCOCorrection\":50.7080078125,"
-                     "\"ReceptionQuality\":100,"
-                     "\"Count\":7654,"
-                     "\"Type\":\"Valid\","
-                     "\"ClockStatus\":\"Drift=-1973usec, Satellite SNR in dB=23, 0, 26, 25, 29, 28\""
-                     "}]},"
-                     "\"Clock\":{"
-                     "\"Model\":\"Acme Corporation GPS3\""
-                     "}}}";
-  msr->extralength = strlen (msr->extra);
-
-  rv = msr3_writemseed (msr, TESTFILE_NSEC_V3, 1, flags, 0);
-  REQUIRE (rv > 0, "msr3_writemseed() return unexpected value");
-  CHECK (!cmpfiles (TESTFILE_NSEC_V3, "data/reference-" TESTFILE_NSEC_V3), "Nanosecond timing write mismatch");
-
-  /* Old, pre-epoch times with Int32 data and a timing exception and 4096 max record length */
-  msr->starttime = ms_timestr2nstime ("1964-03-27T21:11:24.987654321Z");
-  msr->encoding = DE_INT32;
-  msr->reclen = 4096;
-  msr->numsamples  = SINE_DATA_SAMPLES;
-  msr->datasamples = sinedata;
-  msr->sampletype  = 'i';
-  msr->extra       = "{\"FDSN\":{"
-                     "\"Time\":{"
-                     "\"Exception\":[{"
-                     "\"Time\":\"1964-03-27T21:11:48.123456789Z\","
-                     "\"Count\":1,"
-                     "\"Type\":\"Unexpected\","
-                     "\"ClockStatus\":\"Clock tower destroyed\""
-                     "}]},"
-                     "\"Clock\":{"
-                     "\"Model\":\"Ye Olde Clock Tower Company\""
-                     "}}}";
-  msr->extralength = strlen (msr->extra);
-
-  rv = msr3_writemseed (msr, TESTFILE_OLDEN_V3, 1, flags, 0);
-  REQUIRE (rv > 0, "msr3_writemseed() return unexpected value");
-  CHECK (!cmpfiles (TESTFILE_OLDEN_V3, "data/reference-" TESTFILE_OLDEN_V3), "Old, pre-epoch times write mismatch");
-
   msr->extra = NULL;
   msr->extralength = 0;
 
@@ -284,8 +234,63 @@ TEST (write, msr)
   REQUIRE (rv > 0, "msr3_writemseed() return unexpected value");
   CHECK (!cmpfiles (TESTFILE_DEFAULTS_V2, "data/reference-" TESTFILE_DEFAULTS_V2), "Default encoding/reclen write mismatch");
 
-  /* Nanosecond time resolution with Int32 data and a timing exception and 512 record length */
+  msr->extra = NULL;
+  msr->extralength = 0;
+  msr->datasamples = NULL;
+  msr3_free (&msr);
+}
+
+TEST (write, msr3_writemseed_nanosecond)
+{
+  MS3Record *msr = NULL;
+  uint32_t flags = MSF_FLUSHDATA; /* Set data flush flag */
+  int32_t sinedata[SINE_DATA_SAMPLES];
+  int idx;
+  int rv;
+
+  /* Create integer sine data set */
+  for (idx = 0; idx < SINE_DATA_SAMPLES; idx++)
+  {
+    sinedata[idx] = (int32_t)(fsinedata[idx]);
+  }
+
+  msr = msr3_init (msr);
+  REQUIRE (msr != NULL, "msr3_init() returned unexpected NULL");
+
+  strcpy (msr->sid, "FDSN:XX_TEST__B_H_Z");
+  msr->samprate = 40.0;
+  msr->pubversion = 1;
+
+  /* V3 Nanosecond time resolution with Int32 data and a timing exception and 512 max record length */
   msr->starttime = ms_timestr2nstime ("2012-05-12T00:00:00.123456789Z");
+  msr->formatversion = 3;
+  msr->encoding = DE_INT32;
+  msr->reclen = 512;
+  msr->numsamples  = SINE_DATA_SAMPLES;
+  msr->datasamples = sinedata;
+  msr->sampletype  = 'i';
+  msr->extra       = "{\"FDSN\":{"
+                     "\"Time\":{"
+                     "\"Exception\":[{"
+                     "\"Time\":\"2012-05-12T00:00:26.987654321Z\","
+                     "\"VCOCorrection\":50.7080078125,"
+                     "\"ReceptionQuality\":100,"
+                     "\"Count\":7654,"
+                     "\"Type\":\"Valid\","
+                     "\"ClockStatus\":\"Drift=-1973usec, Satellite SNR in dB=23, 0, 26, 25, 29, 28\""
+                     "}]},"
+                     "\"Clock\":{"
+                     "\"Model\":\"Acme Corporation GPS3\""
+                     "}}}";
+  msr->extralength = strlen (msr->extra);
+
+  rv = msr3_writemseed (msr, TESTFILE_NSEC_V3, 1, flags, 0);
+  REQUIRE (rv > 0, "msr3_writemseed() return unexpected value");
+  CHECK (!cmpfiles (TESTFILE_NSEC_V3, "data/reference-" TESTFILE_NSEC_V3), "Nanosecond timing write mismatch");
+
+  /* V2 Nanosecond time resolution with Int32 data and a timing exception and 512 record length */
+  msr->starttime = ms_timestr2nstime ("2012-05-12T00:00:00.123456789Z");
+  msr->formatversion = 2;
   msr->encoding = DE_INT32;
   msr->reclen = 512;
   msr->numsamples  = SINE_DATA_SAMPLES;
@@ -310,8 +315,61 @@ TEST (write, msr)
   REQUIRE (rv > 0, "msr3_writemseed() return unexpected value");
   CHECK (!cmpfiles (TESTFILE_NSEC_V2, "data/reference-" TESTFILE_NSEC_V2), "Nanosecond timing write mismatch");
 
-  /* Old, pre-epoch times with Int32 data and a timing exception and 4096 record length */
+  msr->extra = NULL;
+  msr->extralength = 0;
+  msr->datasamples = NULL;
+  msr3_free (&msr);
+}
+
+TEST (write, msr3_writemseed_olden)
+{
+  MS3Record *msr = NULL;
+  uint32_t flags = MSF_FLUSHDATA; /* Set data flush flag */
+  int32_t sinedata[SINE_DATA_SAMPLES];
+  int idx;
+  int rv;
+
+  /* Create integer sine data set */
+  for (idx = 0; idx < SINE_DATA_SAMPLES; idx++)
+  {
+    sinedata[idx] = (int32_t)(fsinedata[idx]);
+  }
+
+  msr = msr3_init (msr);
+  REQUIRE (msr != NULL, "msr3_init() returned unexpected NULL");
+
+  strcpy (msr->sid, "FDSN:XX_TEST__B_H_Z");
+  msr->samprate = 40.0;
+  msr->pubversion = 1;
+
+  /* V3 Old, pre-epoch times with Int32 data and a timing exception and 4096 max record length */
   msr->starttime = ms_timestr2nstime ("1964-03-27T21:11:24.987654321Z");
+  msr->formatversion = 3;
+  msr->encoding = DE_INT32;
+  msr->reclen = 4096;
+  msr->numsamples  = SINE_DATA_SAMPLES;
+  msr->datasamples = sinedata;
+  msr->sampletype  = 'i';
+  msr->extra       = "{\"FDSN\":{"
+                     "\"Time\":{"
+                     "\"Exception\":[{"
+                     "\"Time\":\"1964-03-27T21:11:48.123456789Z\","
+                     "\"Count\":1,"
+                     "\"Type\":\"Unexpected\","
+                     "\"ClockStatus\":\"Clock tower destroyed\""
+                     "}]},"
+                     "\"Clock\":{"
+                     "\"Model\":\"Ye Olde Clock Tower Company\""
+                     "}}}";
+  msr->extralength = strlen (msr->extra);
+
+  rv = msr3_writemseed (msr, TESTFILE_OLDEN_V3, 1, flags, 0);
+  REQUIRE (rv > 0, "msr3_writemseed() return unexpected value");
+  CHECK (!cmpfiles (TESTFILE_OLDEN_V3, "data/reference-" TESTFILE_OLDEN_V3), "Old, pre-epoch times write mismatch");
+
+  /* V2 Old, pre-epoch times with Int32 data and a timing exception and 4096 record length */
+  msr->starttime = ms_timestr2nstime ("1964-03-27T21:11:24.987654321Z");
+  msr->formatversion = 2;
   msr->encoding = DE_INT32;
   msr->reclen = 4096;
   msr->numsamples  = SINE_DATA_SAMPLES;
