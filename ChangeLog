@@ -1,3 +1,6 @@
+2025.306:
+  - Fix memory leak in mseh_replace().
+
 2025.303: v3.1.11
   - Fix byte swapping in ms3_detect() for v3 records for big-endian systems.
   - Add MSF_SKIPADJACENTDUPLICATES to skip adjacent duplicate records while

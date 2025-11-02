@@ -1131,6 +1131,8 @@ mseh_replace (MS3Record *msr, char *jsonstring)
     /* Serialize new JSON string */
     serialized = yyjson_write_opts (doc, write_flg, &alc, &serialsize, &write_err);
 
+    yyjson_doc_free (doc);
+
     if (serialized == NULL)
     {
       ms_log (2, "%s() Cannot write extra header JSON: %s\n", __func__,
