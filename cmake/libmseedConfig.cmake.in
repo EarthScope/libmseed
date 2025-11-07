@@ -1,0 +1,29 @@
+@PACKAGE_INIT@
+
+# libmseed CMake configuration file
+
+include(CMakeFindDependencyMacro)
+
+# Find dependencies if URL support was enabled
+if(@LIBMSEED_URL@)
+    find_dependency(CURL REQUIRED)
+endif()
+
+# Include the targets file
+include("${CMAKE_CURRENT_LIST_DIR}/libmseedTargets.cmake")
+
+# Create a generic mseed::mseed alias pointing to the appropriate target
+if(TARGET mseed::mseed_shared AND NOT TARGET mseed::mseed)
+    add_library(mseed::mseed ALIAS mseed::mseed_shared)
+    set(LIBMSEED_LIBRARIES mseed::mseed_shared)
+elseif(TARGET mseed::mseed_static AND NOT TARGET mseed::mseed)
+    add_library(mseed::mseed ALIAS mseed::mseed_static)
+    set(LIBMSEED_LIBRARIES mseed::mseed_static)
+endif()
+
+# Provide legacy variables for compatibility
+set(LIBMSEED_FOUND TRUE)
+set(LIBMSEED_VERSION "@PROJECT_VERSION@")
+set(LIBMSEED_INCLUDE_DIRS "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
+
+check_required_components(libmseed)

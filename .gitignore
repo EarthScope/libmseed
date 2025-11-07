@@ -14,3 +14,7 @@ doc/gh-pages/
 
 TODO
 TODO.txt
+
+# CMake directories 
+build
+install
