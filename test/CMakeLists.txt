@@ -33,8 +33,16 @@ add_library(tau STATIC
 )
 
 target_include_directories(tau PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/tau
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
 )
+
+# Link tau with the library to access libmseed.h
+if(BUILD_SHARED_LIBS AND TARGET mseed_shared)
+    target_link_libraries(tau PUBLIC mseed_shared)
+elseif(TARGET mseed_static)
+    target_link_libraries(tau PUBLIC mseed_static)
+endif()
 
 # Build test programs
 foreach(test ${TEST_PROGRAMS})

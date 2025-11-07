@@ -24,7 +24,8 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # C standard
-set(CMAKE_C_STANDARD 99)
+# Use C11 or later to avoid typedef redefinition warnings in TAU test framework
+set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # Library source files

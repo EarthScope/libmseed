@@ -12,6 +12,10 @@
 doc/working/
 doc/gh-pages/
 
+# Tests
+Testing
+test/testdata-*.mseed*
+
 TODO
 TODO.txt
 
