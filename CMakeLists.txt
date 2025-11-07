@@ -186,6 +186,12 @@ install(TARGETS ${INSTALL_TARGETS}
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
+# Export targets to build tree (allows using the build directory directly)
+export(EXPORT libmseedTargets
+    FILE "${CMAKE_CURRENT_BINARY_DIR}/libmseedTargets.cmake"
+    NAMESPACE mseed::
+)
+
 # Install export file
 install(EXPORT libmseedTargets
     FILE libmseedTargets.cmake
