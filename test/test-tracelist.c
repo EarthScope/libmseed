@@ -2,7 +2,17 @@
 #include <libmseed.h>
 #include <time.h>
 
-TEST (tracelist, read)
+/* This test reads a miniSEED file directly into a MS3TraceList and verifies the
+ * contents of the trace list against expected values.
+ *
+ * The test data is a miniSEED file with one series of data with mixed lengths
+ * and mixed time order.
+ *
+ * The test verifies basic functionality of reading data from files of miniSEED
+ * into a trace list and that data added to the trace list are reconstructed as a
+ * continuous time series, regardless of the order in which the data are added.
+ */
+TEST (tracelist, ms3_readtracelist_mixedlengths_mixedorder)
 {
   MS3TraceList *mstl = NULL;
   MS3TraceID *id     = NULL;
@@ -44,7 +54,11 @@ TEST (tracelist, read)
   mstl3_free (&mstl, 1);
 }
 
-TEST (tracelist, read_recptr_file)
+/* This test reads a miniSEED file directly into a MS3TraceList while using the
+ * MSF_RECORDLIST flag to build a record list for each trace segment.  The
+ * expected contents of the record list are verified.
+ */
+TEST (tracelist, ms3_readtracelist_recptr)
 {
   MS3TraceList *mstl   = NULL;
   MS3TraceID *id       = NULL;
@@ -107,13 +121,17 @@ TEST (tracelist, read_recptr_file)
   mstl3_free (&mstl, 1);
 }
 
-TEST (tracelist, read_recptr_buffer)
+/* This test reads miniSEED from a buffer into a MS3TraceList while using the
+ * MSF_RECORDLIST flag to build a record list for each trace segment.  The
+ * expected contents of the record list are verified.
+ */
+TEST (tracelist, mstl3_readbuffer_recptr)
 {
   char buffer[16256];
   FILE *fp = NULL;
 
-  MS3TraceList *mstl   = NULL;
-  MS3TraceID *id       = NULL;
+  MS3TraceList *mstl = NULL;
+  MS3TraceID *id = NULL;
   MS3RecordPtr *recptr = NULL;
   nstime_t endtime;
   int64_t unpacked;
@@ -184,10 +202,15 @@ TEST (tracelist, read_recptr_buffer)
   mstl3_free (&mstl, 1);
 }
 
-TEST (tracelist, read_ppupdatetime)
+/* This test reads miniSEED from a file into a MS3TraceList while using the
+ * MSF_PPUPDATETIME flag to set the segment prvtptr to the update time of the
+ * record.  The expected value of the segment prvtptr is verified to be within
+ * 1 second of the system time.
+ */
+TEST (tracelist, ms3_readtracelist_ppupdatetime)
 {
   MS3TraceList *mstl = NULL;
-  MS3TraceID *id     = NULL;
+  MS3TraceID *id = NULL;
   uint32_t flags;
   nstime_t difference;
   time_t timeval;
@@ -221,10 +244,15 @@ TEST (tracelist, read_ppupdatetime)
   mstl3_free (&mstl, 1);
 }
 
-TEST (tracelist, read_splitisversion)
+/* This test reads miniSEED from a file into a MS3TraceList while using the
+ * MSF_SPLITISVERSION flag to use the value of splitversion as the version
+ * instead of the record publication version.  The expected value of the trace
+ * ID's version is verified.
+ */
+TEST (tracelist, ms3_readtracelist_splitisversion)
 {
   MS3TraceList *mstl = NULL;
-  MS3TraceID *id     = NULL;
+  MS3TraceID *id = NULL;
   uint32_t flags;
   int rv;
 

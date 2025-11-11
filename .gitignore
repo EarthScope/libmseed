@@ -12,5 +12,8 @@
 doc/working/
 doc/gh-pages/
 
+# Test artifacts
+test/testdata-*
+
 TODO
 TODO.txt

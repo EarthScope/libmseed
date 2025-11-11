@@ -31,13 +31,12 @@
 
 /***************************************************************************
  *
- * A simple record handler callback function that parses and prints records
+ * A simple record handler that parses and prints record details
  *
  ***************************************************************************/
 void
-record_handler (char *record, int reclen, void *handlerdata)
+record_handler (char *record, int reclen)
 {
-  (void)handlerdata;
   MS3Record *msr = NULL;
 
   if (!msr3_parse (record, reclen, &msr, 0, 0))
@@ -62,10 +61,15 @@ main (int argc, char **argv)
   int8_t verbose = 0;
   int retcode;
 
-  int64_t psamples;
-  int precords;
   int reclen = 256; /* Desired maximum record length */
   uint8_t encoding = DE_STEIM2; /* Desired data encoding */
+
+  MS3TraceListPacker *packer = NULL;
+  char *record = NULL;
+  int32_t reclen_generated = 0;
+  int64_t packedsamples = 0;
+  int recordcount = 0;
+  int result;
 
   if (argc != 2)
   {
@@ -86,6 +90,14 @@ main (int argc, char **argv)
   flags |= MSF_VALIDATECRC;
   flags |= MSF_UNPACKDATA;
 
+  /* Initialize packing state */
+  packer = mstl3_pack_init (mstl, reclen, encoding, flags, verbose, NULL, 0);
+  if (!packer)
+  {
+    ms_log (2, "Cannot initialize packing state\n");
+    return 1;
+  }
+
   /* Loop over the input file as a source of data */
   while ((retcode = ms3_readmsr (&msr, inputfile, flags, verbose)) == MS_NOERROR)
   {
@@ -97,43 +109,47 @@ main (int argc, char **argv)
 
     /* Attempt to pack data in the Trace List buffer.
      * Only filled, or complete, records will be generated. */
+    ms_log (0, "Calling mstl3_pack_next() to generate records\n");
 
-    ms_log (0, "Calling mstl3_pack() to generate records\n");
+    recordcount = 0;
+    while ((result = mstl3_pack_next (packer, 0, &record, &reclen_generated)) == 1)
+    {
+      record_handler (record, reclen_generated);
+      recordcount++;
+    }
 
-    precords = mstl3_pack (mstl,           // Pack data in this trace list
-                           record_handler, // Callback function that will handle records
-                           NULL,           // Callback function data, none in this case
-                           reclen,         // Maximum record length
-                           encoding,       // Data encoding
-                           &psamples,      // Packed sample count
-                           flags,          // Flags to control packing
-                           verbose,        // Verbosity
-                           NULL            // Extra headers to inject, none in this case
-    );
+    if (result != 0)
+    {
+      ms_log (2, "mstl3_pack_next() returned an error: %d\n", result);
+      break;
+    }
 
-    ms_log (0, "mstl3_pack() created %d records containing %" PRId64 " samples\n",
-            precords, psamples);
+    ms_log (0, "mstl3_pack_next() created %d records\n", recordcount);
   }
 
   if (retcode != MS_ENDOFFILE)
     ms_log (2, "Error reading %s: %s\n", inputfile, ms_errorstr (retcode));
 
   /* Final call to flush data buffers, adding MSF_FLUSHDATA flag */
-  ms_log (0, "Calling mstl3_pack() with MSF_FLUSHDATA flag\n");
+  ms_log (0, "Calling mstl3_pack_next() with MSF_FLUSHDATA flag\n");
 
-  precords = mstl3_pack (mstl,                    // Pack data in this trace list
-                         record_handler,          // Callback function that will handle records
-                         NULL,                    // Callback function data, none in this case
-                         reclen,                  // Maximum record length
-                         encoding,                // Data encoding
-                         &psamples,               // Packed sample count
-                         (flags | MSF_FLUSHDATA), // Flags to control packing, adding flush flag
-                         verbose,                 // Verbosity
-                         NULL                     // Extra headers to inject, none in this case
-  );
+  /* Pack remaining data in the buffer with final call using MSF_FLUSHDATA flag */
+  recordcount = 0;
+  while ((result = mstl3_pack_next (packer, MSF_FLUSHDATA, &record, &reclen_generated)) == 1)
+  {
+    record_handler (record, reclen_generated);
+    recordcount++;
+  }
 
-  ms_log (0, "Final mstl3_pack() created %d records containing %" PRId64 " samples\n",
-          precords, psamples);
+  if (result != 0)
+  {
+    ms_log (2, "mstl3_pack_next() returned an error: %d\n", result);
+  }
+
+  mstl3_pack_free (&packer, &packedsamples);
+
+  ms_log (0, "Final mstl3_pack_next() created %d records for a total of %" PRId64 " samples\n", recordcount,
+          packedsamples);
 
   /* Make sure everything is cleaned up */
   ms3_readmsr (&msr, NULL, flags, 0);

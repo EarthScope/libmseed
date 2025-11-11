@@ -873,21 +873,6 @@ ms3_url_freeheaders (void)
 #endif
 } /* End of ms3_url_freeheaders() */
 
-/***************************************************************************
- *
- * Internal record handler.  The handler data should be a pointer to
- * an open file descriptor to which records will be written.
- *
- ***************************************************************************/
-static void
-ms_record_handler_int (char *record, int reclen, void *ofp)
-{
-  if (fwrite (record, reclen, 1, (FILE *)ofp) != 1)
-  {
-    ms_log (2, "Error writing to output file\n");
-  }
-} /* End of ms_record_handler_int() */
-
 /** ************************************************************************
  * @brief Write miniSEED from an ::MS3Record container to a file
  *
@@ -921,6 +906,11 @@ msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite, uint32_t 
   const char *perms = (overwrite) ? "wb" : "ab";
   int64_t packedrecords = 0;
 
+  MS3RecordPacker *packer;
+  char *record = NULL;
+  int32_t reclen = 0;
+  int result;
+
   if (!msr || !mspath)
   {
     ms_log (2, "%s(): Required input not defined: 'msr' or 'mspath'\n", __func__);
@@ -938,14 +928,46 @@ msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite, uint32_t 
     return -1;
   }
 
+  /* Initialize packer */
+  packer = msr3_pack_init (msr, flags, verbose);
+  if (!packer)
+    return -1;
+
   /* Pack the MS3Record */
-  packedrecords = msr3_pack (msr, &ms_record_handler_int, ofp, NULL, flags, verbose - 1);
+  while ((result = msr3_pack_next (packer, &record, &reclen)) == 1)
+  {
+    if (fwrite (record, reclen, 1, (FILE *)ofp) != 1)
+    {
+      ms_log (2, "Error writing to output file\n");
+      break;
+    }
+
+    packedrecords++;
+  }
+
+  /* Free packer and get total packed samples */
+  msr3_pack_free (&packer, NULL);
 
   /* Close file and return record count */
   fclose (ofp);
 
   return packedrecords;
 } /* End of msr3_writemseed() */
+
+/***************************************************************************
+ *
+ * Internal record handler.  The handler data should be a pointer to
+ * an open file descriptor to which records will be written.
+ *
+ ***************************************************************************/
+static void
+ms_record_handler_int (char *record, int reclen, void *ofp)
+{
+  if (fwrite (record, reclen, 1, (FILE *)ofp) != 1)
+  {
+    ms_log (2, "Error writing to output file\n");
+  }
+} /* End of ms_record_handler_int() */
 
 /** ************************************************************************
  * @brief Write miniSEED from an ::MS3TraceList container to a file
