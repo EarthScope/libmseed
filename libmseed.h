@@ -392,7 +392,8 @@ typedef struct MS3Record
 } MS3Record;
 
 /** @def MS3Record_INITIALIZER
-    @brief Initialializer for a ::MS3Record */
+    @brief Initializer for a ::MS3Record to define default values.  Be careful using this directly
+    as msr3_free() cannot be used and dynamic memory associated will not be freed. */
 #define MS3Record_INITIALIZER                                                                      \
   {.record = NULL,                                                                                 \
    .reclen = -1,                                                                                   \
@@ -419,6 +420,13 @@ extern int msr3_parse (const char *record, uint64_t recbuflen, MS3Record **ppmsr
 
 extern int msr3_pack (const MS3Record *msr, void (*record_handler) (char *, int, void *),
                       void *handlerdata, int64_t *packedsamples, uint32_t flags, int8_t verbose);
+
+/** @brief Opaque packing context for MS3Record generator-style interface */
+typedef struct MS3RecordPacker MS3RecordPacker;
+
+extern MS3RecordPacker *msr3_pack_init (const MS3Record *msr, uint32_t flags, int8_t verbose);
+extern int msr3_pack_next (MS3RecordPacker *packer, char **record, int32_t *reclen);
+extern void msr3_pack_free (MS3RecordPacker **packer, int64_t *packedsamples);
 
 extern int msr3_repack_mseed3 (const MS3Record *msr, char *record, uint32_t recbuflen,
                                int8_t verbose);
@@ -692,12 +700,23 @@ extern int mstl3_resize_buffers (MS3TraceList *mstl);
 extern int64_t mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
                            void *handlerdata, int reclen, int8_t encoding, int64_t *packedsamples,
                            uint32_t flags, int8_t verbose, char *extra);
+
+/** @brief Opaque packing context for MS3TraceList generator-style interface */
+typedef struct MS3TraceListPacker MS3TraceListPacker;
+
+extern MS3TraceListPacker *mstl3_pack_init (MS3TraceList *mstl, int reclen, int8_t encoding,
+                                            uint32_t flags, int8_t verbose, char *extra,
+                                            uint32_t flush_idle_seconds);
+extern int mstl3_pack_next (MS3TraceListPacker *packer, uint32_t flags, char **record, int32_t *reclen);
+extern void mstl3_pack_free (MS3TraceListPacker **packer, int64_t *packedsamples);
+
 extern int64_t mstl3_pack_ppupdate_flushidle (MS3TraceList *mstl,
                                               void (*record_handler) (char *, int, void *),
                                               void *handlerdata, int reclen, int8_t encoding,
                                               int64_t *packedsamples, uint32_t flags,
                                               int8_t verbose, char *extra,
                                               uint32_t flush_idle_seconds);
+
 extern int64_t mstl3_pack_segment (MS3TraceList *mstl, MS3TraceID *id, MS3TraceSeg *seg,
                                    void (*record_handler) (char *, int, void *), void *handlerdata,
                                    int reclen, int8_t encoding, int64_t *packedsamples,

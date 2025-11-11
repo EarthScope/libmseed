@@ -62,13 +62,13 @@ MSLogParam gMSLogParam = MSLogParam_INITIALIZER;
  * @brief Initialize the global logging parameters.
  *
  * Any message printing functions indicated must except a single
- * argument, namely a string \c (const char *) that will contain the log
+ * argument, namely a string @c (const char *) that will contain the log
  * message.  If the function pointers are NULL, defaults will be used.
  *
  * If the log and error prefixes have been set they will be pre-pended
  * to the message.  If the prefixes are NULL, defaults will be used.
  *
- * If \a maxmessages is greater than zero, warning and error (level >=
+ * If @p maxmessages is greater than zero, warning and error (level >=
  * 1) messages will be accumulated in a message registry.  Once the
  * maximum number of messages have accumulated, the oldest messages
  * are discarded.  Messages in the registry can be printed using
@@ -80,9 +80,9 @@ MSLogParam gMSLogParam = MSLogParam_INITIALIZER;
  * @param[in] errprefix Prefix to add to error messages
  * @param[in] maxmessages Maximum number of error/warning messages to store in registry
  *
- * \sa ms_rlog()
- * \sa ms_rlog_emit()
- * \sa ms_rlog_free()
+ * @see ms_rlog()
+ * @see ms_rlog_emit()
+ * @see ms_rlog_free()
  ***************************************************************************/
 void
 ms_rloginit (void (*log_print) (const char *), const char *logprefix,
@@ -98,13 +98,13 @@ ms_rloginit (void (*log_print) (const char *), const char *logprefix,
  * new parameter space will be allocated.
  *
  * Any message printing functions indicated must except a single
- * argument, namely a string \c (const char *) that will contain the log
+ * argument, namely a string @c (const char *) that will contain the log
  * message.  If the function pointers are NULL, defaults will be used.
  *
  * If the log and error prefixes have been set they will be pre-pended
  * to the message.  If the prefixes are NULL, defaults will be used.
  *
- * If \a maxmessages is greater than zero, warning and error (level >=
+ * If @p maxmessages is greater than zero, warning and error (level >=
  * 1) messages will be accumulated in a message registry.  Once the
  * maximum number of messages have accumulated, the oldest messages
  * are discarded.  Messages in the registry can be printed using
@@ -120,9 +120,9 @@ ms_rloginit (void (*log_print) (const char *), const char *logprefix,
  * @returns a pointer to the created/re-initialized MSLogParam struct
  * on success and NULL on error.
  *
- * \sa ms_rlog()
- * \sa ms_rlog_emit()
- * \sa ms_rlog_free()
+ * @see ms_rlog()
+ * @see ms_rlog_emit()
+ * @see ms_rlog_free()
  ***************************************************************************/
 MSLogParam *
 ms_rloginit_l (MSLogParam *logp, void (*log_print) (const char *), const char *logprefix,
@@ -222,12 +222,12 @@ rloginit_int (MSLogParam *logp, void (*log_print) (const char *), const char *lo
  *
  * This function builds the log/error message and passes to it to the
  * appropriate print function.  If custom printing functions have not
- * been defined, messages will be printed with \c fprintf(), log
- * messages to \c stdout and error messages to \c stderr.
+ * been defined, messages will be printed with @c fprintf(), log
+ * messages to @c stdout and error messages to @c stderr.
  *
  * If the log/error prefixes have been set they will be pre-pended to
  * the message.  If no custom log prefix is set none will be included.
- * If no custom error prefix is set \c "Error: " will be included.
+ * If no custom error prefix is set @c "Error: " will be included.
  *
  * A trailing newline character is for error messages is removed if
  * the message is added to the log registry.
@@ -273,12 +273,12 @@ ms_rlog (const char *function, int level, const char *format, ...)
  *
  * This function builds the log/error message and passes to it to the
  * appropriate print function.  If custom printing functions have not
- * been defined, messages will be printed with \c fprintf(), log
- * messages to \c stdout and error messages to \c stderr.
+ * been defined, messages will be printed with @c fprintf(), log
+ * messages to @c stdout and error messages to @c stderr.
  *
  * If the log/error prefixes have been set they will be pre-pended to
  * the message.  If no custom log prefix is set none will be included.
- * If no custom error prefix is set \c "Error: " will be included.
+ * If no custom error prefix is set @c "Error: " will be included.
  *
  * A trailing newline character is for error messages is removed if
  * the message is added to the log registry.
@@ -314,7 +314,7 @@ ms_rlog_l (MSLogParam *logp, const char *function, int level, const char *format
 } /* End of ms_rlog_l() */
 
 /** ************************************************************************
- * @brief Log message using specified logging parameters and \c va_list
+ * @brief Log message using specified logging parameters and @c va_list
  *
  * Trailing newline character is removed when added messages to the
  * registry.
@@ -322,7 +322,7 @@ ms_rlog_l (MSLogParam *logp, const char *function, int level, const char *format
  * @param[in] logp Pointer to ::MSLogParam to use for this message
  * @param[in] function Name of function registering log message
  * @param[in] level Message level
- * @param[in] varlist Message in a \c va_list in printf() style
+ * @param[in] varlist Message in a @c va_list in printf() style
  *
  * @returns The number of characters formatted on success, and a
  * negative value on error.
@@ -412,14 +412,14 @@ rlog_int (MSLogParam *logp, const char *function, int level, const char *format,
  * @brief Add message to registry
  *
  * Add a message to the specified log registry.  Earliest entries are
- * removed to remain within the specified maximum number of messsages.
+ * removed to remain within the specified maximum number of messages.
  *
  * @param[in] logreg Pointer to ::MSLogRegistry to use for this message
  * @param[in] function Name of function generating the message
  * @param[in] level Message level
  * @param[in] message Message text
  *
- * @returns Zero on sucess and non-zero on error
+ * @returns Zero on success and non-zero on error
  ***************************************************************************/
 int
 add_message_int (MSLogRegistry *logreg, const char *function, int level, const char *message)
@@ -530,11 +530,11 @@ print_message_int (MSLogParam *logp, int level, const char *message, char *termi
  * Messages are printed in order from earliest to latest.
  *
  * The maximum number messages to emit, from most recent to earliest,
- * can be limited using \a count.  If the value is 0 all messages are
+ * can be limited using @p count.  If the value is 0 all messages are
  * emitted.  If this limit is used and messages are left in the
  * registry, it is highly recommended to either emit them soon or
  * clear them with ms_rlog_free().  A common pattern would be to emit
- * the last message (e.g. \a count of 1) and immediately free
+ * the last message (e.g. @p count of 1) and immediately free
  * (discard) any remaining messages.
  *
  * @param[in] logp ::MSLogParam for this message or NULL for global parameters
@@ -544,8 +544,8 @@ print_message_int (MSLogParam *logp, int level, const char *message, char *termi
  * @returns The number of message emitted on success, and a negative
  * value on error.
  *
- * \sa ms_rloginit()
- * \sa ms_rlog_free()
+ * @see ms_rloginit()
+ * @see ms_rlog_free()
  ***************************************************************************/
 int
 ms_rlog_emit (MSLogParam *logp, int count, int context)

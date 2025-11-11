@@ -1,3 +1,10 @@
+2025.312:
+  - Add generator-style packing interfaces for MS3Record and MS3TraceList.
+  Specifically msr3_pack_init(), msr_pack_next(), msr_pack_free() and
+  mstl3_pack_init(), mstl3_pack_next(), mstl_pack_free().
+  - Fix mstl3_pack_ppupdate_flushidle() logic to flush only idle streams.
+  - Fix memory leak in mseh_replace().
+
 2025.303: v3.1.11
   - Fix byte swapping in ms3_detect() for v3 records for big-endian systems.
   - Add MSF_SKIPADJACENTDUPLICATES to skip adjacent duplicate records while

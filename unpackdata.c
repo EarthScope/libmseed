@@ -620,7 +620,7 @@ msr_decode_steim2 (int32_t *input, uint64_t inputlength, uint64_t samplecount, i
  *
  * Return number of samples in output buffer on success, -1 on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ************************************************************************/
 int64_t
 msr_decode_geoscope (char *input, uint64_t samplecount, float *output, uint64_t outputlength,

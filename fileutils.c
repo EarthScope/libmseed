@@ -58,7 +58,7 @@ libmseed_url_support (void)
 /** ************************************************************************
  * @brief Initialize ::MS3FileParam parameters for a file descriptor
  *
- * Initialize a ::MS3FileParam for reading from a specified \a fd
+ * Initialize a ::MS3FileParam for reading from a specified @p fd
  * (file descriptor).
  *
  * The ::MS3FileParam should be used with ms3_readmsr_r() or
@@ -69,7 +69,7 @@ libmseed_url_support (void)
  *
  * @returns Allocated ::MS3FileParam on success and NULL on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 MS3FileParam *
 ms3_mstl_init_fd (int fd)
@@ -106,7 +106,7 @@ ms3_mstl_init_fd (int fd)
  * stream reading buffer for a MSFP.  The buffer length, reading offset
  * and stream position indicators are all updated as necessary.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 static void
 ms3_shift_msfp (MS3FileParam *msfp, int shift)
@@ -149,9 +149,9 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
 /***************************************************************************
  * Implementation of MS3Record reading functions
  *
- * \sa ms3_readmsr()
- * \sa ms3_readmsr_r()
- * \sa ms3_readmsr_selection()
+ * @see ms3_readmsr()
+ * @see ms3_readmsr_r()
+ * @see ms3_readmsr_selection()
  ***************************************************************************/
 int
 _ms3_readmsr_impl (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath, uint32_t flags,
@@ -481,24 +481,24 @@ _ms3_readmsr_impl (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
  * All stream reading parameters are stored in a ::MS3FileParam
  * container and returned (via a pointer to a pointer) for the calling
  * routine to use in subsequent calls.  A ::MS3FileParam container
- * will be allocated if \c *ppmsfp is \c NULL.  This routine is thread
+ * will be allocated if @p *ppmsfp is @c NULL.  This routine is thread
  * safe and can be used to read multiple streams in parallel as long as
  * the stream reading parameters are managed appropriately.
  *
- * The \a flags argument are bit flags used to control the reading
+ * The @p flags argument are bit flags used to control the reading
  * process.  The following flags are supported:
  *  - ::MSF_SKIPNOTDATA - skip input that cannot be identified as miniSEED
  *  - ::MSF_UNPACKDATA data samples will be unpacked
  *  - ::MSF_VALIDATECRC Validate CRC (if present in format)
- *  - ::MSF_PNAMERANGE Parse byte range suffix from \a mspath
+ *  - ::MSF_PNAMERANGE Parse byte range suffix from @p mspath
  *
- * If ::MSF_PNAMERANGE is set in \a flags, the \a mspath will be
+ * If ::MSF_PNAMERANGE is set in @p flags, the @p mspath will be
  * searched for start and end byte offsets for the file or URL in the
- * following format: '\c PATH@@\c START-\c END', where \c START and \c
+ * following format: '@c PATH@@@c START-@c END', where @c START and @c
  * END are both optional and specified in bytes.
  *
  * After reading all the records in a stream the calling program should
- * call this routine a final time with \a mspath set to NULL.  This
+ * call this routine a final time with @p mspath set to NULL.  This
  * will close the input stream and free allocated memory.
  *
  * @param[out] ppmsr Pointer-to-pointer of an ::MS3Record, which will
@@ -510,17 +510,17 @@ _ms3_readmsr_impl (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
  *
  * @param[in] verbose Controls verbosity, 0 means no diagnostic output
  *
- * @returns ::MS_NOERROR and populates an ::MS3Record struct, at \a
- * *ppmsr, on successful read.  On error, a (negative) libmseed error
+ * @returns ::MS_NOERROR and populates an ::MS3Record struct, at @p *ppmsr,
+ * on successful read.  On error, a (negative) libmseed error
  * code is returned and *ppmsr is set to NULL.
  * @retval ::MS_ENDOFFILE on reaching the end of a stream
  *
- * \sa @ref data-selections
+ * @see @ref data-selections
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  *
- * \sa ms3_readmsr_r()
- * \sa ms3_readmsr_selection()
+ * @see ms3_readmsr_r()
+ * @see ms3_readmsr_selection()
  ***************************************************************************/
 int
 ms3_readmsr (MS3Record **ppmsr, const char *mspath, uint32_t flags, int8_t verbose)
@@ -533,7 +533,7 @@ ms3_readmsr (MS3Record **ppmsr, const char *mspath, uint32_t flags, int8_t verbo
 /** ************************************************************************
  * @copydoc ms3_readmsr()
  *
- * This function is identical to ms3_readmsr() but with the additonal \a ppmsfp
+ * This function is identical to ms3_readmsr() but with the additonal @p ppmsfp
  * parameter enabling re-entrant capabilities. This function is thread safe and
  * can be used to read more than one stream at a time as long as separate
  * ::MS3FileParam instances are used for each stream.
@@ -542,7 +542,7 @@ ms3_readmsr (MS3Record **ppmsr, const char *mspath, uint32_t flags, int8_t verbo
  * contains the state of stream reading across iterative calls of this
  * function.
  *
- * A ::MS3FileParam container will be allocated if \c *ppmsfp is \c NULL.
+ * A ::MS3FileParam container will be allocated if @p *ppmsfp is @c NULL.
  ***************************************************************************/
 int
 ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath, uint32_t flags,
@@ -554,12 +554,12 @@ ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath, uin
 /** ************************************************************************
  * @copydoc ms3_readmsr()
  *
- * This function is identical to ms3_readmsr() but with the additonal \a ppmsfp
- * and \a selections parameters:
+ * This function is identical to ms3_readmsr() but with the additonal @p ppmsfp
+ * and @p selections parameters:
  *
  * @param[out] ppmsfp Pointer-to-pointer of an ::MS3FileParam, which contains
  * the state of stream reading across iterative calls of this function. A
- * ::MS3FileParam container will be allocated if \c *ppmsfp is \c NULL.
+ * ::MS3FileParam container will be allocated if @p *ppmsfp is @c NULL.
  *
  * @param[in] selections Specify limits to which data should be
  * returned, see @ref data-selections
@@ -582,9 +582,9 @@ ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *msp
  *
  * @returns Return value from ms3_readtracelist_selection()
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  *
- * \sa @ref trace-list
+ * @see @ref trace-list
  ***************************************************************************/
 int
 ms3_readtracelist (MS3TraceList **ppmstl, const char *mspath, const MS3Tolerance *tolerance,
@@ -606,9 +606,9 @@ ms3_readtracelist (MS3TraceList **ppmstl, const char *mspath, const MS3Tolerance
  *
  * @returns Return value from ms3_readtracelist_selection()
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  *
- * \sa @ref trace-list
+ * @see @ref trace-list
  ***************************************************************************/
 int
 ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath, const MS3Tolerance *tolerance,
@@ -640,19 +640,19 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath, const MS3T
  * file and populate a ::MS3TraceList, allocating this struture if
  * needed.  This routine is thread safe.
  *
- * If \a selections is not NULL, the ::MS3Selections will be used to
+ * If @p selections is not NULL, the ::MS3Selections will be used to
  * limit which records are added to the trace list.  Any data not
  * matching the selections will be skipped.
  *
  * As this routine reads miniSEED records it attempts to construct
  * continuous time series, merging segments when possible.  See
- * mstl3_addmsr() for details of \a tolerance.
+ * mstl3_addmsr() for details of @p tolerance.
  *
- * The \a splitversion flag controls whether data are grouped
+ * The @p splitversion flag controls whether data are grouped
  * according to data publication version (or quality for miniSEED
  * 2.x).  See mstl3_addmsr() for full details.
  *
- * If the ::MSF_RECORDLIST flag is set in \a flags, a ::MS3RecordList
+ * If the ::MSF_RECORDLIST flag is set in @p flags, a ::MS3RecordList
  * will be built for each ::MS3TraceSeg.  The ::MS3RecordPtr entries
  * contain the location of the data record, bit flags, extra headers, etc.
  *
@@ -663,8 +663,8 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath, const MS3T
  * @param[in] splitversion Flag to control splitting of version/quality
  * @param[in] flags
  * @parblock
- *  - \c ::MSF_RECORDLIST : Build a ::MS3RecordList for each ::MS3TraceSeg
- *  - \c ::MSF_SKIPADJACENTDUPLICATES : Skip adjacent duplicate records
+ *  - @c ::MSF_RECORDLIST : Build a ::MS3RecordList for each ::MS3TraceSeg
+ *  - @c ::MSF_SKIPADJACENTDUPLICATES : Skip adjacent duplicate records
  *  - Flags supported by msr3_parse()
  *  - Flags supported by mstl3_addmsr()
  * @endparblock
@@ -673,10 +673,10 @@ ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath, const MS3T
  * @returns ::MS_NOERROR and populates an ::MS3TraceList struct at *ppmstl
  * on success, otherwise returns a (negative) libmseed error code.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  *
- * \sa @ref trace-list
- * \sa @ref data-selections
+ * @see @ref trace-list
+ * @see @ref data-selections
  ***************************************************************************/
 int
 ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath,
@@ -769,7 +769,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath,
  * @brief Set User-Agent header for URL-based requests.
  *
  * Configure global User-Agent header for URL-based requests
- * generated by the library.  The \a program and \a version values
+ * generated by the library.  The @p program and @p version values
  * will be combined into the form "program/version" along with
  * declarations of the library and URL-supporting dependency versions.
  *
@@ -781,7 +781,7 @@ ms3_readtracelist_selection (MS3TraceList **ppmstl, const char *mspath,
  *
  * @returns 0 on succes and a negative library error code on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 ms3_url_useragent (const char *program, const char *version)
@@ -811,7 +811,7 @@ ms3_url_useragent (const char *program, const char *version)
  *
  * @returns 0 on succes and a negative library error code on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 ms3_url_userpassword (const char *userpassword)
@@ -834,13 +834,13 @@ ms3_url_userpassword (const char *userpassword)
  * An error will be returned when the library was not compiled with
  * URL support.
  *
- * @sa ms3_url_freeheaders()
+ * @see ms3_url_freeheaders()
  *
  * @param[in] header Header in "key: value" format
  *
  * @returns 0 on succes and a negative library error code on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 ms3_url_addheader (const char *header)
@@ -860,7 +860,7 @@ ms3_url_addheader (const char *header)
  * Free all global headers for URL-based requests as set by
  * ms3_url_addheader().
  *
- * @sa ms3_url_addheader()
+ * @see ms3_url_addheader()
  ***************************************************************************/
 void
 ms3_url_freeheaders (void)
@@ -873,21 +873,6 @@ ms3_url_freeheaders (void)
 #endif
 } /* End of ms3_url_freeheaders() */
 
-/***************************************************************************
- *
- * Internal record handler.  The handler data should be a pointer to
- * an open file descriptor to which records will be written.
- *
- ***************************************************************************/
-static void
-ms_record_handler_int (char *record, int reclen, void *ofp)
-{
-  if (fwrite (record, reclen, 1, (FILE *)ofp) != 1)
-  {
-    ms_log (2, "Error writing to output file\n");
-  }
-} /* End of ms_record_handler_int() */
-
 /** ************************************************************************
  * @brief Write miniSEED from an ::MS3Record container to a file
  *
@@ -895,7 +880,7 @@ ms_record_handler_int (char *record, int reclen, void *ofp)
  * msr3_pack() and write to a specified file.  The ::MS3Record
  * container is used as a template for record(s) written to the file.
  *
- * The \a overwrite flag controls whether a existing file is
+ * The @p overwrite flag controls whether a existing file is
  * overwritten or not.  If true (non-zero) any existing file will be
  * replaced.  If false (zero) new records will be appended to an
  * existing file.  In either case, new files will be created if they
@@ -909,9 +894,9 @@ ms_record_handler_int (char *record, int reclen, void *ofp)
  *
  * @returns the number of records written on success and -1 on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  *
- * \sa msr3_pack()
+ * @see msr3_pack()
  ***************************************************************************/
 int64_t
 msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite, uint32_t flags,
@@ -920,6 +905,11 @@ msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite, uint32_t 
   FILE *ofp;
   const char *perms = (overwrite) ? "wb" : "ab";
   int64_t packedrecords = 0;
+
+  MS3RecordPacker *packer;
+  char *record = NULL;
+  int32_t reclen = 0;
+  int result;
 
   if (!msr || !mspath)
   {
@@ -938,8 +928,25 @@ msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite, uint32_t 
     return -1;
   }
 
+  /* Initialize packer */
+  packer = msr3_pack_init (msr, flags, verbose);
+  if (!packer)
+    return -1;
+
   /* Pack the MS3Record */
-  packedrecords = msr3_pack (msr, &ms_record_handler_int, ofp, NULL, flags, verbose - 1);
+  while ((result = msr3_pack_next (packer, &record, &reclen)) == 1)
+  {
+    if (fwrite (record, reclen, 1, (FILE *)ofp) != 1)
+    {
+      ms_log (2, "Error writing to output file\n");
+      break;
+    }
+
+    packedrecords++;
+  }
+
+  /* Free packer and get total packed samples */
+  msr3_pack_free (&packer, NULL);
 
   /* Close file and return record count */
   fclose (ofp);
@@ -947,13 +954,28 @@ msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite, uint32_t 
   return packedrecords;
 } /* End of msr3_writemseed() */
 
+/***************************************************************************
+ *
+ * Internal record handler.  The handler data should be a pointer to
+ * an open file descriptor to which records will be written.
+ *
+ ***************************************************************************/
+static void
+ms_record_handler_int (char *record, int reclen, void *ofp)
+{
+  if (fwrite (record, reclen, 1, (FILE *)ofp) != 1)
+  {
+    ms_log (2, "Error writing to output file\n");
+  }
+} /* End of ms_record_handler_int() */
+
 /** ************************************************************************
  * @brief Write miniSEED from an ::MS3TraceList container to a file
  *
  * Pack ::MS3TraceList data into miniSEED record(s) by calling
  * mstl3_pack() and write to a specified file.
  *
- * The \a overwrite flag controls whether a existing file is
+ * The @p overwrite flag controls whether a existing file is
  * overwritten or not.  If true (non-zero) any existing file will be
  * replaced.  If false (zero) new records will be appended to an
  * existing file.  In either case, new files will be created if they
@@ -969,10 +991,10 @@ msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite, uint32_t 
  *
  * @returns the number of records written on success and -1 on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  *
- * \sa mstl3_pack()
- * \sa msr3_pack()
+ * @see mstl3_pack()
+ * @see msr3_pack()
  ***************************************************************************/
 int64_t
 mstl3_writemseed (MS3TraceList *mstl, const char *mspath, int8_t overwrite, int maxreclen,

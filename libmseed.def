@@ -12,6 +12,9 @@ EXPORTS
    ms_md2doy
    msr3_parse
    msr3_pack
+   msr3_pack_init
+   msr3_pack_next
+   msr3_pack_free
    msr3_repack_mseed3
    msr3_repack_mseed2
    msr3_pack_header3
@@ -47,6 +50,9 @@ EXPORTS
    mstl3_convertsamples
    mstl3_resize_buffers
    mstl3_pack
+   mstl3_pack_init
+   mstl3_pack_next
+   mstl3_pack_free
    mstl3_pack_segment
    mstl3_pack_ppupdate_flushidle
    mstl3_printtracelist
