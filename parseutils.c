@@ -44,8 +44,8 @@
  * @param ppmsr Pointer-to-point to a ::MS3Record that will be populated
  * @param flags Flags controlling features:
  * @parblock
- *  - \c ::MSF_UNPACKDATA - Unpack data samples
- *  - \c ::MSF_VALIDATECRC Validate CRC (if present in format)
+ *  - @c ::MSF_UNPACKDATA - Unpack data samples
+ *  - @c ::MSF_VALIDATECRC Validate CRC (if present in format)
  * @endparblock
  * @param verbose control verbosity of diagnostic output
  *
@@ -55,7 +55,7 @@
  *       return value is a hint of how many more bytes are needed.
  * @retval <0 library error code is returned.
  *
- * \ref MessageOnError - this function logs a message on error except MS_NOTSEED
+ * @ref MessageOnError - this function logs a message on error except MS_NOTSEED
  ***************************************************************************/
 int
 msr3_parse (const char *record, uint64_t recbuflen, MS3Record **ppmsr, uint32_t flags,
@@ -169,7 +169,7 @@ msr3_parse (const char *record, uint64_t recbuflen, MS3Record **ppmsr, uint32_t 
  * @retval 0 Data record detected but could not determine length
  * @retval >0 Size of the record in bytes
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int64_t
 ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion)
@@ -301,7 +301,7 @@ ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion)
  * Parsing is done at the lowest level, printing error messages for
  * invalid header values and optionally print raw header values.
  *
- * The buffer at \a record is assumed to be a miniSEED record.  Not
+ * The buffer at @p record is assumed to be a miniSEED record.  Not
  * every possible test is performed, common errors and those causing
  * library parsing to fail should be detected.
  *
@@ -311,15 +311,15 @@ ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion)
  * @param[in] maxreclen Maximum length to search in buffer
  * @param[in] details Controls diagnostic output as follows:
  * @parblock
- *  - \c 0 - only print error messages for invalid header fields
- *  - \c 1 - print basic fields in addition to invalid field errors
- *  - \c 2 - print all fields in addition to invalid field errors
+ *  - @c 0 - only print error messages for invalid header fields
+ *  - @c 1 - print basic fields in addition to invalid field errors
+ *  - @c 2 - print all fields in addition to invalid field errors
  * @endparblock
  *
  * @returns 0 when no errors were detected or a positive count of
  * errors detected.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 ms_parse_raw3 (const char *record, int maxreclen, int8_t details)
@@ -499,7 +499,7 @@ ms_parse_raw3 (const char *record, int maxreclen, int8_t details)
  * Parsing is done at the lowest level, printing error messages for
  * invalid header values and optionally print raw header values.
  *
- * The buffer \a record is assumed to be a miniSEED record.  Not every
+ * The buffer @p record is assumed to be a miniSEED record.  Not every
  * possible test is performed, common errors and those causing
  * libmseed parsing to fail should be detected.
  *
@@ -509,21 +509,21 @@ ms_parse_raw3 (const char *record, int maxreclen, int8_t details)
  * @param[in] maxreclen Maximum length to search in buffer
  * @param[in] details Controls diagnostic output as follows:
  * @parblock
- *  - \c 0 - only print error messages for invalid header fields
- *  - \c 1 - print basic fields in addition to invalid field errors
- *  - \c 2 - print all fields in addition to invalid field errors
+ *  - @c 0 - only print error messages for invalid header fields
+ *  - @c 1 - print basic fields in addition to invalid field errors
+ *  - @c 2 - print all fields in addition to invalid field errors
  * @endparblock
  * @param[in] swapflag Flag controlling byte-swapping as follows:
  * @parblock
- *  - \c 1 - swap multibyte quantities
- *  - \c 0 - do not swap
- *  - \c -1 - autodetect byte order using year test, swap if needed
+ *  - @c 1 - swap multibyte quantities
+ *  - @c 0 - do not swap
+ *  - @c -1 - autodetect byte order using year test, swap if needed
  * @endparblock
  *
  * @returns 0 when no errors were detected or a positive count of
  * errors detected.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 ms_parse_raw2 (const char *record, int maxreclen, int8_t details, int8_t swapflag)

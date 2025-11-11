@@ -62,50 +62,49 @@ static nstime_t nstime2fsec_usec_offset (nstime_t nstime, uint16_t *fsec, int8_t
  * responsibility of the calling routine to adjust the data buffer if
  * desired.
  *
- * As each record is filled and finished they are passed to \a
- * record_handler() which should expect 1) a \c char* to the record,
+ * As each record is filled and finished they are passed to @p
+ * record_handler() which should expect 1) a @c char* to the record,
  * 2) the length of the record and 3) a pointer supplied by the
- * original caller containing optional private data (\a handlerdata).
- * It is the responsibility of \a record_handler() to process the
- * record, the memory will be re-used or freed when \a
- * record_handler() returns.
+ * original caller containing optional private data (@p handlerdata).
+ * It is the responsibility of @p record_handler() to process the
+ * record, the memory will be re-used or freed when @p record_handler() returns.
  *
  * The following data encodings and expected @ref MS3Record.sampletype
  * are supported:
- *   - ::DE_TEXT (0), Text, expects type \c 't'
- *   - ::DE_INT16 (1), 16-bit integer, expects type \c 'i'
- *   - ::DE_INT32 (3), 32-bit integer, expects type \c 'i'
- *   - ::DE_FLOAT32 (4), 32-bit float (IEEE), expects type \c 'f'
- *   - ::DE_FLOAT64 (5), 64-bit float (IEEE), expects type \c 'd'
- *   - ::DE_STEIM1 (10), Steim-1 compressed integers, expects type \c 'i'
- *   - ::DE_STEIM2 (11), Steim-2 compressed integers, expects type \c 'i'
+ *   - ::DE_TEXT (0), Text, expects type @c 't'
+ *   - ::DE_INT16 (1), 16-bit integer, expects type @c 'i'
+ *   - ::DE_INT32 (3), 32-bit integer, expects type @c 'i'
+ *   - ::DE_FLOAT32 (4), 32-bit float (IEEE), expects type @c 'f'
+ *   - ::DE_FLOAT64 (5), 64-bit float (IEEE), expects type @c 'd'
+ *   - ::DE_STEIM1 (10), Steim-1 compressed integers, expects type @c 'i'
+ *   - ::DE_STEIM2 (11), Steim-2 compressed integers, expects type @c 'i'
  *
- * If \a flags has ::MSF_FLUSHDATA set, all of the data will be packed
+ * If @p flags has ::MSF_FLUSHDATA set, all of the data will be packed
  * into data records even though the last one will probably be smaller
  * than requested or, in the case of miniSEED 2, unfilled.
  *
  * Default values are: record length = 4096, encoding = 11 (Steim2).
- * The defaults are triggered when \a msr.reclen and \a msr.encoding
+ * The defaults are triggered when @p msr.reclen and @p msr.encoding
  * are set to -1.
  *
  * @param[in] msr ::MS3Record containing data to pack
  * @param[in] record_handler() Callback function called for each record
- * @param[in] handlerdata A pointer that will be provided to the \a record_handler()
+ * @param[in] handlerdata A pointer that will be provided to the @p record_handler()
  * @param[out] packedsamples The number of samples packed, returned to caller
  * @param[in] flags Bit flags used to control the packing process:
  * @parblock
- *  - \c ::MSF_FLUSHDATA : Pack all data in the buffer
- *  - \c ::MSF_PACKVER2 : Pack miniSEED version 2 regardless of ::MS3Record.formatversion
+ *  - @c ::MSF_FLUSHDATA : Pack all data in the buffer
+ *  - @c ::MSF_PACKVER2 : Pack miniSEED version 2 regardless of ::MS3Record.formatversion
  * @endparblock
  * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
  *
  * @returns the number of records created on success and -1 on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  *
- * \sa msr3_pack_init()
- * \sa msr3_pack_next()
- * \sa msr3_pack_free()
+ * @see msr3_pack_init()
+ * @see msr3_pack_next()
+ * @see msr3_pack_free()
  ***************************************************************************/
 int
 msr3_pack (const MS3Record *msr, void (*record_handler) (char *, int, void *), void *handlerdata,
@@ -159,17 +158,17 @@ msr3_pack (const MS3Record *msr, void (*record_handler) (char *, int, void *), v
  * @param[in] msr ::MS3Record containing data to pack
  * @param[in] flags Bit flags used to control the packing process:
  * @parblock
- *  - \c ::MSF_FLUSHDATA : Pack all data in the buffer
- *  - \c ::MSF_PACKVER2 : Pack miniSEED version 2 regardless of ::MS3Record.formatversion
+ *  - @c ::MSF_FLUSHDATA : Pack all data in the buffer
+ *  - @c ::MSF_PACKVER2 : Pack miniSEED version 2 regardless of ::MS3Record.formatversion
  * @endparblock
  * @param[in] verbose Controls logging verbosity, 0 is no diagnostic output
  *
  * @returns pointer to ::MS3RecordPacker on success and NULL on error,
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  *
- * \sa msr3_pack_next()
- * \sa msr3_pack_free()
+ * @see msr3_pack_next()
+ * @see msr3_pack_free()
  ***************************************************************************/
 MS3RecordPacker *
 msr3_pack_init (const MS3Record *msr, uint32_t flags, int8_t verbose)
@@ -596,7 +595,7 @@ msr3_pack_free (MS3RecordPacker **packer, int64_t *packedsamples)
  *
  * @returns record length on success and -1 on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 msr3_repack_mseed3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose)
@@ -681,7 +680,7 @@ msr3_repack_mseed3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8
  * @brief Pack a miniSEED version 3 header into the specified buffer.
  *
  * Default values are: record length = 4096, encoding = 11 (Steim2).
- * The defaults are triggered when \a msr.reclen and \a msr.encoding
+ * The defaults are triggered when @p msr.reclen and @p msr.encoding
  * are set to -1.
  *
  * @param[in] msr ::MS3Record to pack
@@ -691,7 +690,7 @@ msr3_repack_mseed3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8
  *
  * @returns the size of the header (fixed and extra) on success, otherwise -1.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 msr3_pack_header3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose)
@@ -810,7 +809,7 @@ msr3_pack_header3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
  *
  * @returns record length on success and -1 on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 msr3_repack_mseed2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose)
@@ -911,7 +910,7 @@ msr3_repack_mseed2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8
  * @brief Pack a miniSEED version 2 header into the specified buffer.
  *
  * Default values are: record length = 4096, encoding = 11 (Steim2).
- * The defaults are triggered when \a msr.reclen and \a msr.encoding
+ * The defaults are triggered when @p msr.reclen and @p msr.encoding
  * are set to -1.
  *
  * @param[in] msr ::MS3Record to pack
@@ -921,7 +920,7 @@ msr3_repack_mseed2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8
  *
  * @returns the size of the header (fixed and blockettes) on success, otherwise -1.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose)
@@ -935,7 +934,7 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
  * offsets of the 1000 and 1001 blockettes.
  *
  * Default values are: record length = 4096, encoding = 11 (Steim2).
- * The defaults are triggered when \a msr.reclen and \a msr.encoding
+ * The defaults are triggered when @p msr.reclen and @p msr.encoding
  * are set to -1.
  *
  * @param[in] msr ::MS3Record to pack
@@ -947,7 +946,7 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
  *
  * @returns the size of the header (fixed and blockettes) on success, otherwise -1.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 static int
 msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbuflen,
@@ -1757,7 +1756,7 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
  *
  *  Return number of samples packed on success and a negative on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ************************************************************************/
 static int64_t
 msr_pack_data (void *dest, void *src, uint64_t maxsamples, uint64_t maxdatabytes, char sampletype,
@@ -2252,7 +2251,7 @@ ms_genfactmult (double samprate, int16_t *factor, int16_t *multiplier)
  *
  * Return second-resolution nstime_t value on success and NSTERROR on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 static inline nstime_t
 ms_timestr2btime (const char *timestr, uint8_t *btime, int8_t *usec_offset, const char *sid,

@@ -67,7 +67,7 @@ static nstime_t ms_btime2nstime (uint8_t *btime, int8_t swapflag);
  * success, otherwise returns a libmseed error code (listed in
  * libmseed.h).
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int64_t
 msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr, uint32_t flags,
@@ -265,7 +265,7 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr, uint32_t 
  * success, otherwise returns a libmseed error code (listed in
  * libmseed.h).
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int64_t
 msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr, uint32_t flags,
@@ -1044,7 +1044,7 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr, uint32_t 
  *
  * @return 0 on success or negative library error code.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize)
@@ -1141,7 +1141,7 @@ msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize
  *
  * @return number of samples unpacked or negative libmseed error code.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int64_t
 msr3_unpack_data (MS3Record *msr, int8_t verbose)
@@ -1284,11 +1284,11 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
  * @brief Decode data samples to a supplied buffer
  *
  * @param[in] input Encoded data
- * @param[in] inputsize Size of \a input buffer in bytes
+ * @param[in] inputsize Size of @p input buffer in bytes
  * @param[in] encoding Data encoding
  * @param[in] samplecount Number of samples to decode
  * @param[out] output Decoded data
- * @param[in] outputsize Size of \a output buffer in bytes
+ * @param[in] outputsize Size of @p output buffer in bytes
  * @param[out] sampletype Pointer to (single character) sample type of decoded data
  * @param[in] swapflag Flag indicating if encoded data needs swapping
  * @param[in] sid Source identifier to include in diagnostic/error messages
@@ -1296,7 +1296,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
  *
  * @return number of samples decoded or negative libmseed error code.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int64_t
 ms_decode_data (const void *input, uint64_t inputsize, uint8_t encoding, uint64_t samplecount,
@@ -1668,7 +1668,7 @@ ms2_blktlen (uint16_t blkttype, const char *blkt, int8_t swapflag)
  *
  * Return nstime_t value on success, NSTUNSET when year is 0, and NSTERROR on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 static inline nstime_t
 ms_btime2nstime (uint8_t *btime, int8_t swapflag)

@@ -218,7 +218,7 @@ msr_encode_float64 (double *input, uint64_t samplecount, double *output, uint64_
  *
  * Return number of samples in output buffer on success, -1 on failure.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ************************************************************************/
 int64_t
 msr_encode_steim1 (int32_t *input, uint64_t samplecount, int32_t *output, uint64_t outputlength,
@@ -417,7 +417,7 @@ msr_encode_steim1 (int32_t *input, uint64_t samplecount, int32_t *output, uint64
  *
  * Return number of samples in output buffer on success, -1 on failure.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ************************************************************************/
 int64_t
 msr_encode_steim2 (int32_t *input, uint64_t samplecount, int32_t *output, uint64_t outputlength,

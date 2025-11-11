@@ -161,12 +161,12 @@ msr3_matchselect (const MS3Selections *selections, const MS3Record *msr,
 /** ************************************************************************
  * @brief Add selection parameters to selection list.
  *
- * The \a sidpattern may contain globbing characters.
+ * The @p sidpattern may contain globbing characters.
  *
- * The \a starttime and \a endtime may be set to ::NSTUNSET to denote
+ * The @p starttime and @p endtime may be set to ::NSTUNSET to denote
  * "open" times.
  *
- * The \a pubversion may be set to 0 to match any publication
+ * The @p pubversion may be set to 0 to match any publication
  * version.
  *
  * @param[in] ppselections ::MS3Selections to add new selection to
@@ -177,7 +177,7 @@ msr3_matchselect (const MS3Selections *selections, const MS3Record *msr,
  *
  * @returns 0 on success and -1 on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 ms3_addselect (MS3Selections **ppselections, const char *sidpattern, nstime_t starttime,
@@ -273,19 +273,19 @@ ms3_addselect (MS3Selections **ppselections, const char *sidpattern, nstime_t st
  * @brief Add selection parameters to a selection list based on
  * separate source name codes
  *
- * The \a network, \a station, \a location, and \a channel arguments may
+ * The @p network, @p station, @p location, and @p channel arguments may
  * contain globbing parameters.
 
- * The \a starttime and \a endtime may be set to ::NSTUNSET to denote
+ * The @p starttime and @p endtime may be set to ::NSTUNSET to denote
  * "open" times.
  *
- * The \a pubversion may be set to 0 to match any publication
+ * The @p pubversion may be set to 0 to match any publication
  * version.
  *
  * If any of the naming parameters are not supplied (pointer is NULL)
  * a wildcard for all matches is substituted.
  *
- * As a special case, if the location code (loc) is set to \c "--" to
+ * As a special case, if the location code (loc) is set to @c "--" to
  * match an empty location code it will be translated to an empty string
  * to match libmseed's notation.
  *
@@ -300,7 +300,7 @@ ms3_addselect (MS3Selections **ppselections, const char *sidpattern, nstime_t st
  *
  * @return 0 on success and -1 on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 ms3_addselect_comp (MS3Selections **ppselections, char *network, char *station, char *location,
@@ -407,7 +407,7 @@ ms3_addselect_comp (MS3Selections **ppselections, char *network, char *station, 
  *   Network  Station  Location  Channel  [Pubversion  [Starttime  [Endtime]]]
  * @endcode
  *
- * The \c Starttime and \c Endtime values must be in a form recognized
+ * The @c Starttime and @c Endtime values must be in a form recognized
  * by ms_timestr2nstime() and include a full date (i.e. just a year is
  * not allowed).
  *
@@ -421,7 +421,7 @@ ms3_addselect_comp (MS3Selections **ppselections, char *network, char *station, 
  *
  * @returns Count of selections added on success and -1 on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 ms3_readselectionsfile (MS3Selections **ppselections, const char *filename)

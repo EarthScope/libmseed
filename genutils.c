@@ -204,7 +204,7 @@ static const int monthdays_leap[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30,
  *   https://docs.fdsn.org/projects/source-identifiers/
  *
  * Parse a source identifier into separate components, expecting:
- *  \c "FDSN:NET_STA_LOC_CHAN", where \c CHAN="BAND_SOURCE_POSITION"
+ *  @c "FDSN:NET_STA_LOC_CHAN", where @c CHAN="BAND_SOURCE_POSITION"
  *
  * The CHAN value will be converted to a SEED channel code if
  * possible.  Meaning, if the BAND, SOURCE, and POSITION are single
@@ -212,7 +212,7 @@ static const int monthdays_leap[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30,
  * returned channel.
  *
  * Identifiers may contain additional namespace identifiers, e.g.:
- *  \c "FDSN:AGENCY:NET_STA_LOC_CHAN"
+ *  @c "FDSN:AGENCY:NET_STA_LOC_CHAN"
  *
  * Such additional namespaces are not part of the Source ID standard
  * as of this writing and support is included for specialized usage or
@@ -226,18 +226,18 @@ static const int monthdays_leap[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30,
  *
  * @param[in] sid Source identifier
  * @param[out] net Network code
- * @param[in] netsize Maximum length of \a net in bytes
+ * @param[in] netsize Maximum length of @p net in bytes
  * @param[out] sta Station code
- * @param[in] stasize Maximum length of \a sta in bytes
+ * @param[in] stasize Maximum length of @p sta in bytes
  * @param[out] loc Location code
- * @param[in] locsize Maximum length of \a loc in bytes
+ * @param[in] locsize Maximum length of @p loc in bytes
  * @param[out] chan Channel code
- * @param[in] chansize Maximum length of \a chan in bytes
+ * @param[in] chansize Maximum length of @p chan in bytes
  *
  * @retval 0 on success
  * @retval -1 on error
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 ms_sid2nslc_n (const char *sid, char *net, size_t netsize, char *sta, size_t stasize, char *loc,
@@ -370,19 +370,19 @@ ms_sid2nslc (const char *sid, char *net, char *sta, char *loc, char *chan)
  *
  * Create a source identifier from individual network,
  * station, location and channel codes with the form:
- *  \c FDSN:NET_STA_LOC_CHAN, where \c CHAN="BAND_SOURCE_POSITION"
+ *  @c FDSN:NET_STA_LOC_CHAN, where @c CHAN="BAND_SOURCE_POSITION"
  *
  * Memory for the source identifier must already be allocated.
  *
- * If the \a loc value is NULL it will be empty in the resulting Source ID.
+ * If the @p loc value is NULL it will be empty in the resulting Source ID.
  *
- * The \a chan value will be converted to extended channel format if
- * it appears to be in SEED channel form.  Meaning, if the \a chan is
- * 3 characters with no delimiters, it will be converted to \c
+ * The @p chan value will be converted to extended channel format if
+ * it appears to be in SEED channel form.  Meaning, if the @p chan is
+ * 3 characters with no delimiters, it will be converted to @c
  * "BAND_SOURCE_POSITION" form by adding delimiters between the codes.
  *
  * @param[out] sid Destination string for source identifier
- * @param sidlen Maximum length of \a sid
+ * @param sidlen Maximum length of @p sid
  * @param flags Currently unused, set to 0
  * @param[in] net Network code
  * @param[in] sta Station code
@@ -392,7 +392,7 @@ ms_sid2nslc (const char *sid, char *net, char *sta, char *loc, char *chan)
  * @returns length of source identifier
  * @retval -1 on error
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 ms_nslc2sid (char *sid, int sidlen, uint16_t flags, const char *net, const char *sta,
@@ -517,8 +517,8 @@ ms_nslc2sid (char *sid, int sidlen, uint16_t flags, const char *net, const char 
 /** ************************************************************************
  * @brief Convert SEED 2.x channel to extended channel
  *
- * The SEED 2.x channel at \a seedchan must be a 3-character string.
- * The \a xchan buffer must be at least 6 bytes, for the extended
+ * The SEED 2.x channel at @p seedchan must be a 3-character string.
+ * The @p xchan buffer must be at least 6 bytes, for the extended
  * channel (band,source,position) and the terminating NULL.
  *
  * As a special case, SEED codes that are (illegally) spaces will
@@ -570,13 +570,13 @@ ms_seedchan2xchan (char *xchan, const char *seedchan)
 /** ************************************************************************
  * @brief Convert extended channel to SEED 2.x channel
  *
- * The extended channel at \a xchan must be a 5-character string.
+ * The extended channel at @p xchan must be a 5-character string.
  *
- * The \a seedchan buffer must be at least 4 bytes, for the SEED
- * channel and the terminating NULL.  Alternatively, \a seedchan may
+ * The @p seedchan buffer must be at least 4 bytes, for the SEED
+ * channel and the terminating NULL.  Alternatively, @p seedchan may
  * be set to NULL in which case this function becomes a test for
- * whether the \a xchan _could_ be mapped without actually doing the
- * conversion.  Finally, \a seedchan can be the same buffer as \a
+ * whether the @p xchan _could_ be mapped without actually doing the
+ * conversion.  Finally, @p seedchan can be the same buffer as @p
  * xchan for an in-place conversion.
  *
  * This routine simply maps patterns, it does not check the validity
@@ -683,13 +683,13 @@ utf8length_int (const char *str, int maxlength)
 /** ************************************************************************
  * @brief Copy string, removing spaces, always terminated
  *
- * Copy up to \a length bytes of UTF-8 characters from \a source to \a
+ * Copy up to @p length bytes of UTF-8 characters from @p source to @p
  * dest while removing all spaces.  The result is left justified and
  * always null terminated.
  *
  * The destination string must have enough room needed for the
- * non-space characters within \a length and the null terminator, a
- * maximum of \a length + 1.
+ * non-space characters within @p length and the null terminator, a
+ * maximum of @p length + 1.
  *
  * @param[out] dest Destination for terminated string
  * @param[in] source Source string
@@ -737,13 +737,13 @@ ms_strncpclean (char *dest, const char *source, int length)
 /** ************************************************************************
  * @brief Copy string, removing trailing spaces, always terminated
  *
- * Copy up to \a length bytes of UTF-8 characters from \a source to \a
+ * Copy up to @p length bytes of UTF-8 characters from @p source to @p
  * dest without any trailing spaces.  The result is left justified and
  * always null terminated.
  *
  * The destination string must have enough room needed for the
- * characters within \a length and the null terminator, a maximum of
- * \a length + 1.
+ * characters within @p length and the null terminator, a maximum of
+ * @p length + 1.
  *
  * @param[out] dest Destination for terminated string
  * @param[in] source Source string
@@ -791,12 +791,12 @@ ms_strncpcleantail (char *dest, const char *source, int length)
 /** ************************************************************************
  * @brief Copy fixed number of characters into unterminated string
  *
- * Copy \a length bytes of UTF-8 characters from \a source to \a dest,
+ * Copy @p length bytes of UTF-8 characters from @p source to @p dest,
  * padding the right side with spaces and leave open-ended, aka
- * un-terminated.  The result is left justified and \e never null
+ * un-terminated.  The result is left justified and @e never null
  * terminated.
  *
- * The destination string must have enough room for \a length characters.
+ * The destination string must have enough room for @p length characters.
  *
  * @param[out] dest Destination for unterminated string
  * @param[in] source Source string
@@ -853,7 +853,7 @@ ms_strncpopen (char *dest, const char *source, int length)
  * @retval 0 on success
  * @retval -1 on error
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 ms_doy2md (int year, int yday, int *month, int *mday)
@@ -907,7 +907,7 @@ ms_doy2md (int year, int yday, int *month, int *mday)
  * @retval 0 on success
  * @retval -1 on error
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 ms_md2doy (int year, int month, int mday, int *yday)
@@ -1023,24 +1023,24 @@ ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *yday, uint8_t *hour, 
  * Create a time string representation of a high precision epoch time
  * in ISO 8601 and SEED formats.
  *
- * The provided \a timestr buffer must have enough room for the
+ * The provided @p timestr buffer must have enough room for the
  * resulting time string, a maximum of 36 characters + terminating NULL.
  *
- * The \a subseconds flag controls whether the subsecond portion of
- * the time is included or not.  The value of \a subseconds is ignored
- * when the \a format is \c NANOSECONDEPOCH.  When non-zero subseconds
+ * The @p subseconds flag controls whether the subsecond portion of
+ * the time is included or not.  The value of @p subseconds is ignored
+ * when the @p format is @c NANOSECONDEPOCH.  When non-zero subseconds
  * are "trimmed" using these flags there is no rounding, instead it is
  * simple truncation.
  *
  * @param[in] nstime Time value to convert
  * @param[out] timestr Buffer for ISO time string
- * @param[in] timestrsize Size of the \a timestr buffer in bytes
+ * @param[in] timestrsize Size of the @p timestr buffer in bytes
  * @param timeformat Time string format, one of @ref ms_timeformat_t
  * @param subseconds Inclusion of subseconds, one of @ref ms_subseconds_t
  *
  * @returns Pointer to the resulting string or NULL on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 char *
 ms_nstime2timestr_n (nstime_t nstime, char *timestr, size_t timestrsize, ms_timeformat_t timeformat,
@@ -1325,7 +1325,7 @@ ms_time2nstime_int (int year, int yday, int hour, int min, int sec, uint32_t nse
  *
  * @returns epoch time on success and ::NSTERROR on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 nstime_t
 ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec)
@@ -1373,11 +1373,11 @@ ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec)
  * @brief Convert a time string to a high precision epoch time.
  *
  * Detected time formats:
- *   -# ISO month-day as \c "YYYY-MM-DD[THH:MM:SS.FFFFFFFFF]"
- *   -# ISO ordinal as \c "YYYY-DDD[THH:MM:SS.FFFFFFFFF]"
- *   -# SEED ordinal as \c "YYYY,DDD[,HH,MM,SS,FFFFFFFFF]"
- *   -# Year as \c "YYYY"
- *   -# Unix/POSIX epoch time value as \c "[+-]#########.#########"
+ *   -# ISO month-day as @c "YYYY-MM-DD[THH:MM:SS.FFFFFFFFF]"
+ *   -# ISO ordinal as @c "YYYY-DDD[THH:MM:SS.FFFFFFFFF]"
+ *   -# SEED ordinal as @c "YYYY,DDD[,HH,MM,SS,FFFFFFFFF]"
+ *   -# Year as @c "YYYY"
+ *   -# Unix/POSIX epoch time value as @c "[+-]#########.#########"
  *
  * Following determination of the format, non-epoch value conversion
  * is performed by the ms_mdtimestr2nstime() and
@@ -1395,7 +1395,7 @@ ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec)
  *
  * @returns epoch time on success and ::NSTERROR on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  *
  * @see ms_mdtimestr2nstime()
  * @see ms_seedtimestr2nstime()
@@ -1551,7 +1551,7 @@ ms_timestr2nstime (const char *timestr)
  *
  * @returns epoch time on success and ::NSTERROR on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 nstime_t
 ms_mdtimestr2nstime (const char *timestr)
@@ -1658,7 +1658,7 @@ ms_mdtimestr2nstime (const char *timestr)
  *
  * @returns epoch time on success and ::NSTERROR on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 nstime_t
 ms_seedtimestr2nstime (const char *seedtimestr)
@@ -1738,7 +1738,7 @@ ms_seedtimestr2nstime (const char *seedtimestr)
  * Given a time, sample offset and sample rate/period calculate the
  * time of the sample at the offset.
  *
- * If \a samprate is negative the negated value is interpreted as a
+ * If @p samprate is negative the negated value is interpreted as a
  * sample period in seconds, otherwise the value is assumed to be a
  * sample rate in Hertz.
  *
@@ -1749,7 +1749,7 @@ ms_seedtimestr2nstime (const char *seedtimestr)
  * @note On the epoch time scale the value of a leap second is the
  * same as the second following the leap second, without external
  * information the values are ambiguous.
- * \sa ms_readleapsecondfile()
+ * @see ms_readleapsecondfile()
  *
  * @param[in] time Time value for first sample in array
  * @param[in] offset Offset of sample to calculate time of
@@ -1818,7 +1818,7 @@ ms_bigendianhost (void)
  * @retval -1 on file read error
  * @retval -2 when the environment variable is not set
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 ms_readleapseconds (const char *envvarname)
@@ -1847,7 +1847,7 @@ ms_readleapseconds (const char *envvarname)
  * @returns positive number of leap seconds read on success
  * @retval -1 on error
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 ms_readleapsecondfile (const char *filename)

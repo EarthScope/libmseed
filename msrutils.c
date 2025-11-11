@@ -28,9 +28,9 @@
 /** ************************************************************************
  * @brief Initialize and return an ::MS3Record
  *
- * Memory is allocated if for a new ::MS3Record if \a msr is NULL.
+ * Memory is allocated if for a new ::MS3Record if @p msr is NULL.
  *
- * If memory for the \c datasamples field has been allocated the pointer
+ * If memory for the @c datasamples field has been allocated the pointer
  * will be retained for reuse.  If memory for extra headers has been
  * allocated it will be released.
  *
@@ -38,7 +38,7 @@
  *
  * @returns a pointer to a ::MS3Record struct on success or NULL on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 MS3Record *
 msr3_init (MS3Record *msr)
@@ -104,7 +104,7 @@ msr3_free (MS3Record **ppmsr)
  *
  * Extra headers are duplicated as well.
  *
- * If the \a datadup flag is true (non-zero) and the source
+ * If the @p datadup flag is true (non-zero) and the source
  * ::MS3Record has associated data samples copy them as well.
  *
  * @param[in] msr ::MS3Record to duplicate
@@ -112,7 +112,7 @@ msr3_free (MS3Record **ppmsr)
  *
  * @returns Pointer to a new ::MS3Record on success and NULL on error
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 MS3Record *
 msr3_duplicate (const MS3Record *msr, int8_t datadup)
@@ -190,7 +190,7 @@ msr3_duplicate (const MS3Record *msr, int8_t datadup)
  * @note On the epoch time scale the value of a leap second is the
  * same as the second following the leap second, without external
  * information the values are ambiguous.
- * \sa ms_readleapsecondfile()
+ * @see ms_readleapsecondfile()
  *
  * @param[in] msr ::MS3Record to calculate end time of
  *
@@ -216,9 +216,9 @@ msr3_endtime (const MS3Record *msr)
  * @param[in] msr ::MS3Record to print
  * @param[in] details Flags to control the level of details:
  * @parblock
- *  - \c 0 - print a single summary line
- *  - \c 1 - print most details of header
- *  - \c >1 - print all details of header and extra headers if present
+ *  - @c 0 - print a single summary line
+ *  - @c 1 - print most details of header
+ *  - @c >1 - print all details of header and extra headers if present
  * @endparblock
  ***************************************************************************/
 void
@@ -295,7 +295,7 @@ msr3_print (const MS3Record *msr, int8_t details)
  *
  * @returns Return 0 on success, otherwise returns a libmseed error code.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 msr3_resize_buffer (MS3Record *msr)

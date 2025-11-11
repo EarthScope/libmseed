@@ -177,7 +177,7 @@ header_callback (char *buffer, size_t size, size_t num, void *userdata)
  *
  * Return 0 on success and -1 on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int
 msio_fopen (LMIO *io, const char *path, const char *mode, int64_t *startoffset, int64_t *endoffset)
@@ -413,7 +413,7 @@ msio_fopen (LMIO *io, const char *path, const char *mode, int64_t *startoffset, 
  *
  * Returns 0 on success and negative value on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  *********************************************************************/
 int
 msio_fclose (LMIO *io)
@@ -627,9 +627,9 @@ msio_feof (LMIO *io)
  * The header is built as "PROGRAM/VERSION libmseed/version libcurl/version"
  * where VERSION is optional.
  *
- * Returns 0 on succes non-zero otherwise.
+ * Returns 0 on success non-zero otherwise.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  *********************************************************************/
 int
 msio_url_useragent (const char *program, const char *version)
@@ -663,9 +663,9 @@ msio_url_useragent (const char *program, const char *version)
  *
  * Set global user-password credentials for URL-based IO.
  *
- * Returns 0 on succes non-zero otherwise.
+ * Returns 0 on success non-zero otherwise.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  *********************************************************************/
 int
 msio_url_userpassword (const char *userpassword)
@@ -705,9 +705,9 @@ msio_url_userpassword (const char *userpassword)
  *
  * Add header to global list for URL-based IO.
  *
- * Returns 0 on succes non-zero otherwise.
+ * Returns 0 on success non-zero otherwise.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  *********************************************************************/
 int
 msio_url_addheader (const char *header)
