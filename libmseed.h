@@ -392,7 +392,8 @@ typedef struct MS3Record
 } MS3Record;
 
 /** @def MS3Record_INITIALIZER
-    @brief Initializer for a ::MS3Record */
+    @brief Initializer for a ::MS3Record to define default values.  Be careful using this directly
+    as msr3_free() cannot be used and dynamic memory associated will not be freed. */
 #define MS3Record_INITIALIZER                                                                      \
   {.record = NULL,                                                                                 \
    .reclen = -1,                                                                                   \
