@@ -1,4 +1,5 @@
-2025.323:
+Unreleased:
+  - Rename ms3_mstl_init_fd() to ms3_msfp_init_fd() and add backward compatibility.
   - Add -fPIC to the build options for the static library target.
 
 2025.315: v3.2.0

@@ -72,7 +72,7 @@ libmseed_url_support (void)
  * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 MS3FileParam *
-ms3_mstl_init_fd (int fd)
+ms3_msfp_init_fd (int fd)
 {
   MS3FileParam *msfp;
 
