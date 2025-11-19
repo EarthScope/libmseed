@@ -104,11 +104,11 @@ install: shared
 
 .SUFFIXES: .c .o .lo
 
-# Standard object building
+# Static object building
 .c.o:
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -c $< -o $@
 
-# Standard object building for shared library using -fPIC
+# Shared object building
 .c.lo:
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -c $< -o $@
 
