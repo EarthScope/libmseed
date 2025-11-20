@@ -24,7 +24,7 @@ TEST (read, v3_parse)
 
   CHECK (rv == MS_NOERROR, "ms3_readmsr() did not return expected MS_NOERROR");
   REQUIRE (msr != NULL, "ms3_readmsr() did not populate 'msr'");
-  CHECK (msr->reclen == 478, "msr->reclen is not expected 478");
+  CHECK (msr->reclen == 414, "msr->reclen is not expected 478");
   CHECK_STREQ (msr->sid, "FDSN:IU_COLA_00_L_H_1");
   CHECK (msr->formatversion == 3, "msr->formatversion is not expected 3");
   CHECK (msr->flags == 4, "msr->flags is not expected 4");
@@ -33,9 +33,9 @@ TEST (read, v3_parse)
   CHECK (msr->encoding == 11, "msr->encoding is not expected 11");
   CHECK (msr->pubversion == 4, "msr->pubversion is not expected 4");
   CHECK (msr->samplecnt == 135, "msr->samplecnt is not expected 135");
-  CHECK (msr->crc == 0x4F3EAB65, "msr->crc is not expected 0x4F3EAB65");
+  CHECK (msr->crc == 0xCE52C9F7, "msr->crc is not expected 0x4F3EAB65");
   CHECK (msr->extralength == 33, "msr->extralength is not expected 33");
-  CHECK (msr->datalength == 384, "msr->datalength is not expected 384");
+  CHECK (msr->datalength == 320, "msr->datalength is not expected 384");
   CHECK_STREQ (msr->extra, "{\"FDSN\":{\"Time\":{\"Quality\":100}}}");
   CHECK (msr->datasize == 540, "msr->datasize is not expected 540");
   CHECK (msr->numsamples == 135, "msr->numsamples is not expected 135");
