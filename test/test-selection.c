@@ -13,6 +13,7 @@ TEST (selection, match)
   starttime = ms_timestr2nstime ("2010-02-27T06:50:00.069539Z");
   endtime = ms_timestr2nstime ("2010-02-27T07:55:51.069539Z");
 
+  /* Add selections */
   rv = ms3_addselect (&selections, "FDSN:XX_*", NSTUNSET, NSTUNSET, 0);
   REQUIRE (rv == 0, "ms3_addselect() did not return expected 0");
 
@@ -22,7 +23,10 @@ TEST (selection, match)
   rv = ms3_addselect_comp (&selections, "YY", "STA1", "", "LHZ", starttime, endtime, 2);
   REQUIRE (rv == 0, "ms3_addselect_comp() did not return expected 0");
 
-  /* Matches */
+  rv = ms3_addselect (&selections, "FDSN:ZZ_*_*_[BL]_H_[Z12]", NSTUNSET, NSTUNSET, 0);
+  REQUIRE (rv == 0, "ms3_addselect() did not return expected 0");
+
+  /* Test matches */
   match = ms3_matchselect (selections, "FDSN:XX_S2__L_H_Z", NSTUNSET, NSTUNSET, 1, NULL);
   CHECK (match != NULL, "ms3_matchselect() did not return expected match");
 
@@ -34,7 +38,10 @@ TEST (selection, match)
   CHECK (match != NULL, "ms3_matchselect() did not return expected match");
   CHECK (timematch != NULL, "ms3_matchselect() did not return expected time match");
 
-  /* Non matches */
+  match = ms3_matchselect (selections, "FDSN:ZZ_STA1_LO_B_H_Z", starttime, endtime, 0, &timematch);
+  CHECK (match != NULL, "ms3_matchselect() did not return expected match");
+
+  /* Test non matches */
   match = ms3_matchselect (selections, "FDSN:YY_STA2__B_H_Z", starttime, endtime, 0, &timematch);
   CHECK (match == NULL, "ms3_matchselect() returned unexpected match");
   CHECK (timematch == NULL, "ms3_matchselect() returned unexpected time match");
@@ -46,6 +53,10 @@ TEST (selection, match)
   match = ms3_matchselect (selections, "FDSN:YY_STA1__L_H_Z", starttime, endtime, 3, &timematch);
   CHECK (match == NULL, "ms3_matchselect() returned unexpected match");
   CHECK (timematch == NULL, "ms3_matchselect() returned unexpected time match");
+
+  match = ms3_matchselect (selections, "FDSN:ZZ_STA1_LO_H_H_Z", starttime, endtime, 0, &timematch);
+  CHECK (match == NULL, "ms3_matchselect() did not return expected match");
+  CHECK (timematch == NULL, "ms3_matchselect() did not return expected time match");
 
   ms3_freeselections (selections);
 }

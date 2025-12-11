@@ -1,6 +1,8 @@
 Unreleased:
   - Rename ms3_mstl_init_fd() to ms3_msfp_init_fd() and add backward compatibility.
   - Add -fPIC to the build options for the static library target.
+  - Update internal selection matching to support `!` in addition to `^` for
+  character class negation and handle edge cases more robustly.
 
 2025.315: v3.2.0
   - Add generator-style packing interfaces for MS3Record and MS3TraceList.
