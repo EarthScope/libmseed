@@ -117,7 +117,7 @@ header_callback (char *buffer, size_t size, size_t num, void *userdata)
 
   /* Parse and store: "Content-Range: bytes START-END/TOTAL"
    * e.g. Content-Range: bytes 512-1023/4096 */
-  if (size > 22 && strncasecmp (buffer, "Content-Range: bytes", 20) == 0)
+  if (size > 22 && lmp_strncasecmp (buffer, "Content-Range: bytes", 20) == 0)
   {
     /* Process each character, starting just afer "bytes" unit */
     for (ptr = buffer + 20; *ptr != '\0' && (ptr - buffer) < (ptrdiff_t)size; ptr++)
@@ -191,7 +191,7 @@ msio_fopen (LMIO *io, const char *path, const char *mode, int64_t *startoffset, 
     mode = "rb";
 
   /* Treat "file://" specifications as local files by removing the scheme */
-  if (!strncasecmp (path, "file://", 7))
+  if (lmp_strncasecmp (path, "file://", 7) == 0)
   {
     path += 7;
     knownfile = 1;

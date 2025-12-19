@@ -113,8 +113,6 @@ typedef unsigned __int64 uint64_t;
 
 #define snprintf _snprintf
 #define vsnprintf _vsnprintf
-#define strcasecmp _stricmp
-#define strncasecmp _strnicmp
 #define strtoull _strtoui64
 #define fileno _fileno
 #define fdopen _fdopen
@@ -1341,6 +1339,8 @@ extern int lmp_fseek64 (FILE *stream, int64_t offset, int whence);
 extern uint64_t lmp_nanosleep (uint64_t nanoseconds);
 /** Portable function to return the current system time */
 extern nstime_t lmp_systemtime (void);
+/** Portable function for case-insensitive, ASCII-only string comparison */
+extern int lmp_strncasecmp (const char *s1, const char *s2, size_t n);
 
 /** Return CRC32C value of supplied buffer, with optional starting CRC32C value */
 extern uint32_t ms_crc32c (const uint8_t *input, int length, uint32_t previousCRC32C);

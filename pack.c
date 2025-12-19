@@ -1379,7 +1379,7 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
 
       /* Determine which detection type: MURDOCK versus the generic type */
       if (yyjson_ptr_get_str (ehiterval, "/Type", &header_string) &&
-          strncasecmp (header_string, "MURDOCK", 7) == 0)
+          lmp_strncasecmp (header_string, "MURDOCK", 7) == 0)
       {
         blockette_type = 201;
         blockette_length = 60;
@@ -1418,7 +1418,7 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
       /* Determine which wave: DILATATION versus (assumed) COMPRESSION */
       if (yyjson_ptr_get_str (ehiterval, "/Wave", &header_string))
       {
-        if (strncasecmp (header_string, "DILATATION", 10) == 0)
+        if (lmp_strncasecmp (header_string, "DILATATION", 10) == 0)
           *pMS2B200_FLAGS (record + written) |= 0x01;
       }
       else if (blockette_type == 200)
@@ -1427,7 +1427,7 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
       }
 
       if (blockette_type == 200 && yyjson_ptr_get_str (ehiterval, "/Units", &header_string) &&
-          strncasecmp (header_string, "COUNT", 5) != 0)
+          lmp_strncasecmp (header_string, "COUNT", 5) != 0)
         *pMS2B200_FLAGS (record + written) |= 0x02;
 
       if (yyjson_ptr_get_str (ehiterval, "/OnsetTime", &header_string))
@@ -1498,22 +1498,22 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
       blockette_length = 0;
       if (yyjson_ptr_get_str (ehiterval, "/Type", &header_string))
       {
-        if (strncasecmp (header_string, "STEP", 4) == 0)
+        if (lmp_strncasecmp (header_string, "STEP", 4) == 0)
         {
           blockette_type = 300;
           blockette_length = 60;
         }
-        else if (strncasecmp (header_string, "SINE", 4) == 0)
+        else if (lmp_strncasecmp (header_string, "SINE", 4) == 0)
         {
           blockette_type = 310;
           blockette_length = 60;
         }
-        else if (strncasecmp (header_string, "PSEUDORANDOM", 12) == 0)
+        else if (lmp_strncasecmp (header_string, "PSEUDORANDOM", 12) == 0)
         {
           blockette_type = 320;
           blockette_length = 64;
         }
-        else if (strncasecmp (header_string, "GENERIC", 7) == 0)
+        else if (lmp_strncasecmp (header_string, "GENERIC", 7) == 0)
         {
           blockette_type = 390;
           blockette_length = 28;
@@ -1577,7 +1577,7 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
             *pMS2B300_FLAGS (record + written) |= 0x02;
 
           if (yyjson_ptr_get_str (ehiterval, "/Trigger", &header_string) &&
-              strncasecmp (header_string, "AUTOMATIC", 9) == 0)
+              lmp_strncasecmp (header_string, "AUTOMATIC", 9) == 0)
             *pMS2B300_FLAGS (record + written) |= 0x04;
 
           if (yyjson_ptr_get_bool (ehiterval, "/Continued", &header_boolean) && header_boolean)
@@ -1610,7 +1610,7 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
         else if (blockette_type == 310)
         {
           if (yyjson_ptr_get_str (ehiterval, "/Trigger", &header_string) &&
-              strncasecmp (header_string, "AUTOMATIC", 9) == 0)
+              lmp_strncasecmp (header_string, "AUTOMATIC", 9) == 0)
             *pMS2B310_FLAGS (record + written) |= 0x04;
 
           if (yyjson_ptr_get_bool (ehiterval, "/Continued", &header_boolean) && header_boolean)
@@ -1618,11 +1618,11 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
 
           if (yyjson_ptr_get_str (ehiterval, "/AmplitudeRange", &header_string))
           {
-            if (strncasecmp (header_string, "PEAKTOPEAK", 10) == 0)
+            if (lmp_strncasecmp (header_string, "PEAKTOPEAK", 10) == 0)
               *pMS2B310_FLAGS (record + written) |= 0x10;
-            if (strncasecmp (header_string, "ZEROTOPEAK", 10) == 0)
+            if (lmp_strncasecmp (header_string, "ZEROTOPEAK", 10) == 0)
               *pMS2B310_FLAGS (record + written) |= 0x20;
-            if (strncasecmp (header_string, "RMS", 3) == 0)
+            if (lmp_strncasecmp (header_string, "RMS", 3) == 0)
               *pMS2B310_FLAGS (record + written) |= 0x40;
           }
 
@@ -1652,14 +1652,14 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
         else if (blockette_type == 320)
         {
           if (yyjson_ptr_get_str (ehiterval, "/Trigger", &header_string) &&
-              strncasecmp (header_string, "AUTOMATIC", 9) == 0)
+              lmp_strncasecmp (header_string, "AUTOMATIC", 9) == 0)
             *pMS2B320_FLAGS (record + written) |= 0x04;
 
           if (yyjson_ptr_get_bool (ehiterval, "/Continued", &header_boolean) && header_boolean)
             *pMS2B320_FLAGS (record + written) |= 0x08;
 
           if (yyjson_ptr_get_str (ehiterval, "/AmplitudeRange", &header_string) &&
-              strncasecmp (header_string, "RANDOM", 6) == 0)
+              lmp_strncasecmp (header_string, "RANDOM", 6) == 0)
             *pMS2B320_FLAGS (record + written) |= 0x10;
 
           if (yyjson_ptr_get_num (ehiterval, "/Duration", &header_number))
@@ -1688,7 +1688,7 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
         else if (blockette_type == 390)
         {
           if (yyjson_ptr_get_str (ehiterval, "/Trigger", &header_string) &&
-              strncasecmp (header_string, "AUTOMATIC", 9) == 0)
+              lmp_strncasecmp (header_string, "AUTOMATIC", 9) == 0)
             *pMS2B390_FLAGS (record + written) |= 0x04;
 
           if (yyjson_ptr_get_bool (ehiterval, "/Continued", &header_boolean) && header_boolean)

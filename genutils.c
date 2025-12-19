@@ -2077,3 +2077,47 @@ lmp_systemtime (void)
 
 #endif
 } /* End of lmp_systemtime() */
+
+/* Simple ASCII-only tolower() implementation */
+static inline unsigned char
+ascii_tolower (unsigned char c)
+{
+  return (c >= 'A' && c <= 'Z') ? (c + ('a' - 'A')) : c;
+}
+
+/** ************************************************************************
+ * @brief Case-insensitive, ASCII-only string comparison
+ *
+ * Compare two strings up to n characters, ignoring case.  This function is
+ * ASCII-only and does not handle multibyte characters.
+ *
+ * @param[in] s1 First string to compare
+ * @param[in] s2 Second string to compare
+ * @param[in] n Maximum number of characters to compare
+ *
+ * @returns 0 if the strings are equal, a non-zero value otherwise
+ ***************************************************************************/
+int
+lmp_strncasecmp (const char *s1, const char *s2, size_t n)
+{
+  unsigned char ca, cb;
+
+  if (n == 0)
+    return 0;
+
+  while (n--)
+  {
+    ca = (unsigned char)*s1++;
+    cb = (unsigned char)*s2++;
+
+    ca = (unsigned char)ascii_tolower (ca);
+    cb = (unsigned char)ascii_tolower (cb);
+
+    if (ca != cb)
+      return ca - cb;
+
+    if (ca == '\0')
+      return 0;
+  }
+  return 0;
+} /* End of lmp_strncasecmp() */
