@@ -28,6 +28,12 @@ endif()
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+# MSVC-specific settings
+if(MSVC)
+    # Disable deprecation warnings for standard C functions
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+endif()
+
 # Library source files
 set(LIB_SRCS
     fileutils.c
@@ -107,7 +113,7 @@ if(BUILD_SHARED_LIBS)
     endif()
 
     # Position independent code
-    target_compile_options(mseed_shared PRIVATE -fPIC)
+    set_target_properties(mseed_shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
     # Link libraries
     if(LIBMSEED_URL)

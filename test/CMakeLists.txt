@@ -26,6 +26,15 @@ set(EXAMPLE_TESTS
     lm_timestr
 )
 
+# Determine which library target to use (prefer shared if available)
+if(TARGET mseed_shared)
+    set(MSEED_TEST_LIBRARY mseed_shared)
+elseif(TARGET mseed_static)
+    set(MSEED_TEST_LIBRARY mseed_static)
+else()
+    message(FATAL_ERROR "No libmseed library target available for tests")
+endif()
+
 # TAU testing framework
 add_library(tau STATIC
     tau/tau.h
@@ -38,11 +47,7 @@ target_include_directories(tau PUBLIC
 )
 
 # Link tau with the library to access libmseed.h
-if(BUILD_SHARED_LIBS AND TARGET mseed_shared)
-    target_link_libraries(tau PUBLIC mseed_shared)
-elseif(TARGET mseed_static)
-    target_link_libraries(tau PUBLIC mseed_static)
-endif()
+target_link_libraries(tau PUBLIC ${MSEED_TEST_LIBRARY})
 
 # Build test programs
 foreach(test ${TEST_PROGRAMS})
@@ -50,11 +55,7 @@ foreach(test ${TEST_PROGRAMS})
         add_executable(${test} ${test}.c)
 
         # Link against the library and TAU
-        if(BUILD_SHARED_LIBS)
-            target_link_libraries(${test} PRIVATE mseed_shared tau)
-        else()
-            target_link_libraries(${test} PRIVATE mseed_static tau)
-        endif()
+        target_link_libraries(${test} PRIVATE ${MSEED_TEST_LIBRARY} tau)
 
         # Set output directory
         set_target_properties(${test} PROPERTIES
@@ -74,11 +75,7 @@ foreach(test ${EXAMPLE_TESTS})
         add_executable(${test}_test ${test}.c)
 
         # Link against the library
-        if(BUILD_SHARED_LIBS)
-            target_link_libraries(${test}_test PRIVATE mseed_shared)
-        else()
-            target_link_libraries(${test}_test PRIVATE mseed_static)
-        endif()
+        target_link_libraries(${test}_test PRIVATE ${MSEED_TEST_LIBRARY})
 
         # Set output directory
         set_target_properties(${test}_test PROPERTIES

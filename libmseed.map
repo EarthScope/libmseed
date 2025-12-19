@@ -9,7 +9,7 @@
       mseh_*;
       lmp_systemtime;
       leapsecondlist;
-      libmseed_memory;
+      libmseed_*;
   local:
       *;
 };
