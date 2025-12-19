@@ -780,9 +780,6 @@ static int _match_charclass (const char **pp, unsigned char c);
 static int
 ms_globmatch (const char *string, const char *pattern)
 {
-  if (string == NULL || pattern == NULL)
-    return 0;
-
   const char *star_p = NULL; /* position of last '*' in pattern */
   const char *star_s = NULL; /* position in string when last '*' seen */
   unsigned char c;

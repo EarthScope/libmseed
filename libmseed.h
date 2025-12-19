@@ -1353,7 +1353,7 @@ ms_gswap2 (void *data2)
 
   memcpy (&dat, data2, 2);
 
-  dat = ((dat & 0xff00) >> 8) | ((dat & 0x00ff) << 8);
+  dat = (uint16_t)(((dat & 0xff00) >> 8) | ((dat & 0x00ff) << 8));
 
   memcpy (data2, &dat, 2);
 }
