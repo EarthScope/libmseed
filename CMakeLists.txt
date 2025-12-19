@@ -120,6 +120,11 @@ if(BUILD_SHARED_LIBS)
         target_link_libraries(mseed_shared PRIVATE ${LIBMSEED_URL_LIBS})
     endif()
 
+    # Windows socket library needed for select() in msio.c
+    if(WIN32)
+        target_link_libraries(mseed_shared PRIVATE ws2_32)
+    endif()
+
     # Include directories
     target_include_directories(mseed_shared
         PUBLIC
@@ -149,6 +154,11 @@ if(BUILD_STATIC_LIBS)
     # Link libraries
     if(LIBMSEED_URL)
         target_link_libraries(mseed_static PRIVATE ${LIBMSEED_URL_LIBS})
+    endif()
+
+    # Windows socket library needed for select() in msio.c
+    if(WIN32)
+        target_link_libraries(mseed_static PRIVATE ws2_32)
     endif()
 
     # Include directories
