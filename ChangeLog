@@ -3,6 +3,8 @@ Unreleased:
   - Add -fPIC to the build options for the static library target.
   - Update internal selection matching to support `!` in addition to `^` for
   character class negation and handle edge cases more robustly.
+  - Avoid modifying record buffer during v3 CRC check and add CRC validation to testing.
+  - Add v3 parsing test for ensuring header-indicated lengths are sane.
 
 2025.315: v3.2.0
   - Add generator-style packing interfaces for MS3Record and MS3TraceList.

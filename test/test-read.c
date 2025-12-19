@@ -20,7 +20,10 @@ TEST (read, v3_parse)
 
   /* General parsing */
   flags = MSF_UNPACKDATA;
+  flags |= MSF_VALIDATECRC;
   rv = ms3_readmsr (&msr, path, flags, 0);
+
+  printf("rv: %d\n", rv);
 
   CHECK (rv == MS_NOERROR, "ms3_readmsr() did not return expected MS_NOERROR");
   REQUIRE (msr != NULL, "ms3_readmsr() did not populate 'msr'");

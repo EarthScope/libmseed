@@ -76,6 +76,8 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr, uint32_t 
   MS3Record *msr = NULL;
   uint32_t calculated_crc;
   uint32_t header_crc;
+  uint32_t datalength = 0;
+  uint16_t extralength = 0;
   uint8_t sidlength = 0;
   int8_t swapflag;
   int bigendianhost = ms_bigendianhost ();
@@ -114,6 +116,15 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr, uint32_t 
 
   sidlength = *pMS3FSDH_SIDLENGTH (record);
 
+  memcpy (&extralength, pMS3FSDH_EXTRALENGTH (record), sizeof (uint16_t));
+  extralength = HO2u (extralength, swapflag);
+
+  memcpy (&datalength, pMS3FSDH_DATALENGTH (record), sizeof (uint32_t));
+  datalength = HO4u (datalength, swapflag);
+
+  memcpy (&header_crc, pMS3FSDH_CRC (record), sizeof (uint32_t));
+  header_crc = HO4u (header_crc, swapflag);
+
   /* Record SID length must be at most one less than maximum size to leave a byte for termination */
   if (sidlength >= sizeof (msr->sid))
   {
@@ -125,11 +136,12 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr, uint32_t 
   /* Validate the CRC */
   if (flags & MSF_VALIDATECRC)
   {
-    /* Save header CRC, set value to 0, calculate CRC, restore CRC */
-    header_crc = HO4u (*pMS3FSDH_CRC (record), swapflag);
-    memset (pMS3FSDH_CRC (record), 0, sizeof (uint32_t));
-    calculated_crc = ms_crc32c ((const uint8_t *)record, reclen, 0);
-    *pMS3FSDH_CRC (record) = HO4u (header_crc, swapflag);
+    static const uint32_t crc_zeros = 0;
+
+    /* Calculate CRC with zeros in the 4-byte CRC field starting at byte 28 */
+    calculated_crc = ms_crc32c ((const uint8_t *)record, 28, 0);
+    calculated_crc = ms_crc32c ((const uint8_t *)&crc_zeros, sizeof (crc_zeros), calculated_crc);
+    calculated_crc = ms_crc32c ((const uint8_t *)record + 32, reclen - 32, calculated_crc);
 
     if (header_crc != calculated_crc)
     {
@@ -138,6 +150,21 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr, uint32_t 
           "%.*s: CRC is invalid, miniSEED record may be corrupt, header: 0x%X calculated: 0x%X\n",
           sidlength, pMS3FSDH_SID (record), header_crc, calculated_crc);
       return MS_INVALIDCRC;
+    }
+  }
+
+  /* Verify header-indicated lengths fit within the provided record */
+  {
+    uint64_t headerlength = (uint64_t)MS3FSDH_LENGTH + sidlength + extralength;
+    uint64_t expectedlength = headerlength + datalength;
+
+    if (headerlength > (uint64_t)reclen || expectedlength > (uint64_t)reclen)
+    {
+      ms_log (2,
+              "%.*s: Record length (%d) shorter than header lengths (header %" PRIu64
+              ", total %" PRIu64 ")\n",
+              sidlength, pMS3FSDH_SID (record), reclen, headerlength, expectedlength);
+      return MS_OUTOFRANGE;
     }
   }
 
@@ -182,14 +209,12 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr, uint32_t 
   memcpy (&numsamples, pMS3FSDH_NUMSAMPLES (record), sizeof (uint32_t));
   msr->samplecnt = HO4u (numsamples, msr->swapflag);
 
-  uint32_t crc;
-  memcpy (&crc, pMS3FSDH_CRC (record), sizeof (uint32_t));
-  msr->crc = HO4u (crc, msr->swapflag);
+  msr->crc = header_crc;
 
   msr->pubversion = *pMS3FSDH_PUBVERSION (record);
 
   /* Copy extra headers into a NULL-terminated string */
-  msr->extralength = HO2u (*pMS3FSDH_EXTRALENGTH (record), msr->swapflag);
+  msr->extralength = extralength;
   if (msr->extralength)
   {
     if ((msr->extra = (char *)libmseed_memory.malloc (msr->extralength + 1)) == NULL)
@@ -202,9 +227,7 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr, uint32_t 
     msr->extra[msr->extralength] = '\0';
   }
 
-  uint32_t datalength;
-  memcpy (&datalength, pMS3FSDH_DATALENGTH (record), sizeof (uint32_t));
-  msr->datalength = HO4u (datalength, msr->swapflag);
+  msr->datalength = datalength;
 
   /* Determine data payload byte swapping.
      Steim encodings are big endian.
