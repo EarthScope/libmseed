@@ -117,7 +117,7 @@ ms3_shift_msfp (MS3FileParam *msfp, int shift)
     return;
   }
 
-  if (shift <= 0 && shift > msfp->readlength)
+  if (shift <= 0 || shift > msfp->readlength)
   {
     ms_log (2, "Cannot shift buffer, shift: %d, readlength: %d, readoffset: %d\n", shift,
             msfp->readlength, msfp->readoffset);
