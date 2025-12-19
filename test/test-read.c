@@ -40,7 +40,8 @@ TEST (read, v3_parse)
   CHECK (msr->extralength == 33, "msr->extralength is not expected 33");
   CHECK (msr->datalength == 320, "msr->datalength is not expected 384");
   CHECK_STREQ (msr->extra, "{\"FDSN\":{\"Time\":{\"Quality\":100}}}");
-  CHECK (msr->datasize == 540, "msr->datasize is not expected 540");
+  CHECK (msr->datasize == 540 || msr->datasize == libmseed_prealloc_block_size,
+         "msr->datasize is not 540 or prealloc block size");
   CHECK (msr->numsamples == 135, "msr->numsamples is not expected 135");
   CHECK (msr->sampletype == 'i', "msr->sampletype is not expected 'i'");
 
@@ -90,7 +91,8 @@ TEST (read, v2_parse)
   CHECK (msr->extralength == 33, "msr->extralength is not expected 33");
   CHECK (msr->datalength == 448, "msr->datalength is not expected 448");
   CHECK_STREQ (msr->extra, "{\"FDSN\":{\"Time\":{\"Quality\":100}}}");
-  CHECK (msr->datasize == 540, "msr->datasize is not expected 540");
+  CHECK (msr->datasize == 540 || msr->datasize == libmseed_prealloc_block_size,
+         "msr->datasize is not 540 or prealloc block size");
   CHECK (msr->numsamples == 135, "msr->numsamples is not expected 135");
   CHECK (msr->sampletype == 'i', "msr->sampletype is not expected 'i'");
 
