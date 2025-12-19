@@ -473,7 +473,7 @@ msio_fclose (LMIO *io)
  * Returns the number of bytes read on success and a negative value on
  * error.
  *********************************************************************/
-size_t
+int64_t
 msio_fread (LMIO *io, void *buffer, size_t size)
 {
   size_t read = 0;
@@ -483,7 +483,13 @@ msio_fread (LMIO *io, void *buffer, size_t size)
 
   if (!buffer && size > 0)
   {
-    ms_log (2, "No buffer specified for size is > 0\n");
+    ms_log (2, "%s(): No buffer specified for non-zero size\n", __func__);
+    return -1;
+  }
+
+  if (size > INT64_MAX)
+  {
+    ms_log (2, "%s(): Unsupported size, greater than INT64_MAX: %zu\n", __func__, size);
     return -1;
   }
 
@@ -578,7 +584,7 @@ msio_fread (LMIO *io, void *buffer, size_t size)
 #endif /* defined(LIBMSEED_URL) */
   }
 
-  return read;
+  return (int64_t)read;
 } /* End of msio_fread() */
 
 /*********************************************************************
