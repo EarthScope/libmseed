@@ -1,0 +1,163 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+jobs:
+  build-unix:
+    name: ${{ matrix.os }} ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux
+          - os: Linux
+            runner: ubuntu-latest
+            arch: x64
+          - os: Linux
+            runner: ubuntu-24.04-arm
+            arch: arm64
+          # macOS
+          - os: macOS
+            runner: macos-13
+            arch: x64
+          - os: macOS
+            runner: macos-14
+            arch: arm64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcurl4-openssl-dev
+
+      - name: Build library (Make)
+        run: make
+
+      - name: Build and run tests (Make)
+        run: |
+          cd test
+          make
+
+      - name: Clean build artifacts
+        run: make clean
+
+      - name: Configure (CMake)
+        run: cmake -B build -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON -DLIBMSEED_URL=ON
+
+      - name: Build (CMake)
+        run: cmake --build build
+
+      - name: Run tests (CMake)
+        working-directory: build
+        run: ctest --output-on-failure
+
+      - name: Upload library artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: libmseed-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            build/libmseed.*
+            build/*.a
+            build/*.so*
+            build/*.dylib
+          if-no-files-found: ignore
+
+  build-windows:
+    name: Windows MSVC ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            arch: x64
+            cmake_arch: x64
+          - runner: windows-latest
+            arch: arm64
+            cmake_arch: ARM64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.cmake_arch }}
+
+      - name: Build library (nmake)
+        if: matrix.arch == 'x64'
+        run: nmake /f Makefile.win
+
+      - name: Clean nmake build
+        if: matrix.arch == 'x64'
+        run: nmake /f Makefile.win clean
+
+      - name: Configure (CMake)
+        run: cmake -B build -A ${{ matrix.cmake_arch }} -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
+
+      - name: Build (CMake)
+        run: cmake --build build --config Release
+
+      - name: Run tests (CMake)
+        if: matrix.arch == 'x64'
+        working-directory: build
+        run: ctest -C Release --output-on-failure
+
+      - name: Upload library artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: libmseed-Windows-${{ matrix.arch }}
+          path: |
+            build/Release/*.lib
+            build/Release/*.dll
+          if-no-files-found: ignore
+
+  build-windows-mingw:
+    name: Windows MinGW x64
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2/MinGW
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-curl
+            make
+
+      - name: Build and test (MinGW Make)
+        shell: msys2 {0}
+        run: |
+          make
+          cd test
+          make
+
+      - name: Clean and build with CMake
+        shell: msys2 {0}
+        run: |
+          make clean
+          cmake -B build -G "MSYS Makefiles" -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON -DLIBMSEED_URL=ON
+          cmake --build build
+
+      - name: Run tests (CMake)
+        shell: msys2 {0}
+        working-directory: build
+        run: ctest --output-on-failure
+
