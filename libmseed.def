@@ -43,6 +43,7 @@ EXPORTS
    mstl3_init
    mstl3_free
    mstl3_findID
+   mstl3_addmsr
    mstl3_addmsr_recordptr
    mstl3_readbuffer
    mstl3_readbuffer_selection

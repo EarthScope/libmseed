@@ -4,7 +4,6 @@
 set(EXAMPLE_PROGRAMS
     lm_pack
     lm_pack_rollingbuffer
-    lm_pararead
     lm_parse
     lm_read_buffer
     lm_read_recordlist
@@ -13,6 +12,11 @@ set(EXAMPLE_PROGRAMS
     lm_timestr
     mseedview
 )
+
+# lm_pararead requires POSIX threads, exclude on Windows
+if(NOT WIN32)
+    list(APPEND EXAMPLE_PROGRAMS lm_pararead)
+endif()
 
 # Determine which library target to use
 if(BUILD_SHARED_LIBS AND TARGET mseed_shared)

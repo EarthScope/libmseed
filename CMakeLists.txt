@@ -103,12 +103,17 @@ if(BUILD_SHARED_LIBS)
             MACOSX_RPATH ON
             BUILD_WITH_INSTALL_RPATH OFF
         )
-    elseif(UNIX)
+    elseif(UNIX AND NOT MINGW)
         # Use version script on Linux for symbol visibility
         if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libmseed.map")
             set_target_properties(mseed_shared PROPERTIES
                 LINK_FLAGS "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libmseed.map"
             )
+        endif()
+    elseif(WIN32)
+        # Use module definition file for symbol exports on Windows
+        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libmseed.def")
+            target_sources(mseed_shared PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libmseed.def")
         endif()
     endif()
 
