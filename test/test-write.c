@@ -44,16 +44,16 @@ TEST (write, msr3_writemseed_encodings)
 {
   MS3Record *msr = NULL;
   uint32_t flags = MSF_FLUSHDATA; /* Set data flush flag */
-  int32_t sinedata[SINE_DATA_SAMPLES];
-  double dsinedata[SINE_DATA_SAMPLES];
+  int32_t isinedata[SINE_DATA_SAMPLES];
+  float fsinedata[SINE_DATA_SAMPLES];
   int idx;
   int rv;
 
   /* Create integer and double sine data sets */
   for (idx = 0; idx < SINE_DATA_SAMPLES; idx++)
   {
-    sinedata[idx] = (int32_t)(fsinedata[idx]);
-    dsinedata[idx] = (double)(fsinedata[idx]);
+    isinedata[idx] = (int32_t)(dsinedata[idx]);
+    fsinedata[idx] = (float)(dsinedata[idx]);
   }
 
   msr = msr3_init (msr);
@@ -102,7 +102,7 @@ TEST (write, msr3_writemseed_encodings)
   /* Int16 encoding */
   msr->encoding = DE_INT16;
   msr->numsamples  = 220; /* Limit to first 220 samples, which can be represented in 16-bits */
-  msr->datasamples = sinedata;
+  msr->datasamples = isinedata;
   msr->sampletype  = 'i';
 
   rv = msr3_writemseed (msr, TESTFILE_INT16_V3, 1, flags, 0);
@@ -112,7 +112,7 @@ TEST (write, msr3_writemseed_encodings)
   /* Int32 encoding */
   msr->encoding = DE_INT32;
   msr->numsamples  = SINE_DATA_SAMPLES;
-  msr->datasamples = sinedata;
+  msr->datasamples = isinedata;
   msr->sampletype  = 'i';
 
   rv = msr3_writemseed (msr, TESTFILE_INT32_V3, 1, flags, 0);
@@ -122,7 +122,7 @@ TEST (write, msr3_writemseed_encodings)
   /* Steim1 encoding */
   msr->encoding = DE_STEIM1;
   msr->numsamples  = SINE_DATA_SAMPLES;
-  msr->datasamples = sinedata;
+  msr->datasamples = isinedata;
   msr->sampletype  = 'i';
 
   rv = msr3_writemseed (msr, TESTFILE_STEIM1_V3, 1, flags, 0);
@@ -132,7 +132,7 @@ TEST (write, msr3_writemseed_encodings)
   /* Steim2 encoding */
   msr->encoding = DE_STEIM2;
   msr->numsamples  = SINE_DATA_SAMPLES - 1; /* All but last sample for which the difference cannot be represented */
-  msr->datasamples = sinedata;
+  msr->datasamples = isinedata;
   msr->sampletype  = 'i';
 
   rv = msr3_writemseed (msr, TESTFILE_STEIM2_V3, 1, flags, 0);
@@ -143,7 +143,7 @@ TEST (write, msr3_writemseed_encodings)
   msr->encoding = -1;
   msr->reclen = -1;
   msr->numsamples  = SINE_DATA_SAMPLES - 1; /* All but last sample for which the difference cannot be represented */
-  msr->datasamples = sinedata;
+  msr->datasamples = isinedata;
   msr->sampletype  = 'i';
 
   rv = msr3_writemseed (msr, TESTFILE_DEFAULTS_V3, 1, flags, 0);
@@ -196,7 +196,7 @@ TEST (write, msr3_writemseed_encodings)
   /* Int16 encoding */
   msr->encoding = DE_INT16;
   msr->numsamples  = 220; /* Limit to first 220 samples, which can be represented in 16-bits */
-  msr->datasamples = sinedata;
+  msr->datasamples = isinedata;
   msr->sampletype  = 'i';
 
   rv = msr3_writemseed (msr, TESTFILE_INT16_V2, 1, flags, 0);
@@ -206,7 +206,7 @@ TEST (write, msr3_writemseed_encodings)
   /* Int32 encoding */
   msr->encoding = DE_INT32;
   msr->numsamples  = SINE_DATA_SAMPLES;
-  msr->datasamples = sinedata;
+  msr->datasamples = isinedata;
   msr->sampletype  = 'i';
 
   rv = msr3_writemseed (msr, TESTFILE_INT32_V2, 1, flags, 0);
@@ -216,7 +216,7 @@ TEST (write, msr3_writemseed_encodings)
   /* Steim1 encoding */
   msr->encoding = DE_STEIM1;
   msr->numsamples  = SINE_DATA_SAMPLES;
-  msr->datasamples = sinedata;
+  msr->datasamples = isinedata;
   msr->sampletype  = 'i';
 
   rv = msr3_writemseed (msr, TESTFILE_STEIM1_V2, 1, flags, 0);
@@ -226,7 +226,7 @@ TEST (write, msr3_writemseed_encodings)
   /* Steim2 encoding */
   msr->encoding = DE_STEIM2;
   msr->numsamples  = SINE_DATA_SAMPLES - 1; /* All but last sample for which the difference cannot be represented */
-  msr->datasamples = sinedata;
+  msr->datasamples = isinedata;
   msr->sampletype  = 'i';
 
   rv = msr3_writemseed (msr, TESTFILE_STEIM2_V2, 1, flags, 0);
@@ -237,7 +237,7 @@ TEST (write, msr3_writemseed_encodings)
   msr->encoding = -1;
   msr->reclen = -1;
   msr->numsamples  = SINE_DATA_SAMPLES - 1; /* All but last sample for which the difference cannot be represented */
-  msr->datasamples = sinedata;
+  msr->datasamples = isinedata;
   msr->sampletype  = 'i';
 
   rv = msr3_writemseed (msr, TESTFILE_DEFAULTS_V2, 1, flags, 0);
@@ -258,14 +258,14 @@ TEST (write, msr3_writemseed_nanosecond)
 {
   MS3Record *msr = NULL;
   uint32_t flags = MSF_FLUSHDATA; /* Set data flush flag */
-  int32_t sinedata[SINE_DATA_SAMPLES];
+  int32_t isinedata[SINE_DATA_SAMPLES];
   int idx;
   int rv;
 
   /* Create integer sine data set */
   for (idx = 0; idx < SINE_DATA_SAMPLES; idx++)
   {
-    sinedata[idx] = (int32_t)(fsinedata[idx]);
+    isinedata[idx] = (int32_t)(dsinedata[idx]);
   }
 
   msr = msr3_init (msr);
@@ -281,7 +281,7 @@ TEST (write, msr3_writemseed_nanosecond)
   msr->encoding = DE_INT32;
   msr->reclen = 512;
   msr->numsamples  = SINE_DATA_SAMPLES;
-  msr->datasamples = sinedata;
+  msr->datasamples = isinedata;
   msr->sampletype  = 'i';
   msr->extra       = "{\"FDSN\":{"
                      "\"Time\":{"
@@ -308,7 +308,7 @@ TEST (write, msr3_writemseed_nanosecond)
   msr->encoding = DE_INT32;
   msr->reclen = 512;
   msr->numsamples  = SINE_DATA_SAMPLES;
-  msr->datasamples = sinedata;
+  msr->datasamples = isinedata;
   msr->sampletype  = 'i';
   msr->extra       = "{\"FDSN\":{"
                      "\"Time\":{"
@@ -343,14 +343,14 @@ TEST (write, msr3_writemseed_olden)
 {
   MS3Record *msr = NULL;
   uint32_t flags = MSF_FLUSHDATA; /* Set data flush flag */
-  int32_t sinedata[SINE_DATA_SAMPLES];
+  int32_t isinedata[SINE_DATA_SAMPLES];
   int idx;
   int rv;
 
   /* Create integer sine data set */
   for (idx = 0; idx < SINE_DATA_SAMPLES; idx++)
   {
-    sinedata[idx] = (int32_t)(fsinedata[idx]);
+    isinedata[idx] = (int32_t)(dsinedata[idx]);
   }
 
   msr = msr3_init (msr);
@@ -366,7 +366,7 @@ TEST (write, msr3_writemseed_olden)
   msr->encoding = DE_INT32;
   msr->reclen = 4096;
   msr->numsamples  = SINE_DATA_SAMPLES;
-  msr->datasamples = sinedata;
+  msr->datasamples = isinedata;
   msr->sampletype  = 'i';
   msr->extra       = "{\"FDSN\":{"
                      "\"Time\":{"
@@ -391,7 +391,7 @@ TEST (write, msr3_writemseed_olden)
   msr->encoding = DE_INT32;
   msr->reclen = 4096;
   msr->numsamples  = SINE_DATA_SAMPLES;
-  msr->datasamples = sinedata;
+  msr->datasamples = isinedata;
   msr->sampletype  = 'i';
   msr->extra       = "{\"FDSN\":{"
                      "\"Time\":{"
@@ -427,14 +427,14 @@ TEST (write, msr3_writemseed_oddrate)
 {
   MS3Record *msr = NULL;
   uint32_t flags = MSF_FLUSHDATA; /* Set data flush flag */
-  int32_t sinedata[SINE_DATA_SAMPLES];
+  int32_t isinedata[SINE_DATA_SAMPLES];
   int idx;
   int rv;
 
   /* Create integer sine data set */
   for (idx = 0; idx < SINE_DATA_SAMPLES; idx++)
   {
-    sinedata[idx] = (int32_t)(fsinedata[idx]);
+    isinedata[idx] = (int32_t)(dsinedata[idx]);
   }
 
   msr = msr3_init (msr);
@@ -446,7 +446,7 @@ TEST (write, msr3_writemseed_oddrate)
   msr->encoding = DE_INT32;
   msr->reclen = 512;
   msr->numsamples  = SINE_DATA_SAMPLES;
-  msr->datasamples = sinedata;
+  msr->datasamples = isinedata;
   msr->sampletype  = 'i';
 
   /* Odd rate (1080.0) with an repeating decimal period */
@@ -479,14 +479,14 @@ TEST (write, mstl3_writemseed)
   MS3TraceList *mstl = NULL;
   MS3TraceSeg *seg = NULL;
   uint32_t flags = MSF_FLUSHDATA; /* Set data flush flag */
-  int32_t sinedata[SINE_DATA_SAMPLES];
+  int32_t isinedata[SINE_DATA_SAMPLES];
   int idx;
   int64_t rv;
 
   /* Create integer sine data set */
   for (idx = 0; idx < SINE_DATA_SAMPLES; idx++)
   {
-    sinedata[idx] = (int32_t)(fsinedata[idx]);
+    isinedata[idx] = (int32_t)(dsinedata[idx]);
   }
 
   msr = msr3_init (msr);
@@ -503,7 +503,7 @@ TEST (write, mstl3_writemseed)
   strcpy (msr->sid, "FDSN:XX_TEST__B_H_Z");
   msr->samprate    = 40.0;
   msr->numsamples  = SINE_DATA_SAMPLES - 1; /* All but last sample for which the difference cannot be represented */
-  msr->datasamples = sinedata;
+  msr->datasamples = isinedata;
   msr->sampletype  = 'i';
 
   seg = mstl3_addmsr (mstl, msr, 0, 1, 0, NULL);
@@ -550,13 +550,13 @@ TEST (pack, mstl3_pack_v2)
   MS3TraceSeg *seg = NULL;
   FILE *ofp = NULL;
   uint32_t flags = 0;
-  int32_t sinedata[SINE_DATA_SAMPLES];
+  int32_t isinedata[SINE_DATA_SAMPLES];
   int64_t rv;
 
   /* Create integer sine data set */
   for (int idx = 0; idx < SINE_DATA_SAMPLES; idx++)
   {
-    sinedata[idx] = (int32_t)(fsinedata[idx]);
+    isinedata[idx] = (int32_t)(dsinedata[idx]);
   }
 
   mstl = mstl3_init (mstl);
@@ -565,7 +565,7 @@ TEST (pack, mstl3_pack_v2)
   /* Common record parameters */
   msr.reclen = 512;
   msr.pubversion = 1;
-  msr.datasamples = sinedata;
+  msr.datasamples = isinedata;
   msr.sampletype = 'i';
 
   /* Add a H_H_Z trace */
@@ -623,13 +623,13 @@ TEST (pack, mstl3_pack_v3)
   MS3TraceSeg *seg = NULL;
   FILE *ofp = NULL;
   uint32_t flags = 0;
-  int32_t sinedata[SINE_DATA_SAMPLES];
+  int32_t isinedata[SINE_DATA_SAMPLES];
   int64_t rv;
 
   /* Create integer sine data set */
   for (int idx = 0; idx < SINE_DATA_SAMPLES; idx++)
   {
-    sinedata[idx] = (int32_t)(fsinedata[idx]);
+    isinedata[idx] = (int32_t)(dsinedata[idx]);
   }
 
   mstl = mstl3_init (mstl);
@@ -638,7 +638,7 @@ TEST (pack, mstl3_pack_v3)
   /* Common record parameters */
   msr.reclen = 512;
   msr.pubversion = 1;
-  msr.datasamples = sinedata;
+  msr.datasamples = isinedata;
   msr.sampletype = 'i';
 
   /* Add a H_H_Z trace */
@@ -698,7 +698,7 @@ TEST (pack, mstl3_pack_next_v2)
   MS3TraceSeg *seg = NULL;
   FILE *ofp = NULL;
   uint32_t flags = 0;
-  int32_t sinedata[SINE_DATA_SAMPLES];
+  int32_t isinedata[SINE_DATA_SAMPLES];
 
   MS3TraceListPacker *packer = NULL;
   char *record = NULL;
@@ -710,7 +710,7 @@ TEST (pack, mstl3_pack_next_v2)
   /* Create integer sine data set */
   for (int idx = 0; idx < SINE_DATA_SAMPLES; idx++)
   {
-    sinedata[idx] = (int32_t)(fsinedata[idx]);
+    isinedata[idx] = (int32_t)(dsinedata[idx]);
   }
 
   mstl = mstl3_init (mstl);
@@ -718,7 +718,7 @@ TEST (pack, mstl3_pack_next_v2)
 
   /* Common record parameters */
   msr.pubversion = 1;
-  msr.datasamples = sinedata;
+  msr.datasamples = isinedata;
   msr.sampletype = 'i';
 
   /* Add a H_H_Z trace */
@@ -793,7 +793,7 @@ TEST (pack, mstl3_pack_next_v3)
   MS3TraceSeg *seg = NULL;
   FILE *ofp = NULL;
   uint32_t flags = 0;
-  int32_t sinedata[SINE_DATA_SAMPLES];
+  int32_t isinedata[SINE_DATA_SAMPLES];
 
   MS3TraceListPacker *packer = NULL;
   char *record = NULL;
@@ -805,7 +805,7 @@ TEST (pack, mstl3_pack_next_v3)
   /* Create integer sine data set */
   for (int idx = 0; idx < SINE_DATA_SAMPLES; idx++)
   {
-    sinedata[idx] = (int32_t)(fsinedata[idx]);
+    isinedata[idx] = (int32_t)(dsinedata[idx]);
   }
 
   mstl = mstl3_init (mstl);
@@ -813,7 +813,7 @@ TEST (pack, mstl3_pack_next_v3)
 
   /* Common record parameters */
   msr.pubversion = 1;
-  msr.datasamples = sinedata;
+  msr.datasamples = isinedata;
   msr.sampletype = 'i';
 
   /* Add a H_H_Z trace */
@@ -884,13 +884,13 @@ TEST (pack, mstl3_pack_maintainmstl)
   MS3Record msr = MS3Record_INITIALIZER;
   MS3TraceList *mstl = NULL;
   uint32_t flags = 0;
-  int32_t sinedata[SINE_DATA_SAMPLES];
+  int32_t isinedata[SINE_DATA_SAMPLES];
   int64_t rv;
 
   /* Create integer sine data set */
   for (int idx = 0; idx < SINE_DATA_SAMPLES; idx++)
   {
-    sinedata[idx] = (int32_t)(fsinedata[idx]);
+    isinedata[idx] = (int32_t)(dsinedata[idx]);
   }
 
   mstl = mstl3_init (mstl);
@@ -899,7 +899,7 @@ TEST (pack, mstl3_pack_maintainmstl)
   /* Common record parameters */
   msr.reclen = 512;
   msr.pubversion = 1;
-  msr.datasamples = sinedata;
+  msr.datasamples = isinedata;
   msr.sampletype = 'i';
 
   /* Add a H_H_Z trace */
@@ -964,7 +964,7 @@ TEST (pack, mstl3_pack_next_maintainmstl)
   MS3Record msr = MS3Record_INITIALIZER;
   MS3TraceList *mstl = NULL;
   uint32_t flags = 0;
-  int32_t sinedata[SINE_DATA_SAMPLES];
+  int32_t isinedata[SINE_DATA_SAMPLES];
 
   MS3TraceListPacker *packer = NULL;
   char *record = NULL;
@@ -976,7 +976,7 @@ TEST (pack, mstl3_pack_next_maintainmstl)
   /* Create integer sine data set */
   for (int idx = 0; idx < SINE_DATA_SAMPLES; idx++)
   {
-    sinedata[idx] = (int32_t)(fsinedata[idx]);
+    isinedata[idx] = (int32_t)(dsinedata[idx]);
   }
 
   mstl = mstl3_init (mstl);
@@ -985,7 +985,7 @@ TEST (pack, mstl3_pack_next_maintainmstl)
   /* Common record parameters */
   msr.reclen = 512;
   msr.pubversion = 1;
-  msr.datasamples = sinedata;
+  msr.datasamples = isinedata;
   msr.sampletype = 'i';
 
   /* Add a H_H_Z trace */
@@ -1071,13 +1071,13 @@ TEST (pack, mstl3_pack_ppupdate_flushidle_v2)
   MS3TraceSeg *seg = NULL;
   FILE *ofp = NULL;
   uint32_t flags = 0;
-  int32_t sinedata[SINE_DATA_SAMPLES];
+  int32_t isinedata[SINE_DATA_SAMPLES];
   int64_t rv;
 
   /* Create integer sine data set */
   for (int idx = 0; idx < SINE_DATA_SAMPLES; idx++)
   {
-    sinedata[idx] = (int32_t)(fsinedata[idx]);
+    isinedata[idx] = (int32_t)(dsinedata[idx]);
   }
 
   mstl = mstl3_init (mstl);
@@ -1085,7 +1085,7 @@ TEST (pack, mstl3_pack_ppupdate_flushidle_v2)
 
   /* Common record parameters */
   msr.pubversion = 1;
-  msr.datasamples = sinedata;
+  msr.datasamples = isinedata;
   msr.sampletype = 'i';
 
   /* Set the PPUPDATE flag to track update times in mstl3_addmsr() */
@@ -1157,13 +1157,13 @@ TEST (pack, mstl3_pack_ppupdate_flushidle_v3)
   MS3TraceSeg *seg = NULL;
   FILE *ofp = NULL;
   uint32_t flags = 0;
-  int32_t sinedata[SINE_DATA_SAMPLES];
+  int32_t isinedata[SINE_DATA_SAMPLES];
   int64_t rv;
 
   /* Create integer sine data set */
   for (int idx = 0; idx < SINE_DATA_SAMPLES; idx++)
   {
-    sinedata[idx] = (int32_t)(fsinedata[idx]);
+    isinedata[idx] = (int32_t)(dsinedata[idx]);
   }
 
   mstl = mstl3_init (mstl);
@@ -1171,7 +1171,7 @@ TEST (pack, mstl3_pack_ppupdate_flushidle_v3)
 
   /* Common record parameters */
   msr.pubversion = 1;
-  msr.datasamples = sinedata;
+  msr.datasamples = isinedata;
   msr.sampletype = 'i';
 
   /* Set the PPUPDATE flag to track update times in mstl3_addmsr() */
@@ -1237,14 +1237,14 @@ TEST (pack, mstl3_pack_rollingbuffer)
   int64_t packedsamples = 0;
   int64_t totalpackedsamples = 0;
   uint32_t flags = 0;
-  int32_t sinedata[SINE_DATA_SAMPLES];
+  int32_t isinedata[SINE_DATA_SAMPLES];
   int64_t rv;
   nstime_t starttime = ms_timestr2nstime ("2012-05-12T00:00:00.123456789Z");
 
   /* Create integer sine data set */
   for (int idx = 0; idx < SINE_DATA_SAMPLES; idx++)
   {
-    sinedata[idx] = (int32_t)(fsinedata[idx]);
+    isinedata[idx] = (int32_t)(dsinedata[idx]);
   }
 
   mstl = mstl3_init (mstl);
@@ -1253,7 +1253,7 @@ TEST (pack, mstl3_pack_rollingbuffer)
   /* Common record parameters */
   msr.reclen = 512;
   msr.pubversion = 1;
-  msr.datasamples = sinedata;
+  msr.datasamples = isinedata;
   msr.sampletype = 'i';
 
   /* Add first half of H_H_Z trace */
@@ -1341,7 +1341,7 @@ TEST (pack, mstl3_pack_next_rollingbuffer)
   FILE *ofp = NULL;
   int64_t packedsamples = 0;
   uint32_t flags = 0;
-  int32_t sinedata[SINE_DATA_SAMPLES];
+  int32_t isinedata[SINE_DATA_SAMPLES];
   nstime_t starttime = ms_timestr2nstime ("2012-05-12T00:00:00.123456789Z");
 
   MS3TraceListPacker *packer = NULL;
@@ -1353,7 +1353,7 @@ TEST (pack, mstl3_pack_next_rollingbuffer)
   /* Create integer sine data set */
   for (int idx = 0; idx < SINE_DATA_SAMPLES; idx++)
   {
-    sinedata[idx] = (int32_t)(fsinedata[idx]);
+    isinedata[idx] = (int32_t)(dsinedata[idx]);
   }
 
   mstl = mstl3_init (mstl);
@@ -1365,7 +1365,7 @@ TEST (pack, mstl3_pack_next_rollingbuffer)
 
   /* Common record parameters */
   msr.pubversion = 1;
-  msr.datasamples = sinedata;
+  msr.datasamples = isinedata;
   msr.sampletype = 'i';
 
   /* Add first half of H_H_Z trace */

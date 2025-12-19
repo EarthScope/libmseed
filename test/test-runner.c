@@ -136,6 +136,7 @@ cmpdoubles (double *arrayA, double *arrayB, size_t length)
   {
     if (arrayA[idx] != arrayB[idx])
     {
+      printf("arrayA[%zu] = %f, arrayB[%zu] = %f\n", idx, arrayA[idx], idx, arrayB[idx]);
       return 1;
     }
   }
