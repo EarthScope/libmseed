@@ -30,6 +30,7 @@ EXPORTS
    msr3_resize_buffer
    msr3_sampratehz
    msr3_host_latency
+   msr3_nsperiod
    ms3_detect
    ms_parse_raw3
    ms_parse_raw2
@@ -54,8 +55,8 @@ EXPORTS
    mstl3_pack_init
    mstl3_pack_next
    mstl3_pack_free
-   mstl3_pack_segment
    mstl3_pack_ppupdate_flushidle
+   mstl3_pack_segment
    mstl3_printtracelist
    mstl3_printsynclist
    mstl3_printgaplist
@@ -109,3 +110,4 @@ EXPORTS
    ms_crc32c
    leapsecondlist
    libmseed_memory
+   libmseed_prealloc_block_size
