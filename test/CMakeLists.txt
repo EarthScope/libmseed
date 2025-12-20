@@ -91,3 +91,16 @@ endforeach()
 # Copy test data directory to build directory
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+# On Windows, copy the shared library DLL to the test output directory
+# so that tests can find it at runtime
+if(WIN32 AND TARGET mseed_shared)
+    # Use the first test program to determine the output directory
+    list(GET TEST_PROGRAMS 0 FIRST_TEST)
+    add_custom_command(TARGET ${FIRST_TEST} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:mseed_shared>
+            $<TARGET_FILE_DIR:${FIRST_TEST}>
+        COMMENT "Copying mseed DLL to test directory"
+    )
+endif()
