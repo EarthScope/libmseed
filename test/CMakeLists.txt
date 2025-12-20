@@ -26,8 +26,11 @@ set(EXAMPLE_TESTS
     lm_timestr
 )
 
-# Determine which library target to use (prefer shared if available)
-if(TARGET mseed_shared)
+# Determine which library target to use
+# On Windows, prefer static to avoid DLL path issues during testing
+if(WIN32 AND TARGET mseed_static)
+    set(MSEED_TEST_LIBRARY mseed_static)
+elseif(TARGET mseed_shared)
     set(MSEED_TEST_LIBRARY mseed_shared)
 elseif(TARGET mseed_static)
     set(MSEED_TEST_LIBRARY mseed_static)
@@ -92,9 +95,9 @@ endforeach()
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
-# On Windows, copy the shared library DLL to the test output directory
+# On Windows with shared library, copy the DLL to the test output directory
 # so that tests can find it at runtime
-if(WIN32 AND TARGET mseed_shared)
+if(WIN32 AND MSEED_TEST_LIBRARY STREQUAL "mseed_shared")
     # Use the first test program to determine the output directory
     list(GET TEST_PROGRAMS 0 FIRST_TEST)
     add_custom_command(TARGET ${FIRST_TEST} POST_BUILD
