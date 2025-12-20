@@ -1,4 +1,4 @@
-Unreleased:
+2025.354: v3.2.1
   - Rename ms3_mstl_init_fd() to ms3_msfp_init_fd() and add backward compatibility.
   - Add -fPIC to the build options for the static library target.
   - Update internal selection matching to support `!` in addition to `^` for
@@ -6,6 +6,8 @@ Unreleased:
   - Avoid modifying record buffer during v3 CRC check and add CRC validation to testing.
   - Add v3 parsing test for ensuring header-indicated lengths are sane.
   - Small fixes of logic errors and increased portability.
+  - Add GitHub action to build and test on multiple platforms.
+  - Fix Windows symbol issues and CMake configuration.
 
 2025.315: v3.2.0
   - Add generator-style packing interfaces for MS3Record and MS3TraceList.
