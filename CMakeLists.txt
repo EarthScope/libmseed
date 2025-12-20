@@ -60,18 +60,6 @@ set(PUBLIC_HEADERS
     libmseed.h
 )
 
-# Internal header files
-set(INTERNAL_HEADERS
-    extraheaders.h
-    gmtime64.h
-    mseedformat.h
-    msio.h
-    packdata.h
-    unpack.h
-    unpackdata.h
-    yyjson.h
-)
-
 # Handle URL support with libcurl
 if(LIBMSEED_URL)
     find_package(CURL REQUIRED)
@@ -245,13 +233,6 @@ install(FILES
 )
 
 # Generate and install pkg-config file
-configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/mseed.pc.in
-    ${CMAKE_CURRENT_BINARY_DIR}/mseed.pc
-    @ONLY
-)
-
-# Set variables for pkg-config
 set(PREFIX ${CMAKE_INSTALL_PREFIX})
 set(EXEC_PREFIX ${CMAKE_INSTALL_PREFIX})
 set(LIBDIR ${CMAKE_INSTALL_FULL_LIBDIR})

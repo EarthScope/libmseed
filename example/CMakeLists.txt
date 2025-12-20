@@ -33,9 +33,6 @@ foreach(program ${EXAMPLE_PROGRAMS})
         # Link against the library
         target_link_libraries(${program} PRIVATE ${MSEED_LIBRARY})
 
-        # Add dependency to ensure library is built first
-        add_dependencies(${program} ${MSEED_LIBRARY})
-
         # Set output directory
         set_target_properties(${program} PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
