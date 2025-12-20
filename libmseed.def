@@ -72,7 +72,7 @@ EXPORTS
    msr3_writemseed
    mstl3_writemseed
    libmseed_url_support
-   ms3_mstl_init_fd
+   ms3_msfp_init_fd
    ms_sid2nslc_n
    ms_sid2nslc
    ms_nslc2sid
