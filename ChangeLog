@@ -1,3 +1,7 @@
+2025.369: v3.2.2
+  - Allow mseh_set_ptr_r() to create extra headers when none exist for a merge patch
+  using the root pointer ("").  Pointers to non-root locations still must exist.
+
 2025.354: v3.2.1
   - Rename ms3_mstl_init_fd() to ms3_msfp_init_fd() and add backward compatibility.
   - Add -fPIC to the build options for the static library target.

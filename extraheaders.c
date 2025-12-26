@@ -278,7 +278,9 @@ mseh_get_ptr_r (const MS3Record *msr, const char *ptr, void *value, char type, u
  * For most value types, if the @p ptr or final header values do not exist
  * they will be created.  If the header value exists it will be replaced.
  * When the value type is 'M', for Merge Patch (RFC 7386), the location
- * indicated by @p ptr must exist.
+ * indicated by @p ptr must exist unless root pointer: `""` (empty string).
+ * Recommended practice is to always use the root pointer (`""`) when
+ * modifying extra headers with a merge patch for consistent behavior.
  *
  * The @p type value specifies the data type expected for @p value.
  *
@@ -312,6 +314,8 @@ mseh_get_ptr_r (const MS3Record *msr, const char *ptr, void *value, char type, u
  *
  * @see mseh_free_parsestate()
  * @see mseh_serialize()
+ * @see mseh_replace()
+ * @see mseh_print()
  ***************************************************************************/
 int
 mseh_set_ptr_r (MS3Record *msr, const char *ptr, void *value, char type,
@@ -414,15 +418,26 @@ mseh_set_ptr_r (MS3Record *msr, const char *ptr, void *value, char type,
     {
       if ((patch_doc = yyjson_doc_mut_copy (patch_idoc, &alc)))
       {
-        /* Get patch target value */
-        if ((target_val = yyjson_mut_doc_ptr_get (parsed->mut_doc, ptr)))
+        /* Get patch target value, or use root pointer with empty document */
+        target_val = yyjson_mut_doc_ptr_get (parsed->mut_doc, ptr);
+
+        if (target_val || ptr[0] == '\0')
         {
           /* Generate merged value */
           if ((merged_val = yyjson_mut_merge_patch (parsed->mut_doc, target_val,
                                                     yyjson_mut_doc_get_root (patch_doc))))
           {
-            /* Replace value at pointer with merged value */
-            rv = yyjson_mut_doc_ptr_replace (parsed->mut_doc, ptr, merged_val);
+            if (target_val)
+            {
+              /* Replace value at pointer with merged value */
+              rv = yyjson_mut_doc_ptr_replace (parsed->mut_doc, ptr, merged_val);
+            }
+            else
+            {
+              /* No existing target at root, set merged value as document root */
+              yyjson_mut_doc_set_root (parsed->mut_doc, merged_val);
+              rv = true;
+            }
           }
         }
       }
@@ -1093,13 +1108,16 @@ mseh_free_parsestate (LM_PARSED_JSON **parsestate)
  *
  * To _remove_ all of the extra headers, set @p jsonstring to NULL.
  *
- * This function cannot be used in combination with the routines that use
- * a parsed state, i.e. mseh_get_ptr_r() and mseh_set_ptr_r().
+ * @warning This function cannot be used in combination with the routines
+ * that use a parsed state, i.e. mseh_get_ptr_r() and mseh_set_ptr_r().
  *
  * @param[in] msr ::MS3Record to generate extra headers for
  * @param[in] jsonstring JSON replacment for extra headers of @p msr
  *
  * @returns Length of extra headers on success, otherwise a (negative) libmseed error code
+ *
+ * @see mseh_get_ptr_r()
+ * @see mseh_set_ptr_r()
  ***************************************************************************/
 int
 mseh_replace (MS3Record *msr, char *jsonstring)
