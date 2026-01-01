@@ -1,4 +1,4 @@
-Unreleased
+2026.001: v3.2.3
   - Add mseh_get_ptr_type() to determine type of an extra header.
   - Add unsigned integer (uint64_t) support to `mseh_set_ptr_r()` and `mseh_get_ptr_r()`.
 
