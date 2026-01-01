@@ -1,3 +1,7 @@
+Unreleased
+  - Add mseh_get_ptr_type() to determine type of an extra header.
+  - Add unsigned integer (uint64_t) support to `mseh_set_ptr_r()` and `mseh_get_ptr_r()`.
+
 2025.369: v3.2.2
   - Allow mseh_set_ptr_r() to create extra headers when none exist for a merge patch
   using the root pointer ("").  Pointers to non-root locations still must exist.

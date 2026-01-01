@@ -112,17 +112,10 @@ parse_json (char *jsonstring, size_t length, LM_PARSED_JSON *parsed)
 }
 
 /** ************************************************************************
- * @brief Search for and return an extra header value.
+ * @brief Search for and return the type of an extra header value.
  *
  * The extra header value is specified as a JSON Pointer (RFC 6901), e.g.
  * \c '/objectA/objectB/header'.
- *
- * This routine can get used to test for the existence of a value
- * without returning the value by setting @p value to NULL.
- *
- * If the target item is found (and @p value parameter is set) the
- * value will be copied into the memory specified by @p value.  The
- * @p type value specifies the data type expected.
  *
  * If a @p parsestate pointer is supplied, the parsed (deserialized) JSON
  * data are stored here.  This value may be used in subsequent calls to
@@ -132,20 +125,16 @@ parse_json (char *jsonstring, size_t length, LM_PARSED_JSON *parsed)
  *
  * @param[in] msr Parsed miniSEED record to search
  * @param[in] ptr Header value desired, as JSON Pointer
- * @param[out] value Buffer for value, of type @p type
- * @param[in] type Type of value expected, one of:
- * @parblock
- * - @c 'n' - @p value is type @c double
- * - @c 'i' - @p value is type @c int64_t
- * - @c 's' - @p value is type @c char* (maximum length is: @c maxlength - 1)
- * - @c 'b' - @p value of type @c int (boolean value of 0 or 1)
- * @endparblock
- * @param[in] maxlength Maximum length of string value
  * @param[in] parsestate Parsed state for multiple operations, can be NULL
  *
- * @retval 0 on success
- * @retval 1 when the value was not found
- * @retval 2 when the value is of a different type
+ * @retval 'u' (decimal 117) - value is an unsigned integer number, @c uint64_t
+ * @retval 'i' (decimal 105) - value is an integer number, @c int64_t
+ * @retval 'n' (decimal 110) - value is a real number, @c double
+ * @retval 's' (decimal 115) - value is a string, @c char*
+ * @retval 'b' (decimal 98) - value is a boolean, @c int
+ * @retval 'o' (decimal 111) - value is an object
+ * @retval 'a' (decimal 97) - value is an array
+ * @retval 0 - when the value is not found
  * @returns A (negative) libmseed error code on error
  *
  * @ref MessageOnError - this function logs a message on error
@@ -153,16 +142,12 @@ parse_json (char *jsonstring, size_t length, LM_PARSED_JSON *parsed)
  * @see mseh_free_parsestate()
  ***************************************************************************/
 int
-mseh_get_ptr_r (const MS3Record *msr, const char *ptr, void *value, char type, uint32_t maxlength,
-                LM_PARSED_JSON **parsestate)
+mseh_get_ptr_type (const MS3Record *msr, const char *ptr, LM_PARSED_JSON **parsestate)
 {
   LM_PARSED_JSON *parsed = (parsestate) ? *parsestate : NULL;
-
-  yyjson_alc alc = {_priv_malloc, _priv_realloc, _priv_free, NULL};
   yyjson_val *extravalue = NULL;
-  const char *stringvalue = NULL;
-
-  int retval = 0;
+  yyjson_alc alc = {_priv_malloc, _priv_realloc, _priv_free, NULL};
+  char rettype = 0;
 
   if (!msr || !ptr)
   {
@@ -173,7 +158,7 @@ mseh_get_ptr_r (const MS3Record *msr, const char *ptr, void *value, char type, u
   /* Nothing can be found in no headers */
   if (!msr->extralength)
   {
-    return 1;
+    return 0;
   }
 
   if (!msr->extra)
@@ -182,10 +167,10 @@ mseh_get_ptr_r (const MS3Record *msr, const char *ptr, void *value, char type, u
     return MS_GENERROR;
   }
 
-  /* Detect invalid JSON Pointer, i.e. with no root '/' designation */
-  if (ptr[0] != '/')
+  /* Detect invalid JSON Pointer, i.e. with no root '/' designation and not "" (root object) */
+  if (ptr[0] != '/' && ptr[0] != '\0')
   {
-    ms_log (2, "%s() Unsupported ptr notation: %s\n", __func__, ptr);
+    ms_log (2, "%s() Unsupported JSON Pointer notation: %s\n", __func__, ptr);
     return MS_GENERROR;
   }
 
@@ -228,17 +213,156 @@ mseh_get_ptr_r (const MS3Record *msr, const char *ptr, void *value, char type, u
 
   if (extravalue == NULL)
   {
-    retval = 1;
+    rettype = 0;
   }
-  else if (type == 'n' && yyjson_is_num (extravalue))
+  /* Integer type detections before the generic number check */
+  else if (yyjson_is_uint (extravalue))
+  {
+    rettype = 'u';
+  }
+  else if (yyjson_is_int (extravalue))
+  {
+    rettype = 'i';
+  }
+  else if (yyjson_is_num (extravalue))
+  {
+    rettype = 'n';
+  }
+  else if (yyjson_is_str (extravalue))
+  {
+    rettype = 's';
+  }
+  else if (yyjson_is_bool (extravalue))
+  {
+    rettype = 'b';
+  }
+  else if (yyjson_is_obj (extravalue))
+  {
+    rettype = 'o';
+  }
+  else if (yyjson_is_arr (extravalue))
+  {
+    rettype = 'a';
+  }
+
+  /* Free parse state if not being retained */
+  if (parsestate == NULL)
+  {
+    mseh_free_parsestate (&parsed);
+  }
+
+  return rettype;
+}
+
+/** ************************************************************************
+ * @brief Search for and return an extra header value.
+ *
+ * The extra header value is specified as a JSON Pointer (RFC 6901), e.g.
+ * \c '/objectA/objectB/header'.
+ *
+ * This routine can get used to test for the existence of a value
+ * without returning the value by setting @p value to NULL.
+ *
+ * If the target item is found (and @p value parameter is set) the
+ * value will be copied into the memory specified by @p value.  The
+ * @p type value specifies the data type expected.
+ *
+ * If a @p parsestate pointer is supplied, the parsed (deserialized) JSON
+ * data are stored here.  This value may be used in subsequent calls to
+ * avoid re-parsing the JSON.  The data must be freed with
+ * mseh_free_parsestate() when done reading the JSON.  If this value
+ * is NULL the parse state will be created and destroyed on each call.
+ *
+ * @param[in] msr Parsed miniSEED record to search
+ * @param[in] ptr Header value desired, as JSON Pointer
+ * @param[out] value Buffer for value, of type @p type
+ * @param[in] type Type of value expected, one of:
+ * @parblock
+ * - @c 'u' - @p value is type @c uint64_t
+ * - @c 'i' - @p value is type @c int64_t
+ * - @c 'n' - @p value is type @c double
+ * - @c 's' - @p value is type @c char* (maximum length is: @c maxlength - 1)
+ * - @c 'b' - @p value of type @c int (boolean value of 0 or 1)
+ * @endparblock
+ * @param[in] maxlength Maximum length of string value
+ * @param[in] parsestate Parsed state for multiple operations, can be NULL
+ *
+ * @retval 0 on success
+ * @retval 1 when the value was not found
+ * @retval 2 when the value is of a different type
+ * @returns A (negative) libmseed error code on error
+ *
+ * @ref MessageOnError - this function logs a message on error
+ *
+ * @see mseh_free_parsestate()
+ ***************************************************************************/
+int
+mseh_get_ptr_r (const MS3Record *msr, const char *ptr, void *value, char type, uint32_t maxlength,
+                LM_PARSED_JSON **parsestate)
+{
+  LM_PARSED_JSON *parsed = NULL;
+  yyjson_val *extravalue = NULL;
+  const char *stringvalue = NULL;
+
+  int retval = 0;
+  int detected_type;
+
+  if (!msr || !ptr)
+  {
+    ms_log (2, "%s() Required input not defined: 'msr' or 'ptr'\n", __func__);
+    return MS_GENERROR;
+  }
+
+  /* Nothing can be found in no headers */
+  if (!msr->extralength)
+  {
+    return 1;
+  }
+
+  if (!msr->extra)
+  {
+    ms_log (2, "%s() Expected extra headers (msr->extra) are not present\n", __func__);
+    return MS_GENERROR;
+  }
+
+  /* Check for existing value at JSON Pointer */
+  detected_type = mseh_get_ptr_type (msr, ptr, (parsestate) ? parsestate : &parsed);
+
+  /* Set parsed state pointer if supplied and populated by mseh_get_ptr_type() */
+  if (parsestate != NULL)
+  {
+    parsed = *parsestate;
+  }
+
+  /* Return error or not found indicator if type is not detected */
+  if (detected_type <= 0)
+  {
+    /* Free parse state if not being retained */
+    if (parsestate == NULL)
+    {
+      mseh_free_parsestate (&parsed);
+    }
+
+    return (detected_type == 0) ? 1 : detected_type;
+  }
+
+  /* Get target value */
+  extravalue = yyjson_doc_ptr_get (parsed->doc, ptr);
+
+  if (type == 'u' && yyjson_is_uint (extravalue))
   {
     if (value)
-      *((double *)value) = unsafe_yyjson_get_num (extravalue);
+      *((uint64_t *)value) = unsafe_yyjson_get_uint (extravalue);
   }
   else if (type == 'i' && yyjson_is_int (extravalue))
   {
     if (value)
       *((int64_t *)value) = unsafe_yyjson_get_int (extravalue);
+  }
+  else if (type == 'n' && yyjson_is_num (extravalue))
+  {
+    if (value)
+      *((double *)value) = unsafe_yyjson_get_num (extravalue);
   }
   else if (type == 's' && yyjson_is_str (extravalue))
   {
@@ -298,8 +422,9 @@ mseh_get_ptr_r (const MS3Record *msr, const char *ptr, void *value, char type, u
  * @param[in] value Buffer for value, of type @p type
  * @param[in] type Type of value expected, one of:
  * @parblock
- * - @c 'n' - @p value is type @c double
+ * - @c 'u' - @p value is type @c uint64_t
  * - @c 'i' - @p value is type @c int64_t
+ * - @c 'n' - @p value is type @c double
  * - @c 's' - @p value is type @c char*
  * - @c 'b' - @p value is type @c int (boolean value of 0 or 1)
  * - @c 'M' - @p value is type @c char* and a Merge Patch to apply at @p ptr
@@ -337,7 +462,7 @@ mseh_set_ptr_r (MS3Record *msr, const char *ptr, void *value, char type,
   }
 
   /* Detect invalid JSON Pointer, i.e. with no root '/' designation */
-  if (ptr[0] != '/' && type != 'M')
+  if (ptr[0] != '/' && ptr[0] != '\0' && type != 'M')
   {
     ms_log (2, "%s() Unsupported JSON Pointer notation: %s\n", __func__, ptr);
     return MS_GENERROR;
@@ -396,13 +521,17 @@ mseh_set_ptr_r (MS3Record *msr, const char *ptr, void *value, char type,
   /* Set (or replace) header value at ptr */
   switch (type)
   {
-  case 'n':
+  case 'u':
     rv = yyjson_mut_doc_ptr_set (parsed->mut_doc, ptr,
-                                 yyjson_mut_real (parsed->mut_doc, *((double *)value)));
+                                 yyjson_mut_uint (parsed->mut_doc, *((uint64_t *)value)));
     break;
   case 'i':
     rv = yyjson_mut_doc_ptr_set (parsed->mut_doc, ptr,
                                  yyjson_mut_sint (parsed->mut_doc, *((int64_t *)value)));
+    break;
+  case 'n':
+    rv = yyjson_mut_doc_ptr_set (parsed->mut_doc, ptr,
+                                 yyjson_mut_real (parsed->mut_doc, *((double *)value)));
     break;
   case 's':
     rv = yyjson_mut_doc_ptr_set (parsed->mut_doc, ptr,

@@ -82,6 +82,7 @@ EXPORTS
    ms_strncpclean
    ms_strncpcleantail
    ms_strncpopen
+   mseh_get_ptr_type
    mseh_get_ptr_r
    mseh_set_ptr_r
    mseh_add_event_detection_r
