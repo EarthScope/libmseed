@@ -1,0 +1,25 @@
+var searchData=
+[
+  ['data_0',['Reading miniSEED data',['../page-tutorial.html#reading',1,'']]],
+  ['data_20formats_1',['Time series data formats',['../page-capabilities.html#time-series-data',1,'']]],
+  ['data_20from_20a_20url_2',['How do I read data from a URL?',['../page-faq.html#faq-3',1,'']]],
+  ['data_20from_20to_20files_3',['How do I read/write data from/to files?',['../page-faq.html#faq-1',1,'']]],
+  ['data_20from_20to_20memory_20buffers_4',['Can I read/write data from/to memory buffers?',['../page-faq.html#faq-2',1,'']]],
+  ['data_20model_5',['Ramifications for change in data model',['../porting-guide.html#porting-data-model-change',1,'']]],
+  ['data_20records_6',['Data Records',['../page-capabilities.html#data-records',1,'']]],
+  ['data_20to_20files_7',['Writing miniSEED data to files',['../page-tutorial.html#writing-files',1,'']]],
+  ['deprecated_20list_8',['Deprecated List',['../deprecated.html',1,'']]],
+  ['design_9',['Callback design',['../page-tutorial.html#callback',1,'']]],
+  ['development_20and_20issues_10',['Development and issues',['../index.html#develop-main',1,'']]],
+  ['do_11',['This library sucks. What can I do?',['../page-faq.html#faq-9',1,'']]],
+  ['do_20how_20can_20i_20contribute_12',['This library is great, but doesn&apos;t do something I need. What can I do? How can I contribute?',['../page-faq.html#faq-10',1,'']]],
+  ['do_20i_20do_20that_13',['I&apos;m using the library and would like to cite it. How do I do that?',['../page-faq.html#faq-8',1,'']]],
+  ['do_20i_20port_20my_20libmseed_202_20x_20program_20to_20the_203_20x_20api_14',['The library API changed! Why? How do I port my libmseed 2.x program to the 3.x API?',['../page-faq.html#faq-7',1,'']]],
+  ['do_20i_20read_20data_20from_20a_20url_15',['How do I read data from a URL?',['../page-faq.html#faq-3',1,'']]],
+  ['do_20i_20read_20write_20data_20from_20to_20files_16',['How do I read/write data from/to files?',['../page-faq.html#faq-1',1,'']]],
+  ['do_20something_20i_20need_20what_20can_20i_20do_20how_20can_20i_20contribute_17',['This library is great, but doesn&apos;t do something I need. What can I do? How can I contribute?',['../page-faq.html#faq-10',1,'']]],
+  ['do_20that_18',['I&apos;m using the library and would like to cite it. How do I do that?',['../page-faq.html#faq-8',1,'']]],
+  ['documentation_19',['libmseed Documentation',['../index.html',1,'']]],
+  ['doesn_20t_20do_20something_20i_20need_20what_20can_20i_20do_20how_20can_20i_20contribute_20',['This library is great, but doesn&apos;t do something I need. What can I do? How can I contribute?',['../page-faq.html#faq-10',1,'']]],
+  ['downloading_20and_20installing_21',['Downloading and installing',['../index.html#main-downloding',1,'']]]
+];

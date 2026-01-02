@@ -1,0 +1,28 @@
+var searchData=
+[
+  ['callback_20design_0',['Callback design',['../page-tutorial.html#callback',1,'']]],
+  ['can_20i_20contribute_1',['This library is great, but doesn&apos;t do something I need. What can I do? How can I contribute?',['../page-faq.html#faq-10',1,'']]],
+  ['can_20i_20do_2',['This library sucks. What can I do?',['../page-faq.html#faq-9',1,'']]],
+  ['can_20i_20do_20how_20can_20i_20contribute_3',['This library is great, but doesn&apos;t do something I need. What can I do? How can I contribute?',['../page-faq.html#faq-10',1,'']]],
+  ['can_20i_20read_20write_20data_20from_20to_20memory_20buffers_4',['Can I read/write data from/to memory buffers?',['../page-faq.html#faq-2',1,'']]],
+  ['can_20i_20use_20libmseed_20strictly_20with_20miniseed_20version_202_5',['Can I use libmseed strictly with miniSEED version 2?',['../page-faq.html#faq-5',1,'']]],
+  ['capabilities_6',['Capabilities',['../page-capabilities.html',1,'index']]],
+  ['central_20logging_7',['Central Logging',['../group__logging.html',1,'']]],
+  ['change_20in_20data_20model_8',['Ramifications for change in data model',['../porting-guide.html#porting-data-model-change',1,'']]],
+  ['changed_20why_20how_20do_20i_20port_20my_20libmseed_202_20x_20program_20to_20the_203_20x_20api_9',['The library API changed! Why? How do I port my libmseed 2.x program to the 3.x API?',['../page-faq.html#faq-7',1,'']]],
+  ['changes_20that_20commonly_20need_20attention_10',['Most important changes that commonly need attention',['../porting-guide.html#porting-important',1,'']]],
+  ['changes_20that_20may_20need_20attention_11',['Other changes that may need attention',['../porting-guide.html#porting-other',1,'']]],
+  ['channel_12',['I need to use separate FDSN identifiers of Network, Station, Location and Channel.',['../page-faq.html#faq-6',1,'']]],
+  ['cite_20it_20how_20do_20i_20do_20that_13',['I&apos;m using the library and would like to cite it. How do I do that?',['../page-faq.html#faq-8',1,'']]],
+  ['clockstatus_14',['clockstatus',['../group__extra-headers.html#a4edb6885fbabec3e71115fbf22716da1',1,'MSEHTimingException']]],
+  ['codes_15',['Return codes',['../group__return-values.html',1,'']]],
+  ['common_20usage_16',['Common usage',['../page-tutorial.html#common-usage',1,'']]],
+  ['commonly_20need_20attention_17',['Most important changes that commonly need attention',['../porting-guide.html#porting-important',1,'']]],
+  ['continued_18',['continued',['../group__extra-headers.html#a3d2f550d6a0405a252ee51123991a8b4',1,'MSEHCalibration']]],
+  ['contribute_19',['This library is great, but doesn&apos;t do something I need. What can I do? How can I contribute?',['../page-faq.html#faq-10',1,'']]],
+  ['control_20flags_20',['Control flags',['../group__control-flags.html',1,'']]],
+  ['count_21',['count',['../group__extra-headers.html#a5ba8c8b49e869534dad58357eb2ff17f',1,'MSEHTimingException']]],
+  ['coupling_22',['coupling',['../group__extra-headers.html#a828729f48696977892ceac0b6e39988f',1,'MSEHCalibration']]],
+  ['crc_23',['crc',['../group__miniseed-record.html#a2f4036711bd3a7badb40d31f7737b770',1,'MS3Record']]],
+  ['creating_20miniseed_20records_24',['Creating miniSEED records',['../page-tutorial.html#creating-records',1,'']]]
+];

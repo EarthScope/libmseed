@@ -1,0 +1,27 @@
+var searchData=
+[
+  ['i_20contribute_0',['This library is great, but doesn&apos;t do something I need. What can I do? How can I contribute?',['../page-faq.html#faq-10',1,'']]],
+  ['i_20do_1',['This library sucks. What can I do?',['../page-faq.html#faq-9',1,'']]],
+  ['i_20do_20how_20can_20i_20contribute_2',['This library is great, but doesn&apos;t do something I need. What can I do? How can I contribute?',['../page-faq.html#faq-10',1,'']]],
+  ['i_20do_20that_3',['I&apos;m using the library and would like to cite it. How do I do that?',['../page-faq.html#faq-8',1,'']]],
+  ['i_20m_20using_20the_20library_20and_20would_20like_20to_20cite_20it_20how_20do_20i_20do_20that_4',['I&apos;m using the library and would like to cite it. How do I do that?',['../page-faq.html#faq-8',1,'']]],
+  ['i_20need_20to_20use_20separate_20fdsn_20identifiers_20of_20network_20station_20location_20and_20channel_5',['I need to use separate FDSN identifiers of Network, Station, Location and Channel.',['../page-faq.html#faq-6',1,'']]],
+  ['i_20need_20what_20can_20i_20do_20how_20can_20i_20contribute_6',['This library is great, but doesn&apos;t do something I need. What can I do? How can I contribute?',['../page-faq.html#faq-10',1,'']]],
+  ['i_20port_20my_20libmseed_202_20x_20program_20to_20the_203_20x_20api_7',['The library API changed! Why? How do I port my libmseed 2.x program to the 3.x API?',['../page-faq.html#faq-7',1,'']]],
+  ['i_20read_20data_20from_20a_20url_8',['How do I read data from a URL?',['../page-faq.html#faq-3',1,'']]],
+  ['i_20read_20write_20data_20from_20to_20files_9',['How do I read/write data from/to files?',['../page-faq.html#faq-1',1,'']]],
+  ['i_20read_20write_20data_20from_20to_20memory_20buffers_10',['Can I read/write data from/to memory buffers?',['../page-faq.html#faq-2',1,'']]],
+  ['i_20use_20libmseed_20strictly_20with_20miniseed_20version_202_11',['Can I use libmseed strictly with miniSEED version 2?',['../page-faq.html#faq-5',1,'']]],
+  ['identifiers_12',['Working with Source Identifiers',['../page-examples.html#example-lm_sids',1,'']]],
+  ['identifiers_20of_20network_20station_20location_20and_20channel_13',['I need to use separate FDSN identifiers of Network, Station, Location and Channel.',['../page-faq.html#faq-6',1,'']]],
+  ['important_20changes_20that_20commonly_20need_20attention_14',['Most important changes that commonly need attention',['../porting-guide.html#porting-important',1,'']]],
+  ['in_20data_20model_15',['Ramifications for change in data model',['../porting-guide.html#porting-data-model-change',1,'']]],
+  ['in_20parallel_16',['Reading files in parallel',['../page-examples.html#example-lm_pararead',1,'']]],
+  ['installing_17',['Downloading and installing',['../index.html#main-downloding',1,'']]],
+  ['into_20traces_20lists_18',['Reading miniSEED from files into traces lists',['../page-tutorial.html#reading-tracelists',1,'']]],
+  ['is_20a_20library_20needed_19',['miniSEED is simple, why is a library needed?',['../page-faq.html#faq-4',1,'']]],
+  ['is_20great_20but_20doesn_20t_20do_20something_20i_20need_20what_20can_20i_20do_20how_20can_20i_20contribute_20',['This library is great, but doesn&apos;t do something I need. What can I do? How can I contribute?',['../page-faq.html#faq-10',1,'']]],
+  ['is_20simple_20why_20is_20a_20library_20needed_21',['miniSEED is simple, why is a library needed?',['../page-faq.html#faq-4',1,'']]],
+  ['issues_22',['Development and issues',['../index.html#develop-main',1,'']]],
+  ['it_20how_20do_20i_20do_20that_23',['I&apos;m using the library and would like to cite it. How do I do that?',['../page-faq.html#faq-8',1,'']]]
+];
