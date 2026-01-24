@@ -34,6 +34,10 @@ identified at compile time but may yet effect the program.
 
 - MS3TraceList.numtraces renamed to ::MS3TraceList.numtraceids.
 
+- MS3TraceID is no longer a simple linked list, it is now a skip list.
+This slightly changes the syntax for traversing the list as illustrated
+in the examples.
+
 - The \c fpos and \c last arguments of ::ms3_readmsr(), ::ms3_readmsr_r(),
 and ::ms3_readmsr_selection() have been removed.  The same capability is
 available using the re-entrant ('_r') functions with ::MS3FileParam (msfp)
@@ -46,6 +50,11 @@ available using the re-entrant ('_r') functions with ::MS3FileParam (msfp)
 previous \c hptime_t was a microsecond epoch value.  Careful review is
 required for values used by a program directly (they really _should
 not_ be).
+
+- Convert all usage of HPTMODULUS to NSTMODULUS abd HPTERROR to NSTERROR.
+
+- Review usage of NSTERROR for cases where the new NSTUNSET value is used
+instead to indicate an unset value.
 
 - Review and change functions with \c hptime in the name to their
   closest equivalent for the new \c nstime version.  See @ref time-related.
@@ -64,7 +73,7 @@ mstl3_printsynclist(), and \c mstl3_printgaplist().
 @note If the above functions are simply renamed and the flag values
 are not changed to use the enumerated types, leaving integers as
 arguments, there may be a **non-obvious bug**.  Most compilers will
-quiety accept an integer for the enum argument, which may or may not
+quietly accept an integer for the enum argument, which may or may not
 match the desired time format or subsecond handling. Assume _not_.
 
 - Adapt to new identification of a record source.  The channel
@@ -73,7 +82,7 @@ library console output and logging, to a URI-style Source Identifier
 (SID) with the pattern \c FDSN:NN_SSS_LL_B_S_s.  The following helper
 functions are available for mapping between the new URI-based scheme
 and the traditional SEED network, station, location, channel scheme:
-  - ms_sid2nslc(): convert SID to traditional SEED identifiers
+  - ms_sid2nslc_n(): convert SID to traditional SEED identifiers
   - ms_nslc2sid(): convert traditional SEED identifiers to an SID
   - ms_seedchan2xchan(): convert SEED channel to SID-style channel components
   - ms_xchan2seedchan(): convert SID band, source and position to SEED channel
@@ -125,26 +134,26 @@ API changed as follows:
   - Activity flags (field 12):
     - Bit 0 (calibration signals present) => Fixed header flags, bit 0
     - Bit 1 (time correction applied), not retained
-    - Bit 2 (begining of event) => Extra header FDSN.Event.Begin
-    - Bit 3 (end of event) => Extra header FDSN.Event.End
-    - Bit 4 (positive leap second included) => Extra header FDSN.Time.LeapSecond
-    - Bit 5 (negative leap second included) => Extra header FDSN.Time.LeapSecond
-    - Bit 6 (event in progress) => Extra header FDSN.Event.InProgress
+    - Bit 2 (begining of event) => Extra header /FDSN/Event/Begin
+    - Bit 3 (end of event) => Extra header /FDSN/Event/End
+    - Bit 4 (positive leap second included) => Extra header /FDSN/Time/LeapSecond
+    - Bit 5 (negative leap second included) => Extra header /FDSN/Time/LeapSecond
+    - Bit 6 (event in progress) => Extra header /FDSN/Event/InProgress
   - I/O flags (field 13):
-    - Bit 0 (Station volume parity error) => Extra header FDSN.Flags.StationVolumeParityError
-    - Bit 1 (Long record read) => Extra header FDSN.Flags.LongRecordRead
-    - Bit 2 (Short record read) => Extra header FDSN.Flags.ShortRecordRead
-    - Bit 3 (Start of time series) => Extra header FDSN.Flags.StartOfTimeSeries
-    - Bit 4 (End of time series) => Extra header FDSN.Flags.EndOfTimeSeries
+    - Bit 0 (Station volume parity error) => Extra header /FDSN/Flags/StationVolumeParityError
+    - Bit 1 (Long record read) => Extra header /FDSN/Flags/LongRecordRead
+    - Bit 2 (Short record read) => Extra header /FDSN/Flags/ShortRecordRead
+    - Bit 3 (Start of time series) => Extra header /FDSN/Flags/StartOfTimeSeries
+    - Bit 4 (End of time series) => Extra header /FDSN/Flags/EndOfTimeSeries
     - Bit 5 (Clock locked) => Fixed header flags, bit 2
   - Data quality flags (field 14):
-    - Bit 0 (Amplifier saturation detected) => Extra header FDSN.Flags.AmplifierSaturation
-    - Bit 1 (Digitizer clipping detected) => Extra header FDSN.Flags.DigitizerClipping
-    - Bit 2 (Spikes detected) => Extra header FDSN.Flags.Spikes
-    - Bit 3 (Glitches detected) => Extra header FDSN.Flags.Glitches
-    - Bit 4 (Missing/padded data present) => Extra header FDSN.Flags.MissingData
-    - Bit 5 (Telemetry synchronization error) => Extra header FDSN.Flags.TelemetrySyncError
-    - Bit 6 (Digital filter may be charging) => Extra header FDSN.Flags.FilterCharging
+    - Bit 0 (Amplifier saturation detected) => Extra header /FDSN/Flags/AmplifierSaturation
+    - Bit 1 (Digitizer clipping detected) => Extra header /FDSN/Flags/DigitizerClipping
+    - Bit 2 (Spikes detected) => Extra header /FDSN/Flags/Spikes
+    - Bit 3 (Glitches detected) => Extra header /FDSN/Flags/Glitches
+    - Bit 4 (Missing/padded data present) => Extra header /FDSN/Flags/MissingData
+    - Bit 5 (Telemetry synchronization error) => Extra header /FDSN/Flags/TelemetrySyncError
+    - Bit 6 (Digital filter may be charging) => Extra header /FDSN/Flags/FilterCharging
     - Bit 7 (Time tag questionable) => Fixed header flags, bit 1
 
   The existence of these boolean extra header values can be tested with mseh_exists().
@@ -169,7 +178,7 @@ version 3, results in the following consequences:
 - Version 2.x timing blockettes (500) contain one "Clock Model"
   designation per blockette, potentially allowing for multiple
   designations in a single record.  Upon reading such a record, only
-  the last clock model is retained (in the \c FDSN.Clock.Model @ref
+  the last clock model is retained (in the \c /FDSN/Clock/Model @ref
   extra-headers).
 
 - Version 2.x sequence numbers, as six digit ASCII string, are not

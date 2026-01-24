@@ -3,6 +3,7 @@
   - Fix return value from ms_rlog_emit()
   - Fix tracking of message count in log registry.
   - Add tests for logging facility.
+  - Add example/lm_extraheaders.c to demonstrate extra header functionality.
 
 2026.001: v3.2.3
   - Add mseh_get_ptr_type() to determine type of an extra header.
