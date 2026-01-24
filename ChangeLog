@@ -1,4 +1,4 @@
-2026.024:
+2026.024: v3.2.4
   - Add ms_rlog_pop() to return messages from the error/warning log registry
   - Fix return value from ms_rlog_emit()
   - Fix tracking of message count in log registry.
