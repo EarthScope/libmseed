@@ -98,4 +98,10 @@ identifier codes.
 
 @include lm_sids.c
 
+@section example-lm_extraheaders Working with extra headers
+
+An example of working with extra headers in miniSEED records.
+
+@include lm_extraheaders.c
+
 */
