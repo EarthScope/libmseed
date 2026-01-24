@@ -454,7 +454,7 @@ add_message_int (MSLogRegistry *logreg, const char *function, int level, const c
   strncpy (logentry->message, message, sizeof (logentry->message));
   logentry->message[sizeof (logentry->message) - 1] = '\0';
 
-  /* Add entry to registry */
+  /* Add entry to registry at the head of the list */
   logentry->next = logreg->messages;
   logreg->messages = logentry;
   logreg->messagecnt += 1;
@@ -473,7 +473,10 @@ add_message_int (MSLogRegistry *logreg, const char *function, int level, const c
         logentry->next = NULL;
 
       if (count > logreg->maxmessages)
+      {
         free (logentry);
+        logreg->messagecnt -= 1;
+      }
 
       logentry = lognext;
     }
@@ -524,10 +527,10 @@ print_message_int (MSLogParam *logp, int level, const char *message, char *termi
 /** ************************************************************************
  * @brief Emit, aka send to print functions, messages from log registry
  *
- * Emit messages from the log registry, using the printing functions
- * identified by the ::MSLogParam.
+ * Emit error and warning messages from the log registry, using the printing
+ * functions identified by the ::MSLogParam.
  *
- * Messages are printed in order from earliest to latest.
+ * Messages are printed in order from latest to earliest.
  *
  * The maximum number messages to emit, from most recent to earliest,
  * can be limited using @p count.  If the value is 0 all messages are
@@ -541,11 +544,11 @@ print_message_int (MSLogParam *logp, int level, const char *message, char *termi
  * @param[in] count Number of messages to emit, 0 to emit all messages
  * @param[in] context If non-zero include context by prefixing the function name (if available)
  *
- * @returns The number of message emitted on success, and a negative
- * value on error.
+ * @returns The number of messages emitted.
  *
  * @see ms_rloginit()
  * @see ms_rlog_free()
+ * @see ms_rlog_pop()
  ***************************************************************************/
 int
 ms_rlog_emit (MSLogParam *logp, int count, int context)
@@ -555,6 +558,7 @@ ms_rlog_emit (MSLogParam *logp, int count, int context)
   char local_message[MAX_LOG_MSG_LENGTH];
   char *message = NULL;
   int emit = (count > 0) ? count : -1;
+  int emitted = 0;
 
   if (!logp)
     logp = &gMSLogParam;
@@ -595,18 +599,85 @@ ms_rlog_emit (MSLogParam *logp, int count, int context)
     logentry = logprint->next;
     free (logprint);
     logprint = logentry;
+    emitted++;
   }
 
-  return 0;
+  logp->registry.messagecnt -= emitted;
+
+  return emitted;
 } /* End of ms_rlog_emit() */
+
+/** ************************************************************************
+ * @brief Pop error and warning messages from log registry
+ *
+ * Messages are formatted and stored in the specified message buffer.
+ *
+ * The latest (most recent) message is popped.
+ *
+ * @param[in] logp ::MSLogParam for this message or NULL for global parameters
+ * @param[out] message Message buffer to store the message in
+ * @param[in] size Size of the message buffer
+ * @param[in] context If non-zero include context by prefixing the function name (if available)
+ *
+ * @retval >0 length of message copied to buffer on success
+ * @retval 0 if no message is available
+ * @retval -1 on error
+ *
+ * @see ms_rloginit()
+ * @see ms_rlog_free()
+ * @see ms_rlog_emit()
+ ***************************************************************************/
+int
+ms_rlog_pop (MSLogParam *logp, char *message, size_t size, int context)
+{
+  MSLogEntry *logprint = NULL;
+  char local_message[MAX_LOG_MSG_LENGTH];
+  char *message_ptr = NULL;
+  size_t length = 0;
+
+  if (!message || size == 0)
+    return -1;
+
+  if (!logp)
+    logp = &gMSLogParam;
+
+  logprint = logp->registry.messages;
+
+  /* Copy and free message */
+  if (logprint)
+  {
+    /* Add function name to message if requested and present */
+    if (context && logprint->function[0] != '\0')
+    {
+      snprintf (local_message, sizeof (local_message), "%s() %.*s", logprint->function,
+                (int)(MAX_LOG_MSG_LENGTH - sizeof (logprint->function) - 3), logprint->message);
+      message_ptr = local_message;
+    }
+    else
+    {
+      message_ptr = logprint->message;
+    }
+
+    /* Copy message to buffer */
+    strncpy (message, message_ptr, size);
+    message[size - 1] = '\0';
+    length = strlen (message);
+
+    /* Remove message from registry */
+    logp->registry.messages = logprint->next;
+    logp->registry.messagecnt -= 1;
+    free (logprint);
+  }
+
+  return (int)length;
+} /* End of ms_rlog_pop() */
 
 /** ************************************************************************
  * @brief Free, without emitting, all messages from log registry
  *
  * @param[in] logp ::MSLogParam for this message or NULL for global parameters
  *
- * @returns The number of message freed on success, and a negative
- * value on error.
+ * @returns The number of messages freed.
  ***************************************************************************/
 int
 ms_rlog_free (MSLogParam *logp)
@@ -627,6 +698,8 @@ ms_rlog_free (MSLogParam *logp)
     free (logentry);
     logentry = logp->registry.messages;
   }
+
+  logp->registry.messagecnt = 0;
 
   return freed;
 } /* End of ms_rlog_free() */

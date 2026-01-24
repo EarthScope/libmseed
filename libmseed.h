@@ -1277,6 +1277,7 @@ extern MSLogParam *ms_rloginit_l (MSLogParam *logp, void (*log_print) (const cha
                                   const char *logprefix, void (*diag_print) (const char *),
                                   const char *errprefix, int maxmessages);
 extern int ms_rlog_emit (MSLogParam *logp, int count, int context);
+extern int ms_rlog_pop (MSLogParam *logp, char *message, size_t size, int context);
 extern int ms_rlog_free (MSLogParam *logp);
 
 /** @} */

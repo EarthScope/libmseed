@@ -1,3 +1,9 @@
+2026.024:
+  - Add ms_rlog_pop() to return messages from the error/warning log registry
+  - Fix return value from ms_rlog_emit()
+  - Fix tracking of message count in log registry.
+  - Add tests for logging facility.
+
 2026.001: v3.2.3
   - Add mseh_get_ptr_type() to determine type of an extra header.
   - Add unsigned integer (uint64_t) support to `mseh_set_ptr_r()` and `mseh_get_ptr_r()`.
