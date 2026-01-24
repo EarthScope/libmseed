@@ -4,6 +4,7 @@
 set(TEST_PROGRAMS
     test-crc
     test-extraheaders
+    test-logging
     test-msrutils
     test-read
     test-repack
