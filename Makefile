@@ -1,3 +1,9 @@
+CFLAGS ?= -O2 -g
+
+# On x86_64, enable SSE4.1 for SIMD optimizations
+ifeq ($(shell uname -m),x86_64)
+  CFLAGS += -msse4.1
+endif
 
 # Build environment can be configured the following
 # environment variables:

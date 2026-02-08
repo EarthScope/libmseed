@@ -345,6 +345,377 @@ msr_decode_steim1 (int32_t *input, uint64_t inputlength, uint64_t samplecount, i
   return outputidx;
 } /* End of msr_decode_steim1() */
 
+/* Portable fast byte-swap macro, internal to this file only.
+ * Does NOT replace ms_gswap4() — used in the optimized Steim2 decoder
+ * for the swap-specialized code path where swapflag is a compile-time constant. */
+#if defined(__GNUC__) || defined(__clang__)
+  #define MS_BSWAP32(x)  __builtin_bswap32(x)
+#elif defined(_MSC_VER)
+  #define MS_BSWAP32(x)  _byteswap_ulong(x)
+#else
+  static inline uint32_t ms_bswap32_fallback_ (uint32_t x) {
+    return ((x & 0xFF000000u) >> 24) | ((x & 0x00FF0000u) >> 8) |
+           ((x & 0x0000FF00u) << 8)  | ((x & 0x000000FFu) << 24);
+  }
+  #define MS_BSWAP32(x)  ms_bswap32_fallback_(x)
+#endif
+
+/* Sign-extend a value of 'bits' width to int32_t.
+ * Uses arithmetic right shift, which is 2 instructions on x86 (shl + sar). */
+#define SIGN_EXTEND(val, bits) ((int32_t)((uint32_t)(val) << (32 - (bits))) >> (32 - (bits)))
+
+#if defined(__GNUC__) || defined(__clang__)
+#define LM_INLINE static inline __attribute__((always_inline))
+#elif defined(_MSC_VER)
+#define LM_INLINE static __forceinline
+#else
+#define LM_INLINE static inline
+#endif
+
+#if defined(__SSE4_1__)
+#include <smmintrin.h>
+static inline __m128i prefix_sum_epi32_ (__m128i d, int32_t carry) {
+  d = _mm_add_epi32 (d, _mm_slli_si128 (d, 4));
+  d = _mm_add_epi32 (d, _mm_slli_si128 (d, 8));
+  d = _mm_add_epi32 (d, _mm_set1_epi32 (carry));
+  return d;
+}
+#endif
+
+#define STEIM2_APPEND_SAMPLE(val)                                           \
+  do {                                                                      \
+    if (__builtin_expect (!skip_first, 1)) {                                \
+      prev = (int32_t)((uint32_t)prev + (uint32_t)(val));                  \
+      output[outputidx++] = prev;                                           \
+    } else { skip_first = 0; }                                              \
+  } while (0)
+
+/*
+ * Optimized Steim2 decode inner loop:
+ *   decode_steim2_native_ (swap=0) — no byte swapping
+ *   decode_steim2_swap_   (swap=1) — byte swapping enabled
+ *
+ * Optimizations applied:
+ *   - Fused decode + integrate: no intermediate diff[] array, prev stays in register
+ *   - Flat 4-bit dispatch: single switch(encoding) instead of nested switch/switch
+ *   - Eliminated frame copy: reads directly from input buffer
+ *   - Fully unrolled bit extractions per encoding case
+ *   - Shift-based sign extension (2 instructions on x86)
+ *   - swap is a compile-time constant, eliminating per-word branches
+ *   - Frame-level fast path for frames with >= 105 samples remaining
+ *   - SIMD SSE4.1 prefix-sum integration and 128-bit vector stores
+ */
+LM_INLINE int64_t
+decode_steim2_core_ (const uint32_t *input, uint64_t maxframes, uint64_t samplecount,
+                     int32_t *output, const char *srcname, const int swap)
+{
+  int32_t Xn = 0;
+  int32_t prev = 0;
+  uint64_t outputidx = 0;
+  uint64_t frameidx;
+  int startnibble;
+  int widx;
+  int skip_first = 0;
+
+  for (frameidx = 0; frameidx < maxframes && outputidx < samplecount; frameidx++)
+  {
+    const uint32_t *fptr = input + (16 * frameidx);
+
+    if (frameidx == 0)
+    {
+      uint32_t w1 = fptr[1];
+      uint32_t w2 = fptr[2];
+      if (swap) { w1 = MS_BSWAP32 (w1); w2 = MS_BSWAP32 (w2); }
+
+      prev = (int32_t)w1;
+      output[0] = prev;
+      outputidx = 1;
+      Xn = (int32_t)w2;
+      startnibble = 3;
+      skip_first = 1; /* Skip the first difference in first frame */
+    }
+    else
+    {
+      startnibble = 1;
+    }
+
+    uint32_t w0 = fptr[0];
+    if (swap) w0 = MS_BSWAP32 (w0);
+
+    /* Fast path: full frame with at least 105 samples remaining and skip_first == 0 */
+    if (samplecount - outputidx >= 105 && !skip_first)
+    {
+      for (widx = startnibble; widx < 16; widx++)
+      {
+        int nibble = (w0 >> (30 - 2 * widx)) & 3;
+        uint32_t w = fptr[widx];
+        if (swap && nibble >= 2)
+          w = MS_BSWAP32 (w);
+
+        int dnib = (nibble >= 2) ? ((w >> 30) & 3) : 0;
+        int encoding = (nibble << 2) | dnib;
+
+        switch (encoding)
+        {
+        case 0x0: case 0x1: case 0x2: case 0x3:
+          /* nibble=00: no data */
+          break;
+
+        case 0x4: case 0x5: case 0x6: case 0x7:
+          /* nibble=01: Four 8-bit differences */
+#if defined(__SSE4_1__)
+          {
+            __m128i bytes = _mm_cvtsi32_si128 (*(const int32_t *)&fptr[widx]);
+            __m128i diffs = _mm_cvtepi8_epi32 (bytes);
+            __m128i result = prefix_sum_epi32_ (diffs, prev);
+            _mm_storeu_si128 ((__m128i *)&output[outputidx], result);
+            prev = _mm_extract_epi32 (result, 3);
+            outputidx += 4;
+          }
+#else
+          {
+            const int8_t *bytes = (const int8_t *)&fptr[widx];
+            output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)bytes[0]));
+            output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)bytes[1]));
+            output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)bytes[2]));
+            output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)bytes[3]));
+          }
+#endif
+          break;
+
+        case 0x8: /* nibble=10, dnib=00: Error */
+          ms_log (2, "%s: Impossible Steim2 dnib=00 for nibble=10\n", srcname);
+          return -1;
+
+        case 0x9: /* nibble=10, dnib=01: One 30-bit difference */
+          prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w, 30));
+          output[outputidx++] = prev;
+          break;
+
+        case 0xA: /* nibble=10, dnib=10: Two 15-bit differences */
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w >> 15, 15)));
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w, 15)));
+          break;
+
+        case 0xB: /* nibble=10, dnib=11: Three 10-bit differences */
+#if defined(__SSE4_1__)
+          {
+            int32_t d0 = SIGN_EXTEND (w >> 20, 10);
+            int32_t d1 = SIGN_EXTEND (w >> 10, 10);
+            int32_t d2 = SIGN_EXTEND (w, 10);
+            __m128i diffs = _mm_set_epi32 (0, d2, d1, d0);
+            __m128i result = prefix_sum_epi32_ (diffs, prev);
+            output[outputidx]     = _mm_extract_epi32 (result, 0);
+            output[outputidx + 1] = _mm_extract_epi32 (result, 1);
+            output[outputidx + 2] = _mm_extract_epi32 (result, 2);
+            prev = _mm_extract_epi32 (result, 2);
+            outputidx += 3;
+          }
+#else
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w >> 20, 10)));
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w >> 10, 10)));
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w, 10)));
+#endif
+          break;
+
+        case 0xC: /* nibble=11, dnib=00: Five 6-bit differences */
+#if defined(__SSE4_1__)
+          {
+            int32_t d0 = SIGN_EXTEND (w >> 24, 6);
+            int32_t d1 = SIGN_EXTEND (w >> 18, 6);
+            int32_t d2 = SIGN_EXTEND (w >> 12, 6);
+            int32_t d3 = SIGN_EXTEND (w >> 6, 6);
+            int32_t d4 = SIGN_EXTEND (w, 6);
+            __m128i diffs = _mm_set_epi32 (d3, d2, d1, d0);
+            __m128i result = prefix_sum_epi32_ (diffs, prev);
+            _mm_storeu_si128 ((__m128i *)&output[outputidx], result);
+            prev = _mm_extract_epi32 (result, 3);
+            prev = (int32_t)((uint32_t)prev + (uint32_t)d4);
+            output[outputidx + 4] = prev;
+            outputidx += 5;
+          }
+#else
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w >> 24, 6)));
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w >> 18, 6)));
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w >> 12, 6)));
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w >> 6, 6)));
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w, 6)));
+#endif
+          break;
+
+        case 0xD: /* nibble=11, dnib=01: Six 5-bit differences */
+#if defined(__SSE4_1__)
+          {
+            int32_t d0 = SIGN_EXTEND (w >> 25, 5);
+            int32_t d1 = SIGN_EXTEND (w >> 20, 5);
+            int32_t d2 = SIGN_EXTEND (w >> 15, 5);
+            int32_t d3 = SIGN_EXTEND (w >> 10, 5);
+            int32_t d4 = SIGN_EXTEND (w >> 5, 5);
+            int32_t d5 = SIGN_EXTEND (w, 5);
+            __m128i diffs = _mm_set_epi32 (d3, d2, d1, d0);
+            __m128i result = prefix_sum_epi32_ (diffs, prev);
+            _mm_storeu_si128 ((__m128i *)&output[outputidx], result);
+            prev = _mm_extract_epi32 (result, 3);
+            prev = (int32_t)((uint32_t)prev + (uint32_t)d4);
+            output[outputidx + 4] = prev;
+            prev = (int32_t)((uint32_t)prev + (uint32_t)d5);
+            output[outputidx + 5] = prev;
+            outputidx += 6;
+          }
+#else
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w >> 25, 5)));
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w >> 20, 5)));
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w >> 15, 5)));
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w >> 10, 5)));
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w >> 5, 5)));
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w, 5)));
+#endif
+          break;
+
+        case 0xE: /* nibble=11, dnib=10: Seven 4-bit differences */
+#if defined(__SSE4_1__)
+          {
+            int32_t d0 = SIGN_EXTEND (w >> 24, 4);
+            int32_t d1 = SIGN_EXTEND (w >> 20, 4);
+            int32_t d2 = SIGN_EXTEND (w >> 16, 4);
+            int32_t d3 = SIGN_EXTEND (w >> 12, 4);
+            int32_t d4 = SIGN_EXTEND (w >> 8, 4);
+            int32_t d5 = SIGN_EXTEND (w >> 4, 4);
+            int32_t d6 = SIGN_EXTEND (w, 4);
+            __m128i diffs = _mm_set_epi32 (d3, d2, d1, d0);
+            __m128i result = prefix_sum_epi32_ (diffs, prev);
+            _mm_storeu_si128 ((__m128i *)&output[outputidx], result);
+            prev = _mm_extract_epi32 (result, 3);
+            prev = (int32_t)((uint32_t)prev + (uint32_t)d4);
+            output[outputidx + 4] = prev;
+            prev = (int32_t)((uint32_t)prev + (uint32_t)d5);
+            output[outputidx + 5] = prev;
+            prev = (int32_t)((uint32_t)prev + (uint32_t)d6);
+            output[outputidx + 6] = prev;
+            outputidx += 7;
+          }
+#else
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w >> 24, 4)));
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w >> 20, 4)));
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w >> 16, 4)));
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w >> 12, 4)));
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w >> 8, 4)));
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w >> 4, 4)));
+          output[outputidx++] = (prev = (int32_t)((uint32_t)prev + (uint32_t)SIGN_EXTEND (w, 4)));
+#endif
+          break;
+
+        case 0xF: /* nibble=11, dnib=11: Error */
+          ms_log (2, "%s: Impossible Steim2 dnib=11 for nibble=11\n", srcname);
+          return -1;
+        }
+      }
+    }
+    else /* Safe path: boundary checks for frame 0 and tail frames */
+    {
+      for (widx = startnibble; widx < 16 && outputidx < samplecount; widx++)
+      {
+        int nibble = (w0 >> (30 - 2 * widx)) & 3;
+        uint32_t w = fptr[widx];
+        if (swap && nibble >= 2)
+          w = MS_BSWAP32 (w);
+
+        int dnib = (nibble >= 2) ? ((w >> 30) & 3) : 0;
+        int encoding = (nibble << 2) | dnib;
+
+        switch (encoding)
+        {
+        case 0x0: case 0x1: case 0x2: case 0x3:
+          break;
+
+        case 0x4: case 0x5: case 0x6: case 0x7:
+          {
+            const int8_t *bytes = (const int8_t *)&fptr[widx];
+            STEIM2_APPEND_SAMPLE (bytes[0]);
+            if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (bytes[1]);
+            if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (bytes[2]);
+            if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (bytes[3]);
+          }
+          break;
+
+        case 0x8:
+          ms_log (2, "%s: Impossible Steim2 dnib=00 for nibble=10\n", srcname);
+          return -1;
+
+        case 0x9:
+          STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w, 30));
+          break;
+
+        case 0xA:
+          STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w >> 15, 15));
+          if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w, 15));
+          break;
+
+        case 0xB:
+          STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w >> 20, 10));
+          if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w >> 10, 10));
+          if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w, 10));
+          break;
+
+        case 0xC:
+          STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w >> 24, 6));
+          if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w >> 18, 6));
+          if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w >> 12, 6));
+          if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w >> 6, 6));
+          if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w, 6));
+          break;
+
+        case 0xD:
+          STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w >> 25, 5));
+          if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w >> 20, 5));
+          if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w >> 15, 5));
+          if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w >> 10, 5));
+          if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w >> 5, 5));
+          if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w, 5));
+          break;
+
+        case 0xE:
+          STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w >> 24, 4));
+          if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w >> 20, 4));
+          if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w >> 16, 4));
+          if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w >> 12, 4));
+          if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w >> 8, 4));
+          if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w >> 4, 4));
+          if (outputidx < samplecount) STEIM2_APPEND_SAMPLE (SIGN_EXTEND (w, 4));
+          break;
+
+        case 0xF:
+          ms_log (2, "%s: Impossible Steim2 dnib=11 for nibble=11\n", srcname);
+          return -1;
+        }
+      }
+    }
+  }
+
+  /* Check data integrity by comparing last sample to Xn */
+  if (outputidx == samplecount && output[outputidx - 1] != Xn)
+  {
+    ms_log (1, "%s: Warning: Data integrity check for Steim2 failed, Last sample=%d, Xn=%d\n",
+            srcname, output[outputidx - 1], Xn);
+  }
+
+  return (int64_t)outputidx;
+}
+
+static inline int64_t
+decode_steim2_native_ (const uint32_t *input, uint64_t maxframes, uint64_t samplecount,
+                       int32_t *output, const char *srcname)
+{
+  return decode_steim2_core_ (input, maxframes, samplecount, output, srcname, 0);
+}
+
+static inline int64_t
+decode_steim2_swap_ (const uint32_t *input, uint64_t maxframes, uint64_t samplecount,
+                     int32_t *output, const char *srcname)
+{
+  return decode_steim2_core_ (input, maxframes, samplecount, output, srcname, 1);
+}
+
 /************************************************************************
  * msr_decode_steim2:
  *
@@ -357,50 +728,7 @@ int64_t
 msr_decode_steim2 (int32_t *input, uint64_t inputlength, uint64_t samplecount, int32_t *output,
                    uint64_t outputlength, const char *srcname, int swapflag)
 {
-  uint32_t frame[16]; /* Frame, 16 x 32-bit quantities = 64 bytes */
-  int32_t diff[105];  /* Difference values for a frame, max is 15 x 7 (4-bit samples) */
-  int32_t Xn = 0;     /* Reverse integration constant, aka last sample */
-  uint64_t outputidx;
   uint64_t maxframes = inputlength / 64;
-  uint64_t frameidx;
-  int diffidx;
-  int startnibble;
-  int nibble;
-  int widx;
-  int dnib;
-  int idx;
-
-  union dword
-  {
-    int8_t d8[4];
-    int32_t d32;
-  } *word;
-
-  /* Bitfield specifications for sign extension of various bit-width values */
-  struct
-  {
-    signed int x : 4;
-  } s4;
-  struct
-  {
-    signed int x : 5;
-  } s5;
-  struct
-  {
-    signed int x : 6;
-  } s6;
-  struct
-  {
-    signed int x : 10;
-  } s10;
-  struct
-  {
-    signed int x : 15;
-  } s15;
-  struct
-  {
-    signed int x : 30;
-  } s30;
 
   if (maxframes == 0 || samplecount == 0)
     return 0;
@@ -420,192 +748,11 @@ msr_decode_steim2 (int32_t *input, uint64_t inputlength, uint64_t samplecount, i
           (srcname) ? srcname : "");
 #endif
 
-  for (frameidx = 0, outputidx = 0; frameidx < maxframes && outputidx < samplecount; frameidx++)
-  {
-    /* Copy frame, each is 16x32-bit quantities = 64 bytes */
-    memcpy (frame, input + (16 * frameidx), 64);
-    diffidx = 0;
-
-    /* Save forward integration constant (X0) and reverse integration constant (Xn)
-       and set the starting nibble index depending on frame. */
-    if (frameidx == 0)
-    {
-      if (swapflag)
-      {
-        ms_gswap4 (&frame[1]);
-        ms_gswap4 (&frame[2]);
-      }
-
-      output[0] = frame[1];
-      outputidx++;
-      Xn = frame[2];
-
-      startnibble = 3; /* First frame: skip nibbles, X0, and Xn */
-
-#if DECODE_DEBUG
-      ms_log (0, "Frame %" PRIu64 ": X0=%d  Xn=%d\n", frameidx, output[0], Xn);
-#endif
-    }
-    else
-    {
-      startnibble = 1; /* Subsequent frames: skip nibbles */
-
-#if DECODE_DEBUG
-      ms_log (0, "Frame %" PRIu64 "\n", frameidx);
-#endif
-    }
-
-    /* Swap 32-bit word containing the nibbles */
-    if (swapflag)
-      ms_gswap4 (&frame[0]);
-
-    /* Decode each 32-bit word according to nibble */
-    for (widx = startnibble; widx < 16; widx++)
-    {
-      /* W0: the first 32-bit quantity contains 16 x 2-bit nibbles (high order bits) */
-      nibble = EXTRACTBITRANGE (frame[0], (30 - (2 * widx)), 2);
-
-      switch (nibble)
-      {
-      case 0: /* nibble=00: Special flag, no differences */
-#if DECODE_DEBUG
-        ms_log (0, "  W%02d: 00=special\n", widx);
-#endif
-        break;
-      case 1: /* nibble=01: Four 8-bit differences, starting at high order bits */
-        word = (union dword *)&frame[widx];
-        for (idx = 0; idx < 4; idx++)
-        {
-          diff[diffidx++] = word->d8[idx];
-        }
-
-#if DECODE_DEBUG
-        ms_log (0, "  W%02d: 01=4x8b  %d  %d  %d  %d\n", widx, diff[diffidx - 4], diff[diffidx - 3],
-                diff[diffidx - 2], diff[diffidx - 1]);
-#endif
-        break;
-
-      case 2: /* nibble=10: Must consult dnib, the high order two bits */
-        if (swapflag)
-          ms_gswap4 (&frame[widx]);
-        dnib = EXTRACTBITRANGE (frame[widx], 30, 2);
-
-        switch (dnib)
-        {
-        case 0: /* nibble=10, dnib=00: Error, undefined value */
-          ms_log (2, "%s: Impossible Steim2 dnib=00 for nibble=10\n", srcname);
-
-          return -1;
-          break;
-
-        case 1: /* nibble=10, dnib=01: One 30-bit difference */
-          diff[diffidx++] = (s30.x = EXTRACTBITRANGE (frame[widx], 0, 30));
-
-#if DECODE_DEBUG
-          ms_log (0, "  W%02d: 10,01=1x30b  %d\n", widx, diff[diffidx - 1]);
-#endif
-          break;
-
-        case 2: /* nibble=10, dnib=10: Two 15-bit differences, starting at high order bits */
-          for (idx = 0; idx < 2; idx++)
-          {
-            diff[diffidx++] = (s15.x = EXTRACTBITRANGE (frame[widx], (15 - idx * 15), 15));
-          }
-
-#if DECODE_DEBUG
-          ms_log (0, "  W%02d: 10,10=2x15b  %d  %d\n", widx, diff[diffidx - 2], diff[diffidx - 1]);
-#endif
-          break;
-
-        case 3: /* nibble=10, dnib=11: Three 10-bit differences, starting at high order bits */
-          for (idx = 0; idx < 3; idx++)
-          {
-            diff[diffidx++] = (s10.x = EXTRACTBITRANGE (frame[widx], (20 - idx * 10), 10));
-          }
-
-#if DECODE_DEBUG
-          ms_log (0, "  W%02d: 10,11=3x10b  %d  %d  %d\n", widx, diff[diffidx - 3],
-                  diff[diffidx - 2], diff[diffidx - 1]);
-#endif
-          break;
-        }
-
-        break;
-
-      case 3: /* nibble=11: Must consult dnib, the high order two bits */
-        if (swapflag)
-          ms_gswap4 (&frame[widx]);
-        dnib = EXTRACTBITRANGE (frame[widx], 30, 2);
-
-        switch (dnib)
-        {
-        case 0: /* nibble=11, dnib=00: Five 6-bit differences, starting at high order bits */
-          for (idx = 0; idx < 5; idx++)
-          {
-            diff[diffidx++] = (s6.x = EXTRACTBITRANGE (frame[widx], (24 - idx * 6), 6));
-          }
-
-#if DECODE_DEBUG
-          ms_log (0, "  W%02d: 11,00=5x6b  %d  %d  %d  %d  %d\n", widx, diff[diffidx - 5],
-                  diff[diffidx - 4], diff[diffidx - 3], diff[diffidx - 2], diff[diffidx - 1]);
-#endif
-          break;
-
-        case 1: /* nibble=11, dnib=01: Six 5-bit differences, starting at high order bits */
-          for (idx = 0; idx < 6; idx++)
-          {
-            diff[diffidx++] = (s5.x = EXTRACTBITRANGE (frame[widx], (25 - idx * 5), 5));
-          }
-
-#if DECODE_DEBUG
-          ms_log (0, "  W%02d: 11,01=6x5b  %d  %d  %d  %d  %d  %d\n", widx, diff[diffidx - 6],
-                  diff[diffidx - 5], diff[diffidx - 4], diff[diffidx - 3], diff[diffidx - 2],
-                  diff[diffidx - 1]);
-#endif
-          break;
-
-        case 2: /* nibble=11, dnib=10: Seven 4-bit differences, starting at high order bits */
-          for (idx = 0; idx < 7; idx++)
-          {
-            diff[diffidx++] = (s4.x = EXTRACTBITRANGE (frame[widx], (24 - idx * 4), 4));
-          }
-
-#if DECODE_DEBUG
-          ms_log (0, "  W%02d: 11,10=7x4b  %d  %d  %d  %d  %d  %d  %d\n", widx, diff[diffidx - 7],
-                  diff[diffidx - 6], diff[diffidx - 5], diff[diffidx - 4], diff[diffidx - 3],
-                  diff[diffidx - 2], diff[diffidx - 1]);
-#endif
-          break;
-
-        case 3: /* nibble=11, dnib=11: Error, undefined value */
-          ms_log (2, "%s: Impossible Steim2 dnib=11 for nibble=11\n", srcname);
-
-          return -1;
-          break;
-        }
-
-        break;
-      } /* Done with decoding 32-bit word based on nibble */
-    } /* Done looping over nibbles and 32-bit words */
-
-    /* Apply differences in this frame to calculate output samples,
-     * ignoring first difference for first frame */
-    for (idx = (frameidx == 0) ? 1 : 0; idx < diffidx && outputidx < samplecount;
-         idx++, outputidx++)
-    {
-      /* Sum in unsigned to avoid signed overflow UB */
-      output[outputidx] = (int32_t) ((uint32_t) output[outputidx - 1] + (uint32_t) diff[idx]);
-    }
-  } /* Done looping over frames */
-
-  /* Check data integrity by comparing last sample to Xn (reverse integration constant) */
-  if (outputidx == samplecount && output[outputidx - 1] != Xn)
-  {
-    ms_log (1, "%s: Warning: Data integrity check for Steim2 failed, Last sample=%d, Xn=%d\n",
-            srcname, output[outputidx - 1], Xn);
-  }
-
-  return outputidx;
+  /* Dispatch to compile-time specialized version */
+  if (swapflag)
+    return decode_steim2_swap_ ((const uint32_t *)input, maxframes, samplecount, output, srcname);
+  else
+    return decode_steim2_native_ ((const uint32_t *)input, maxframes, samplecount, output, srcname);
 } /* End of msr_decode_steim2() */
 
 /* Defines for GEOSCOPE encoding */
