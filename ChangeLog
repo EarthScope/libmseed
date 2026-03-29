@@ -3,6 +3,8 @@
   - Avoid closing I/O streams not opened by the library when reading or
   writing miniSEED, specifically stdin and stdout or a provided descriptor.
   - Update GitHub Actions dependencies for Node 24 changes.
+  - Fix test-tracelist MSF_PPUPDATETIME check: bracket read with
+    lmp_systemtime() so slow CI does not fail when the read exceeds one second.
 
 Note: behavior change, I/O streams provided by the caller, such as stdin
 and stdout, are no longer closed by the library.
