@@ -6,6 +6,7 @@
 /* Handle binary mode for Windows specifically */
 #if defined(LMP_WIN)
    #include <io.h>
+   #include <fcntl.h>
    #define SET_BINARY_MODE(fd) _setmode(fd, _O_BINARY)
 #else
    #define SET_BINARY_MODE(fd) ((void)0)

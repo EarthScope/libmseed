@@ -79,6 +79,7 @@ extern "C"
 #include <sys/timeb.h>
 #include <sys/types.h>
 #include <windows.h>
+#include <io.h>
 
 /* Re-define print conversion for size_t values */
 #undef PRIsize_t
