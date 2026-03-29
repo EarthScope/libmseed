@@ -29,8 +29,8 @@ extern "C"
 {
 #endif
 
-#define LIBMSEED_VERSION "3.2.4"    //!< Library version
-#define LIBMSEED_RELEASE "2026.024" //!< Library release date
+#define LIBMSEED_VERSION "3.3.0"    //!< Library version
+#define LIBMSEED_RELEASE "2026.088" //!< Library release date
 
 /** @defgroup io-functions File and URL I/O */
 /** @defgroup miniseed-record Record Handling */
@@ -115,6 +115,8 @@ typedef unsigned __int64 uint64_t;
 #define vsnprintf _vsnprintf
 #define strtoull _strtoui64
 #define fileno _fileno
+#define dup _dup
+#define close _close
 #define fdopen _fdopen
 #endif
 
@@ -132,6 +134,7 @@ typedef unsigned __int64 uint64_t;
 /* All other platforms */
 #include <inttypes.h>
 #include <sys/time.h>
+#include <unistd.h>
 #endif
 
 #define MINRECLEN 40       //!< Minimum miniSEED record length supported

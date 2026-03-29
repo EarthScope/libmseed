@@ -62,8 +62,11 @@ libmseed_url_support (void)
  * (file descriptor).
  *
  * The ::MS3FileParam should be used with ms3_readmsr_r() or
- * ms3_readmsr_selection().  Once all data has been read from the
- * stream, it will be closed during the cleanup call of those routines.
+ * ms3_readmsr_selection().
+ *
+ * Note: the specified file descriptor will _not_ be closed during cleanup
+ * of the MS3FileParam.  The caller is responsible for closing the file
+ * descriptor when it is no longer needed.
  *
  * @param[in] fd File descriptor for input reading
  *
@@ -87,10 +90,9 @@ ms3_msfp_init_fd (int fd)
  * ms3_readmsr_selection().  Once all data has been read from the
  * stream, it will be closed during the cleanup call of those routines.
  *
- * Note: on most systems file descriptors 0, 1 and 2 are reserved for
- * standard input, output and error, respectively, and are likely already
- * open.  To use stdin as a file descriptor, specify "-" as the mspath
- * argument to the ms3_readmsr_r() or ms3_readmsr_selection() functions.
+ * Note: the specified file descriptor will _not_ be closed during cleanup
+ * of the MS3FileParam.  The caller is responsible for closing the file
+ * descriptor when it is no longer needed.
  *
  * @param[in] startoffset Start offset in input stream if > 0
  * @param[in] endoffset End offset in input stream if > 0
@@ -135,21 +137,19 @@ ms3_msfp_init (int64_t startoffset, int64_t endoffset, int fd)
   {
     msfp->input.type = LMIO_FD;
 
-    /* Special case for stdin, mimic what ms3_readmsr*() does for "-" */
-    if (fd == fileno (stdin))
+    int myfd = dup (fd);
+    if (myfd < 0)
     {
-      msfp->input.handle = stdin;
-      msfp->path[0] = '-';
-      msfp->path[1] = '\0';
-    }
-    else
-    {
-      msfp->input.handle = fdopen (fd, "rb");
+      ms_log (2, "%s(): Cannot dup file descriptor %d\n", __func__, fd);
+      libmseed_memory.free (msfp);
+      return NULL;
     }
 
+    msfp->input.handle = fdopen (myfd, "rb");
     if (msfp->input.handle == NULL)
     {
-      ms_log (2, "%s(): Cannot open file descriptor %d\n", __func__, fd);
+      ms_log (2, "%s(): Cannot fdopen file descriptor %d\n", __func__, fd);
+      close (myfd);
       libmseed_memory.free (msfp);
       return NULL;
     }
@@ -309,8 +309,22 @@ _ms3_readmsr_impl (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
 
     if (strcmp (mspath, "-") == 0)
     {
+      int myfd = dup (fileno (stdin));
+      if (myfd < 0)
+      {
+        ms_log (2, "Cannot dup stdin\n");
+        msr3_free (ppmsr);
+        return MS_GENERROR;
+      }
+
       msfp->input.type = LMIO_FD;
-      msfp->input.handle = stdin;
+      msfp->input.handle = fdopen (myfd, "rb");
+      if (msfp->input.handle == NULL)
+      {
+        close (myfd);
+        msr3_free (ppmsr);
+        return MS_GENERROR;
+      }
     }
     else
     {
@@ -1007,7 +1021,8 @@ msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite, uint32_t 
   msr3_pack_free (&packer, NULL);
 
   /* Close file and return record count */
-  fclose (ofp);
+  if (ofp != stdout)
+    fclose (ofp);
 
   return packedrecords;
 } /* End of msr3_writemseed() */
@@ -1089,7 +1104,8 @@ mstl3_writemseed (MS3TraceList *mstl, const char *mspath, int8_t overwrite, int 
                               verbose, NULL);
 
   /* Close file and return record count */
-  fclose (ofp);
+  if (ofp != stdout)
+    fclose (ofp);
 
   return packedrecords;
 } /* End of mstl3_writemseed() */
