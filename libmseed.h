@@ -116,6 +116,7 @@ typedef unsigned __int64 uint64_t;
 #define strtoull _strtoui64
 #define fileno _fileno
 #define dup _dup
+#define dup2 _dup2
 #define close _close
 #define fdopen _fdopen
 #endif
