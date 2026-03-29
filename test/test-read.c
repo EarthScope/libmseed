@@ -377,6 +377,35 @@ TEST (read, byterange)
   ms3_readmsr(&msr, NULL, flags, 0);
 }
 
+TEST (read, byterange_init)
+{
+  MS3FileParam *msfp = NULL;
+  MS3Record *msr = NULL;
+  nstime_t nstime;
+  uint32_t flags = MSF_UNPACKDATA;
+  int rv;
+
+  nstime = ms_timestr2nstime ("2010-02-27T06:51:04.069539Z");
+
+  /* Read byte range 9428-9967 from V3 format file */
+  msfp = ms3_msfp_init (9428, 9967, -1);
+  REQUIRE (msfp != NULL, "ms3_msfp_init() did not return expected MS3FileParam");
+  rv = ms3_readmsr_r (&msfp, &msr, "data/testdata-oneseries-mixedlengths-mixedorder.mseed3", flags, 0);
+  REQUIRE (rv == MS_NOERROR, "ms3_readmsr_r() did not return expected MS_NOERROR");
+  CHECK (msr->numsamples == 112, "Byte range read, unexpected number of decoded samples");
+  CHECK (msr->starttime == nstime, "Byte range read, unexpected record start time");
+  ms3_readmsr(&msr, NULL, flags, 0);
+
+  // /* Read byte range 9344-9855 from V2 format file */
+  msfp = ms3_msfp_init (9344, 9855, -1);
+  REQUIRE (msfp != NULL, "ms3_msfp_init() did not return expected MS3FileParam");
+  rv = ms3_readmsr_r (&msfp, &msr, "data/testdata-oneseries-mixedlengths-mixedorder.mseed2", flags, 0);
+  REQUIRE (rv == MS_NOERROR, "ms3_readmsr_r() did not return expected MS_NOERROR");
+  CHECK (msr->numsamples == 112, "Byte range read, unexpected number of decoded samples");
+  CHECK (msr->starttime == nstime, "Byte range read, unexpected record start time");
+  ms3_readmsr(&msr, NULL, flags, 0);
+}
+
 TEST (read, selection)
 {
   MS3Record *msr = NULL;

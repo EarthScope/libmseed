@@ -74,6 +74,38 @@ libmseed_url_support (void)
 MS3FileParam *
 ms3_msfp_init_fd (int fd)
 {
+  return ms3_msfp_init (0, 0, fd);
+}
+
+/** ************************************************************************
+ * @brief Initialize ::MS3FileParam parameters
+ *
+ * Initialize a ::MS3FileParam for reading from a specified @p startoffset,
+ * @p endoffset and/or @p fd (file descriptor).
+ *
+ * The ::MS3FileParam should be used with ms3_readmsr_r() or
+ * ms3_readmsr_selection().  Once all data has been read from the
+ * stream, it will be closed during the cleanup call of those routines.
+ *
+ * Note: on most systems file descriptors 0, 1 and 2 are reserved for
+ * standard input, output and error, respectively, and are likely already
+ * open.  To use stdin as a file descriptor, specify "-" as the mspath
+ * argument to the ms3_readmsr_r() or ms3_readmsr_selection() functions.
+ *
+ * @param[in] startoffset Start offset in input stream if > 0
+ * @param[in] endoffset End offset in input stream if > 0
+ * @param[in] fd File descriptor for input reading if >= 0
+ *
+ * @returns Allocated ::MS3FileParam on success and NULL on error.
+ *
+ * @see ms3_readmsr_r()
+ * @see ms3_readmsr_selection()
+ *
+ * @ref MessageOnError - this function logs a message on error
+ ***************************************************************************/
+MS3FileParam *
+ms3_msfp_init (int64_t startoffset, int64_t endoffset, int fd)
+{
   MS3FileParam *msfp;
 
   /* Initialize the read parameters if needed */
@@ -87,14 +119,40 @@ ms3_msfp_init_fd (int fd)
 
   *msfp = (MS3FileParam)MS3FileParam_INITIALIZER;
 
-  msfp->input.type = LMIO_FD;
-  msfp->input.handle = fdopen (fd, "rb");
-
-  if (msfp->input.handle == NULL)
+  /* Set the start and end offsets if provided */
+  if (startoffset > 0)
   {
-    ms_log (2, "%s(): Cannot open file descriptor %d\n", __func__, fd);
-    libmseed_memory.free (msfp);
-    return NULL;
+    msfp->startoffset = startoffset;
+  }
+
+  if (endoffset > 0)
+  {
+    msfp->endoffset = endoffset;
+  }
+
+  /* Initialize the input handle if a file descriptor is provided */
+  if (fd >= 0)
+  {
+    msfp->input.type = LMIO_FD;
+
+    /* Special case for stdin, mimic what ms3_readmsr*() does for "-" */
+    if (fd == fileno (stdin))
+    {
+      msfp->input.handle = stdin;
+      msfp->path[0] = '-';
+      msfp->path[1] = '\0';
+    }
+    else
+    {
+      msfp->input.handle = fdopen (fd, "rb");
+    }
+
+    if (msfp->input.handle == NULL)
+    {
+      ms_log (2, "%s(): Cannot open file descriptor %d\n", __func__, fd);
+      libmseed_memory.free (msfp);
+      return NULL;
+    }
   }
 
   return msfp;

@@ -1,3 +1,7 @@
+2026.088:
+  - Add ms3_msfp_init() to initialized MS3FileParam with start/end offsets.
+  - Improve handling of ms3_msfp_init_fd() to avoid another reader of stdin.
+
 2026.024: v3.2.4
   - Add ms_rlog_pop() to return messages from the error/warning log registry
   - Fix return value from ms_rlog_emit()
