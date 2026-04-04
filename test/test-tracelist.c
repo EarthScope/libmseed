@@ -218,7 +218,7 @@ TEST (tracelist, ms3_readtracelist_ppupdatetime)
 
   char *path = "data/testdata-oneseries-mixedlengths-mixedorder.mseed2";
 
-  timeval = time(NULL);
+  timeval = time (NULL);
 
   /* Set bit flag to set segment prvtptr to nstime_t value of update time */
   flags = MSF_PPUPDATETIME;
@@ -239,7 +239,8 @@ TEST (tracelist, ms3_readtracelist_ppupdatetime)
   /* Check that update time is within 10 seconds of system time */
   difference = *(nstime_t *)id->first->prvtptr - (nstime_t)timeval * NSTMODULUS;
 
-  CHECK (difference < 10 * NSTMODULUS, "update time at id->first->prvtptr is not within 10 seconds of system time");
+  CHECK (difference < (nstime_t)10 * (nstime_t)NSTMODULUS,
+         "update time at id->first->prvtptr is not within 10 seconds of system time");
 
   mstl3_free (&mstl, 1);
 }
