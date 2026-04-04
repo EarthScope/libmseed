@@ -1,3 +1,6 @@
+2026.094: v3.4.0
+  - Support writing header-only records and add tests for header-only records.
+
 2026.088: v3.3.0
   - Add `ms3_msfp_init()` to initialized MS3FileParam with start/end offsets.
   - Avoid closing I/O streams not opened by the library when reading or

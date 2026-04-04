@@ -87,6 +87,9 @@ static nstime_t nstime2fsec_usec_offset (nstime_t nstime, uint16_t *fsec, int8_t
  * The defaults are triggered when @p msr.reclen and @p msr.encoding
  * are set to -1.
  *
+ * To create a header-only record with no data payload (i.e., no samples), set
+ * @ref MS3Record.numsamples to 0.
+ *
  * @param[in] msr ::MS3Record containing data to pack
  * @param[in] record_handler() Callback function called for each record
  * @param[in] handlerdata A pointer that will be provided to the @p record_handler()
@@ -152,6 +155,9 @@ msr3_pack (const MS3Record *msr, void (*record_handler) (char *, int, void *), v
  *
  * Create and initialize an opaque ::MS3RecordPacker context for generating
  * miniSEED records one at a time from an ::MS3Record.
+ *
+ * To create a header-only record with no data payload (i.e., no samples), set
+ * @ref MS3Record.numsamples to 0.
  *
  * The packer should be freed with msr3_pack_free() when done.
  *
@@ -246,7 +252,7 @@ msr3_pack_init (const MS3Record *msr, uint32_t flags, int8_t verbose)
 
   memset (packer->rawrec, 0, packer->maxreclen);
 
-  /* For records with samples, set up encoding buffers and parameters */
+  /* For records with samples, validate sample type before packing */
   if (msr->numsamples > 0)
   {
     packer->samplesize = ms_samplesize (msr->sampletype);
@@ -257,39 +263,43 @@ msr3_pack_init (const MS3Record *msr, uint32_t flags, int8_t verbose)
       libmseed_memory.free (packer);
       return NULL;
     }
+  }
 
-    /* Pack header to determine data offset */
-    if (packer->formatversion == 3)
-    {
-      packer->dataoffset = msr3_pack_header3 (msr, packer->rawrec, packer->maxreclen, verbose);
-    }
-    else
-    {
-      packer->dataoffset = msr3_pack_header2_offsets (msr, packer->rawrec, packer->maxreclen,
-                                                      &packer->blockette_1000_offset,
-                                                      &packer->blockette_1001_offset, verbose);
+  /* Pack header (required for header-only and data-containing records) */
+  if (packer->formatversion == 3)
+  {
+    packer->dataoffset = msr3_pack_header3 (msr, packer->rawrec, packer->maxreclen, verbose);
+  }
+  else
+  {
+    packer->dataoffset = msr3_pack_header2_offsets (msr, packer->rawrec, packer->maxreclen,
+                                                    &packer->blockette_1000_offset,
+                                                    &packer->blockette_1001_offset, verbose);
 
-      if (packer->dataoffset > 0)
+    if (packer->dataoffset > 0 && msr->numsamples > 0)
+    {
+      /* For Steim encodings, align data offset to 64-byte boundary */
+      if (packer->encoding == DE_STEIM1 || packer->encoding == DE_STEIM2)
       {
-        /* For Steim encodings, align data offset to 64-byte boundary */
-        if (packer->encoding == DE_STEIM1 || packer->encoding == DE_STEIM2)
-        {
-          packer->dataoffset = ((packer->dataoffset + 63) / 64) * 64;
-        }
-
-        /* Set data offset in header */
-        *pMS2FSDH_DATAOFFSET (packer->rawrec) = HO2u (packer->dataoffset, packer->swapflag);
+        packer->dataoffset = ((packer->dataoffset + 63) / 64) * 64;
       }
-    }
 
-    if (packer->dataoffset < 0)
-    {
-      ms_log (2, "%s: Cannot pack miniSEED header\n", msr->sid);
-      libmseed_memory.free (packer->rawrec);
-      libmseed_memory.free (packer);
-      return NULL;
+      /* Set data offset in header */
+      *pMS2FSDH_DATAOFFSET (packer->rawrec) = HO2u (packer->dataoffset, packer->swapflag);
     }
+  }
 
+  if (packer->dataoffset < 0)
+  {
+    ms_log (2, "%s: Cannot pack miniSEED header\n", msr->sid);
+    libmseed_memory.free (packer->rawrec);
+    libmseed_memory.free (packer);
+    return NULL;
+  }
+
+  /* For records with samples, set up encoding buffers and parameters */
+  if (msr->numsamples > 0)
+  {
     /* Determine the max data bytes and sample count */
     packer->maxdatabytes = packer->maxreclen - packer->dataoffset;
 
@@ -383,6 +393,9 @@ msr3_pack_next (MS3RecordPacker *packer, char **record, int32_t *reclen)
       /* Set encoding to text (value of 0) for consistency */
       *pMS3FSDH_ENCODING (packer->rawrec) = DE_TEXT;
 
+      *pMS3FSDH_NUMSAMPLES (packer->rawrec) = HO4u (0, packer->swapflag);
+      *pMS3FSDH_DATALENGTH (packer->rawrec) = HO4u (0, packer->swapflag);
+
       /* Calculate CRC and set */
       memset (pMS3FSDH_CRC (packer->rawrec), 0, sizeof (uint32_t));
       crc = ms_crc32c ((const uint8_t *)packer->rawrec, packer->dataoffset, 0);
@@ -402,6 +415,11 @@ msr3_pack_next (MS3RecordPacker *packer, char **record, int32_t *reclen)
       {
         *pMS2B1000_ENCODING (packer->rawrec + packer->blockette_1000_offset) = DE_TEXT;
       }
+
+      /* Data segment is not used; clear it */
+      if (packer->dataoffset > 0 && (uint32_t)packer->dataoffset < packer->maxreclen)
+        memset (packer->rawrec + packer->dataoffset, 0,
+                (size_t)(packer->maxreclen - (uint32_t)packer->dataoffset));
 
       if (packer->verbose >= 1)
         ms_log (0, "%s: Packed %u byte record with no payload\n", packer->msr->sid,

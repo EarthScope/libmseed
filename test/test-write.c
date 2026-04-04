@@ -14,6 +14,7 @@ extern int cmpfiles (char *fileA, char *fileB);
 #define TESTFILE_STEIM1_V2  "testdata-steim1.mseed2"
 #define TESTFILE_STEIM2_V2  "testdata-steim2.mseed2"
 #define TESTFILE_DEFAULTS_V2  "testdata-defaults.mseed2"
+#define TESTFILE_HEADERONLY_V2 "testdata-headeronly.mseed2"
 #define TESTFILE_NSEC_V2    "testdata-nsec.mseed2"
 #define TESTFILE_OLDEN_V2   "testdata-olden.mseed2"
 #define TESTFILE_ODDRATE_V2 "testdata-oddrate.mseed2"
@@ -28,6 +29,7 @@ extern int cmpfiles (char *fileA, char *fileB);
 #define TESTFILE_STEIM1_V3  "testdata-steim1.mseed3"
 #define TESTFILE_STEIM2_V3  "testdata-steim2.mseed3"
 #define TESTFILE_DEFAULTS_V3  "testdata-defaults.mseed3"
+#define TESTFILE_HEADERONLY_V3 "testdata-headeronly.mseed3"
 #define TESTFILE_NSEC_V3    "testdata-nsec.mseed3"
 #define TESTFILE_OLDEN_V3   "testdata-olden.mseed3"
 #define TESTFILE_ODDRATE_V3 "testdata-oddrate.mseed3"
@@ -247,6 +249,78 @@ TEST (write, msr3_writemseed_encodings)
   msr->extra = NULL;
   msr->extralength = 0;
   msr->datasamples = NULL;
+  msr3_free (&msr);
+}
+
+/* Test packing v2 miniSEED records with only the header and no data. */
+TEST (write, msr3_writemseed_headeronly_v2)
+{
+  MS3Record *msr = NULL;
+  uint32_t flags = MSF_PACKVER2; /* write v2 format */
+  int rv;
+
+  msr = msr3_init (msr);
+  REQUIRE (msr != NULL, "msr3_init() returned unexpected NULL");
+
+  /* Set up record parameters */
+  msr->reclen = 4096;
+  msr->pubversion = 1;
+  msr->starttime = ms_timestr2nstime ("2012-05-12T00:00:00");
+
+  strcpy (msr->sid, "FDSN:XX_TEST__S_O_H");
+  msr->samprate = 0;
+  msr->pubversion = 1;
+
+  msr->extra = soh_json_headers;
+  msr->extralength = strlen (msr->extra);
+
+  msr->samplecnt = 0;
+  msr->numsamples = 0;
+  msr->datasamples = NULL;
+
+  rv = msr3_writemseed (msr, TESTFILE_HEADERONLY_V2, 1, flags, 0);
+  REQUIRE (rv > 0, "msr3_writemseed() return unexpected value");
+  CHECK (!cmpfiles (TESTFILE_HEADERONLY_V2, "data/reference-" TESTFILE_HEADERONLY_V2),
+         "Header only write mismatch");
+
+  msr->extra = NULL;
+  msr->extralength = 0;
+  msr3_free (&msr);
+}
+
+/* Test packing v3 miniSEED records with only the header and no data. */
+TEST (write, msr3_writemseed_headeronly_v3)
+{
+  MS3Record *msr = NULL;
+  uint32_t flags = 0;
+  int rv;
+
+  msr = msr3_init (msr);
+  REQUIRE (msr != NULL, "msr3_init() returned unexpected NULL");
+
+  /* Set up record parameters */
+  msr->reclen = 4096;
+  msr->pubversion = 1;
+  msr->starttime = ms_timestr2nstime ("2012-05-12T00:00:00");
+
+  strcpy (msr->sid, "FDSN:XX_TEST__S_O_H");
+  msr->samprate = 0;
+  msr->pubversion = 1;
+
+  msr->extra = soh_json_headers;
+  msr->extralength = strlen (msr->extra);
+
+  msr->samplecnt = 0;
+  msr->numsamples = 0;
+  msr->datasamples = NULL;
+
+  rv = msr3_writemseed (msr, TESTFILE_HEADERONLY_V3, 1, flags, 0);
+  REQUIRE (rv > 0, "msr3_writemseed() return unexpected value");
+  CHECK (!cmpfiles (TESTFILE_HEADERONLY_V3, "data/reference-" TESTFILE_HEADERONLY_V3),
+         "Header only write mismatch");
+
+  msr->extra = NULL;
+  msr->extralength = 0;
   msr3_free (&msr);
 }
 

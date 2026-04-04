@@ -119,6 +119,51 @@ TEST (read, v2_parse)
   ms3_readmsr(&msr, NULL, flags, 0);
 }
 
+TEST (read, headeronly_v2)
+{
+  MS3Record *msr = NULL;
+  uint32_t flags = 0;
+  int rv;
+
+  rv = ms3_readmsr (&msr, "data/reference-testdata-headeronly.mseed2", flags, 0);
+
+  // DEBUG
+  msr3_print (msr, 1);
+
+  CHECK (rv == MS_NOERROR, "ms3_readmsr() did not return expected MS_NOERROR");
+  REQUIRE (msr != NULL, "ms3_readmsr() did not populate 'msr'");
+  REQUIRE (msr->datasamples == NULL, "ms3_readmsr() did not populate 'msr->datasamples'");
+  CHECK (msr->numsamples == 0, "ms3_readmsr() returned unexpected value for 'msr->numsamples'");
+  CHECK (msr->sampletype == 0, "ms3_readmsr() returned unexpected value for 'msr->sampletype'");
+  CHECK (msr->datasize == 0, "ms3_readmsr() returned unexpected value for 'msr->datasize'");
+  CHECK (msr->datalength == 0, "ms3_readmsr() returned unexpected value for 'msr->datalength'");
+  CHECK (msr->extralength == 569, "ms3_readmsr() returned unexpected value for 'msr->extralength'");
+  CHECK (msr->crc == 0, "ms3_readmsr() returned unexpected value for 'msr->crc'");
+
+  ms3_readmsr (&msr, NULL, flags, 0);
+}
+
+TEST (read, headeronly_v3)
+{
+  MS3Record *msr = NULL;
+  uint32_t flags = 0;
+  int rv;
+
+  rv = ms3_readmsr (&msr, "data/reference-testdata-headeronly.mseed3", flags, 0);
+
+  CHECK (rv == MS_NOERROR, "ms3_readmsr() did not return expected MS_NOERROR");
+  REQUIRE (msr != NULL, "ms3_readmsr() did not populate 'msr'");
+  REQUIRE (msr->datasamples == NULL, "ms3_readmsr() did not populate 'msr->datasamples'");
+  CHECK (msr->numsamples == 0, "ms3_readmsr() returned unexpected value for 'msr->numsamples'");
+  CHECK (msr->sampletype == 0, "ms3_readmsr() returned unexpected value for 'msr->sampletype'");
+  CHECK (msr->datasize == 0, "ms3_readmsr() returned unexpected value for 'msr->datasize'");
+  CHECK (msr->datalength == 0, "ms3_readmsr() returned unexpected value for 'msr->datalength'");
+  CHECK (msr->extralength == 730, "ms3_readmsr() returned unexpected value for 'msr->extralength'");
+  CHECK (msr->crc == 0xC22273A9, "ms3_readmsr() returned unexpected value for 'msr->crc'");
+
+  ms3_readmsr (&msr, NULL, flags, 0);
+}
+
 TEST (read, v3_encodings)
 {
   MS3Record *msr = NULL;

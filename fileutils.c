@@ -958,6 +958,9 @@ ms3_url_freeheaders (void)
  * existing file.  In either case, new files will be created if they
  * do not yet exist.
  *
+ * To write a header-only record with no data payload (i.e., no samples), set
+ * @ref MS3Record.numsamples to 0.
+ *
  * @param[in,out] msr ::MS3Record containing data to write
  * @param[in] mspath File for output records
  * @param[in] overwrite Flag to control overwriting versus appending
