@@ -38,6 +38,7 @@ extern "C" {
 #include <time.h>
 #include <string.h>
 #include <ctype.h>
+#include <sys/types.h>
 
 /* This library uses structs that map to SEED header/blockette
    structures that are required to have a layout exactly as specified,
