@@ -1,3 +1,6 @@
+2026.110:
+  - Improve correctness of internal glob matching routines.
+
 2026.094: v3.4.0
   - Support writing header-only records and add tests for header-only records.
 
