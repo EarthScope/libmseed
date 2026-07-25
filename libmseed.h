@@ -112,6 +112,7 @@ extern "C" {
     #define stat _stat
   #endif
 #else
+  #include <sys/types.h>
   #include <unistd.h>
   #include <inttypes.h>
 #endif
