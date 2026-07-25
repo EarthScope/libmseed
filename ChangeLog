@@ -1,4 +1,4 @@
-2026.206:
+2026.206: 2.19.9
 	- Including sys/types.h for POSIX platforms that need it for off_t.
 	Thanks to @elrafoon for reporting.
 
