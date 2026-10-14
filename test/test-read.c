@@ -862,9 +862,10 @@ TEST (read, v2_truncated_header)
 }
 
 /* Build a 2-frame Steim buffer: X0=100, Xn=104, differences 7,1,1,1,1 as 8-bit
- * words, in frame 0 when firstframe is nonzero, otherwise in frame 1 */
+ * words, in frame 0 when firstframe is nonzero, otherwise in frame 1.  A nonzero
+ * trailnibble places trailword with that nibble in the word after the differences. */
 static void
-build_steim_frames (uint32_t *frames, int firstframe)
+build_steim_frames (uint32_t *frames, int firstframe, int trailnibble, uint32_t trailword)
 {
   uint32_t *dframe = firstframe ? frames : frames + 16;
   int dstart = firstframe ? 3 : 1;
@@ -875,6 +876,12 @@ build_steim_frames (uint32_t *frames, int firstframe)
   dframe[dstart]     = 0x07010101u;
   dframe[dstart + 1] = 0x01000000u;
   dframe[0] |= (0x1u << (30 - 2 * dstart)) | (0x1u << (30 - 2 * (dstart + 1)));
+
+  if (trailnibble)
+  {
+    dframe[dstart + 2] = trailword;
+    dframe[0] |= ((uint32_t)trailnibble << (30 - 2 * (dstart + 2)));
+  }
 
   frames[1] = 100;
   frames[2] = 104;
@@ -898,7 +905,7 @@ TEST (read, steim_first_difference)
   {
     for (int firstframe = 1; firstframe >= 0; firstframe--)
     {
-      build_steim_frames (frames, firstframe);
+      build_steim_frames (frames, firstframe, 0, 0);
       memset (output, 0, sizeof (output));
 
       rv = ms_decode_data (frames, sizeof (frames), encodings[enc], 5, output, sizeof (output),
@@ -907,5 +914,34 @@ TEST (read, steim_first_difference)
       CHECK (cmpint32s (output, expected, 5) == 0,
              "Steim decode is wrong when the first difference is not in frame 0");
     }
+  }
+}
+
+TEST (read, steim2_trailing_undefined)
+{
+  uint32_t frames[32];
+  int32_t output[9];
+  int32_t expected[5] = {100, 101, 102, 103, 104};
+  /* Undefined codes: nibble 10 with dnib 00, nibble 11 with dnib 11 */
+  int nibbles[2]      = {2, 3};
+  uint32_t words[2]   = {0x00000000u, 0xC0000000u};
+  char sampletype;
+  int64_t rv;
+
+  for (int idx = 0; idx < 2; idx++)
+  {
+    /* Undefined word follows the 8 differences (5 used) in frame 0 */
+    build_steim_frames (frames, 1, nibbles[idx], words[idx]);
+    memset (output, 0, sizeof (output));
+
+    rv = ms_decode_data (frames, sizeof (frames), DE_STEIM2, 5, output, sizeof (output),
+                         &sampletype, 1 - ms_bigendianhost (), NULL, 0);
+    REQUIRE (rv == 5, "ms_decode_data() rejected an undefined code after the last needed difference");
+    CHECK (cmpint32s (output, expected, 5) == 0, "Steim2 decode is wrong with a trailing undefined code");
+
+    /* Reaching the undefined word is an error */
+    rv = ms_decode_data (frames, sizeof (frames), DE_STEIM2, 9, output, sizeof (output),
+                         &sampletype, 1 - ms_bigendianhost (), NULL, 0);
+    CHECK (rv < 0, "ms_decode_data() accepted an undefined Steim2 code that was needed");
   }
 }

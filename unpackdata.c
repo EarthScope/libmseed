@@ -469,6 +469,10 @@ msr_decode_steim2 (int32_t *input, uint64_t inputlength, uint64_t samplecount, i
     /* Decode each 32-bit word according to nibble */
     for (widx = startnibble; widx < 16; widx++)
     {
+      /* Words after the differences needed for the sample count are ignored */
+      if (outputidx >= samplecount || (uint64_t)diffidx >= samplecount - outputidx + skipfirst)
+        break;
+
       /* W0: the first 32-bit quantity contains 16 x 2-bit nibbles (high order bits) */
       nibble = EXTRACTBITRANGE (frame[0], (30 - (2 * widx)), 2);
 

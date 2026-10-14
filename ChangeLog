@@ -2,6 +2,8 @@
   - Avoid reading a miniSEED 2 blockette offset beyond a truncated buffer.
   - Skip the first Steim difference of a record even when frame 0 holds no
     differences.
+  - Ignore undefined Steim2 codes after the last difference needed for the
+    sample count.
 
 2026.217: v3.5.4
   - Trace list packing optimization and improvement:
