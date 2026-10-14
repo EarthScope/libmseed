@@ -202,6 +202,7 @@ msr_decode_steim1 (int32_t *input, uint64_t inputlength, uint64_t samplecount, i
   int nibble;
   int widx;
   int idx;
+  int skipfirst = 1; /* First difference of the record is not applied */
 
   union dword
   {
@@ -326,12 +327,17 @@ msr_decode_steim1 (int32_t *input, uint64_t inputlength, uint64_t samplecount, i
     } /* Done looping over nibbles and 32-bit words */
 
     /* Apply differences in this frame to calculate output samples,
-     * ignoring first difference for first frame */
-    for (idx = (frameidx == 0) ? 1 : 0; idx < diffidx && outputidx < samplecount;
-         idx++, outputidx++)
+     * ignoring the first difference of the record */
+    idx = 0;
+    if (skipfirst && diffidx > 0)
+    {
+      idx = 1;
+      skipfirst = 0;
+    }
+    for (; idx < diffidx && outputidx < samplecount; idx++, outputidx++)
     {
       /* Sum in unsigned to avoid signed overflow UB */
-      output[outputidx] = (int32_t) ((uint32_t) output[outputidx - 1] + (uint32_t) diff[idx]);
+      output[outputidx] = (int32_t)((uint32_t)output[outputidx - 1] + (uint32_t)diff[idx]);
     }
   } /* Done looping over frames */
 
@@ -369,6 +375,7 @@ msr_decode_steim2 (int32_t *input, uint64_t inputlength, uint64_t samplecount, i
   int widx;
   int dnib;
   int idx;
+  int skipfirst = 1; /* First difference of the record is not applied */
 
   union dword
   {
@@ -589,12 +596,17 @@ msr_decode_steim2 (int32_t *input, uint64_t inputlength, uint64_t samplecount, i
     } /* Done looping over nibbles and 32-bit words */
 
     /* Apply differences in this frame to calculate output samples,
-     * ignoring first difference for first frame */
-    for (idx = (frameidx == 0) ? 1 : 0; idx < diffidx && outputidx < samplecount;
-         idx++, outputidx++)
+     * ignoring the first difference of the record */
+    idx = 0;
+    if (skipfirst && diffidx > 0)
+    {
+      idx = 1;
+      skipfirst = 0;
+    }
+    for (; idx < diffidx && outputidx < samplecount; idx++, outputidx++)
     {
       /* Sum in unsigned to avoid signed overflow UB */
-      output[outputidx] = (int32_t) ((uint32_t) output[outputidx - 1] + (uint32_t) diff[idx]);
+      output[outputidx] = (int32_t)((uint32_t)output[outputidx - 1] + (uint32_t)diff[idx]);
     }
   } /* Done looping over frames */
 

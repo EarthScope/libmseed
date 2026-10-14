@@ -1,5 +1,7 @@
 2026.287:
-  - Avoid reading a miniSEED 2 blockette offset beyond a truncated buffer
+  - Avoid reading a miniSEED 2 blockette offset beyond a truncated buffer.
+  - Skip the first Steim difference of a record even when frame 0 holds no
+    differences.
 
 2026.217: v3.5.4
   - Trace list packing optimization and improvement:

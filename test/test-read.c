@@ -860,3 +860,52 @@ TEST (read, v2_truncated_header)
   msr3_free (&msr);
   msr3_free (&parsed);
 }
+
+/* Build a 2-frame Steim buffer: X0=100, Xn=104, differences 7,1,1,1,1 as 8-bit
+ * words, in frame 0 when firstframe is nonzero, otherwise in frame 1 */
+static void
+build_steim_frames (uint32_t *frames, int firstframe)
+{
+  uint32_t *dframe = firstframe ? frames : frames + 16;
+  int dstart = firstframe ? 3 : 1;
+
+  memset (frames, 0, 32 * sizeof (uint32_t));
+
+  /* Two words of 4 x 8-bit differences, nibble 01 (valid for Steim1 and Steim2) */
+  dframe[dstart]     = 0x07010101u;
+  dframe[dstart + 1] = 0x01000000u;
+  dframe[0] |= (0x1u << (30 - 2 * dstart)) | (0x1u << (30 - 2 * (dstart + 1)));
+
+  frames[1] = 100;
+  frames[2] = 104;
+
+  if (!ms_bigendianhost ())
+    for (int idx = 0; idx < 32; idx++)
+      frames[idx] = ((frames[idx] & 0xFFu) << 24) | ((frames[idx] & 0xFF00u) << 8) |
+                    ((frames[idx] >> 8) & 0xFF00u) | (frames[idx] >> 24);
+}
+
+TEST (read, steim_first_difference)
+{
+  uint32_t frames[32];
+  int32_t output[5];
+  int32_t expected[5] = {100, 101, 102, 103, 104};
+  uint8_t encodings[2] = {DE_STEIM1, DE_STEIM2};
+  char sampletype;
+  int64_t rv;
+
+  for (int enc = 0; enc < 2; enc++)
+  {
+    for (int firstframe = 1; firstframe >= 0; firstframe--)
+    {
+      build_steim_frames (frames, firstframe);
+      memset (output, 0, sizeof (output));
+
+      rv = ms_decode_data (frames, sizeof (frames), encodings[enc], 5, output, sizeof (output),
+                           &sampletype, 1 - ms_bigendianhost (), NULL, 0);
+      REQUIRE (rv == 5, "ms_decode_data() did not decode 5 samples");
+      CHECK (cmpint32s (output, expected, 5) == 0,
+             "Steim decode is wrong when the first difference is not in frame 0");
+    }
+  }
+}
