@@ -1,3 +1,6 @@
+2026.287:
+  - Avoid reading a miniSEED 2 blockette offset beyond a truncated buffer
+
 2026.217: v3.5.4
   - Trace list packing optimization and improvement:
     * Reuse the record packer and its buffers across trace-list segments.

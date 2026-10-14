@@ -818,3 +818,45 @@ TEST (read, v2_b100_invalid_samplerate)
   msr3_free (&msr);
   msr3_free (&parsed);
 }
+
+/* Verify a miniSEED 2 buffer shorter than the fixed header is parsed as
+ * incomplete, with exactly-sized buffers so out-of-bounds reads are detectable. */
+TEST (read, v2_truncated_header)
+{
+  MS3Record *msr = NULL;
+  MS3Record *parsed = NULL;
+  int64_t packedsamples = 0;
+  char *exact;
+  int length;
+  int rv;
+
+  msr = msr3_init (msr);
+  REQUIRE (msr != NULL, "msr3_init() returned unexpected NULL");
+
+  strcpy (msr->sid, "FDSN:XX_TEST__L_H_Z");
+  msr->reclen = 128;
+  msr->pubversion = 1;
+  msr->starttime = ms_timestr2nstime ("2020-01-01T00:00:00Z");
+  msr->samprate = 1.0;
+
+  packbuflen = 0;
+  rv = msr3_pack (msr, record_handler_buf, NULL, &packedsamples, MSF_FLUSHDATA | MSF_PACKVER2, 0);
+  REQUIRE (rv == 1, "msr3_pack() returned unexpected value");
+  REQUIRE (packbuflen >= MS2FSDH_LENGTH, "msr3_pack() did not produce a full fixed header");
+
+  for (length = MINRECLEN; length < MS2FSDH_LENGTH; length++)
+  {
+    exact = (char *)malloc ((size_t)length);
+    REQUIRE (exact != NULL, "Cannot allocate memory");
+    memcpy (exact, packbuf, (size_t)length);
+
+    rv = msr3_parse (exact, (uint64_t)length, &parsed, 0, 0);
+    CHECK (rv == MINRECLEN, "msr3_parse() did not request more data for a truncated header");
+    CHECK (parsed == NULL, "msr3_parse() populated 'parsed' for a truncated header");
+
+    free (exact);
+  }
+
+  msr3_free (&msr);
+  msr3_free (&parsed);
+}

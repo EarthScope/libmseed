@@ -231,7 +231,9 @@ ms3_detect (const char *record, uint64_t recbuflen, uint8_t *formatversion)
     if (!MS_ISVALIDYEARDAY (*pMS2FSDH_YEAR (record), *pMS2FSDH_DAY (record)))
       swapflag = 1;
 
-    blkt_offset = HO2u (*pMS2FSDH_BLOCKETTEOFFSET (record), swapflag);
+    /* Blockette offset is only present in a complete fixed header */
+    blkt_offset =
+        (recbuflen >= MS2FSDH_LENGTH) ? HO2u (*pMS2FSDH_BLOCKETTEOFFSET (record), swapflag) : 0;
 
     /* Loop through blockettes as long as number is non-zero and the 4-byte
      * blockette header (type and next offset) is fully within the buffer */
