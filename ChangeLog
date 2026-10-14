@@ -4,6 +4,8 @@
     differences.
   - Ignore undefined Steim2 codes after the last difference needed for the
     sample count.
+  - Reject a miniSEED v2 BTIME fraction above 9999 instead of wrapping it
+    into range.
 
 2026.217: v3.5.4
   - Trace list packing optimization and improvement:

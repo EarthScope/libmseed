@@ -1842,6 +1842,7 @@ static inline nstime_t
 ms_btime2nstime (uint8_t *btime, int8_t swapflag)
 {
   uint16_t year;
+  uint16_t fract;
 
   if (btime == NULL)
   {
@@ -1856,7 +1857,14 @@ ms_btime2nstime (uint8_t *btime, int8_t swapflag)
     return NSTUNSET;
   }
 
-  return ms_time2nstime (
-      year, HO2u (*((uint16_t *)(btime + 2)), swapflag), *(btime + 4), *(btime + 5), *(btime + 6),
-      (uint32_t)HO2u (*(uint16_t *)(btime + 8), swapflag) * (NSTMODULUS / 10000));
+  fract = HO2u (*(uint16_t *)(btime + 8), swapflag);
+
+  if (fract > 9999)
+  {
+    ms_log (2, "fractional seconds (%u) is out of range\n", fract);
+    return NSTERROR;
+  }
+
+  return ms_time2nstime (year, HO2u (*((uint16_t *)(btime + 2)), swapflag), *(btime + 4),
+                         *(btime + 5), *(btime + 6), (uint32_t)fract * (NSTMODULUS / 10000));
 } /* End of ms_btime2nstime() */
