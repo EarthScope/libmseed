@@ -1139,9 +1139,23 @@ msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overwrite, uint32_t 
   /* Free packer and get total packed samples */
   msr3_pack_free (&packer, NULL);
 
+  /* A full or read-only filesystem may not surface an error until
+   * buffered data is flushed */
+  if (packedrecords >= 0 && (fflush (ofp) != 0 || ferror (ofp)))
+  {
+    ms_log (2, "Error writing to output file %s\n", mspath);
+    packedrecords = -1;
+  }
+
   /* Close file and return record count */
   if (ofp != stdout)
-    fclose (ofp);
+  {
+    if (fclose (ofp) != 0 && packedrecords >= 0)
+    {
+      ms_log (2, "Error closing output file %s: %s\n", mspath, strerror (errno));
+      packedrecords = -1;
+    }
+  }
 
   return packedrecords;
 } /* End of msr3_writemseed() */
