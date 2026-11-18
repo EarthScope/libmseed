@@ -562,11 +562,13 @@ ms_parse_raw2 (const char *record, int maxreclen, int8_t details, int8_t swapfla
   ms2_recordsid (record, sid, sizeof (sid));
 
   /* Check to see if byte swapping is needed by testing the year and day */
-  if (swapflag == -1 &&
-      !MS_ISVALIDYEARDAY (HO2uP (pMS2FSDH_YEAR (record), 0), HO2uP (pMS2FSDH_DAY (record), 0)))
+  if (swapflag == -1)
+    swapflag =
+        (MS_ISVALIDYEARDAY (HO2uP (pMS2FSDH_YEAR (record), 0), HO2uP (pMS2FSDH_DAY (record), 0)))
+            ? 0
+            : 1;
+  else if (swapflag != 0)
     swapflag = 1;
-  else
-    swapflag = 0;
 
   if (details > 1)
   {

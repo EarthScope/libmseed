@@ -945,3 +945,31 @@ TEST (read, steim2_trailing_undefined)
     CHECK (rv < 0, "ms_decode_data() accepted an undefined Steim2 code that was needed");
   }
 }
+
+/* ms_parse_raw2() must honor an explicit swap flag rather than only
+ * the autodetected value.  The record header is byte swapped relative
+ * to the host, so a swap flag of 1 or -1 parses cleanly and 0 does not.
+ */
+TEST (read, v2_parse_raw_swapflag)
+{
+  char record[512];
+  FILE *fp = NULL;
+  size_t rv;
+
+  /* Use the header byte order opposite to the host */
+  const char *path = (ms_bigendianhost ()) ? "data/reference-testdata-steim2-LE.mseed2"
+                                           : "data/reference-testdata-steim2.mseed2";
+
+  fp = fopen (path, "rb");
+  REQUIRE (fp != NULL, "File pointer is unexpected NULL");
+  rv = fread (record, sizeof (record), 1, fp);
+  fclose (fp);
+  REQUIRE (rv == 1, "fread() did not read a complete record");
+
+  CHECK (ms_parse_raw2 (record, sizeof (record), 0, -1) == 0,
+         "ms_parse_raw2() with autodetected swapping reported errors");
+  CHECK (ms_parse_raw2 (record, sizeof (record), 0, 1) == 0,
+         "ms_parse_raw2() with explicit swapping reported errors");
+  CHECK (ms_parse_raw2 (record, sizeof (record), 0, 0) > 0,
+         "ms_parse_raw2() without swapping did not report errors");
+}
