@@ -27,6 +27,7 @@
   - Rebuild trace segment search state when a caller changes a segment list,
     instead of following pointers to segments the caller may have freed.
   - Reject a record with an invalid data offset when unpacking a record list
+  - Compile with -O2 when CFLAGS is not set
   - Run the macOS CI build on the macos-15 runner image
 
 2026.287:

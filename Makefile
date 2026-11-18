@@ -2,9 +2,11 @@
 # Build environment can be configured the following
 # environment variables:
 #   CC : Specify the C compiler to use
-#   CFLAGS : Specify compiler options to use
+#   CFLAGS : Specify compiler options to use, default: -O2
 #   LDFLAGS : Specify linker options to use
 #   CPPFLAGS : Specify c-preprocessor options to use
+
+CFLAGS ?= -O2
 
 # Extract version from libmseed.h, expected line should include LIBMSEED_VERSION "#.#.#"
 MAJOR_VER = $(shell grep LIBMSEED_VERSION libmseed.h | grep -Eo '[0-9]+.[0-9]+.[0-9]+' | cut -d . -f 1)
