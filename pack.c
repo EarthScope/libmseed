@@ -19,6 +19,7 @@
  * limitations under the License.
  ***************************************************************************/
 
+#include <float.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,6 +50,11 @@ static void repack_payload_order (const MS3Record *msr, char *data, uint32_t dat
                                   int8_t target_bigendian);
 
 static int ms_genfactmult (double samprate, int16_t *factor, int16_t *multiplier);
+
+static int lm_real2uint32 (double real, double scale, uint32_t *value, const char *sid,
+                           const char *name);
+
+static int lm_real2float (double real, float *value, const char *sid, const char *name);
 
 static nstime_t ms_timestr2btime (const char *timestr, uint8_t *btime, int8_t *usec_offset,
                                   const char *sid, int8_t swapflag);
@@ -1287,6 +1293,8 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
   const char *header_string;
   double header_number;
   uint64_t header_uint;
+  uint32_t header_u32;
+  float header_float;
   bool header_boolean;
 
   uint16_t blockette_type;
@@ -1687,7 +1695,11 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
       *pMS2B500_NEXT (record + written) = 0;
 
       if (yyjson_ptr_get_num (ehiterval, "/VCOCorrection", &header_number))
-        *pMS2B500_VCOCORRECTION (record + written) = HO4f ((float)header_number, swapflag);
+      {
+        if (lm_real2float (header_number, &header_float, msr->sid, "/VCOCorrection"))
+          goto error_return;
+        *pMS2B500_VCOCORRECTION (record + written) = HO4f (header_float, swapflag);
+      }
 
       if (yyjson_ptr_get_str (ehiterval, "/Time", &header_string))
       {
@@ -1766,13 +1778,25 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
       *pMS2B200_NEXT (record + written) = 0;
 
       if (yyjson_ptr_get_num (ehiterval, "/SignalAmplitude", &header_number))
-        *pMS2B200_AMPLITUDE (record + written) = HO4f ((float)header_number, swapflag);
+      {
+        if (lm_real2float (header_number, &header_float, msr->sid, "/SignalAmplitude"))
+          goto error_return;
+        *pMS2B200_AMPLITUDE (record + written) = HO4f (header_float, swapflag);
+      }
 
       if (yyjson_ptr_get_num (ehiterval, "/SignalPeriod", &header_number))
-        *pMS2B200_PERIOD (record + written) = HO4f ((float)header_number, swapflag);
+      {
+        if (lm_real2float (header_number, &header_float, msr->sid, "/SignalPeriod"))
+          goto error_return;
+        *pMS2B200_PERIOD (record + written) = HO4f (header_float, swapflag);
+      }
 
       if (yyjson_ptr_get_num (ehiterval, "/BackgroundEstimate", &header_number))
-        *pMS2B200_BACKGROUNDEST (record + written) = HO4f ((float)header_number, swapflag);
+      {
+        if (lm_real2float (header_number, &header_float, msr->sid, "/BackgroundEstimate"))
+          goto error_return;
+        *pMS2B200_BACKGROUNDEST (record + written) = HO4f (header_float, swapflag);
+      }
 
       /* Determine which wave: DILATATION versus (assumed) COMPRESSION */
       if (yyjson_ptr_get_str (ehiterval, "/Wave", &header_string))
@@ -1821,7 +1845,17 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
             if (!yyjson_is_num (ehsubiterval))
               continue;
 
-            pMS2B201_MEDSNR (record + written)[idx++] = (uint8_t)yyjson_get_num (ehsubiterval);
+            if (lm_real2uint32 (yyjson_get_num (ehsubiterval), 1.0, &header_u32, msr->sid,
+                                "/MEDSNR"))
+              goto error_return;
+
+            if (header_u32 > UINT8_MAX)
+            {
+              ms_log (2, "%s: Value of /MEDSNR is out of range: %u\n", msr->sid, header_u32);
+              goto error_return;
+            }
+
+            pMS2B201_MEDSNR (record + written)[idx++] = (uint8_t)header_u32;
           }
         }
 
@@ -1958,22 +1992,35 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
             *pMS2B300_FLAGS (record + written) |= 0x08;
 
           if (yyjson_ptr_get_num (ehiterval, "/Duration", &header_number))
-            *pMS2B300_STEPDURATION (record + written) =
-                HO4u ((uint32_t)(header_number * 10000 + 0.5), swapflag);
+          {
+            if (lm_real2uint32 (header_number, 10000.0, &header_u32, msr->sid, "/Duration"))
+              goto error_return;
+            *pMS2B300_STEPDURATION (record + written) = HO4u (header_u32, swapflag);
+          }
 
           if (yyjson_ptr_get_num (ehiterval, "/StepBetween", &header_number))
-            *pMS2B300_INTERVALDURATION (record + written) =
-                HO4u ((uint32_t)(header_number * 10000 + 0.5), swapflag);
+          {
+            if (lm_real2uint32 (header_number, 10000.0, &header_u32, msr->sid, "/StepBetween"))
+              goto error_return;
+            *pMS2B300_INTERVALDURATION (record + written) = HO4u (header_u32, swapflag);
+          }
 
           if (yyjson_ptr_get_num (ehiterval, "/Amplitude", &header_number))
-            *pMS2B300_AMPLITUDE (record + written) = HO4f ((float)header_number, swapflag);
+          {
+            if (lm_real2float (header_number, &header_float, msr->sid, "/Amplitude"))
+              goto error_return;
+            *pMS2B300_AMPLITUDE (record + written) = HO4f (header_float, swapflag);
+          }
 
           if (yyjson_ptr_get_str (ehiterval, "/InputChannel", &header_string))
             ms_strncpopen (pMS2B300_INPUTCHANNEL (record + written), header_string, 3);
 
           if (yyjson_ptr_get_num (ehiterval, "/ReferenceAmplitude", &header_number))
-            *pMS2B300_REFERENCEAMPLITUDE (record + written) =
-                HO4u ((uint32_t)(header_number + 0.5), swapflag);
+          {
+            if (lm_real2uint32 (header_number, 1.0, &header_u32, msr->sid, "/ReferenceAmplitude"))
+              goto error_return;
+            *pMS2B300_REFERENCEAMPLITUDE (record + written) = HO4u (header_u32, swapflag);
+          }
 
           if (yyjson_ptr_get_str (ehiterval, "/Coupling", &header_string))
             ms_strncpopen (pMS2B300_COUPLING (record + written), header_string, 12);
@@ -2001,21 +2048,35 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
           }
 
           if (yyjson_ptr_get_num (ehiterval, "/Duration", &header_number))
-            *pMS2B310_DURATION (record + written) =
-                HO4u ((uint32_t)(header_number * 10000 + 0.5), swapflag);
+          {
+            if (lm_real2uint32 (header_number, 10000.0, &header_u32, msr->sid, "/Duration"))
+              goto error_return;
+            *pMS2B310_DURATION (record + written) = HO4u (header_u32, swapflag);
+          }
 
           if (yyjson_ptr_get_num (ehiterval, "/SinePeriod", &header_number))
-            *pMS2B310_PERIOD (record + written) = HO4f ((float)header_number, swapflag);
+          {
+            if (lm_real2float (header_number, &header_float, msr->sid, "/SinePeriod"))
+              goto error_return;
+            *pMS2B310_PERIOD (record + written) = HO4f (header_float, swapflag);
+          }
 
           if (yyjson_ptr_get_num (ehiterval, "/Amplitude", &header_number))
-            *pMS2B310_AMPLITUDE (record + written) = HO4f ((float)header_number, swapflag);
+          {
+            if (lm_real2float (header_number, &header_float, msr->sid, "/Amplitude"))
+              goto error_return;
+            *pMS2B310_AMPLITUDE (record + written) = HO4f (header_float, swapflag);
+          }
 
           if (yyjson_ptr_get_str (ehiterval, "/InputChannel", &header_string))
             ms_strncpopen (pMS2B310_INPUTCHANNEL (record + written), header_string, 3);
 
           if (yyjson_ptr_get_num (ehiterval, "/ReferenceAmplitude", &header_number))
-            *pMS2B310_REFERENCEAMPLITUDE (record + written) =
-                HO4u ((uint32_t)(header_number + 0.5), swapflag);
+          {
+            if (lm_real2uint32 (header_number, 1.0, &header_u32, msr->sid, "/ReferenceAmplitude"))
+              goto error_return;
+            *pMS2B310_REFERENCEAMPLITUDE (record + written) = HO4u (header_u32, swapflag);
+          }
 
           if (yyjson_ptr_get_str (ehiterval, "/Coupling", &header_string))
             ms_strncpopen (pMS2B310_COUPLING (record + written), header_string, 12);
@@ -2037,18 +2098,28 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
             *pMS2B320_FLAGS (record + written) |= 0x10;
 
           if (yyjson_ptr_get_num (ehiterval, "/Duration", &header_number))
-            *pMS2B320_DURATION (record + written) =
-                HO4u ((uint32_t)(header_number * 10000 + 0.5), swapflag);
+          {
+            if (lm_real2uint32 (header_number, 10000.0, &header_u32, msr->sid, "/Duration"))
+              goto error_return;
+            *pMS2B320_DURATION (record + written) = HO4u (header_u32, swapflag);
+          }
 
           if (yyjson_ptr_get_num (ehiterval, "/Amplitude", &header_number))
-            *pMS2B320_PTPAMPLITUDE (record + written) = HO4f ((float)header_number, swapflag);
+          {
+            if (lm_real2float (header_number, &header_float, msr->sid, "/Amplitude"))
+              goto error_return;
+            *pMS2B320_PTPAMPLITUDE (record + written) = HO4f (header_float, swapflag);
+          }
 
           if (yyjson_ptr_get_str (ehiterval, "/InputChannel", &header_string))
             ms_strncpopen (pMS2B320_INPUTCHANNEL (record + written), header_string, 3);
 
           if (yyjson_ptr_get_num (ehiterval, "/ReferenceAmplitude", &header_number))
-            *pMS2B320_REFERENCEAMPLITUDE (record + written) =
-                HO4u ((uint32_t)(header_number + 0.5), swapflag);
+          {
+            if (lm_real2uint32 (header_number, 1.0, &header_u32, msr->sid, "/ReferenceAmplitude"))
+              goto error_return;
+            *pMS2B320_REFERENCEAMPLITUDE (record + written) = HO4u (header_u32, swapflag);
+          }
 
           if (yyjson_ptr_get_str (ehiterval, "/Coupling", &header_string))
             ms_strncpopen (pMS2B320_COUPLING (record + written), header_string, 12);
@@ -2069,11 +2140,18 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
             *pMS2B390_FLAGS (record + written) |= 0x08;
 
           if (yyjson_ptr_get_num (ehiterval, "/Duration", &header_number))
-            *pMS2B390_DURATION (record + written) =
-                HO4u ((uint32_t)(header_number * 10000 + 0.5), swapflag);
+          {
+            if (lm_real2uint32 (header_number, 10000.0, &header_u32, msr->sid, "/Duration"))
+              goto error_return;
+            *pMS2B390_DURATION (record + written) = HO4u (header_u32, swapflag);
+          }
 
           if (yyjson_ptr_get_num (ehiterval, "/Amplitude", &header_number))
-            *pMS2B390_AMPLITUDE (record + written) = HO4f ((float)header_number, swapflag);
+          {
+            if (lm_real2float (header_number, &header_float, msr->sid, "/Amplitude"))
+              goto error_return;
+            *pMS2B390_AMPLITUDE (record + written) = HO4f (header_float, swapflag);
+          }
 
           if (yyjson_ptr_get_str (ehiterval, "/InputChannel", &header_string))
             ms_strncpopen (pMS2B390_INPUTCHANNEL (record + written), header_string, 3);
@@ -2122,6 +2200,10 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
   }
 
   return written;
+
+error_return:
+  yyjson_doc_free (ehdoc);
+  return -1;
 } /* End of msr3_pack_header2() */
 
 /************************************************************************
@@ -2557,6 +2639,50 @@ ms_reduce_rate (double samprate, int16_t *factor1, int16_t *factor2)
 
   return -1;
 } /* End of ms_reduce_rate() */
+
+/***************************************************************************
+ * Convert a real value, multiplied by scale, to an unsigned 32-bit integer
+ * rounded to nearest.  The name identifies the value in error messages.
+ *
+ * Returns 0 on success and -1 if the result is not representable.
+ ***************************************************************************/
+static int
+lm_real2uint32 (double real, double scale, uint32_t *value, const char *sid, const char *name)
+{
+  double scaled = real * scale + 0.5;
+
+  /* Written as a positive range test so NaN, which compares false, is rejected */
+  if (!(scaled >= 0.0 && scaled < 4294967296.0))
+  {
+    ms_log (2, "%s: Value of %s is out of range: %g\n", sid, name, real);
+    return -1;
+  }
+
+  *value = (uint32_t)scaled;
+
+  return 0;
+} /* End of lm_real2uint32() */
+
+/***************************************************************************
+ * Convert a real value to single precision.  NaN and infinities are
+ * converted, a finite value beyond the single precision range is not.
+ * The name identifies the value in error messages.
+ *
+ * Returns 0 on success and -1 if the value is not representable.
+ ***************************************************************************/
+static int
+lm_real2float (double real, float *value, const char *sid, const char *name)
+{
+  if (isfinite (real) && fabs (real) > (double)FLT_MAX)
+  {
+    ms_log (2, "%s: Value of %s is out of range: %g\n", sid, name, real);
+    return -1;
+  }
+
+  *value = (float)real;
+
+  return 0;
+} /* End of lm_real2float() */
 
 /***************************************************************************
  * ms_genfactmult:

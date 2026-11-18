@@ -2614,3 +2614,42 @@ TEST (pack, msr3_pack_v2_calibration_abort)
                              "\"EndTime\":\"2024-01-02T03:04:09Z\"}]}}}") < 0,
          "An unrecognized calibration Type was not rejected");
 }
+
+/* Extra header numbers that cannot be represented in their miniSEED v2
+ * blockette fields are rejected rather than converted */
+TEST (pack, msr3_pack_v2_blockette_value_range)
+{
+  /* Values within range are accepted */
+  CHECK (pack_v2_with_extra ("{\"FDSN\":{\"Calibration\":{\"Sequence\":[{\"Type\":\"STEP\","
+                             "\"Duration\":1.5,\"StepBetween\":2,\"Amplitude\":-3.25,"
+                             "\"ReferenceAmplitude\":7}]}}}") > 0,
+         "In-range calibration values were rejected for v2");
+  CHECK (pack_v2_with_extra ("{\"FDSN\":{\"Event\":{\"Detection\":[{\"Type\":\"MURDOCK\","
+                             "\"SignalAmplitude\":-80.5,\"MEDSNR\":[1,2,3,4,5,255]}]}}}") > 0,
+         "In-range detection values were rejected for v2");
+
+  /* Negative and too large unsigned values */
+  CHECK (pack_v2_with_extra ("{\"FDSN\":{\"Calibration\":{\"Sequence\":[{\"Type\":\"STEP\","
+                             "\"Duration\":-1}]}}}") < 0,
+         "A negative calibration Duration was not rejected");
+  CHECK (pack_v2_with_extra ("{\"FDSN\":{\"Calibration\":{\"Sequence\":[{\"Type\":\"SINE\","
+                             "\"Duration\":1e6}]}}}") < 0,
+         "A calibration Duration beyond 32-bit 0.0001 second units was not rejected");
+  CHECK (pack_v2_with_extra ("{\"FDSN\":{\"Calibration\":{\"Sequence\":[{\"Type\":\"PSEUDORANDOM\","
+                             "\"ReferenceAmplitude\":5e9}]}}}") < 0,
+         "A calibration ReferenceAmplitude beyond 32 bits was not rejected");
+  CHECK (pack_v2_with_extra ("{\"FDSN\":{\"Event\":{\"Detection\":[{\"Type\":\"MURDOCK\","
+                             "\"MEDSNR\":[1,2,300]}]}}}") < 0,
+         "A MEDSNR value beyond 8 bits was not rejected");
+  CHECK (pack_v2_with_extra ("{\"FDSN\":{\"Event\":{\"Detection\":[{\"Type\":\"MURDOCK\","
+                             "\"MEDSNR\":[-1]}]}}}") < 0,
+         "A negative MEDSNR value was not rejected");
+
+  /* Real values beyond single precision */
+  CHECK (pack_v2_with_extra ("{\"FDSN\":{\"Event\":{\"Detection\":[{"
+                             "\"SignalAmplitude\":1e300}]}}}") < 0,
+         "A detection SignalAmplitude beyond single precision was not rejected");
+  CHECK (pack_v2_with_extra ("{\"FDSN\":{\"Time\":{\"Exception\":[{"
+                             "\"VCOCorrection\":-1e40}]}}}") < 0,
+         "A timing exception VCOCorrection beyond single precision was not rejected");
+}
