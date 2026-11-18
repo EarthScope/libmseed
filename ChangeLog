@@ -6,6 +6,7 @@
   - Report no data payload for a miniSEED 2 record with a data offset of 0.
   - Omit non-finite blockette values from extra headers and report a failure
     to serialize miniSEED 2 extra headers as an error.
+  - Keep trace segments in time order after packed samples are trimmed.
 
 2026.287:
   - Avoid reading a miniSEED 2 blockette offset beyond a truncated buffer.

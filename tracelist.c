@@ -36,6 +36,7 @@ static MS3TraceSeg *lm_addsegtoseg (MS3TraceSeg *seg1, MS3TraceSeg *seg2);
 static MS3RecordPtr *lm_add_recordptr (MS3TraceSeg *seg, const MS3Record *msr, nstime_t endtime,
                                        int8_t whence, uint32_t flags);
 
+static void lm_sort_segment (MS3TraceID *id, MS3TraceSeg *seg);
 static void lm_recentseg_touch (LMTraceIDNode *idnode, MS3TraceSeg *seg);
 static void lm_recentseg_remove (LMTraceIDNode *idnode, MS3TraceSeg *seg);
 static void lm_endbound_fold (LMTraceIDNode *idnode, nstime_t endtime);
@@ -637,6 +638,68 @@ lm_scan_recent (LMTraceIDNode *idnode, const MS3Record *msr, nstime_t endtime, n
 } /* End of lm_scan_recent() */
 
 /***************************************************************************
+ * Move a segment within its trace ID's list to restore the order of start
+ * time ascending, then end time descending.
+ ***************************************************************************/
+static void
+lm_sort_segment (MS3TraceID *id, MS3TraceSeg *seg)
+{
+  MS3TraceSeg *segafter;
+  MS3TraceSeg *segbefore;
+
+  while (seg->next &&
+         (seg->starttime > seg->next->starttime ||
+          (seg->starttime == seg->next->starttime && seg->endtime < seg->next->endtime)))
+  {
+    /* Move segment down list, swap seg and seg->next */
+    segafter = seg->next;
+
+    if (seg->prev)
+      seg->prev->next = segafter;
+
+    if (segafter->next)
+      segafter->next->prev = seg;
+
+    segafter->prev = seg->prev;
+    seg->prev = segafter;
+    seg->next = segafter->next;
+    segafter->next = seg;
+
+    /* Reset first and last segment pointers if replaced */
+    if (id->first == seg)
+      id->first = segafter;
+
+    if (id->last == segafter)
+      id->last = seg;
+  }
+  while (seg->prev &&
+         (seg->starttime < seg->prev->starttime ||
+          (seg->starttime == seg->prev->starttime && seg->endtime > seg->prev->endtime)))
+  {
+    /* Move segment up list, swap seg and seg->prev */
+    segbefore = seg->prev;
+
+    if (seg->next)
+      seg->next->prev = segbefore;
+
+    if (segbefore->prev)
+      segbefore->prev->next = seg;
+
+    segbefore->next = seg->next;
+    seg->next = segbefore;
+    seg->prev = segbefore->prev;
+    segbefore->prev = seg;
+
+    /* Reset first and last segment pointers if replaced */
+    if (id->first == segbefore)
+      id->first = seg;
+
+    if (id->last == seg)
+      id->last = segbefore;
+  }
+} /* End of lm_sort_segment() */
+
+/***************************************************************************
  * Implementation of MS3TraceList addition functions
  *
  * @see mstl3_addmsr()
@@ -1110,56 +1173,7 @@ _mstl3_addmsr_impl (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **ppr
   } /* End of adding coverage to matching ID */
 
   /* Sort modified segment into place, logic above should limit these to few shifts if any */
-  while (seg->next &&
-         (seg->starttime > seg->next->starttime ||
-          (seg->starttime == seg->next->starttime && seg->endtime < seg->next->endtime)))
-  {
-    /* Move segment down list, swap seg and seg->next */
-    segafter = seg->next;
-
-    if (seg->prev)
-      seg->prev->next = segafter;
-
-    if (segafter->next)
-      segafter->next->prev = seg;
-
-    segafter->prev = seg->prev;
-    seg->prev = segafter;
-    seg->next = segafter->next;
-    segafter->next = seg;
-
-    /* Reset first and last segment pointers if replaced */
-    if (id->first == seg)
-      id->first = segafter;
-
-    if (id->last == segafter)
-      id->last = seg;
-  }
-  while (seg->prev &&
-         (seg->starttime < seg->prev->starttime ||
-          (seg->starttime == seg->prev->starttime && seg->endtime > seg->prev->endtime)))
-  {
-    /* Move segment up list, swap seg and seg->prev */
-    segbefore = seg->prev;
-
-    if (seg->next)
-      seg->next->prev = segbefore;
-
-    if (segbefore->prev)
-      segbefore->prev->next = seg;
-
-    segbefore->next = seg->next;
-    seg->next = segbefore;
-    seg->prev = segbefore->prev;
-    segbefore->prev = seg;
-
-    /* Reset first and last segment pointers if replaced */
-    if (id->first == segbefore)
-      id->first = seg;
-
-    if (id->last == seg)
-      id->last = segbefore;
-  }
+  lm_sort_segment (id, seg);
 
   /* Track the most-recently-active segments to bound future searches */
   if (seg && !((LMTraceListNode *)mstl)->foreignid)
@@ -2632,10 +2646,15 @@ _mstl3_pack_callback (MS3TraceList *mstl, void (*record_handler) (char *, int, v
       totalpackedrecords += segpackedrecords;
       totalpackedsamples += segpackedsamples;
 
-      /* Remove segment if no samples remain and the MSF_MAINTAINMSTL flag is not set */
+      /* Remove segment if no samples remain and the MSF_MAINTAINMSTL flag is not set,
+       * otherwise keep a segment with an advanced start time in list order */
       if ((flags & MSF_MAINTAINMSTL) == 0 && seg->numsamples == 0)
       {
         lm_remove_segment (mstl, id, seg, 1);
+      }
+      else if ((flags & MSF_MAINTAINMSTL) == 0 && segpackedsamples > 0)
+      {
+        lm_sort_segment (id, seg);
       }
 
       seg = nextseg;
@@ -3224,6 +3243,7 @@ mstl3_pack_next (MS3TraceListPacker *packer, uint32_t flags, char **record, int3
           }
 
           lm_update_id_extent (packer->current_id);
+          lm_sort_segment (packer->current_id, packer->current_seg);
         }
         else
         {

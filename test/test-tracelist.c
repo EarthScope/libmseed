@@ -737,3 +737,124 @@ TEST (tracelist, mstl3_convertsamples_double)
   CHECK (((int32_t *)seg->datasamples)[1] == -2, "Double sample did not convert as expected");
   mstl3_free (&mstl, 0);
 }
+
+/* Discard packed records */
+static void
+discard_record (char *record, int reclen, void *handlerdata)
+{
+  (void)record;
+  (void)reclen;
+  (void)handlerdata;
+}
+
+/* Add a 1 Hz integer series of 'count' samples starting at 'second' */
+static MS3TraceSeg *
+add_series (MS3TraceList *mstl, int64_t second, int64_t count)
+{
+  MS3Record msr = MS3Record_INITIALIZER;
+  MS3TraceSeg *seg;
+  int32_t *samples;
+  int64_t idx;
+
+  if (!(samples = (int32_t *)malloc ((size_t)count * sizeof (int32_t))))
+    return NULL;
+
+  for (idx = 0; idx < count; idx++)
+    samples[idx] = (int32_t)idx;
+
+  strcpy (msr.sid, "FDSN:XX_SORT__B_H_Z");
+  msr.starttime = MS_EPOCH2NSTIME (1700000000 + second);
+  msr.samprate = 1.0;
+  msr.samplecnt = count;
+  msr.numsamples = count;
+  msr.sampletype = 'i';
+  msr.datasamples = samples;
+
+  seg = mstl3_addmsr (mstl, &msr, 0, 1, 0, NULL);
+
+  free (samples);
+
+  return seg;
+}
+
+/* Test that a trace ID's segments are in start time order */
+static int
+segments_in_order (const MS3TraceList *mstl)
+{
+  const MS3TraceSeg *seg = mstl->traces.next[0]->first;
+
+  for (; seg && seg->next; seg = seg->next)
+    if (seg->starttime > seg->next->starttime)
+      return 0;
+
+  return 1;
+}
+
+/* Build overlapping segments [0,99] and [50,60] and a later [200,299] */
+static MS3TraceList *
+overlapping_segments (void)
+{
+  MS3TraceList *mstl = mstl3_init (NULL);
+
+  if (!mstl || !add_series (mstl, 0, 100) || !add_series (mstl, 50, 11) ||
+      !add_series (mstl, 200, 100))
+    mstl3_free (&mstl, 1);
+
+  return mstl;
+}
+
+/* Packing full records from the front of a segment advances its start time,
+ * which must keep the segment list in start time order when segments overlap.
+ * A record contiguous with a segment that ends up later in the list must
+ * still be merged into it. */
+TEST (tracelist, mstl3_pack_keeps_segment_order)
+{
+  MS3TraceListPacker *packer = NULL;
+  MS3TraceList *mstl = NULL;
+  int64_t packedsamples = 0;
+  int64_t packedrecords;
+  char *record = NULL;
+  int32_t reclen = 0;
+  int rv;
+
+  /* Callback interface */
+  mstl = overlapping_segments ();
+  REQUIRE (mstl != NULL, "Cannot build trace list");
+  REQUIRE (mstl->traces.next[0]->numsegments == 3, "Expected 3 segments before packing");
+
+  packedrecords =
+      mstl3_pack (mstl, discard_record, NULL, 256, DE_INT32, &packedsamples, 0, 0, NULL);
+  CHECK (packedrecords > 0, "mstl3_pack() did not pack any records");
+  CHECK (mstl->traces.next[0]->numsegments == 3, "Expected 3 segments after packing");
+  CHECK (segments_in_order (mstl), "Segments not in start time order after mstl3_pack()");
+
+  REQUIRE (add_series (mstl, 61, 5) != NULL, "Cannot add series contiguous with [50,60]");
+  CHECK (mstl->traces.next[0]->numsegments == 3,
+         "Contiguous series was not merged after mstl3_pack()");
+
+  mstl3_free (&mstl, 1);
+
+  /* Generator interface */
+  mstl = overlapping_segments ();
+  REQUIRE (mstl != NULL, "Cannot build trace list");
+
+  packer = mstl3_pack_init (mstl, 256, DE_INT32, 0, 0, NULL, 0);
+  REQUIRE (packer != NULL, "mstl3_pack_init() failed");
+
+  packedrecords = 0;
+  while ((rv = mstl3_pack_next (packer, 0, &record, &reclen)) == 1)
+    packedrecords++;
+
+  CHECK (rv == 0, "mstl3_pack_next() did not return expected 0");
+  CHECK (packedrecords > 0, "mstl3_pack_next() did not pack any records");
+  mstl3_pack_free (&packer, NULL);
+
+  CHECK (mstl->traces.next[0]->numsegments == 3, "Expected 3 segments after packing");
+  CHECK (segments_in_order (mstl), "Segments not in start time order after mstl3_pack_next()");
+
+  REQUIRE (add_series (mstl, 61, 5) != NULL, "Cannot add series contiguous with [50,60]");
+  CHECK (mstl->traces.next[0]->numsegments == 3,
+         "Contiguous series was not merged after mstl3_pack_next()");
+
+  mstl3_free (&mstl, 1);
+}
