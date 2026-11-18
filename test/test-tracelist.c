@@ -858,3 +858,61 @@ TEST (tracelist, mstl3_pack_keeps_segment_order)
 
   mstl3_free (&mstl, 1);
 }
+
+/* Log output captured while synclist_capture is set, otherwise printed */
+static int synclist_capture = 0;
+static char synclist_output[2048];
+
+static void
+synclist_log_print (const char *message)
+{
+  if (synclist_capture)
+    strncat (synclist_output, message, sizeof (synclist_output) - strlen (synclist_output) - 1);
+  else
+    fputs (message, stdout);
+}
+
+static void
+synclist_diag_print (const char *message)
+{
+  if (!synclist_capture)
+    fputs (message, stderr);
+}
+
+/* A source ID that cannot be split into codes is printed with empty codes,
+ * not the codes of the previously printed trace ID */
+TEST (tracelist, mstl3_printsynclist_unparsable_sid)
+{
+  MS3Record msr = MS3Record_INITIALIZER;
+  MS3TraceList *mstl = NULL;
+  const char *cp;
+  int count = 0;
+
+  mstl = mstl3_init (NULL);
+  REQUIRE (mstl != NULL, "mstl3_init() failed");
+
+  msr.starttime = MS_EPOCH2NSTIME (1700000000);
+  msr.samprate = 1.0;
+
+  strcpy (msr.sid, "FDSN:XX_AAA_00_B_H_Z");
+  REQUIRE (mstl3_addmsr (mstl, &msr, 0, 1, 0, NULL) != NULL, "mstl3_addmsr() failed");
+
+  strcpy (msr.sid, "XX_BBB");
+  REQUIRE (mstl3_addmsr (mstl, &msr, 0, 1, 0, NULL) != NULL, "mstl3_addmsr() failed");
+
+  synclist_output[0] = '\0';
+  ms_loginit (synclist_log_print, "", synclist_diag_print, NULL);
+
+  synclist_capture = 1;
+  mstl3_printsynclist (mstl, NULL, NONE);
+  synclist_capture = 0;
+
+  for (cp = synclist_output; (cp = strstr (cp, "XX|AAA|00|BHZ|")); cp++)
+    count++;
+
+  CHECK (count == 1, "Codes of one trace ID were printed for another");
+  CHECK (strstr (synclist_output, "\n||||") != NULL,
+         "Unparsable source ID was not printed with empty codes");
+
+  mstl3_free (&mstl, 1);
+}

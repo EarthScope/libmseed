@@ -11,6 +11,8 @@
     period given as a negative rate.
   - Report an error from msr3_writemseed() when flushing or closing the
     output file fails.
+  - Print empty codes in mstl3_printsynclist() for a source ID that cannot be
+    split into codes, instead of the codes of the previous trace ID.
 
 2026.287:
   - Avoid reading a miniSEED 2 blockette offset beyond a truncated buffer.

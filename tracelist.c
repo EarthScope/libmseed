@@ -3821,6 +3821,9 @@ mstl3_printsynclist (const MS3TraceList *mstl, const char *dccid, ms_subseconds_
   id = mstl->traces.next[0];
   while (id)
   {
+    /* Codes not parsed from the source ID are printed empty */
+    net[0] = sta[0] = loc[0] = chan[0] = '\0';
+
     ms_sid2nslc_n (id->sid, net, sizeof (net), sta, sizeof (sta), loc, sizeof (loc), chan,
                    sizeof (chan));
 
