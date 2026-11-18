@@ -1,6 +1,7 @@
 2026.321:
   - Convert the encoded data byte order when repacking records between format
     versions.
+  - Decode record list payloads using only the payload byte swap flag.
 
 2026.287:
   - Avoid reading a miniSEED 2 blockette offset beyond a truncated buffer.

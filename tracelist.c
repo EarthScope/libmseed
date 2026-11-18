@@ -2431,7 +2431,8 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output, uint64_
     unpackedsamples = ms_decode_data (
         input, recordptr->msr->reclen - recordptr->dataoffset, (uint8_t)recordptr->msr->encoding,
         recordptr->msr->samplecnt, (unsigned char *)output + outputoffset,
-        decodedsize - outputoffset, &sampletype, recordptr->msr->swapflag, id->sid, verbose);
+        decodedsize - outputoffset, &sampletype, (recordptr->msr->swapflag & MSSWAP_PAYLOAD),
+        id->sid, verbose);
 
     if (unpackedsamples < 0)
     {

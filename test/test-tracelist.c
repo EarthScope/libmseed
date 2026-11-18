@@ -219,6 +219,71 @@ TEST (tracelist, mstl3_readbuffer_recptr)
   mstl3_free (&mstl, 1);
 }
 
+/* This test decodes a record list of miniSEED 2 records with a big endian
+ * header and little endian INT32 payload, as declared in Blockette 1000.
+ * On a little endian host only the header needs swapping, and the samples
+ * decoded from the record list must match those unpacked while parsing.
+ */
+TEST (tracelist, mstl3_unpack_recordlist_mixedbyteorder)
+{
+  char buffer[2560];
+  FILE *fp = NULL;
+
+  MS3TraceList *mstl_unpacked = NULL;
+  MS3TraceList *mstl_reclist = NULL;
+  MS3TraceSeg *seg_unpacked = NULL;
+  MS3TraceSeg *seg_reclist = NULL;
+  uint16_t dataoffset;
+  int64_t unpacked;
+  int64_t rv;
+  int offset;
+  int idx;
+
+  char *path = "data/reference-testdata-int32.mseed2";
+
+  fp = fopen (path, "rb");
+  REQUIRE (fp != NULL, "File pointer is unexpected NULL");
+  rv = fread (buffer, sizeof (buffer), 1, fp);
+  fclose (fp);
+  REQUIRE (rv == 1, "fread() did not read entire file");
+
+  /* Reference samples from the unmodified, big endian records */
+  rv = mstl3_readbuffer (&mstl_unpacked, buffer, sizeof (buffer), 0, MSF_UNPACKDATA, NULL, 0);
+  REQUIRE (rv == 5, "mstl3_readbuffer() did not return expected 5 records");
+  seg_unpacked = mstl_unpacked->traces.next[0]->first;
+  REQUIRE (seg_unpacked->numsamples > 0, "Reference segment has no samples");
+
+  /* Convert each 512-byte record payload to little endian, declared in Blockette 1000 */
+  for (offset = 0; offset < (int)sizeof (buffer); offset += 512)
+  {
+    dataoffset = (uint16_t)(((uint8_t)buffer[offset + 44] << 8) | (uint8_t)buffer[offset + 45]);
+    REQUIRE (dataoffset == 56, "Data offset is not expected 56");
+    REQUIRE ((uint8_t)buffer[offset + 48] == 0x03 && (uint8_t)buffer[offset + 49] == 0xE8,
+             "Blockette 1000 is not at expected offset 48");
+
+    buffer[offset + 53] = 0; /* Blockette 1000 byte order: little endian */
+
+    for (idx = offset + dataoffset; idx + 4 <= offset + 512; idx += 4)
+      ms_gswap4 (buffer + idx);
+  }
+
+  rv = mstl3_readbuffer (&mstl_reclist, buffer, sizeof (buffer), 0, MSF_RECORDLIST, NULL, 0);
+  REQUIRE (rv == 5, "mstl3_readbuffer() did not return expected 5 records");
+  seg_reclist = mstl_reclist->traces.next[0]->first;
+  REQUIRE (seg_reclist->recordlist != NULL, "Record list is unexpected NULL");
+
+  unpacked = mstl3_unpack_recordlist (mstl_reclist->traces.next[0], seg_reclist, NULL, 0, 0);
+
+  CHECK (unpacked == seg_unpacked->numsamples, "Unpacked sample count does not match reference");
+  REQUIRE (seg_reclist->datasamples != NULL, "Record list samples are unexpected NULL");
+  CHECK (memcmp (seg_reclist->datasamples, seg_unpacked->datasamples,
+                 (size_t)seg_unpacked->numsamples * sizeof (int32_t)) == 0,
+         "Record list samples do not match samples unpacked while parsing");
+
+  mstl3_free (&mstl_unpacked, 1);
+  mstl3_free (&mstl_reclist, 1);
+}
+
 /* This test adds a header-only record with extra headers to a MS3TraceList
  * via mstl3_addmsr_recordptr(), once with default flags and once with the
  * MSF_RECORDLIST_NOEXTRAS flag set, verifying that the extra headers are
