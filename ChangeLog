@@ -1,4 +1,5 @@
 2026.321:
+  - Run the macOS CI build on the macos-15 runner image
   - Convert the encoded data byte order when repacking records between format
     versions.
   - Decode record list payloads using only the payload byte swap flag.

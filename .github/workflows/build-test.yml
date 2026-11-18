@@ -24,7 +24,7 @@ jobs:
             arch: arm64
           # macOS
           - os: macOS
-            runner: macos-14
+            runner: macos-15
             arch: arm64
 
     steps:
