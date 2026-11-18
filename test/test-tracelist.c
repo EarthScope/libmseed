@@ -284,6 +284,60 @@ TEST (tracelist, mstl3_unpack_recordlist_mixedbyteorder)
   mstl3_free (&mstl_reclist, 1);
 }
 
+/* This test builds a record list from a miniSEED 2 record with samples but a
+ * data offset of 0, i.e. no data payload.  Unpacking the record list must fail
+ * instead of decoding the record header as data.
+ */
+TEST (tracelist, mstl3_unpack_recordlist_dataoffset0)
+{
+  char buffer[512];
+  FILE *fp = NULL;
+
+  MS3TraceList *mstl = NULL;
+  MS3TraceID *id = NULL;
+  int64_t unpacked;
+  int64_t rv;
+
+  char *path = "data/reference-testdata-steim2.mseed2";
+
+  fp = fopen (path, "rb");
+  REQUIRE (fp != NULL, "File pointer is unexpected NULL");
+  rv = fread (buffer, sizeof (buffer), 1, fp);
+  fclose (fp);
+  REQUIRE (rv == 1, "fread() did not read first record");
+
+  REQUIRE ((uint8_t)buffer[48] == 0x03 && (uint8_t)buffer[49] == 0xE8,
+           "Blockette 1000 is not at expected offset 48");
+  REQUIRE ((uint8_t)buffer[54] == 9, "Record length is not expected 512");
+
+  /* Set the fixed header data offset to 0 */
+  buffer[44] = 0;
+  buffer[45] = 0;
+
+  /* Suppress expected error messages by accumulating them */
+  ms_rloginit (NULL, NULL, NULL, NULL, 10);
+
+  rv = mstl3_readbuffer (&mstl, buffer, sizeof (buffer), 0, MSF_RECORDLIST, NULL, 0);
+  REQUIRE (rv == 1, "mstl3_readbuffer() did not return expected 1 record");
+
+  id = mstl->traces.next[0];
+  REQUIRE (id != NULL, "mstl->traces.next[0] is not populated");
+  REQUIRE (id->first != NULL, "id->first is not populated");
+  REQUIRE (id->first->recordlist != NULL, "Record list is unexpected NULL");
+  REQUIRE (id->first->samplecnt > 0, "id->first->samplecnt is unexpected 0");
+  REQUIRE (id->first->recordlist->first->dataoffset == 0,
+           "Record pointer data offset is not expected 0");
+
+  unpacked = mstl3_unpack_recordlist (id, id->first, NULL, 0, 0);
+  CHECK (unpacked == -1, "mstl3_unpack_recordlist() did not return expected -1");
+
+  mstl3_free (&mstl, 1);
+
+  /* Discard the expected error messages and restore printing */
+  ms_rlog_free (NULL);
+  ms_rloginit (NULL, NULL, NULL, NULL, 0);
+}
+
 /* This test adds a header-only record with extra headers to a MS3TraceList
  * via mstl3_addmsr_recordptr(), once with default flags and once with the
  * MSF_RECORDLIST_NOEXTRAS flag set, verifying that the extra headers are

@@ -2388,6 +2388,16 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output, uint64_
       continue;
     }
 
+    /* Data offset must be beyond the fixed header and within the record */
+    if (recordptr->dataoffset < MINRECLEN ||
+        recordptr->dataoffset >= (uint32_t)recordptr->msr->reclen)
+    {
+      ms_log (2, "%s: Data offset value is not valid: %u\n", id->sid, recordptr->dataoffset);
+
+      totalunpackedsamples = -1;
+      break;
+    }
+
     if (ms_encoding_sizetype ((uint8_t)recordptr->msr->encoding, NULL, &recsampletype))
     {
       ms_log (2, "%s: Cannot determine sample type for encoding: %u\n", id->sid,
