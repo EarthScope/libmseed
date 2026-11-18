@@ -655,6 +655,8 @@ mseh_set_ptr_r (MS3Record *msr, const char *ptr, void *value, char type,
  *
  * If @p ptr is NULL, the default is @c '/FDSN/Event/Detection'.
  *
+ * Non-finite real values are not included.
+ *
  * @param[in] msr Parsed miniSEED record to query
  * @param[in] ptr Header value desired, specified in dot notation
  * @param[in] eventdetection Structure with event detection values
@@ -700,21 +702,21 @@ mseh_add_event_detection_r (MS3Record *msr, const char *ptr, MSEHEventDetection 
     yyjson_mut_set_str (&type, eventdetection->type);
     yyjson_mut_obj_add (&entry, &type_key, &type);
   }
-  if (eventdetection->signalamplitude != 0.0)
+  if (eventdetection->signalamplitude != 0.0 && isfinite (eventdetection->signalamplitude))
   {
     yyjson_mut_set_str (&sigamp_key, "SignalAmplitude");
     yyjson_mut_set_real (&sigamp, eventdetection->signalamplitude);
     limit_real_precision (&sigamp, eventdetection->signalamplitude);
     yyjson_mut_obj_add (&entry, &sigamp_key, &sigamp);
   }
-  if (eventdetection->signalperiod != 0.0)
+  if (eventdetection->signalperiod != 0.0 && isfinite (eventdetection->signalperiod))
   {
     yyjson_mut_set_str (&sigper_key, "SignalPeriod");
     yyjson_mut_set_real (&sigper, eventdetection->signalperiod);
     limit_real_precision (&sigper, eventdetection->signalperiod);
     yyjson_mut_obj_add (&entry, &sigper_key, &sigper);
   }
-  if (eventdetection->backgroundestimate != 0.0)
+  if (eventdetection->backgroundestimate != 0.0 && isfinite (eventdetection->backgroundestimate))
   {
     yyjson_mut_set_str (&bgest_key, "BackgroundEstimate");
     yyjson_mut_set_real (&bgest, eventdetection->backgroundestimate);
@@ -794,6 +796,8 @@ mseh_add_event_detection_r (MS3Record *msr, const char *ptr, MSEHEventDetection 
  * @brief Add calibration to the extra headers of the given record.
  *
  * If @p ptr is NULL, the default is @c '/FDSN/Calibration/Sequence'.
+ *
+ * Non-finite real values are not included.
  *
  * @param[in] msr Parsed miniSEED record to query
  * @param[in] ptr Header value desired, specified in dot notation
@@ -909,7 +913,7 @@ mseh_add_calibration_r (MS3Record *msr, const char *ptr, MSEHCalibration *calibr
     yyjson_mut_set_bool (&continued, calibration->continued);
     yyjson_mut_obj_add (&entry, &continued_key, &continued);
   }
-  if (calibration->amplitude != 0.0)
+  if (calibration->amplitude != 0.0 && isfinite (calibration->amplitude))
   {
     yyjson_mut_set_str (&amplitude_key, "Amplitude");
     yyjson_mut_set_real (&amplitude, calibration->amplitude);
@@ -928,21 +932,21 @@ mseh_add_calibration_r (MS3Record *msr, const char *ptr, MSEHCalibration *calibr
     yyjson_mut_set_str (&amprange, calibration->amplituderange);
     yyjson_mut_obj_add (&entry, &amprange_key, &amprange);
   }
-  if (calibration->duration != 0.0)
+  if (calibration->duration != 0.0 && isfinite (calibration->duration))
   {
     yyjson_mut_set_str (&duration_key, "Duration");
     yyjson_mut_set_real (&duration, calibration->duration);
     limit_real_precision (&duration, calibration->duration);
     yyjson_mut_obj_add (&entry, &duration_key, &duration);
   }
-  if (calibration->sineperiod != 0.0)
+  if (calibration->sineperiod != 0.0 && isfinite (calibration->sineperiod))
   {
     yyjson_mut_set_str (&sineperiod_key, "SinePeriod");
     yyjson_mut_set_real (&sineperiod, calibration->sineperiod);
     limit_real_precision (&sineperiod, calibration->sineperiod);
     yyjson_mut_obj_add (&entry, &sineperiod_key, &sineperiod);
   }
-  if (calibration->stepbetween != 0.0)
+  if (calibration->stepbetween != 0.0 && isfinite (calibration->stepbetween))
   {
     yyjson_mut_set_str (&stepbetween_key, "StepBetween");
     yyjson_mut_set_real (&stepbetween, calibration->stepbetween);
@@ -955,7 +959,7 @@ mseh_add_calibration_r (MS3Record *msr, const char *ptr, MSEHCalibration *calibr
     yyjson_mut_set_str (&inputchannel, calibration->inputchannel);
     yyjson_mut_obj_add (&entry, &inputchannel_key, &inputchannel);
   }
-  if (calibration->refamplitude != 0.0)
+  if (calibration->refamplitude != 0.0 && isfinite (calibration->refamplitude))
   {
     yyjson_mut_set_str (&refamp_key, "ReferenceAmplitude");
     yyjson_mut_set_real (&refamp, calibration->refamplitude);
@@ -1023,6 +1027,8 @@ field_length (const char *field, size_t size)
  *
  * If @p ptr is NULL, the default is @c '/FDSN/Time/Exception'.
  *
+ * Non-finite real values are not included.
+ *
  * @param[in] msr Parsed miniSEED record to query
  * @param[in] ptr Header value desired, specified in dot notation
  * @param[in] exception Structure with timing exception values
@@ -1071,7 +1077,7 @@ mseh_add_timing_exception_r (MS3Record *msr, const char *ptr, MSEHTimingExceptio
       return MS_GENERROR;
     }
   }
-  if (exception->vcocorrection >= 0.0)
+  if (exception->vcocorrection >= 0.0 && isfinite (exception->vcocorrection))
   {
     yyjson_mut_set_str (&vcocorr_key, "VCOCorrection");
     yyjson_mut_set_real (&vcocorr, exception->vcocorrection);

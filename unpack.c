@@ -1008,7 +1008,12 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr, uint32_t 
   /* Serialize extra header JSON structure and free parsed state */
   if (parsestate)
   {
-    mseh_serialize (msr, &parsestate);
+    if (mseh_serialize (msr, &parsestate) < 0)
+    {
+      ms_log (2, "%s: Cannot serialize extra headers\n", msr->sid);
+      goto error_return;
+    }
+
     mseh_free_parsestate (&parsestate);
   }
 

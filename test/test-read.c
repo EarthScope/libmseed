@@ -973,3 +973,45 @@ TEST (read, v2_parse_raw_swapflag)
   CHECK (ms_parse_raw2 (record, sizeof (record), 0, 0) > 0,
          "ms_parse_raw2() without swapping did not report errors");
 }
+
+/* A non-finite float in a miniSEED 2 blockette cannot be represented in the
+ * extra headers; it is omitted while the rest of the blockette is kept. */
+TEST (read, v2_blockette_nonfinite_float)
+{
+  MS3Record *msr = NULL;
+  char record[512];
+  char wave[32] = {0};
+  double number = 0.0;
+  FILE *fp = NULL;
+  size_t readcount;
+  int rv;
+
+  fp = fopen ("data/testdata-detection.record.mseed2", "rb");
+  REQUIRE (fp != NULL, "File pointer is unexpected NULL");
+  readcount = fread (record, sizeof (record), 1, fp);
+  fclose (fp);
+  REQUIRE (readcount == 1, "fread() did not read a complete record");
+
+  REQUIRE ((uint8_t)record[56] == 0x00 && (uint8_t)record[57] == 0xC9,
+           "Blockette 201 is not at expected offset 56");
+
+  /* Blockette 201 signal amplitude: big endian quiet NaN */
+  record[60] = (char)0x7F;
+  record[61] = (char)0xC0;
+  record[62] = 0x00;
+  record[63] = 0x00;
+
+  rv = msr3_parse (record, sizeof (record), &msr, 0, 0);
+  REQUIRE (rv == MS_NOERROR, "msr3_parse() did not return expected MS_NOERROR");
+
+  CHECK (mseh_exists (msr, "/FDSN/Event/Detection/0"),
+         "Expected /FDSN/Event/Detection/0 does not exist");
+  CHECK (!mseh_exists (msr, "/FDSN/Event/Detection/0/SignalAmplitude"),
+         "Non-finite /FDSN/Event/Detection/0/SignalAmplitude is unexpectedly present");
+  CHECK (mseh_get_number (msr, "/FDSN/Event/Detection/0/SignalPeriod", &number) == 0,
+         "Expected /FDSN/Event/Detection/0/SignalPeriod does not exist");
+  mseh_get_string (msr, "/FDSN/Event/Detection/0/Wave", wave, sizeof (wave));
+  CHECK_STREQ (wave, "DILATATION");
+
+  msr3_free (&msr);
+}
