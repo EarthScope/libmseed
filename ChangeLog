@@ -3,6 +3,7 @@
     versions.
   - Decode record list payloads using only the payload byte swap flag.
   - Honor an explicit swap flag of 1 in ms_parse_raw2() instead of clearing it.
+  - Report no data payload for a miniSEED 2 record with a data offset of 0.
 
 2026.287:
   - Avoid reading a miniSEED 2 blockette offset beyond a truncated buffer.

@@ -250,3 +250,52 @@ TEST (repack, v2_payload_byteorder)
   repack_roundtrip ("data/reference-testdata-steim1-LE.mseed2", 2);
   repack_roundtrip ("data/reference-testdata-steim2-LE.mseed2", 2);
 }
+
+/* A miniSEED 2 header-only record has a data offset of 0, meaning no payload,
+ * regardless of the encoding declared in Blockette 1000.  Repacking must not
+ * carry any part of the record as encoded data. */
+TEST (repack, v2_headeronly_steim)
+{
+  MS3Record *msr = NULL;
+  char record[4096];
+  char repacked[4096];
+  uint32_t dataoffset = 1;
+  uint32_t datasize = 1;
+  uint32_t datalength;
+  FILE *fp = NULL;
+  size_t readcount;
+  int reclen;
+  int rv;
+
+  fp = fopen ("data/reference-testdata-headeronly.mseed2", "rb");
+  REQUIRE (fp != NULL, "File pointer is unexpected NULL");
+  readcount = fread (record, sizeof (record), 1, fp);
+  fclose (fp);
+  REQUIRE (readcount == 1, "fread() did not read a complete record");
+
+  REQUIRE ((uint8_t)record[48] == 0x03 && (uint8_t)record[49] == 0xE8,
+           "Blockette 1000 is not at expected offset 48");
+  REQUIRE (record[44] == 0 && record[45] == 0, "Data offset is not expected 0");
+
+  record[52] = DE_STEIM2; /* Blockette 1000 encoding */
+
+  rv = msr3_parse (record, sizeof (record), &msr, 0, 0);
+  REQUIRE (rv == MS_NOERROR, "msr3_parse() did not return expected MS_NOERROR");
+  CHECK (msr->samplecnt == 0, "msr->samplecnt is not expected 0");
+
+  rv = msr3_data_bounds (msr, &dataoffset, &datasize);
+  CHECK (rv == 0, "msr3_data_bounds() did not return expected 0");
+  CHECK (datasize == 0, "msr3_data_bounds() datasize is not expected 0");
+
+  reclen = msr3_repack_mseed3 (msr, repacked, sizeof (repacked), 0);
+  REQUIRE (reclen > 0, "msr3_repack_mseed3() did not return a record length");
+  memcpy (&datalength, repacked + 36, sizeof (datalength));
+  if (ms_bigendianhost ())
+    ms_gswap4 (&datalength);
+  CHECK (datalength == 0, "Repacked v3 data length is not expected 0");
+
+  reclen = msr3_repack_mseed2 (msr, repacked, sizeof (repacked), 0);
+  CHECK (reclen == 4096, "msr3_repack_mseed2() did not return expected 4096");
+
+  msr3_free (&msr);
+}

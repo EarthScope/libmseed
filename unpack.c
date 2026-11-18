@@ -1164,6 +1164,13 @@ msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize
   {
     *dataoffset = HO2uP (pMS2FSDH_DATAOFFSET (msr->record), msr->swapflag & MSSWAP_HEADER);
 
+    /* A data offset of 0 means the record has no payload */
+    if (*dataoffset == 0)
+    {
+      *datasize = 0;
+      return 0;
+    }
+
     /* Validate data offset is within the record to avoid unsigned underflow */
     if (*dataoffset >= (uint32_t)msr->reclen)
     {
