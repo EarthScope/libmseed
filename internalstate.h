@@ -138,6 +138,11 @@ lm_tracelist_native (const MS3TraceList *mstl)
  * in the end time of segments as they are evicted from the recent set or
  * removed from the trace list.
  *
+ * The seen_* fields hold the trace ID's segment count and first and last
+ * segments as of the library's last change to its segment list.  A
+ * mismatch means the list was changed by the caller, and the recent set,
+ * whose pointers may no longer be valid, is rebuilt before use.
+ *
  * The public struct is the first member so public pointers, sizeof, and
  * field offsets are unaffected by the extension. */
 typedef struct
@@ -145,6 +150,9 @@ typedef struct
   MS3TraceID id;
   MS3TraceSeg *recentseg[LM_RECENTSEGS];
   nstime_t nonrecentendbound;
+  uint32_t seen_numsegments;
+  MS3TraceSeg *seen_first;
+  MS3TraceSeg *seen_last;
 } LMTraceIDNode;
 
 #ifdef __cplusplus

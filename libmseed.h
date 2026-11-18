@@ -608,7 +608,12 @@ typedef struct MS3RecordList
 /** @brief Maximum skip list height for MSTraceIDs */
 #define MSTRACEID_SKIPLIST_HEIGHT 8
 
-/** @brief Container for a continuous trace segment, linkable */
+/** @brief Container for a continuous trace segment, linkable
+ *
+ * Segments of a ::MS3TraceList are added and removed by library functions.
+ * A caller that unlinks or frees a segment itself must keep the \a prev and
+ * \a next links and the ::MS3TraceID \a first, \a last and \a numsegments
+ * fields consistent. */
 typedef struct MS3TraceSeg
 {
   nstime_t starttime; //!< Time of first sample

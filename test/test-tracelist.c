@@ -970,3 +970,39 @@ TEST (tracelist, mstl3_addmsr_caller_allocated_list)
 
   mstl3_free (&mstl, 1);
 }
+
+/* A segment unlinked and freed by the caller, keeping the list consistent,
+ * must not be used by later additions to the trace list */
+TEST (tracelist, mstl3_addmsr_after_caller_removes_segment)
+{
+  MS3TraceList *mstl = NULL;
+  MS3TraceID *id = NULL;
+  MS3TraceSeg *removed = NULL;
+
+  mstl = mstl3_init (NULL);
+  REQUIRE (mstl != NULL, "mstl3_init() failed");
+
+  REQUIRE (add_series (mstl, 0, 10) != NULL, "Cannot add series at 0");
+  REQUIRE (add_series (mstl, 100, 10) != NULL, "Cannot add series at 100");
+  REQUIRE (add_series (mstl, 200, 10) != NULL, "Cannot add series at 200");
+
+  id = mstl->traces.next[0];
+  REQUIRE (id->numsegments == 3, "Expected 3 segments");
+
+  /* Remove the last segment as a caller would */
+  removed = id->last;
+  id->last = removed->prev;
+  id->last->next = NULL;
+  id->numsegments -= 1;
+  free (removed->datasamples);
+  free (removed);
+
+  /* Contiguous with the end of the first segment, found by searching the list */
+  REQUIRE (add_series (mstl, 10, 5) != NULL, "Cannot add series at 10");
+
+  CHECK (id->numsegments == 2, "Series was not merged into the first segment");
+  CHECK (id->first->samplecnt == 15, "First segment sample count is not expected 15");
+  CHECK (id->last->samplecnt == 10, "Last segment sample count is not expected 10");
+
+  mstl3_free (&mstl, 1);
+}
