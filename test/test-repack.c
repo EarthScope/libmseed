@@ -168,3 +168,85 @@ TEST (repack, v2_negative_time_correction)
   msr3_free (&msr);
   msr3_free (&parsed);
 }
+
+/* Repack the first record of a file to the specified version, parse the
+ * result and confirm the decoded samples match the original.
+ */
+static void
+repack_roundtrip (const char *path, int version)
+{
+  MS3Record *msr = NULL;
+  MS3Record *parsed = NULL;
+  char buffer[8192];
+  uint8_t samplesize;
+  int packedlength;
+  int rv;
+
+  rv = ms3_readmsr (&msr, path, MSF_UNPACKDATA, 0);
+  CHECK (rv == MS_NOERROR, "ms3_readmsr() did not return expected MS_NOERROR");
+  CHECK (msr != NULL && msr->numsamples > 0, "ms3_readmsr() did not unpack samples");
+
+  if (rv != MS_NOERROR || msr == NULL || msr->numsamples <= 0)
+    goto cleanup;
+
+  if (version == 3)
+  {
+    packedlength = msr3_repack_mseed3 (msr, buffer, sizeof (buffer), 0);
+  }
+  else
+  {
+    /* v2 record length must be a power of 2 */
+    if (msr->formatversion == 3)
+      msr->reclen = 1024;
+
+    packedlength = msr3_repack_mseed2 (msr, buffer, sizeof (buffer), 0);
+  }
+
+  CHECK (packedlength > 0, "Repack returned an error");
+
+  if (packedlength <= 0)
+    goto cleanup;
+
+  rv = msr3_parse (buffer, packedlength, &parsed, MSF_UNPACKDATA, 0);
+  CHECK (rv == MS_NOERROR && parsed != NULL, "msr3_parse() of repacked record failed");
+
+  if (rv != MS_NOERROR || parsed == NULL)
+    goto cleanup;
+
+  CHECK (parsed->formatversion == version, "Repacked format version is not expected");
+  CHECK (parsed->encoding == msr->encoding, "Repacked encoding does not match");
+  CHECK (parsed->sampletype == msr->sampletype, "Repacked sample type does not match");
+  CHECK (parsed->numsamples == msr->numsamples, "Repacked sample count does not match");
+
+  samplesize = ms_samplesize (msr->sampletype);
+  if (parsed->numsamples == msr->numsamples && parsed->sampletype == msr->sampletype)
+    CHECK (memcmp (parsed->datasamples, msr->datasamples,
+                   (size_t)msr->numsamples * samplesize) == 0,
+           "Repacked samples do not match original");
+
+cleanup:
+  msr3_free (&parsed);
+  ms3_readmsr (&msr, NULL, 0, 0);
+}
+
+TEST (repack, v3_payload_byteorder)
+{
+  repack_roundtrip ("data/reference-testdata-int16.mseed2", 3);
+  repack_roundtrip ("data/reference-testdata-int32.mseed2", 3);
+  repack_roundtrip ("data/reference-testdata-float32.mseed2", 3);
+  repack_roundtrip ("data/reference-testdata-float64.mseed2", 3);
+  repack_roundtrip ("data/reference-testdata-steim1-LE.mseed2", 3);
+  repack_roundtrip ("data/reference-testdata-steim2-LE.mseed2", 3);
+  repack_roundtrip ("data/reference-testdata-text.mseed2", 3);
+}
+
+TEST (repack, v2_payload_byteorder)
+{
+  repack_roundtrip ("data/reference-testdata-int16.mseed3", 2);
+  repack_roundtrip ("data/reference-testdata-int32.mseed3", 2);
+  repack_roundtrip ("data/reference-testdata-float32.mseed3", 2);
+  repack_roundtrip ("data/reference-testdata-float64.mseed3", 2);
+  repack_roundtrip ("data/reference-testdata-steim2.mseed3", 2);
+  repack_roundtrip ("data/reference-testdata-steim1-LE.mseed2", 2);
+  repack_roundtrip ("data/reference-testdata-steim2-LE.mseed2", 2);
+}

@@ -43,6 +43,11 @@ static int64_t msr_pack_data (void *dest, void *src, uint64_t maxsamples, uint64
                               char sampletype, int8_t encoding, int8_t swapflag,
                               uint32_t *byteswritten, const char *sid, int8_t verbose);
 
+static void repack_steim_to_bigendian (char *data, uint32_t datasize, int8_t encoding);
+
+static void repack_payload_order (const MS3Record *msr, char *data, uint32_t datasize,
+                                  int8_t target_bigendian);
+
 static int ms_genfactmult (double samprate, int16_t *factor, int16_t *multiplier);
 
 static nstime_t ms_timestr2btime (const char *timestr, uint8_t *btime, int8_t *usec_offset,
@@ -752,6 +757,113 @@ lm_pack_state_free (MS3RecordPacker *packer)
   packer->encoded_size = 0;
 } /* End of lm_pack_state_free() */
 
+/***************************************************************************
+ * Convert little endian Steim frames in place to big endian.
+ *
+ * Little endian Steim swaps each difference within its 32-bit word, so
+ * the swapping of each word depends on its nibble:
+ *   W0, X0 and Xn: 32-bit
+ *   nibble 01: none (8-bit differences)
+ *   nibble 10: Steim1 16-bit halves, Steim2 32-bit
+ *   nibble 11: 32-bit
+ ***************************************************************************/
+static void
+repack_steim_to_bigendian (char *data, uint32_t datasize, int8_t encoding)
+{
+  uint8_t *frame;
+  uint32_t frameidx;
+  uint32_t nibbles;
+  int widx;
+
+  for (frameidx = 0; (frameidx + 1) * 64 <= datasize; frameidx++)
+  {
+    frame = (uint8_t *)data + (frameidx * 64);
+
+    ms_gswap4 (frame);
+    nibbles = ((uint32_t)frame[0] << 24) | ((uint32_t)frame[1] << 16) | ((uint32_t)frame[2] << 8) |
+              (uint32_t)frame[3];
+
+    /* X0 and Xn in first frame */
+    if (frameidx == 0)
+    {
+      ms_gswap4 (frame + 4);
+      ms_gswap4 (frame + 8);
+    }
+
+    for (widx = (frameidx == 0) ? 3 : 1; widx < 16; widx++)
+    {
+      switch ((nibbles >> (30 - (2 * widx))) & 0x3)
+      {
+      case 2:
+        if (encoding == DE_STEIM1)
+        {
+          ms_gswap2 (frame + (4 * widx));
+          ms_gswap2 (frame + (4 * widx) + 2);
+        }
+        else
+        {
+          ms_gswap4 (frame + (4 * widx));
+        }
+        break;
+      case 3:
+        ms_gswap4 (frame + (4 * widx));
+        break;
+      }
+    }
+  }
+} /* End of repack_steim_to_bigendian() */
+
+/***************************************************************************
+ * Convert encoded data in place from the byte order of the source record
+ * to the target byte order.  Steim targets are always big endian.
+ *
+ * Only encodings defined by miniSEED 3 are converted.  Text, retired and
+ * unrecognized encodings are left unchanged.
+ ***************************************************************************/
+static void
+repack_payload_order (const MS3Record *msr, char *data, uint32_t datasize, int8_t target_bigendian)
+{
+  uint32_t wordsize;
+  uint32_t idx;
+  int8_t source_bigendian;
+
+  source_bigendian = (ms_bigendianhost () ^ ((msr->swapflag & MSSWAP_PAYLOAD) != 0)) ? 1 : 0;
+
+  if (source_bigendian == (target_bigendian ? 1 : 0))
+    return;
+
+  switch (msr->encoding)
+  {
+  case DE_INT16:
+    wordsize = 2;
+    break;
+  case DE_INT32:
+  case DE_FLOAT32:
+    wordsize = 4;
+    break;
+  case DE_FLOAT64:
+    wordsize = 8;
+    break;
+  case DE_STEIM1:
+  case DE_STEIM2:
+    if (!source_bigendian)
+      repack_steim_to_bigendian (data, datasize, msr->encoding);
+    return;
+  default:
+    return;
+  }
+
+  for (idx = 0; idx + wordsize <= datasize; idx += wordsize)
+  {
+    if (wordsize == 2)
+      ms_gswap2 (data + idx);
+    else if (wordsize == 4)
+      ms_gswap4 (data + idx);
+    else
+      ms_gswap8 (data + idx);
+  }
+} /* End of repack_payload_order() */
+
 /** ************************************************************************
  * @brief Repack a parsed miniSEED record into a version 3 record.
  *
@@ -828,8 +940,10 @@ msr3_repack_mseed3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8
 
   reclen = dataoffset + origdatasize;
 
-  /* Copy encoded data into record */
+  /* Copy encoded data into record, Steim is big endian, all others little endian */
   memcpy (record + dataoffset, msr->record + origdataoffset, origdatasize);
+  repack_payload_order (msr, record + dataoffset, origdatasize,
+                        (msr->encoding == DE_STEIM1 || msr->encoding == DE_STEIM2));
 
   /* Check to see if byte swapping is needed, miniSEED 3 is little endian */
   swapflag = (ms_bigendianhost ()) ? 1 : 0;
@@ -1068,8 +1182,9 @@ msr3_repack_mseed2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8
   if (dataoffset > (uint32_t)headerlen)
     memset (record + headerlen, 0, dataoffset - headerlen);
 
-  /* Copy encoded data into record */
+  /* Copy encoded data into record, big endian as declared in Blockette 1000 */
   memcpy (record + dataoffset, msr->record + origdataoffset, origdatasize);
+  repack_payload_order (msr, record + dataoffset, origdatasize, 1);
 
   /* Check if byte swapping is needed, miniSEED 2 is written big endian */
   swapflag = (ms_bigendianhost ()) ? 0 : 1;
