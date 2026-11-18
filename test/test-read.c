@@ -762,7 +762,7 @@ TEST (read, v3_invalid_samplerate)
   REQUIRE (packbuflen > 0, "msr3_pack() did not produce any output");
 
   /* Patch the fixed-header sample rate to NaN */
-  *pMS3FSDH_SAMPLERATE (packbuf) = HO8f (NAN, swapflag);
+  STORE8f (pMS3FSDH_SAMPLERATE (packbuf), NAN, swapflag);
 
   rv = msr3_parse (packbuf, (uint64_t)packbuflen, &parsed, 0, 0);
   CHECK (rv != MS_NOERROR, "msr3_parse() did not reject a NaN sample rate");

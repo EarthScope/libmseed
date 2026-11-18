@@ -411,7 +411,7 @@ lm_pack_state_init (MS3RecordPacker *packer, const MS3Record *msr, uint32_t flag
       }
 
       /* Set data offset in header */
-      *pMS2FSDH_DATAOFFSET (packer->rawrec) = HO2u (packer->dataoffset, packer->swapflag);
+      STORE2u (pMS2FSDH_DATAOFFSET (packer->rawrec), packer->dataoffset, packer->swapflag);
     }
   }
 
@@ -519,13 +519,13 @@ msr3_pack_next (MS3RecordPacker *packer, char **record, int32_t *reclen)
       /* Set encoding to text (value of 0) for consistency */
       *pMS3FSDH_ENCODING (packer->rawrec) = DE_TEXT;
 
-      *pMS3FSDH_NUMSAMPLES (packer->rawrec) = HO4u (0, packer->swapflag);
-      *pMS3FSDH_DATALENGTH (packer->rawrec) = HO4u (0, packer->swapflag);
+      STORE4u (pMS3FSDH_NUMSAMPLES (packer->rawrec), 0, packer->swapflag);
+      STORE4u (pMS3FSDH_DATALENGTH (packer->rawrec), 0, packer->swapflag);
 
       /* Calculate CRC and set */
       memset (pMS3FSDH_CRC (packer->rawrec), 0, sizeof (uint32_t));
       crc = ms_crc32c ((const uint8_t *)packer->rawrec, packer->dataoffset, 0);
-      *pMS3FSDH_CRC (packer->rawrec) = HO4u (crc, packer->swapflag);
+      STORE4u (pMS3FSDH_CRC (packer->rawrec), crc, packer->swapflag);
 
       if (packer->verbose >= 1)
         ms_log (0, "%s: Packed %d byte record with no payload\n", packer->msr->sid,
@@ -606,8 +606,8 @@ msr3_pack_next (MS3RecordPacker *packer, char **record, int32_t *reclen)
     reclen_generated = packer->dataoffset + datalength;
 
     /* Update number of samples and data length */
-    *pMS3FSDH_NUMSAMPLES (packer->rawrec) = HO4u ((uint32_t)samples_packed, packer->swapflag);
-    *pMS3FSDH_DATALENGTH (packer->rawrec) = HO4u (datalength, packer->swapflag);
+    STORE4u (pMS3FSDH_NUMSAMPLES (packer->rawrec), (uint32_t)samples_packed, packer->swapflag);
+    STORE4u (pMS3FSDH_DATALENGTH (packer->rawrec), datalength, packer->swapflag);
 
     /* Update start time if not first record */
     if (packer->recordcount > 0)
@@ -619,9 +619,9 @@ msr3_pack_next (MS3RecordPacker *packer, char **record, int32_t *reclen)
         return -1;
       }
 
-      *pMS3FSDH_NSEC (packer->rawrec) = HO4u (nsec, packer->swapflag);
-      *pMS3FSDH_YEAR (packer->rawrec) = HO2u (year, packer->swapflag);
-      *pMS3FSDH_DAY (packer->rawrec) = HO2u (day, packer->swapflag);
+      STORE4u (pMS3FSDH_NSEC (packer->rawrec), nsec, packer->swapflag);
+      STORE2u (pMS3FSDH_YEAR (packer->rawrec), year, packer->swapflag);
+      STORE2u (pMS3FSDH_DAY (packer->rawrec), day, packer->swapflag);
       *pMS3FSDH_HOUR (packer->rawrec) = hour;
       *pMS3FSDH_MIN (packer->rawrec) = min;
       *pMS3FSDH_SEC (packer->rawrec) = sec;
@@ -630,7 +630,7 @@ msr3_pack_next (MS3RecordPacker *packer, char **record, int32_t *reclen)
     /* Calculate CRC and set */
     memset (pMS3FSDH_CRC (packer->rawrec), 0, sizeof (uint32_t));
     crc = ms_crc32c ((const uint8_t *)packer->rawrec, reclen_generated, 0);
-    *pMS3FSDH_CRC (packer->rawrec) = HO4u (crc, packer->swapflag);
+    STORE4u (pMS3FSDH_CRC (packer->rawrec), crc, packer->swapflag);
   }
   /* Version 2 record */
   else
@@ -639,7 +639,7 @@ msr3_pack_next (MS3RecordPacker *packer, char **record, int32_t *reclen)
     reclen_generated = packer->maxreclen;
 
     /* Update number of samples */
-    *pMS2FSDH_NUMSAMPLES (packer->rawrec) = HO2u ((uint16_t)samples_packed, packer->swapflag);
+    STORE2u (pMS2FSDH_NUMSAMPLES (packer->rawrec), (uint16_t)samples_packed, packer->swapflag);
 
     /* Zero any space between encoded data and end of record */
     uint32_t content = packer->dataoffset + datalength;
@@ -661,12 +661,12 @@ msr3_pack_next (MS3RecordPacker *packer, char **record, int32_t *reclen)
         return -1;
       }
 
-      *pMS2FSDH_YEAR (packer->rawrec) = HO2u (year, packer->swapflag);
-      *pMS2FSDH_DAY (packer->rawrec) = HO2u (day, packer->swapflag);
+      STORE2u (pMS2FSDH_YEAR (packer->rawrec), year, packer->swapflag);
+      STORE2u (pMS2FSDH_DAY (packer->rawrec), day, packer->swapflag);
       *pMS2FSDH_HOUR (packer->rawrec) = hour;
       *pMS2FSDH_MIN (packer->rawrec) = min;
       *pMS2FSDH_SEC (packer->rawrec) = sec;
-      *pMS2FSDH_FSEC (packer->rawrec) = HO2u (fsec, packer->swapflag);
+      STORE2u (pMS2FSDH_FSEC (packer->rawrec), fsec, packer->swapflag);
 
       if (packer->blockette_1001_offset)
       {
@@ -955,13 +955,13 @@ msr3_repack_mseed3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8
   swapflag = (ms_bigendianhost ()) ? 1 : 0;
 
   /* Update number of samples and data length */
-  *pMS3FSDH_NUMSAMPLES (record) = HO4u ((uint32_t)msr->samplecnt, swapflag);
-  *pMS3FSDH_DATALENGTH (record) = HO4u (origdatasize, swapflag);
+  STORE4u (pMS3FSDH_NUMSAMPLES (record), (uint32_t)msr->samplecnt, swapflag);
+  STORE4u (pMS3FSDH_DATALENGTH (record), origdatasize, swapflag);
 
   /* Calculate CRC (with CRC field set to 0) and set */
   memset (pMS3FSDH_CRC (record), 0, sizeof (uint32_t));
   crc = ms_crc32c ((const uint8_t *)record, reclen, 0);
-  *pMS3FSDH_CRC (record) = HO4u (crc, swapflag);
+  STORE4u (pMS3FSDH_CRC (record), crc, swapflag);
 
   if (verbose >= 1)
     ms_log (0, "%s: Repacked %" PRId64 " samples into a %u byte record\n", msr->sid, msr->samplecnt,
@@ -1059,9 +1059,9 @@ msr3_pack_header3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
   record[1] = 'S';
   *pMS3FSDH_FORMATVERSION (record) = 3;
   *pMS3FSDH_FLAGS (record) = msr->flags;
-  *pMS3FSDH_NSEC (record) = HO4u (nsec, swapflag);
-  *pMS3FSDH_YEAR (record) = HO2u (year, swapflag);
-  *pMS3FSDH_DAY (record) = HO2u (day, swapflag);
+  STORE4u (pMS3FSDH_NSEC (record), nsec, swapflag);
+  STORE2u (pMS3FSDH_YEAR (record), year, swapflag);
+  STORE2u (pMS3FSDH_DAY (record), day, swapflag);
   *pMS3FSDH_HOUR (record) = hour;
   *pMS3FSDH_MIN (record) = min;
   *pMS3FSDH_SEC (record) = sec;
@@ -1069,13 +1069,13 @@ msr3_pack_header3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
 
   /* If rate positive and less than one, convert to period notation */
   if (msr->samprate != 0.0 && msr->samprate > 0 && msr->samprate < 1.0)
-    *pMS3FSDH_SAMPLERATE (record) = HO8f ((-1.0 / msr->samprate), swapflag);
+    STORE8f (pMS3FSDH_SAMPLERATE (record), (-1.0 / msr->samprate), swapflag);
   else
-    *pMS3FSDH_SAMPLERATE (record) = HO8f (msr->samprate, swapflag);
+    STORE8f (pMS3FSDH_SAMPLERATE (record), msr->samprate, swapflag);
 
   *pMS3FSDH_PUBVERSION (record) = msr->pubversion;
   *pMS3FSDH_SIDLENGTH (record) = (uint8_t)sidlength;
-  *pMS3FSDH_EXTRALENGTH (record) = HO2u (extralength, swapflag);
+  STORE2u (pMS3FSDH_EXTRALENGTH (record), extralength, swapflag);
   memcpy (pMS3FSDH_SID (record), msr->sid, sidlength);
 
   if (extralength > 0)
@@ -1196,8 +1196,8 @@ msr3_repack_mseed2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8
   swapflag = (ms_bigendianhost ()) ? 0 : 1;
 
   /* Update number of samples and data offset */
-  *pMS2FSDH_NUMSAMPLES (record) = HO2u ((uint16_t)msr->samplecnt, swapflag);
-  *pMS2FSDH_DATAOFFSET (record) = HO2u ((uint16_t)dataoffset, swapflag);
+  STORE2u (pMS2FSDH_NUMSAMPLES (record), (uint16_t)msr->samplecnt, swapflag);
+  STORE2u (pMS2FSDH_DATAOFFSET (record), (uint16_t)dataoffset, swapflag);
 
   /* Zero any space between encoded data and end of record.  totalsize is the
    * end of the encoded data (dataoffset + origdatasize), computed above. */
@@ -1280,7 +1280,7 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
   uint32_t reclenfind;
   int16_t factor;
   int16_t multiplier;
-  uint16_t *next_blockette = NULL;
+  void *next_blockette = NULL;
 
   yyjson_doc *ehdoc = NULL;
   yyjson_val *ehroot = NULL;
@@ -1461,17 +1461,17 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
   ms_strncpopen (pMS2FSDH_CHANNEL (record), channel, 3);
   ms_strncpopen (pMS2FSDH_NETWORK (record), network, 2);
 
-  *pMS2FSDH_YEAR (record) = HO2u (year, swapflag);
-  *pMS2FSDH_DAY (record) = HO2u (day, swapflag);
+  STORE2u (pMS2FSDH_YEAR (record), year, swapflag);
+  STORE2u (pMS2FSDH_DAY (record), day, swapflag);
   *pMS2FSDH_HOUR (record) = hour;
   *pMS2FSDH_MIN (record) = min;
   *pMS2FSDH_SEC (record) = sec;
   *pMS2FSDH_UNUSED (record) = 0;
-  *pMS2FSDH_FSEC (record) = HO2u (fsec, swapflag);
-  *pMS2FSDH_NUMSAMPLES (record) = 0;
+  STORE2u (pMS2FSDH_FSEC (record), fsec, swapflag);
+  STORE2u (pMS2FSDH_NUMSAMPLES (record), 0, 0);
 
-  *pMS2FSDH_SAMPLERATEFACT (record) = HO2d (factor, swapflag);
-  *pMS2FSDH_SAMPLERATEMULT (record) = HO2d (multiplier, swapflag);
+  STORE2d (pMS2FSDH_SAMPLERATEFACT (record), factor, swapflag);
+  STORE2d (pMS2FSDH_SAMPLERATEMULT (record), multiplier, swapflag);
 
   /* Map activity bit flags */
   *pMS2FSDH_ACTFLAGS (record) = 0;
@@ -1558,7 +1558,7 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
       return -1;
     }
 
-    *pMS2FSDH_TIMECORRECT (record) = HO4d ((int32_t)correction, swapflag);
+    STORE4d (pMS2FSDH_TIMECORRECT (record), (int32_t)correction, swapflag);
 
     /* Set time correction applied bit in activity flags.
        Rationale: V3 records do not allow unapplied time corrections and unapplied
@@ -1567,20 +1567,20 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
   }
   else
   {
-    *pMS2FSDH_TIMECORRECT (record) = 0;
+    STORE4d (pMS2FSDH_TIMECORRECT (record), 0, 0);
   }
 
   *pMS2FSDH_NUMBLOCKETTES (record) = 1;
-  *pMS2FSDH_DATAOFFSET (record) = 0;
-  *pMS2FSDH_BLOCKETTEOFFSET (record) = HO2u (48, swapflag);
+  STORE2u (pMS2FSDH_DATAOFFSET (record), 0, 0);
+  STORE2u (pMS2FSDH_BLOCKETTEOFFSET (record), 48, swapflag);
 
   written = 48;
 
   /* Add mandatory Blockette 1000 */
   next_blockette = pMS2B1000_NEXT (record + written);
 
-  *pMS2B1000_TYPE (record + written) = HO2u (1000, swapflag);
-  *pMS2B1000_NEXT (record + written) = 0;
+  STORE2u (pMS2B1000_TYPE (record + written), 1000, swapflag);
+  STORE2u (pMS2B1000_NEXT (record + written), 0, 0);
   *pMS2B1000_ENCODING (record + written) = encoding;
   *pMS2B1000_BYTEORDER (record + written) = 1;
   *pMS2B1000_RECLEN (record + written) = reclenexp;
@@ -1621,12 +1621,12 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
       return -1;
     }
 
-    *next_blockette = HO2u ((uint16_t)written, swapflag);
+    STORE2u (next_blockette, (uint16_t)written, swapflag);
     next_blockette = pMS2B1001_NEXT (record + written);
     *pMS2FSDH_NUMBLOCKETTES (record) += 1;
 
-    *pMS2B1001_TYPE (record + written) = HO2u (1001, swapflag);
-    *pMS2B1001_NEXT (record + written) = 0;
+    STORE2u (pMS2B1001_TYPE (record + written), 1001, swapflag);
+    STORE2u (pMS2B1001_NEXT (record + written), 0, 0);
 
     if (yyjson_ptr_get_uint (ehroot, "/FDSN/Time/Quality", &header_uint) &&
         header_uint <= UINT8_MAX)
@@ -1654,13 +1654,13 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
       return -1;
     }
 
-    *next_blockette = HO2u ((uint16_t)written, swapflag);
+    STORE2u (next_blockette, (uint16_t)written, swapflag);
     next_blockette = pMS2B100_NEXT (record + written);
     *pMS2FSDH_NUMBLOCKETTES (record) += 1;
 
-    *pMS2B100_TYPE (record + written) = HO2u (100, swapflag);
-    *pMS2B100_NEXT (record + written) = 0;
-    *pMS2B100_SAMPRATE (record + written) = HO4f ((float)sampratehz, swapflag);
+    STORE2u (pMS2B100_TYPE (record + written), 100, swapflag);
+    STORE2u (pMS2B100_NEXT (record + written), 0, 0);
+    STORE4f (pMS2B100_SAMPRATE (record + written), (float)sampratehz, swapflag);
     *pMS2B100_FLAGS (record + written) = 0;
     memset (pMS2B100_RESERVED (record + written), 0, 3);
 
@@ -1686,19 +1686,19 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
         return -1;
       }
 
-      *next_blockette = HO2u ((uint16_t)written, swapflag);
+      STORE2u (next_blockette, (uint16_t)written, swapflag);
       next_blockette = pMS2B500_NEXT (record + written);
       *pMS2FSDH_NUMBLOCKETTES (record) += 1;
 
       memset (record + written, 0, blockette_length);
-      *pMS2B500_TYPE (record + written) = HO2u (500, swapflag);
-      *pMS2B500_NEXT (record + written) = 0;
+      STORE2u (pMS2B500_TYPE (record + written), 500, swapflag);
+      STORE2u (pMS2B500_NEXT (record + written), 0, 0);
 
       if (yyjson_ptr_get_num (ehiterval, "/VCOCorrection", &header_number))
       {
         if (lm_real2float (header_number, &header_float, msr->sid, "/VCOCorrection"))
           goto error_return;
-        *pMS2B500_VCOCORRECTION (record + written) = HO4f (header_float, swapflag);
+        STORE4f (pMS2B500_VCOCORRECTION (record + written), header_float, swapflag);
       }
 
       if (yyjson_ptr_get_str (ehiterval, "/Time", &header_string))
@@ -1723,7 +1723,7 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
         *pMS2B500_RECEPTIONQUALITY (record + written) = (uint8_t)header_uint;
 
       if (yyjson_ptr_get_uint (ehiterval, "/Count", &header_uint) && header_uint <= UINT32_MAX)
-        *pMS2B500_EXCEPTIONCOUNT (record + written) = HO4d ((uint32_t)header_uint, swapflag);
+        STORE4u (pMS2B500_EXCEPTIONCOUNT (record + written), (uint32_t)header_uint, swapflag);
 
       if (yyjson_ptr_get_str (ehiterval, "/Type", &header_string))
         ms_strncpopen (pMS2B500_EXCEPTIONTYPE (record + written), header_string, 16);
@@ -1769,33 +1769,33 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
       }
 
       /* The initial fields of B200 and B201 are the same */
-      *next_blockette = HO2u ((uint16_t)written, swapflag);
+      STORE2u (next_blockette, (uint16_t)written, swapflag);
       next_blockette = pMS2B200_NEXT (record + written);
       *pMS2FSDH_NUMBLOCKETTES (record) += 1;
 
       memset (record + written, 0, blockette_length);
-      *pMS2B200_TYPE (record + written) = HO2u (blockette_type, swapflag);
-      *pMS2B200_NEXT (record + written) = 0;
+      STORE2u (pMS2B200_TYPE (record + written), blockette_type, swapflag);
+      STORE2u (pMS2B200_NEXT (record + written), 0, 0);
 
       if (yyjson_ptr_get_num (ehiterval, "/SignalAmplitude", &header_number))
       {
         if (lm_real2float (header_number, &header_float, msr->sid, "/SignalAmplitude"))
           goto error_return;
-        *pMS2B200_AMPLITUDE (record + written) = HO4f (header_float, swapflag);
+        STORE4f (pMS2B200_AMPLITUDE (record + written), header_float, swapflag);
       }
 
       if (yyjson_ptr_get_num (ehiterval, "/SignalPeriod", &header_number))
       {
         if (lm_real2float (header_number, &header_float, msr->sid, "/SignalPeriod"))
           goto error_return;
-        *pMS2B200_PERIOD (record + written) = HO4f (header_float, swapflag);
+        STORE4f (pMS2B200_PERIOD (record + written), header_float, swapflag);
       }
 
       if (yyjson_ptr_get_num (ehiterval, "/BackgroundEstimate", &header_number))
       {
         if (lm_real2float (header_number, &header_float, msr->sid, "/BackgroundEstimate"))
           goto error_return;
-        *pMS2B200_BACKGROUNDEST (record + written) = HO4f (header_float, swapflag);
+        STORE4f (pMS2B200_BACKGROUNDEST (record + written), header_float, swapflag);
       }
 
       /* Determine which wave: DILATATION versus (assumed) COMPRESSION */
@@ -1951,13 +1951,13 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
           blockette_type == 390)
       {
         /* The initial fields of B300, 310, 320, 390 are the same */
-        *next_blockette = HO2u ((uint16_t)written, swapflag);
+        STORE2u (next_blockette, (uint16_t)written, swapflag);
         next_blockette = pMS2B300_NEXT (record + written);
         *pMS2FSDH_NUMBLOCKETTES (record) += 1;
 
         memset (record + written, 0, blockette_length);
-        *pMS2B300_TYPE (record + written) = HO2u (blockette_type, swapflag);
-        *pMS2B300_NEXT (record + written) = 0;
+        STORE2u (pMS2B300_TYPE (record + written), blockette_type, swapflag);
+        STORE2u (pMS2B300_NEXT (record + written), 0, 0);
 
         if (yyjson_ptr_get_str (ehiterval, "/BeginTime", &header_string))
         {
@@ -1995,21 +1995,21 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
           {
             if (lm_real2uint32 (header_number, 10000.0, &header_u32, msr->sid, "/Duration"))
               goto error_return;
-            *pMS2B300_STEPDURATION (record + written) = HO4u (header_u32, swapflag);
+            STORE4u (pMS2B300_STEPDURATION (record + written), header_u32, swapflag);
           }
 
           if (yyjson_ptr_get_num (ehiterval, "/StepBetween", &header_number))
           {
             if (lm_real2uint32 (header_number, 10000.0, &header_u32, msr->sid, "/StepBetween"))
               goto error_return;
-            *pMS2B300_INTERVALDURATION (record + written) = HO4u (header_u32, swapflag);
+            STORE4u (pMS2B300_INTERVALDURATION (record + written), header_u32, swapflag);
           }
 
           if (yyjson_ptr_get_num (ehiterval, "/Amplitude", &header_number))
           {
             if (lm_real2float (header_number, &header_float, msr->sid, "/Amplitude"))
               goto error_return;
-            *pMS2B300_AMPLITUDE (record + written) = HO4f (header_float, swapflag);
+            STORE4f (pMS2B300_AMPLITUDE (record + written), header_float, swapflag);
           }
 
           if (yyjson_ptr_get_str (ehiterval, "/InputChannel", &header_string))
@@ -2019,7 +2019,7 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
           {
             if (lm_real2uint32 (header_number, 1.0, &header_u32, msr->sid, "/ReferenceAmplitude"))
               goto error_return;
-            *pMS2B300_REFERENCEAMPLITUDE (record + written) = HO4u (header_u32, swapflag);
+            STORE4u (pMS2B300_REFERENCEAMPLITUDE (record + written), header_u32, swapflag);
           }
 
           if (yyjson_ptr_get_str (ehiterval, "/Coupling", &header_string))
@@ -2051,21 +2051,21 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
           {
             if (lm_real2uint32 (header_number, 10000.0, &header_u32, msr->sid, "/Duration"))
               goto error_return;
-            *pMS2B310_DURATION (record + written) = HO4u (header_u32, swapflag);
+            STORE4u (pMS2B310_DURATION (record + written), header_u32, swapflag);
           }
 
           if (yyjson_ptr_get_num (ehiterval, "/SinePeriod", &header_number))
           {
             if (lm_real2float (header_number, &header_float, msr->sid, "/SinePeriod"))
               goto error_return;
-            *pMS2B310_PERIOD (record + written) = HO4f (header_float, swapflag);
+            STORE4f (pMS2B310_PERIOD (record + written), header_float, swapflag);
           }
 
           if (yyjson_ptr_get_num (ehiterval, "/Amplitude", &header_number))
           {
             if (lm_real2float (header_number, &header_float, msr->sid, "/Amplitude"))
               goto error_return;
-            *pMS2B310_AMPLITUDE (record + written) = HO4f (header_float, swapflag);
+            STORE4f (pMS2B310_AMPLITUDE (record + written), header_float, swapflag);
           }
 
           if (yyjson_ptr_get_str (ehiterval, "/InputChannel", &header_string))
@@ -2075,7 +2075,7 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
           {
             if (lm_real2uint32 (header_number, 1.0, &header_u32, msr->sid, "/ReferenceAmplitude"))
               goto error_return;
-            *pMS2B310_REFERENCEAMPLITUDE (record + written) = HO4u (header_u32, swapflag);
+            STORE4u (pMS2B310_REFERENCEAMPLITUDE (record + written), header_u32, swapflag);
           }
 
           if (yyjson_ptr_get_str (ehiterval, "/Coupling", &header_string))
@@ -2101,14 +2101,14 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
           {
             if (lm_real2uint32 (header_number, 10000.0, &header_u32, msr->sid, "/Duration"))
               goto error_return;
-            *pMS2B320_DURATION (record + written) = HO4u (header_u32, swapflag);
+            STORE4u (pMS2B320_DURATION (record + written), header_u32, swapflag);
           }
 
           if (yyjson_ptr_get_num (ehiterval, "/Amplitude", &header_number))
           {
             if (lm_real2float (header_number, &header_float, msr->sid, "/Amplitude"))
               goto error_return;
-            *pMS2B320_PTPAMPLITUDE (record + written) = HO4f (header_float, swapflag);
+            STORE4f (pMS2B320_PTPAMPLITUDE (record + written), header_float, swapflag);
           }
 
           if (yyjson_ptr_get_str (ehiterval, "/InputChannel", &header_string))
@@ -2118,7 +2118,7 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
           {
             if (lm_real2uint32 (header_number, 1.0, &header_u32, msr->sid, "/ReferenceAmplitude"))
               goto error_return;
-            *pMS2B320_REFERENCEAMPLITUDE (record + written) = HO4u (header_u32, swapflag);
+            STORE4u (pMS2B320_REFERENCEAMPLITUDE (record + written), header_u32, swapflag);
           }
 
           if (yyjson_ptr_get_str (ehiterval, "/Coupling", &header_string))
@@ -2143,14 +2143,14 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
           {
             if (lm_real2uint32 (header_number, 10000.0, &header_u32, msr->sid, "/Duration"))
               goto error_return;
-            *pMS2B390_DURATION (record + written) = HO4u (header_u32, swapflag);
+            STORE4u (pMS2B390_DURATION (record + written), header_u32, swapflag);
           }
 
           if (yyjson_ptr_get_num (ehiterval, "/Amplitude", &header_number))
           {
             if (lm_real2float (header_number, &header_float, msr->sid, "/Amplitude"))
               goto error_return;
-            *pMS2B390_AMPLITUDE (record + written) = HO4f (header_float, swapflag);
+            STORE4f (pMS2B390_AMPLITUDE (record + written), header_float, swapflag);
           }
 
           if (yyjson_ptr_get_str (ehiterval, "/InputChannel", &header_string))
@@ -2173,13 +2173,13 @@ msr3_pack_header2_offsets (const MS3Record *msr, char *record, uint32_t recbufle
           return -1;
         }
 
-        *next_blockette = HO2u ((uint16_t)written, swapflag);
+        STORE2u (next_blockette, (uint16_t)written, swapflag);
         next_blockette = pMS2B395_NEXT (record + written);
         *pMS2FSDH_NUMBLOCKETTES (record) += 1;
 
         memset (record + written, 0, blockette_length);
-        *pMS2B395_TYPE (record + written) = HO2u (blockette_type, swapflag);
-        *pMS2B395_NEXT (record + written) = 0;
+        STORE2u (pMS2B395_TYPE (record + written), blockette_type, swapflag);
+        STORE2u (pMS2B395_NEXT (record + written), 0, 0);
 
         if (ms_timestr2btime (header_string, (uint8_t *)pMS2B395_YEAR (record + written), NULL,
                               msr->sid, swapflag) == NSTERROR)
@@ -2795,13 +2795,13 @@ ms_timestr2btime (const char *timestr, uint8_t *btime, int8_t *usec_offset, cons
   if (ms_nstime2time (second_nstime, &year, &day, &hour, &min, &sec, NULL))
     return NSTERROR;
 
-  *((uint16_t *)(btime)) = HO2u (year, swapflag);
-  *((uint16_t *)(btime + 2)) = HO2u (day, swapflag);
+  STORE2u (btime, year, swapflag);
+  STORE2u (btime + 2, day, swapflag);
   *((uint8_t *)(btime + 4)) = hour;
   *((uint8_t *)(btime + 5)) = min;
   *((uint8_t *)(btime + 6)) = sec;
   *((uint8_t *)(btime + 7)) = 0;
-  *((uint16_t *)(btime + 8)) = HO2u (fsec, swapflag);
+  STORE2u (btime + 8, fsec, swapflag);
 
   if (usec_offset)
     *usec_offset = l_usec_offset;

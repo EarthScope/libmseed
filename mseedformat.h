@@ -685,6 +685,44 @@ HO8fP (const void *ptr, int swapflag)
   return HO8f (value, swapflag);
 }
 
+/* Record order stores to a possibly unaligned pointer */
+static inline void
+STORE2d (void *ptr, int16_t value, int swapflag)
+{
+  value = HO2d (value, swapflag);
+  memcpy (ptr, &value, sizeof (value));
+}
+static inline void
+STORE2u (void *ptr, uint16_t value, int swapflag)
+{
+  value = HO2u (value, swapflag);
+  memcpy (ptr, &value, sizeof (value));
+}
+static inline void
+STORE4d (void *ptr, int32_t value, int swapflag)
+{
+  value = HO4d (value, swapflag);
+  memcpy (ptr, &value, sizeof (value));
+}
+static inline void
+STORE4u (void *ptr, uint32_t value, int swapflag)
+{
+  value = HO4u (value, swapflag);
+  memcpy (ptr, &value, sizeof (value));
+}
+static inline void
+STORE4f (void *ptr, float value, int swapflag)
+{
+  value = HO4f (value, swapflag);
+  memcpy (ptr, &value, sizeof (value));
+}
+static inline void
+STORE8f (void *ptr, double value, int swapflag)
+{
+  value = HO8f (value, swapflag);
+  memcpy (ptr, &value, sizeof (value));
+}
+
 /* Macro to test for sane year and day values, used primarily to
  * determine if byte order swapping is needed for miniSEED 2.x.
  *

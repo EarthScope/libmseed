@@ -2653,3 +2653,48 @@ TEST (pack, msr3_pack_v2_blockette_value_range)
                              "\"VCOCorrection\":-1e40}]}}}") < 0,
          "A timing exception VCOCorrection beyond single precision was not rejected");
 }
+
+/* Headers packed to an unaligned buffer are identical to those packed to
+ * an aligned buffer */
+TEST (pack, msr3_pack_header_unaligned)
+{
+  MS3Record msr = MS3Record_INITIALIZER;
+  static const char extra[] = "{\"FDSN\":{\"Time\":{\"Quality\":80,\"Correction\":-0.5,"
+                              "\"Exception\":[{\"Time\":\"2024-01-02T03:04:05.123456Z\","
+                              "\"VCOCorrection\":12.5,\"Count\":3}]},"
+                              "\"Event\":{\"Detection\":[{\"Type\":\"MURDOCK\","
+                              "\"SignalAmplitude\":80.5,\"OnsetTime\":\"2024-01-02T03:04:06Z\"}]},"
+                              "\"Calibration\":{\"Sequence\":[{\"Type\":\"STEP\","
+                              "\"BeginTime\":\"2024-01-02T03:04:07Z\",\"Duration\":1.5,"
+                              "\"EndTime\":\"2024-01-02T03:04:09Z\"}]}}}";
+  double aligned_storage[1024];
+  double unaligned_storage[1024];
+  char *aligned = (char *)aligned_storage;
+  char *unaligned = (char *)unaligned_storage + 1;
+  int alignedlen;
+  int unalignedlen;
+
+  strcpy (msr.sid, "FDSN:XX_TEST_00_B_H_Z");
+  msr.reclen = 4096;
+  msr.encoding = DE_STEIM2;
+  msr.starttime = ms_timestr2nstime ("2024-01-02T03:04:05.123456789Z");
+  msr.samprate = 40.5;
+  msr.extra = (char *)extra;
+  msr.extralength = (uint16_t)strlen (extra);
+
+  memset (aligned_storage, 0, sizeof (aligned_storage));
+  memset (unaligned_storage, 0, sizeof (unaligned_storage));
+  alignedlen = msr3_pack_header3 (&msr, aligned, sizeof (aligned_storage) - 1, 0);
+  unalignedlen = msr3_pack_header3 (&msr, unaligned, sizeof (unaligned_storage) - 1, 0);
+  REQUIRE (alignedlen > 0, "msr3_pack_header3() failed");
+  CHECK (unalignedlen == alignedlen && memcmp (aligned, unaligned, alignedlen) == 0,
+         "Unaligned v3 header differs from aligned v3 header");
+
+  memset (aligned_storage, 0, sizeof (aligned_storage));
+  memset (unaligned_storage, 0, sizeof (unaligned_storage));
+  alignedlen = msr3_pack_header2 (&msr, aligned, sizeof (aligned_storage) - 1, 0);
+  unalignedlen = msr3_pack_header2 (&msr, unaligned, sizeof (unaligned_storage) - 1, 0);
+  REQUIRE (alignedlen > 0, "msr3_pack_header2() failed");
+  CHECK (unalignedlen == alignedlen && memcmp (aligned, unaligned, alignedlen) == 0,
+         "Unaligned v2 header differs from aligned v2 header");
+}
