@@ -115,15 +115,18 @@ extern FILE *lm_fopen_recordfile (const char *path);
  * refused in favor of a full scan */
 #define LM_RECENTSEGS_MAXWALK 8
 
-/* Private extension of MS3TraceList (opaque in public header).
- *
- * The public struct is the first member so public pointers, sizeof, and
- * field offsets are unaffected by the extension. */
-typedef struct
+/* Tag in the otherwise unused source ID of a trace list's head node, set by
+ * mstl3_init() and cleared when an MS3TraceID not allocated by this library
+ * may be present.  The leading control byte is never part of a source ID. */
+#define LM_TRACELIST_TAG "\001libmseed trace list"
+
+/* Test whether a trace list was initialized by mstl3_init() and holds only
+ * trace IDs allocated by this library as LMTraceIDNode */
+static inline int
+lm_tracelist_native (const MS3TraceList *mstl)
 {
-  MS3TraceList mstl;
-  int8_t foreignid; /* Set if an MS3TraceID not allocated by this library may be present */
-} LMTraceListNode;
+  return memcmp (mstl->traces.sid, LM_TRACELIST_TAG, sizeof (LM_TRACELIST_TAG)) == 0;
+}
 
 /* Private extension of MS3TraceID (opaque in public header).
  *

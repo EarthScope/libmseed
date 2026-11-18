@@ -943,3 +943,30 @@ TEST (tracelist, ms3_readtracelist_recptr_pnamerange)
 
   mstl3_free (&mstl, 1);
 }
+
+/* A trace list allocated by the caller, rather than by mstl3_init(), can be
+ * populated and freed by the library */
+TEST (tracelist, mstl3_addmsr_caller_allocated_list)
+{
+  MS3TraceList *mstl = NULL;
+  MS3TraceSeg *seg = NULL;
+
+  mstl = (MS3TraceList *)calloc (1, sizeof (MS3TraceList));
+  REQUIRE (mstl != NULL, "Cannot allocate trace list");
+
+  /* Out of order series, filling the gaps last */
+  REQUIRE (add_series (mstl, 0, 10) != NULL, "Cannot add series at 0");
+  REQUIRE (add_series (mstl, 20, 10) != NULL, "Cannot add series at 20");
+  REQUIRE (add_series (mstl, 40, 10) != NULL, "Cannot add series at 40");
+  REQUIRE (add_series (mstl, 30, 10) != NULL, "Cannot add series at 30");
+  REQUIRE (add_series (mstl, 10, 10) != NULL, "Cannot add series at 10");
+
+  REQUIRE (mstl->numtraceids == 1, "mstl->numtraceids is not expected 1");
+  CHECK (mstl->traces.next[0]->numsegments == 1, "Series were not merged into one segment");
+
+  seg = mstl->traces.next[0]->first;
+  CHECK (seg->samplecnt == 50, "Segment sample count is not expected 50");
+  CHECK (seg->starttime == MS_EPOCH2NSTIME (1700000000), "Segment start is not expected");
+
+  mstl3_free (&mstl, 1);
+}

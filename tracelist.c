@@ -93,7 +93,7 @@ mstl3_init (MS3TraceList *mstl)
     mstl3_free (&mstl, 1);
   }
 
-  mstl = (MS3TraceList *)libmseed_memory.malloc (sizeof (LMTraceListNode));
+  mstl = (MS3TraceList *)libmseed_memory.malloc (sizeof (MS3TraceList));
 
   if (mstl == NULL)
   {
@@ -101,7 +101,8 @@ mstl3_init (MS3TraceList *mstl)
     return NULL;
   }
 
-  memset (mstl, 0, sizeof (LMTraceListNode));
+  memset (mstl, 0, sizeof (MS3TraceList));
+  memcpy (mstl->traces.sid, LM_TRACELIST_TAG, sizeof (LM_TRACELIST_TAG));
 
   /* Seed PRNG with 1, we only need random distribution */
   mstl->prngstate = 1;
@@ -309,7 +310,7 @@ mstl3_addID (MS3TraceList *mstl, MS3TraceID *id, MS3TraceID **prev)
    * tail this library allocates internally, so disable the state that
    * relies on it for the containing list. */
   if (mstl)
-    ((LMTraceListNode *)mstl)->foreignid = 1;
+    memset (mstl->traces.sid, 0, sizeof (mstl->traces.sid));
 
   return lm_addID (mstl, id, prev);
 } /* End of mstl3_addID() */
@@ -869,7 +870,7 @@ _mstl3_addmsr_impl (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **ppr
       if (pprecptr && !(*pprecptr = lm_add_recordptr (seg, msr, endtime, 1, flags)))
       {
         /* seg's end time was already extended above; keep the end-time bound valid */
-        if (!((LMTraceListNode *)mstl)->foreignid)
+        if (lm_tracelist_native (mstl))
           lm_endbound_fold ((LMTraceIDNode *)id, seg->endtime);
         return NULL;
       }
@@ -893,7 +894,7 @@ _mstl3_addmsr_impl (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **ppr
       if (pprecptr && !(*pprecptr = lm_add_recordptr (seg, msr, endtime, 0, flags)))
       {
         /* seg is already linked into the list; keep the end-time bound valid */
-        if (!((LMTraceListNode *)mstl)->foreignid)
+        if (lm_tracelist_native (mstl))
           lm_endbound_fold ((LMTraceIDNode *)id, seg->endtime);
         return NULL;
       }
@@ -917,7 +918,7 @@ _mstl3_addmsr_impl (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **ppr
       if (pprecptr && !(*pprecptr = lm_add_recordptr (seg, msr, endtime, 0, flags)))
       {
         /* seg is already linked into the list; keep the end-time bound valid */
-        if (!((LMTraceListNode *)mstl)->foreignid)
+        if (lm_tracelist_native (mstl))
           lm_endbound_fold ((LMTraceIDNode *)id, seg->endtime);
         return NULL;
       }
@@ -984,7 +985,7 @@ _mstl3_addmsr_impl (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **ppr
       }
       /* If every segment outside the recent set is provably too old to match,
        * the recent set alone determines the result of the search below. */
-      else if (!((LMTraceListNode *)mstl)->foreignid &&
+      else if (lm_tracelist_native (mstl) &&
                (msr->starttime - nsperiod - nstimetol) > ((LMTraceIDNode *)id)->nonrecentendbound &&
                lm_scan_recent ((LMTraceIDNode *)id, msr, endtime, nsperiod, nstimetol, nnstimetol,
                                sampratehz, sampratetol, autoheal, &segbefore, &segafter,
@@ -1063,7 +1064,7 @@ _mstl3_addmsr_impl (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **ppr
         if (pprecptr && !(*pprecptr = lm_add_recordptr (segbefore, msr, endtime, 1, flags)))
         {
           /* segbefore's end time was already extended above; keep the end-time bound valid */
-          if (!((LMTraceListNode *)mstl)->foreignid)
+          if (lm_tracelist_native (mstl))
             lm_endbound_fold ((LMTraceIDNode *)id, segbefore->endtime);
           return NULL;
         }
@@ -1074,7 +1075,7 @@ _mstl3_addmsr_impl (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **ppr
           /* Add segafter coverage to segbefore */
           if (!lm_addsegtoseg (segbefore, segafter))
           {
-            if (!((LMTraceListNode *)mstl)->foreignid)
+            if (lm_tracelist_native (mstl))
               lm_endbound_fold ((LMTraceIDNode *)id, segbefore->endtime);
             return NULL;
           }
@@ -1090,7 +1091,7 @@ _mstl3_addmsr_impl (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **ppr
             segafter->next->prev = segafter->prev;
 
           /* Drop segafter from the recent set before it is freed */
-          if (!((LMTraceListNode *)mstl)->foreignid)
+          if (lm_tracelist_native (mstl))
             lm_recentseg_remove ((LMTraceIDNode *)id, segafter);
 
           /* Free all memory associated with the segment after that has been merged */
@@ -1176,7 +1177,7 @@ _mstl3_addmsr_impl (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **ppr
   lm_sort_segment (id, seg);
 
   /* Track the most-recently-active segments to bound future searches */
-  if (seg && !((LMTraceListNode *)mstl)->foreignid)
+  if (seg && lm_tracelist_native (mstl))
   {
     lm_recentseg_touch ((LMTraceIDNode *)id, seg);
     lm_recentseg_touch ((LMTraceIDNode *)id, id->last);
@@ -4058,7 +4059,7 @@ lm_remove_segment (MS3TraceList *mstl, MS3TraceID *id, MS3TraceSeg *seg, int8_t 
   id->numsegments -= 1;
 
   /* Drop the segment from the recent set before it is freed */
-  if (!((LMTraceListNode *)mstl)->foreignid)
+  if (lm_tracelist_native (mstl))
     lm_recentseg_remove ((LMTraceIDNode *)id, seg);
 
   /* Free all memory associated with the segment */

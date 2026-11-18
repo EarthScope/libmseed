@@ -22,6 +22,8 @@
   - Return the starting CRC value from ms_crc32c() when there is no input,
     instead of 0.
   - Write multi-byte header and blockette fields without unaligned typed stores.
+  - Mark library-initialized trace lists in the head node instead of a hidden
+    tail, so lists allocated by the caller are not accessed out of bounds.
 
 2026.287:
   - Avoid reading a miniSEED 2 blockette offset beyond a truncated buffer.
