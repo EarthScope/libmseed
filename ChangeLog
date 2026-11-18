@@ -13,6 +13,8 @@
     output file fails.
   - Print empty codes in mstl3_printsynclist() for a source ID that cannot be
     split into codes, instead of the codes of the previous trace ID.
+  - Correct documentation of mstl3_pack_segment(), which does not remove a
+    fully packed segment, and of the ms_rlog_emit() message order.
 
 2026.287:
   - Avoid reading a miniSEED 2 blockette offset beyond a truncated buffer.

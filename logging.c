@@ -540,7 +540,7 @@ print_message_int (MSLogParam *logp, int level, const char *message, char *termi
  * Emit error and warning messages from the log registry, using the printing
  * functions identified by the ::MSLogParam.
  *
- * Messages are printed in order from latest to earliest.
+ * Messages are printed in order from earliest to latest.
  *
  * The maximum number messages to emit, from most recent to earliest,
  * can be limited using @p count.  If the value is 0 all messages are

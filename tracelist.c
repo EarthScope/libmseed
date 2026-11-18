@@ -3447,9 +3447,9 @@ mstl3_pack_free (MS3TraceListPacker **packer, int64_t *packedsamples)
  * record.
  *
  * If all of the data from the segment is packed into miniSEED records
- * and the ::MSF_MAINTAINMSTL is _not_ set the segment will be removed
- * from the trace list.  All memmory referenced by the segment, including
- * the `prvtptr`s, will also be freed.
+ * and the ::MSF_MAINTAINMSTL is _not_ set the segment is left in the
+ * trace list with no samples, it is not removed.  mstl3_pack() removes
+ * such segments.
  *
  * @param[in] mstl ::MS3TraceList for the relevent ::MS3TraceID (unused for now)
  * @param[in] id ::MS3TraceID for the relevant ::MS3TraceSeg
