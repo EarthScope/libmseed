@@ -2377,6 +2377,9 @@ TEST (pack, mstl3_pack_next_autoheal_merge)
   int32_t isinedata[SINE_DATA_SAMPLES];
   nstime_t starttime = ms_timestr2nstime ("2012-05-12T00:00:00.0Z");
 
+  /* Suppress expected error messages by accumulating them */
+  ms_rloginit (NULL, NULL, NULL, NULL, 10);
+
   MS3TraceListPacker *packer = NULL;
   char *record = NULL;
   int32_t reclen = 0;
@@ -2448,6 +2451,10 @@ TEST (pack, mstl3_pack_next_autoheal_merge)
   mstl3_pack_free (&packer, &packedsamples);
   CHECK (packedsamples > 0, "mstl3_pack_free() did not report samples packed before the abort");
   mstl3_free (&mstl, 0);
+
+  /* Discard the expected error messages and restore printing */
+  ms_rlog_free (NULL);
+  ms_rloginit (NULL, NULL, NULL, NULL, 0);
 }
 
 /* Count records emitted, without writing them anywhere */
@@ -2497,6 +2504,9 @@ TEST (pack, msr3_pack_v2_samprate_range)
 {
   int records = 0;
 
+  /* Suppress expected error messages by accumulating them */
+  ms_rloginit (NULL, NULL, NULL, NULL, 10);
+
   /* Rates beyond the representable range, and NaN, must be rejected */
   CHECK (pack_v2_at_rate (1.0e10, &records) < 0, "Sample rate 1e10 was not rejected for v2");
   CHECK (pack_v2_at_rate (1.0e30, &records) < 0, "Sample rate 1e30 was not rejected for v2");
@@ -2519,6 +2529,10 @@ TEST (pack, msr3_pack_v2_samprate_range)
          "Sample rate 1/3 was rejected for v2");
   CHECK (pack_v2_at_rate (-10.0, &records) > 0 && records > 0,
          "Sample period -10 (0.1 Hz) was rejected for v2");
+
+  /* Discard the expected error messages and restore printing */
+  ms_rlog_free (NULL);
+  ms_rloginit (NULL, NULL, NULL, NULL, 0);
 }
 
 /* Retain the last record emitted, for parsing back */
@@ -2575,6 +2589,9 @@ TEST (pack, msr3_pack_v2_calibration_abort)
   char gotstr[64];
   int rrv;
 
+  /* Suppress expected error messages by accumulating them */
+  ms_rloginit (NULL, NULL, NULL, NULL, 10);
+
   CHECK (pack_v2_with_extra ("{\"FDSN\":{\"Calibration\":{\"Sequence\":[{\"Type\":\"ABORT\","
                              "\"EndTime\":\"2024-01-02T03:04:09Z\"}]}}}") > 0,
          "A calibration abort sequence was rejected for v2");
@@ -2613,12 +2630,19 @@ TEST (pack, msr3_pack_v2_calibration_abort)
   CHECK (pack_v2_with_extra ("{\"FDSN\":{\"Calibration\":{\"Sequence\":[{\"Type\":\"BOGUS\","
                              "\"EndTime\":\"2024-01-02T03:04:09Z\"}]}}}") < 0,
          "An unrecognized calibration Type was not rejected");
+
+  /* Discard the expected error messages and restore printing */
+  ms_rlog_free (NULL);
+  ms_rloginit (NULL, NULL, NULL, NULL, 0);
 }
 
 /* Extra header numbers that cannot be represented in their miniSEED v2
  * blockette fields are rejected rather than converted */
 TEST (pack, msr3_pack_v2_blockette_value_range)
 {
+  /* Suppress expected error messages by accumulating them */
+  ms_rloginit (NULL, NULL, NULL, NULL, 10);
+
   /* Values within range are accepted */
   CHECK (pack_v2_with_extra ("{\"FDSN\":{\"Calibration\":{\"Sequence\":[{\"Type\":\"STEP\","
                              "\"Duration\":1.5,\"StepBetween\":2,\"Amplitude\":-3.25,"
@@ -2652,6 +2676,10 @@ TEST (pack, msr3_pack_v2_blockette_value_range)
   CHECK (pack_v2_with_extra ("{\"FDSN\":{\"Time\":{\"Exception\":[{"
                              "\"VCOCorrection\":-1e40}]}}}") < 0,
          "A timing exception VCOCorrection beyond single precision was not rejected");
+
+  /* Discard the expected error messages and restore printing */
+  ms_rlog_free (NULL);
+  ms_rloginit (NULL, NULL, NULL, NULL, 0);
 }
 
 /* Headers packed to an unaligned buffer are identical to those packed to
