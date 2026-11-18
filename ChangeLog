@@ -1,4 +1,4 @@
-2026.321:
+2026.321: v3.5.5
   - Convert the encoded data byte order when repacking records between format
     versions.
   - Return the starting CRC value from ms_crc32c() when there is no input,
