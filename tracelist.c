@@ -2375,7 +2375,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output, uint64_
             break;
           }
 
-          if ((filelistptr->fileptr = fopen (recordptr->filename, "rb")) == NULL)
+          if ((filelistptr->fileptr = lm_fopen_recordfile (recordptr->filename)) == NULL)
           {
             ms_log (2, "%s: Cannot open file (%s): %s\n", id->sid, recordptr->filename,
                     strerror (errno));

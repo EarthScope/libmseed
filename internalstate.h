@@ -102,6 +102,10 @@ extern void lm_pack_state_finish (MS3RecordPacker *packer, int64_t *packedsample
 /* Release a packer's rawrec/encoded buffers */
 extern void lm_pack_state_free (MS3RecordPacker *packer);
 
+/* Open a record list file path for reading, without a byte range suffix
+ * if the path as given does not exist; returns NULL on error */
+extern FILE *lm_fopen_recordfile (const char *path);
+
 /* Number of most-recently-active segments tracked per MS3TraceID, used to
  * bound the segment-list search in _mstl3_addmsr_impl() */
 #define LM_RECENTSEGS 4

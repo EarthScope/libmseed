@@ -916,3 +916,30 @@ TEST (tracelist, mstl3_printsynclist_unparsable_sid)
 
   mstl3_free (&mstl, 1);
 }
+
+/* A record list read from a path with a byte range suffix refers to the
+ * file by that path; unpacking must open the file without the suffix. */
+TEST (tracelist, ms3_readtracelist_recptr_pnamerange)
+{
+  MS3TraceList *mstl = NULL;
+  MS3TraceID *id = NULL;
+  int64_t unpacked;
+  int rv;
+
+  char *path = "data/testdata-oneseries-mixedlengths-mixedorder.mseed2@0-16255";
+
+  rv = ms3_readtracelist (&mstl, path, NULL, 0, MSF_RECORDLIST | MSF_PNAMERANGE, 0);
+  REQUIRE (rv == MS_NOERROR, "ms3_readtracelist() did not return expected MS_NOERROR");
+
+  id = mstl->traces.next[0];
+  REQUIRE (id != NULL && id->first != NULL, "Trace list is not populated");
+  REQUIRE (id->first->recordlist != NULL, "id->first->recordlist is not populated");
+  CHECK (id->first->samplecnt == 3952, "id->first->samplecnt is not expected 3952");
+
+  unpacked = mstl3_unpack_recordlist (id, id->first, NULL, 0, 0);
+
+  CHECK (unpacked == 3952, "mstl3_unpack_recordlist() did not unpack expected 3952 samples");
+  CHECK (id->first->numsamples == 3952, "id->first->numsamples is not expected 3952");
+
+  mstl3_free (&mstl, 1);
+}
