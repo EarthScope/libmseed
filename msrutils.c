@@ -419,14 +419,16 @@ msr3_host_latency (const MS3Record *msr)
   double span = 0.0; /* Time covered by the samples */
   double epoch;      /* Current epoch time */
   double latency = 0.0;
+  double sampratehz;
   time_t tv;
 
   if (msr == NULL)
     return 0.0;
 
   /* Calculate the time covered by the samples */
-  if (msr->samprate > 0.0 && msr->samplecnt > 0)
-    span = (1.0 / msr->samprate) * (msr->samplecnt - 1);
+  sampratehz = msr3_sampratehz (msr);
+  if (sampratehz > 0.0 && msr->samplecnt > 0)
+    span = (1.0 / sampratehz) * (msr->samplecnt - 1);
 
   /* Grab UTC time according to the system clock */
   epoch = (double)time (&tv);

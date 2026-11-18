@@ -1,5 +1,7 @@
 #include <libmseed.h>
+#include <math.h>
 #include <tau/tau.h>
+#include <time.h>
 
 TEST (msr3, utils)
 {
@@ -119,4 +121,33 @@ TEST (msr3, duplicate_extra)
   msr3_free (&msr_dup);
 
   ms3_readmsr (&msr, NULL, flags, 0);
+}
+
+/* Latency is measured to the last sample, for a sample rate given either
+ * in samples per second or as a (negative) sample period in seconds */
+TEST (msr3, host_latency)
+{
+  MS3Record msr = MS3Record_INITIALIZER;
+  double latency_first;
+  double latency_last;
+
+  msr.starttime = MS_EPOCH2NSTIME ((int64_t)time (NULL) - 1000);
+
+  /* Rate: 0.1 samples per second, a 10 second period */
+  msr.samprate = 0.1;
+  msr.samplecnt = 1;
+  latency_first = msr3_host_latency (&msr);
+  msr.samplecnt = 2;
+  latency_last = msr3_host_latency (&msr);
+  CHECK (fabs ((latency_first - latency_last) - 10.0) < 1.5,
+         "Latency for positive sample rate does not account for the last sample");
+
+  /* Period: 10 seconds per sample */
+  msr.samprate = -10.0;
+  msr.samplecnt = 1;
+  latency_first = msr3_host_latency (&msr);
+  msr.samplecnt = 2;
+  latency_last = msr3_host_latency (&msr);
+  CHECK (fabs ((latency_first - latency_last) - 10.0) < 1.5,
+         "Latency for negative sample period does not account for the last sample");
 }
