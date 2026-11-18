@@ -1400,7 +1400,8 @@ extern nstime_t lmp_systemtime (void);
 /** Portable function for case-insensitive, ASCII-only string comparison */
 extern int lmp_strncasecmp (const char *s1, const char *s2, size_t n);
 
-/** Return CRC32C value of supplied buffer, with optional starting CRC32C value */
+/** Return CRC32C value of supplied buffer, with optional starting CRC32C value,
+    which is returned unchanged when there is no input */
 extern uint32_t ms_crc32c (const uint8_t *input, int length, uint32_t previousCRC32C);
 
 /** In-place byte swapping of 2 byte quantity */

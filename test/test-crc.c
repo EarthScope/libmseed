@@ -117,4 +117,10 @@ TEST (CRC, CRC32C)
 
   result = ms_crc32c ((const uint8_t *)"SOMEDATA", 0, 0);
   CHECK (result == 0, "CRC-32C NULL input test failure");
+
+  /* Continued calculation, including a zero-length continuation */
+  result = ms_crc32c ((const uint8_t *)"12345", 5, 0);
+  result = ms_crc32c ((const uint8_t *)"", 0, result);
+  result = ms_crc32c ((const uint8_t *)"6789", 4, result);
+  CHECK (result == 0xe3069283, "CRC-32C continued with zero-length input test failure");
 }

@@ -395,13 +395,13 @@ static uint32_t s_crc32c_sb8(const uint8_t *input, int length, uint32_t previous
  * slice-by-1, version.  Otherwise the calculation utilizes the
  * slice-by-8 optimized calculation.
  *
- * Return the CRC value on success or 0 on error.
+ * Return the CRC value, or previousCRC32C when there is no input.
  ************************************************************************/
 uint32_t
 ms_crc32c (const uint8_t* input, int length, uint32_t previousCRC32C)
 {
   if (!input || length <= 0)
-    return 0;
+    return previousCRC32C;
 
   if (ms_bigendianhost())
     return s_crc32c_no_slice(input, length, previousCRC32C);

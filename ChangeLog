@@ -19,6 +19,8 @@
     blockette fields instead of converting them.
   - Open a record list file read with a byte range suffix by its path
     without the suffix when unpacking.
+  - Return the starting CRC value from ms_crc32c() when there is no input,
+    instead of 0.
 
 2026.287:
   - Avoid reading a miniSEED 2 blockette offset beyond a truncated buffer.
