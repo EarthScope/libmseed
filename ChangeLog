@@ -1,4 +1,4 @@
-2026.322:
+2026.322: v3.6.0
   - Add msr3_parse_next() to step through records in a buffer
   - Skip non-miniSEED data in mstl3_readbuffer() when MSF_SKIPNOTDATA is set
 
