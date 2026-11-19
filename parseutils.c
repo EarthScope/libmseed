@@ -151,6 +151,133 @@ msr3_parse (const char *record, uint64_t recbuflen, MS3Record **ppmsr, uint32_t 
 } /* End of msr3_parse() */
 
 /** ************************************************************************
+ * @brief Parse the next miniSEED record in a buffer
+ *
+ * Search @p buffer for a miniSEED record starting at @p *offset and
+ * parse it with msr3_parse().  This routine can be called repeatedly
+ * to step through all records in a buffer:
+ *
+ * @code
+ *   uint64_t offset = 0;
+ *
+ *   while (msr3_parse_next (buffer, buflen, &offset, &msr, flags, 0) == 0)
+ *   {
+ *     // Do something with msr, located at buffer + offset
+ *
+ *     offset += msr->reclen;
+ *   }
+ *
+ *   msr3_free (&msr);
+ * @endcode
+ *
+ * If ::MSF_SKIPNOTDATA is set in @p flags, any input that cannot be
+ * parsed as a miniSEED record is skipped and @p *offset is advanced to
+ * the next record.  Otherwise such input is an error.
+ *
+ * No more than ::MAXRECLEN bytes are searched for the end of a record
+ * for which a length cannot be determined from its header.
+ *
+ * The ::MSF_ATENDOFFILE flag may be set when @p buffer contains the end
+ * of the input, which allows the length of a final miniSEED 2.x record
+ * without a 1000 blockette to be implied by the buffer length.
+ *
+ * @param[in] buffer Buffer containing miniSEED records
+ * @param[in] buflen Length of @p buffer in bytes
+ * @param[in,out] offset Offset in @p buffer to start searching, updated
+ *   to the offset of the parsed record, incomplete record or error
+ * @param[out] ppmsr Pointer-to-point to a ::MS3Record that will be populated
+ * @param[in] flags Flags controlling features:
+ * @parblock
+ *  - @c ::MSF_SKIPNOTDATA - Skip input that cannot be identified as miniSEED
+ *  - @c ::MSF_ATENDOFFILE - The buffer contains the end of the input
+ *  - Flags supported by msr3_parse()
+ * @endparblock
+ * @param[in] verbose control verbosity of diagnostic output
+ *
+ * @return Parsing status
+ * @retval 0 Success, populates the supplied ::MS3Record, which starts
+ *       at @p *offset and is ::MS3Record.reclen bytes long.
+ * @retval >0 No complete record remains in the buffer, the return
+ *       value is a hint of how many more bytes are needed.
+ * @retval <0 library error code is returned.
+ *
+ * @ref MessageOnError - this function logs a message on error except MS_NOTSEED
+ *
+ * @see msr3_parse()
+ ***************************************************************************/
+int
+msr3_parse_next (const char *buffer, uint64_t buflen, uint64_t *offset, MS3Record **ppmsr,
+                 uint32_t flags, int8_t verbose)
+{
+  uint64_t startoffset;
+  uint64_t window;
+  uint32_t pflags;
+  int parseval;
+
+  if (!buffer || !offset || !ppmsr)
+  {
+    ms_log (2, "%s(): Required input not defined: 'buffer', 'offset' or 'ppmsr'\n", __func__);
+    return MS_GENERROR;
+  }
+
+  if (*offset > buflen)
+  {
+    ms_log (2, "%s(): Offset (%" PRIu64 ") is beyond buffer length (%" PRIu64 ")\n", __func__,
+            *offset, buflen);
+    return MS_GENERROR;
+  }
+
+  startoffset = *offset;
+
+  while ((buflen - *offset) >= MINRECLEN)
+  {
+    window = buflen - *offset;
+    pflags = flags;
+
+    /* Limit parsing to the maximum record length, short of the end of the buffer */
+    if (window > MAXRECLEN)
+    {
+      window = MAXRECLEN;
+      pflags &= ~(MSF_ATENDOFFILE);
+    }
+
+    parseval = msr3_parse (buffer + *offset, window, ppmsr, pflags, verbose);
+
+    if (parseval == 0)
+    {
+      if (verbose > 1 && *offset > startoffset)
+      {
+        ms_log (0, "Skipped %" PRIu64 " bytes of non-data starting at byte offset %" PRIu64 "\n",
+                *offset - startoffset, startoffset);
+      }
+
+      return MS_NOERROR;
+    }
+
+    /* A record that would extend beyond the maximum record length */
+    if (parseval > 0 && (window + (uint64_t)parseval) > MAXRECLEN)
+    {
+      if (!(flags & MSF_SKIPNOTDATA))
+      {
+        ms_log (2, "miniSEED record length out of supported range at byte offset %" PRIu64 "\n",
+                *offset);
+      }
+
+      parseval = MS_OUTOFRANGE;
+    }
+
+    /* More data needed to complete the record, or an error */
+    if (parseval > 0 || !(flags & MSF_SKIPNOTDATA))
+      return parseval;
+
+    *offset += 1;
+  }
+
+  /* Too little remains for a record, hint at the minimum that would be needed */
+  return (int)(MINRECLEN - (buflen - *offset));
+} /* End of msr3_parse_next() */
+
+/** ************************************************************************
  * @brief Detect miniSEED record in buffer
  *
  * Determine if the buffer contains a miniSEED data record by

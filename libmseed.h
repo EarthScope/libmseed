@@ -421,6 +421,9 @@ typedef struct MS3Record
 extern int msr3_parse (const char *record, uint64_t recbuflen, MS3Record **ppmsr, uint32_t flags,
                        int8_t verbose);
 
+extern int msr3_parse_next (const char *buffer, uint64_t buflen, uint64_t *offset,
+                            MS3Record **ppmsr, uint32_t flags, int8_t verbose);
+
 extern int msr3_pack (const MS3Record *msr, void (*record_handler) (char *, int, void *),
                       void *handlerdata, int64_t *packedsamples, uint32_t flags, int8_t verbose);
 

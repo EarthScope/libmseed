@@ -11,6 +11,7 @@ EXPORTS
    ms_doy2md
    ms_md2doy
    msr3_parse
+   msr3_parse_next
    msr3_pack
    msr3_pack_init
    msr3_pack_next

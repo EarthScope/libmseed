@@ -1015,3 +1015,213 @@ TEST (read, v2_blockette_nonfinite_float)
 
   msr3_free (&msr);
 }
+
+#define SKIP_SOURCE "data/testdata-3channel-signal.mseed3"
+#define SKIP_SOURCE_SIZE 56522
+#define SKIP_JUNK_SIZE 800
+#define SKIP_TESTFILE "testdata-skipnotdata.mseed3"
+
+/* Read the SKIP_SOURCE file into a buffer of at least SKIP_SOURCE_SIZE bytes */
+static int
+read_skip_source (char *buffer)
+{
+  FILE *fp = fopen (SKIP_SOURCE, "rb");
+  size_t readcount;
+
+  if (!fp)
+    return -1;
+
+  readcount = fread (buffer, SKIP_SOURCE_SIZE, 1, fp);
+  fclose (fp);
+
+  return (readcount == 1) ? 0 : -1;
+}
+
+/* Step through a buffer where non-miniSEED data is before, between and after
+ * the records.  The same records are returned as from the buffer of records
+ * alone, and as from the file reader given the same input. */
+TEST (read, msr3_parse_next_skipnotdata)
+{
+  MS3Record *msr = NULL;
+  MS3FileParam *msfp = NULL;
+  char *source;
+  char *buffer;
+  uint64_t buflen = SKIP_SOURCE_SIZE + 3 * SKIP_JUNK_SIZE;
+  uint64_t offset;
+  uint64_t firstoffset = 0;
+  uint64_t secondoffset = 0;
+  int32_t firstreclen = 0;
+  int64_t expected = 0;
+  int64_t count = 0;
+  FILE *fp;
+  int rv;
+
+  source = (char *)malloc (SKIP_SOURCE_SIZE);
+  buffer = (char *)malloc (buflen);
+  REQUIRE (source != NULL && buffer != NULL, "Cannot allocate buffers");
+  REQUIRE (read_skip_source (source) == 0, "Cannot read " SKIP_SOURCE);
+
+  /* Records alone, each follows the previous */
+  offset = 0;
+  while ((rv = msr3_parse_next (source, SKIP_SOURCE_SIZE, &offset, &msr, 0, 0)) == 0)
+  {
+    if (expected == 0)
+      firstreclen = msr->reclen;
+
+    expected++;
+    offset += msr->reclen;
+  }
+
+  REQUIRE (expected > 2, "Expected more than 2 records in " SKIP_SOURCE);
+  CHECK (rv == MINRECLEN, "msr3_parse_next() did not return MINRECLEN at the end of the buffer");
+  CHECK (offset == SKIP_SOURCE_SIZE, "msr3_parse_next() did not consume the entire buffer");
+
+  /* Non-data, first record, non-data, remaining records, non-data */
+  memset (buffer, 'X', buflen);
+  memcpy (buffer + SKIP_JUNK_SIZE, source, firstreclen);
+  memcpy (buffer + 2 * SKIP_JUNK_SIZE + firstreclen, source + firstreclen,
+          SKIP_SOURCE_SIZE - firstreclen);
+
+  /* Non-data is an error without the skip flag, with offset left at the non-data */
+  offset = 0;
+  rv = msr3_parse_next (buffer, buflen, &offset, &msr, 0, 0);
+  CHECK (rv == MS_NOTSEED, "msr3_parse_next() did not return expected MS_NOTSEED");
+  CHECK (offset == 0, "msr3_parse_next() changed offset on error");
+
+  offset = 0;
+  while ((rv = msr3_parse_next (buffer, buflen, &offset, &msr, MSF_SKIPNOTDATA, 0)) == 0)
+  {
+    if (count == 0)
+      firstoffset = offset;
+    else if (count == 1)
+      secondoffset = offset;
+
+    count++;
+    offset += msr->reclen;
+  }
+
+  CHECK (count == expected, "msr3_parse_next() did not return all records when skipping non-data");
+  CHECK (firstoffset == SKIP_JUNK_SIZE, "First record is not at expected offset");
+  CHECK (secondoffset == (uint64_t)(2 * SKIP_JUNK_SIZE + firstreclen),
+         "Second record is not at expected offset");
+  CHECK (rv > 0, "msr3_parse_next() did not return a positive value at the end of the buffer");
+  CHECK ((buflen - offset) < MINRECLEN, "msr3_parse_next() did not search the entire buffer");
+
+  msr3_free (&msr);
+
+  /* The file reader returns the same records from the same input */
+  fp = fopen (SKIP_TESTFILE, "wb");
+  REQUIRE (fp != NULL, "Cannot open " SKIP_TESTFILE);
+  REQUIRE (fwrite (buffer, buflen, 1, fp) == 1, "Cannot write " SKIP_TESTFILE);
+  fclose (fp);
+
+  count = 0;
+  while ((rv = ms3_readmsr_r (&msfp, &msr, SKIP_TESTFILE, MSF_SKIPNOTDATA, 0)) == MS_NOERROR)
+  {
+    if (count == 0)
+      CHECK (msfp->streampos - msr->reclen == SKIP_JUNK_SIZE,
+             "First record from file is not at expected offset");
+
+    count++;
+  }
+
+  CHECK (rv == MS_ENDOFFILE, "ms3_readmsr_r() did not return expected MS_ENDOFFILE");
+  CHECK (count == expected, "ms3_readmsr_r() did not return all records when skipping non-data");
+
+  ms3_readmsr_r (&msfp, &msr, NULL, 0, 0);
+  remove (SKIP_TESTFILE);
+
+  free (source);
+  free (buffer);
+}
+
+/* A final record that is not complete is reported as needing the missing
+ * bytes, with the offset left at the start of that record. */
+TEST (read, msr3_parse_next_partial)
+{
+  MS3Record *msr = NULL;
+  char *source;
+  uint64_t offset = 0;
+  uint64_t lastoffset = 0;
+  int64_t expected = 0;
+  int64_t count = 0;
+  int rv;
+
+  source = (char *)malloc (SKIP_SOURCE_SIZE);
+  REQUIRE (source != NULL, "Cannot allocate buffer");
+  REQUIRE (read_skip_source (source) == 0, "Cannot read " SKIP_SOURCE);
+
+  while (msr3_parse_next (source, SKIP_SOURCE_SIZE, &offset, &msr, 0, 0) == 0)
+  {
+    lastoffset = offset;
+    expected++;
+    offset += msr->reclen;
+  }
+
+  offset = 0;
+  while ((rv = msr3_parse_next (source, SKIP_SOURCE_SIZE - 10, &offset, &msr, MSF_SKIPNOTDATA,
+                                0)) == 0)
+  {
+    count++;
+    offset += msr->reclen;
+  }
+
+  CHECK (count == expected - 1, "msr3_parse_next() did not return all complete records");
+  CHECK (rv == 10, "msr3_parse_next() did not return the 10 bytes needed");
+  CHECK (offset == lastoffset, "Offset is not at the start of the incomplete record");
+
+  /* An offset beyond the buffer is an error */
+  offset = SKIP_SOURCE_SIZE + 1;
+  rv = msr3_parse_next (source, SKIP_SOURCE_SIZE, &offset, &msr, 0, 0);
+  CHECK (rv == MS_GENERROR, "msr3_parse_next() did not return an error for an invalid offset");
+
+  msr3_free (&msr);
+  free (source);
+}
+
+/* A miniSEED 2 header with no determinable record length, followed by more
+ * than the maximum record length of non-data, is out of range and is skipped
+ * on request.  It is not a record needing more data. */
+TEST (read, msr3_parse_next_maxreclen)
+{
+  MS3Record *msr = NULL;
+  char *buffer;
+  uint64_t recordoffset = MAXRECLEN + 1024;
+  uint64_t buflen;
+  uint64_t offset;
+  uint8_t formatversion = 0;
+  FILE *fp;
+  size_t readcount;
+  int rv;
+
+  buffer = (char *)calloc (1, recordoffset + 4096);
+  REQUIRE (buffer != NULL, "Cannot allocate buffer");
+
+  /* A sequence number, data quality indicator and reserved byte are enough to
+   * be detected as a miniSEED 2 header, with no blockettes */
+  memcpy (buffer, "000001D ", 8);
+  REQUIRE (ms3_detect (buffer, 4096, &formatversion) == 0 && formatversion == 2,
+           "Header is not detected as miniSEED 2 with an undetermined length");
+
+  fp = fopen ("data/reference-testdata-steim2.mseed3", "rb");
+  REQUIRE (fp != NULL, "File pointer is unexpected NULL");
+  readcount = fread (buffer + recordoffset, 1, 4096, fp);
+  fclose (fp);
+  REQUIRE (readcount >= MINRECLEN, "Cannot read record");
+  buflen = recordoffset + readcount;
+
+  offset = 0;
+  rv = msr3_parse_next (buffer, buflen, &offset, &msr, 0, 0);
+  CHECK (rv == MS_OUTOFRANGE, "msr3_parse_next() did not return expected MS_OUTOFRANGE");
+  CHECK (offset == 0, "msr3_parse_next() changed offset on error");
+
+  offset = 0;
+  rv = msr3_parse_next (buffer, buflen, &offset, &msr, MSF_SKIPNOTDATA, 0);
+  CHECK (rv == MS_NOERROR, "msr3_parse_next() did not return expected MS_NOERROR");
+  CHECK (offset == recordoffset, "Record is not at expected offset");
+  REQUIRE (msr != NULL, "msr3_parse_next() did not populate 'msr'");
+  CHECK (msr->formatversion == 3, "Record is not the expected format version 3");
+
+  msr3_free (&msr);
+  free (buffer);
+}
