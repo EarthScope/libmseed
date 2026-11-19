@@ -1060,3 +1060,119 @@ TEST (tracelist, mstl3_addmsr_after_caller_removes_segment)
 
   mstl3_free (&mstl, 1);
 }
+
+/* Non-miniSEED data in a buffer is skipped on request, resulting in the same
+ * trace list as the records alone, and is otherwise an error. */
+TEST (tracelist, mstl3_readbuffer_skipnotdata)
+{
+  MS3TraceList *mstl = NULL;
+  MS3TraceList *mstl_skip = NULL;
+  MS3TraceID *id = NULL;
+  MS3TraceID *id_skip = NULL;
+  MS3Record *msr = NULL;
+  char *source;
+  char *buffer;
+  const uint64_t sourcelen = 56522;
+  const uint64_t junklen = 800;
+  uint64_t buflen = sourcelen + 3 * junklen;
+  int32_t firstreclen;
+  int64_t expected;
+  int64_t rv;
+  FILE *fp;
+
+  char *path = "data/testdata-3channel-signal.mseed3";
+
+  source = (char *)malloc (sourcelen);
+  buffer = (char *)malloc (buflen);
+  REQUIRE (source != NULL && buffer != NULL, "Cannot allocate buffers");
+
+  fp = fopen (path, "rb");
+  REQUIRE (fp != NULL, "File pointer is unexpected NULL");
+  rv = fread (source, sourcelen, 1, fp);
+  fclose (fp);
+  REQUIRE (rv == 1, "fread() did not read entire file");
+
+  REQUIRE (msr3_parse (source, sourcelen, &msr, 0, 0) == 0, "Cannot parse first record");
+  firstreclen = msr->reclen;
+  msr3_free (&msr);
+
+  expected = mstl3_readbuffer (&mstl, source, sourcelen, 0, 0, NULL, 0);
+  REQUIRE (expected > 2, "mstl3_readbuffer() did not return more than 2 records");
+
+  /* Non-data, first record, non-data, remaining records, non-data */
+  memset (buffer, 'X', buflen);
+  memcpy (buffer + junklen, source, firstreclen);
+  memcpy (buffer + 2 * junklen + firstreclen, source + firstreclen, sourcelen - firstreclen);
+
+  rv = mstl3_readbuffer (&mstl_skip, buffer, buflen, 0, 0, NULL, 0);
+  CHECK (rv == MS_NOTSEED, "mstl3_readbuffer() did not return expected MS_NOTSEED");
+  mstl3_free (&mstl_skip, 1);
+
+  rv = mstl3_readbuffer (&mstl_skip, buffer, buflen, 0, MSF_SKIPNOTDATA | MSF_RECORDLIST, NULL, 0);
+  CHECK (rv == expected, "mstl3_readbuffer() did not return all records when skipping non-data");
+  REQUIRE (mstl_skip != NULL, "mstl3_readbuffer() did not populate 'mstl'");
+  CHECK (mstl_skip->numtraceids == mstl->numtraceids, "Trace ID count is not as expected");
+
+  id = mstl->traces.next[0];
+  id_skip = mstl_skip->traces.next[0];
+
+  while (id && id_skip)
+  {
+    CHECK_STREQ (id_skip->sid, id->sid);
+    CHECK (id_skip->earliest == id->earliest, "Trace ID earliest time is not as expected");
+    CHECK (id_skip->latest == id->latest, "Trace ID latest time is not as expected");
+    CHECK (id_skip->numsegments == id->numsegments, "Segment count is not as expected");
+    REQUIRE (id_skip->first != NULL, "id->first is not populated");
+    CHECK (id_skip->first->samplecnt == id->first->samplecnt, "Sample count is not as expected");
+
+    id = id->next[0];
+    id_skip = id_skip->next[0];
+  }
+
+  CHECK (id == NULL && id_skip == NULL, "Trace lists do not have the same trace IDs");
+
+  /* The first record follows the leading non-data */
+  id_skip = mstl_skip->traces.next[0];
+  REQUIRE (id_skip != NULL && id_skip->first != NULL, "First trace ID is not populated");
+  REQUIRE (id_skip->first->recordlist != NULL, "Record list is unexpected NULL");
+  CHECK (id_skip->first->recordlist->first->bufferptr == buffer + junklen,
+         "First record pointer is not at expected offset");
+
+  mstl3_free (&mstl, 1);
+  mstl3_free (&mstl_skip, 1);
+  free (source);
+  free (buffer);
+}
+
+/* A miniSEED 2 header with no determinable record length, followed by more
+ * than the maximum record length of non-data, is a record length out of
+ * range and not the end of the buffer. */
+TEST (tracelist, mstl3_readbuffer_maxreclen)
+{
+  MS3TraceList *mstl = NULL;
+  char *buffer;
+  uint64_t buflen = MAXRECLEN + 1024;
+  int64_t rv;
+
+  buffer = (char *)calloc (1, buflen);
+  REQUIRE (buffer != NULL, "Cannot allocate buffer");
+
+  /* Detected as a miniSEED 2 header with no blockettes */
+  memcpy (buffer, "000001D ", 8);
+
+  /* Suppress expected error messages by accumulating them */
+  ms_rloginit (NULL, NULL, NULL, NULL, 10);
+
+  rv = mstl3_readbuffer (&mstl, buffer, buflen, 0, 0, NULL, 0);
+  CHECK (rv == MS_OUTOFRANGE, "mstl3_readbuffer() did not return expected MS_OUTOFRANGE");
+  mstl3_free (&mstl, 1);
+
+  rv = mstl3_readbuffer (&mstl, buffer, buflen, 0, MSF_SKIPNOTDATA, NULL, 0);
+  CHECK (rv == 0, "mstl3_readbuffer() did not return expected 0 records");
+
+  ms_rlog_free (NULL);
+  ms_rloginit (NULL, NULL, NULL, NULL, 0);
+
+  mstl3_free (&mstl, 1);
+  free (buffer);
+}

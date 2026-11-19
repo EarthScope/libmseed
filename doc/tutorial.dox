@@ -123,9 +123,11 @@ only selected data.
 If an application is not designed to read miniSEED from files the
 library provides functions functionality to read data from memory.
 The mstl3_readbuffer() function will read all data from a buffer into
-a @ref trace-list.  The low-level functions ms3_detect() and
-msr3_parse() can be used to detect and parse miniSEED records in
-memory buffers.
+a @ref trace-list.  The msr3_parse_next() function steps through the
+records in a buffer one at a time.  Both can skip input that is not
+miniSEED with the ::MSF_SKIPNOTDATA flag.  The low-level functions
+ms3_detect() and msr3_parse() can be used to detect and parse
+individual miniSEED records in memory buffers.
 
 @subsection writing Writing miniSEED records
 

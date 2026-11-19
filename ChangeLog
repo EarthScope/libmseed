@@ -1,5 +1,6 @@
 2026.322:
   - Add msr3_parse_next() to step through records in a buffer
+  - Skip non-miniSEED data in mstl3_readbuffer() when MSF_SKIPNOTDATA is set
 
 2026.321: v3.5.5
   - Convert the encoded data byte order when repacking records between format

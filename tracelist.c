@@ -1379,6 +1379,7 @@ mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr *
  * @parblock
  *  - @c ::MSF_RECORDLIST : Build a ::MS3RecordList for each ::MS3TraceSeg
  *  - @c ::MSF_RECORDLIST_NOEXTRAS : Do not copy extra headers into record list entries
+ *  - @c ::MSF_SKIPNOTDATA : Skip input that cannot be identified as miniSEED
  *  - Flags supported by msr3_parse()
  *  - Flags supported by mstl3_addmsr()
  * @endparblock
@@ -1428,6 +1429,7 @@ mstl3_readbuffer (MS3TraceList **ppmstl, const char *buffer, uint64_t bufferleng
  * @parblock
  *  - @c ::MSF_RECORDLIST : Build a ::MS3RecordList for each ::MS3TraceSeg
  *  - @c ::MSF_RECORDLIST_NOEXTRAS : Do not copy extra headers into record list entries
+ *  - @c ::MSF_SKIPNOTDATA : Skip input that cannot be identified as miniSEED
  *  - Flags supported by msr3_parse()
  *  - Flags supported by mstl3_addmsr()
  * @endparblock
@@ -1478,7 +1480,7 @@ mstl3_readbuffer_selection (MS3TraceList **ppmstl, const char *buffer, uint64_t 
 
   while ((bufferlength - offset) >= MINRECLEN)
   {
-    parsevalue = msr3_parse (buffer + offset, bufferlength - offset, &msr, pflags, verbose);
+    parsevalue = msr3_parse_next (buffer, bufferlength, &offset, &msr, pflags, verbose);
 
     if (parsevalue < 0)
     {
